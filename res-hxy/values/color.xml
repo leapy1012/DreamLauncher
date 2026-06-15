@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <color name="screen_edit_gallery_cursor_bg">#22ffffff</color>
+    <color name="hxy_folder_bg_round_color">#8ac5c7c9</color>
+    <color name="n_actionbar_bg">#81c2fd</color>
+
+    <color name="settings_materialColorSurfaceContainer">#EEEEEE</color>
+    <color name="settings_materialColorSurfaceBright">#F9FAF8</color>
+    <color name="prize_preference_category_title_color">#969696</color>
+    <color name="hxyos_control_enable">#d6dbdf</color>
+    <color name="hxyos_rv_bg_color">#ffffffff</color>
+</resources>

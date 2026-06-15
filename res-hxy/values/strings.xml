@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- hxy-feature: add launcher style function  202312 -->
+    <string name="home_screen_style_title">Home screen</string>
+    <string name="home_screen_style_regular">Regular</string>
+    <string name="home_screen_style_single">App drawer</string>
+    <string name="launcher_style_title">Launcher Style</string>
+    <string name="launcher_style_summary">Choose Launcer Style</string>
+    <string name="item_unremoved">Item can not be removed when is Home Screen</string>
+    <!-- hxy-feature: add launcher style function  202312 -->
+     <!-- hxy-feature: desktop theme 202312 -->
+    <string name="launcher_theme_title">Theme</string>
+    <string name="launcher_theme_summary">Choose Theme</string>
+    <string name="none">default</string>
+    <!-- hxy-feature: desktop theme 202312 -->
+    <string name="hxy_launcher_available">available</string>
+    <string name="google_folder_title">Google</string>
+    <string name="shake_device_tips">Shake device to fill empty cells with icons</string>
+    <string name="effect_button_text">Effect</string>
+    <string name="transition_effect_accordion">Accordion</string>
+    <string name="transition_effect_carousel_left">Carousel(left)</string>
+    <string name="transition_effect_carousel_right">Carousel(right)</string>
+    <string name="transition_effect_cross">Cross</string>
+    <string name="transition_effect_cubein">Inward cube</string>
+    <string name="transition_effect_cubeout">Outward cube</string>
+    <string name="transition_effect_flip">Flip vertically</string>
+    <string name="transition_effect_none">Default</string>
+    <string name="transition_effect_overview">Overview</string>
+    <string name="transition_effect_stack">Card pile</string>
+    <string name="transition_effect_wheel">Wheel</string>
+    <string name="transition_effect_windmill">Windmill</string>
+    <string name="hxy_folder_switch_large">Show as large folder</string>
+    <string name="hxy_folder_switch_small">Show as small folder</string>
+    <string name="str_add_to">Add</string>
+    <string name="home_screen_icon_custom">Icon Custom</string>
+    <string name="new_install_display_dot">New install display dots</string>
+    <string name="memory_clean_end_animator">Already in optimum state</string>
+    <string name="memory_clean_running_animator">Accelerating</string>
+    <string name="memory_clean_start_animator">Cleanup</string>
+    <string name="app_name_memory_clean">Cleanup</string>
+    <string name="hxy_clear_memrey_all_locked">Your phone is at its best</string>
+    <string name="hxy_clear_memrey_toast">Release %s memory</string>
+    <string name="wallpaper_choose_widget_title">Switch wallpaper</string>
+    <string name="folder_unnamed">unnamed</string>
+    <string name="accessibility_text_reading_options_title">Display size and text</string>
+    <string name="home_screen_layout_lock">Layout Lock</string>
+    <string name="home_screen_layout_lock_tips">After the layout is locked,the desktop application cannot be dragged or uninstalled</string>
+    <string name="home_screen_docked_app">Docked App</string>
+    <string name="home_screen_docked_app_tips">Display the name for apps located on bottom row of home screen</string>
+    <string name="home_screen_app_name_length">App Name Length</string>
+    <string name="home_screen_app_name_length_tips">Display name of app in single line</string>
+    <string name="home_screen_fill_cell">Fill cells of uninstalled apps</string>
+    <string name="home_screen_double_tap_to_off">Double click to turn off the screen</string>
+    <string name="home_screen_double_tap_to_off_summary">On the lockscreen or standby interface,double-click on the blank space to turn off the screen</string>
+    <string name="home_screen_memory_clean">Cleanup</string>
+    <string name="home_screen_wallpaper_set">Switch wallpaper</string>
+    <string name="home_screen_icon_shape">Icon Shape</string>
+    <string name="home_screen_icon_shape_default">default</string>
+    <string name="home_screen_icon_shape_droplet">droplet</string>
+    <string name="home_screen_icon_shape_neighbourhood">neighbourhood</string>
+    <string name="home_screen_icon_shape_circle">circle</string>
+    <string name="icon_shape_override_progress">Icon Shape Overriding</string>
+    <string name="home_screen_icon_size">Icon Size</string>
+    <string name="pref_minusEnabled">Enable Left Screen</string>
+    <string name="pref_plusEnabled">Enable Right Screen</string>
+    <string name="hxy_apply_theme">apply theme</string>
+    <string name="settings_style">Themer</string>
+    <string name="sure_set_theme">Are you sure you want to set this theme?</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+</resources>

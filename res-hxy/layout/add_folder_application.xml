@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.android.launcher3.big.add.HxyAddBubbleTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/BaseIcon"
+    android:hapticFeedbackEnabled="false"
+    android:includeFontPadding="false"
+    android:stateListAnimator="@animator/app_icon_anim"
+    app:centerVertically="true"
+    app:iconDisplay="2" />

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/*
+* Copyright (C) 2013 The Android Open Source Project
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+ -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- hxy-fea: add launcher style function  202312 -->
+    <string name="home_screen_style_title">桌面模式</string>
+    <string name="home_screen_style_regular">标准模式</string>
+    <string name="home_screen_style_single">抽屉模式</string>
+    <string name="launcher_style_title">桌面模式</string>
+    <string name="launcher_style_summary">"选择桌面风格"</string>
+    <string name="item_unremoved">单层桌面时不能移除快捷方式</string>
+    <!-- hxy-fea: add launcher style function  202312 -->
+    <!-- hxy-feature: desktop theme 202312 -->
+    <string name="launcher_theme_title">"主题"</string>
+    <string name="launcher_theme_summary">"选择主题"</string>
+    <string name="none">默认</string>
+    <!-- hxy-feature: desktop theme 202312-->
+    <string name="hxy_launcher_available">可用</string>
+    <string name="shake_device_tips">摇一摇当前页面图标自动补位</string>
+    <string name="effect_button_text">滑屏效果</string>
+    <string name="transition_effect_accordion">手风琴</string>
+    <string name="transition_effect_carousel_left">旋转木马(左)</string>
+    <string name="transition_effect_carousel_right">旋转木马(右)</string>
+    <string name="transition_effect_cross">交叉</string>
+    <string name="transition_effect_cubein">向内立方体</string>
+    <string name="transition_effect_cubeout">向外立方体</string>
+    <string name="transition_effect_flip">垂直翻转</string>
+    <string name="transition_effect_none">默认滑屏</string>
+    <string name="transition_effect_overview">概览</string>
+    <string name="transition_effect_stack">卡片堆</string>
+    <string name="transition_effect_wheel">轮子</string>
+    <string name="transition_effect_windmill">风车</string>
+    <string name="hxy_folder_switch_large">显示为大文件夹</string>
+    <string name="hxy_folder_switch_small">显示为小文件夹</string>
+    <string name="str_add_to">添加</string>
+    <string name="home_screen_icon_custom">图标自定义</string>
+    <string name="new_install_display_dot">新安装应用显示小圆点</string>
+    <string name="memory_clean_end_animator">已清理</string>
+    <string name="memory_clean_running_animator">清理中</string>
+    <string name="memory_clean_start_animator">一键清理</string>
+    <string name="app_name_memory_clean">一键清理</string>
+    <string name="hxy_clear_memrey_all_locked">您的手机已经最佳状态</string>
+    <string name="hxy_clear_memrey_toast">释放了 %s 内存</string>
+    <string name="wallpaper_choose_widget_title">切换壁纸</string>
+    <string name="folder_unnamed">未命名</string>
+    <string name="accessibility_text_reading_options_title">显示大小和文字</string>
+    <string name="home_screen_layout_lock">布局锁定</string>
+    <string name="home_screen_layout_lock_tips">布局锁定后，应用将不能被移动</string>
+    <string name="home_screen_docked_app">底部dock栏标题</string>
+    <string name="home_screen_docked_app_tips">开启显示标题，关闭隐藏标题</string>
+    <string name="home_screen_app_name_length">单行显示</string>
+    <string name="home_screen_app_name_length_tips">桌面图标标题单行显示</string>
+    <string name="home_screen_fill_cell">卸载应用后自动补位</string>
+    <string name="home_screen_double_tap_to_off">双击息屏</string>
+    <string name="home_screen_double_tap_to_off_summary">锁屏或桌面空白处双击，可息屏</string>
+    <string name="home_screen_memory_clean">一键清理</string>
+    <string name="home_screen_wallpaper_set">切换壁纸</string>
+    <string name="home_screen_icon_shape">图标风格</string>
+    <string name="home_screen_icon_shape_default">默认</string>
+    <string name="home_screen_icon_shape_droplet">水滴</string>
+    <string name="home_screen_icon_shape_neighbourhood">方圆</string>
+    <string name="home_screen_icon_shape_circle">圆形</string>
+    <string name="icon_shape_override_progress">图标重载中</string>
+    <string name="home_screen_icon_size">图标大小</string>
+    <string name="pref_minusEnabled">启用左一屏</string>
+    <string name="pref_plusEnabled">启用右一屏</string>
+    <string name="hxy_apply_theme">正在设置主题</string>
+    <string name="settings_style">主题</string>
+    <string name="sure_set_theme">确定设置此主题吗?</string>
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+</resources>

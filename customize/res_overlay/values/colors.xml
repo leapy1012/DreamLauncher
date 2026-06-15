@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="category_folder_bg">#EEEEEE</color>
+    <color name="category_more_name">#FFFFFF</color>
+    <color name="category_app_name">#FFFFFF</color>
+
+    <color name="search_keyword">#FFFFFF</color>
+    <color name="search_placeholder">#66FFFFFF</color>
+    <color name="search_cursor">#66FFFFFF</color>
+    <color name="search_bg">#33FFFFFF</color>
+    <color name="search_section_header">#FFFFFF</color>
+    <color name="search_app_name">#FFFFFF</color>
+
+    <color name="widget_bg">#EEEEEE</color>
+    <color name="widget_name">#EEEEEE</color>
+    <color name="widget_section_name">#FFFFFF</color>
+
+    <color name="usagestats_app_name">#FFFFFF</color>
+
+    <color name="battery_phone_icon">#EEEEEE</color>
+    <color name="battery_percentage">#EEEEEE</color>
+    <color name="battery_progress_active">#3EC960</color>
+    <color name="battery_progress_inactive">#A9ACBB</color>
+
+    <color name="ram_phone_icon">#EEEEEE</color>
+    <color name="ram_percentage">#EEEEEE</color>
+    <color name="ram_progress_active">#4095D6</color>
+    <color name="ram_progress_inactive">#A9ACBB</color>
+</resources>

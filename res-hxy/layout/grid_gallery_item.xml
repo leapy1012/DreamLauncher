@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:id="@+id/content"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.android.launcher3.screenedit.IconTextView
+        android:id="@+id/effect_button"
+        style="@style/PannelButton"
+        android:layout_width="match_parent"
+        android:drawableTop="@drawable/screen_edit_effect_cross"
+        android:drawablePadding="4dp"
+        android:drawableTint="?attr/workspaceTextColor"
+        android:text="@string/effect_button_text" />
+</FrameLayout>

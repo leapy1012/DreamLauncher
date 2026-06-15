@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="HomeSettings.Theme.Customize" parent="HomeSettings.Theme">
+        <item name="alertDialogTheme">@style/Theme.AppCompat.DayNight.Dialog</item>
+        <item name="preferenceTheme">@style/HomeSettings.PreferenceTheme.Customize</item>
+    </style>
+
+    <style name="HomeSettings.PreferenceTheme.Customize" parent="HomeSettings.PreferenceTheme">
+        <item name="dialogPreferenceStyle">@style/HomeSettings.DialogPreferenceStyle.Customize</item>
+    </style>
+
+    <style name="HomeSettings.DialogPreferenceStyle.Customize"
+        parent="@style/Preference.DialogPreference.Material">
+        <item name="iconSpaceReserved">@bool/home_settings_icon_space_reserved</item>
+    </style>
+</resources>

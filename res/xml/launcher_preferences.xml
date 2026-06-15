@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2016 Google Inc.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        android:key="hxyos_desktop_settings"
+        android:order="20">
+        <!-- hxy-feature: add launcher style function -->
+        <Preference
+            android:key="pref_launcher_style"
+            android:title="@string/launcher_style_title"
+            android:summary="@string/launcher_style_summary"
+            android:fragment="com.android.launcher3.settings.LauncherStyleFragment"
+            android:persistent="true" />
+        <!-- hxy-feature: add launcher style function -->
+        <Preference
+            android:key="pref_developer_options"
+            android:persistent="false"
+            android:title="Developer Options"
+            android:fragment="com.android.launcher3.settings.DeveloperOptionsFragment" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="pref_allowRotation"
+            android:persistent="true"
+            android:summary="@string/allow_rotation_desc"
+            android:title="@string/allow_rotation_title"/>
+        <SwitchPreference
+            android:key="pref_install_behavior"
+            android:title="@string/new_install_display_dot"
+            android:defaultValue="false"
+            android:persistent="true"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="hxyos_desktop_layout"
+        android:order="10">
+        <Preference
+            android:key="pref_text_size"
+            android:title="@string/accessibility_text_reading_options_title"
+            android:persistent="true">
+            <intent android:action="android.settings.TEXT_READING_SETTINGS"/>
+        </Preference>
+
+        <Preference
+            android:key="pref_icon_size"
+            android:title="@string/home_screen_icon_custom"
+            android:persistent="true">
+            <intent android:action="hxy.intent.action.ICON_SIZE_SETTINGS"/>
+        </Preference>
+        <SwitchPreference
+            android:key="pref_layout_dock"
+            android:title="@string/home_screen_layout_lock"
+            android:summary="@string/home_screen_layout_lock_tips"
+            android:defaultValue="false"
+            android:persistent="true"/>
+        <SwitchPreference
+            android:key="pref_docked_app"
+            android:title="@string/home_screen_docked_app"
+            android:summary="@string/home_screen_docked_app_tips"
+            android:defaultValue="false"
+            android:persistent="true"/>
+        <SwitchPreference
+            android:key="pref_app_name"
+            android:title="@string/home_screen_app_name_length"
+            android:summary="@string/home_screen_app_name_length_tips"
+            android:defaultValue="true"
+            android:persistent="true"/>
+        <SwitchPreference
+            android:key="pref_fill_cell"
+            android:title="@string/home_screen_fill_cell"
+            android:defaultValue="false"
+            android:persistent="true"/>
+        <com.android.launcher3.settings.NotificationDotsPreference
+            android:key="pref_icon_badging"
+            android:persistent="false"
+            android:title="@string/notification_dots_title"
+            android:widgetLayout="@layout/prize_preference_arrow">
+            <intent android:action="android.settings.NOTIFICATION_SETTINGS">
+                <!-- This extra highlights the "Allow notification dots" field in Notification settings -->
+                <extra
+                    android:name=":settings:fragment_args_key"
+                    android:value="notification_badging"/>
+            </intent>
+        </com.android.launcher3.settings.NotificationDotsPreference>
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="pref_add_icon_to_home"
+            android:persistent="true"
+            android:summary="@string/auto_add_shortcuts_description"
+            android:title="@string/auto_add_shortcuts_label"/>
+        <SwitchPreference
+            android:key="pref_minusEnabled"
+            android:title="@string/pref_minusEnabled"
+            android:defaultValue="@bool/config_minusEnabled"
+            android:persistent="true" />
+
+        <SwitchPreference
+            android:key="pref_plusEnabled"
+            android:title="@string/pref_plusEnabled"
+            android:defaultValue="@bool/config_plusEnabled"
+            android:persistent="true" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="hxyos_desktop_other"
+        android:order="30">
+        <!-- hxy-feature: desktop theme -->
+        <Preference
+            android:key="pref_theme_style"
+            android:title="@string/launcher_theme_title"
+            android:summary="@string/launcher_theme_summary"
+            android:persistent="true">
+            <intent android:action="hxy.intent.action.CHOOSE_THEME"/>
+        </Preference>
+        <!-- hxy-feature: desktop theme-->
+        <SwitchPreference
+            android:key="pref_double_tap"
+            android:title="@string/home_screen_double_tap_to_off"
+            android:summary="@string/home_screen_double_tap_to_off_summary"
+            android:defaultValue="false"
+            android:persistent="true"/>
+        <SwitchPreference
+            android:key="pref_memory_clean"
+            android:title="@string/home_screen_memory_clean"
+            android:defaultValue="true"
+            android:persistent="true"/>
+        <SwitchPreference
+            android:key="pref_wallpaper_set"
+            android:title="@string/home_screen_wallpaper_set"
+            android:defaultValue="true"
+            android:persistent="true"/>
+    </PreferenceCategory>
+</PreferenceScreen>

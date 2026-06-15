@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillAlpha="0.2"
+        android:fillColor="#ffffff"
+        android:pathData="M0,24a24,24 0,1 0,48 0a24,24 0,1 0,-48 0z"
+        android:strokeAlpha="0.4" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillType="evenOdd"
+        android:pathData="M22.457,14.829L25.543,14.829C26.679,14.829 27.6,15.75 27.6,16.886L27.6,30.257C27.6,31.393 26.679,32.314 25.543,32.314L22.457,32.314C21.321,32.314 20.4,31.393 20.4,30.257L20.4,16.886C20.4,15.75 21.321,14.829 22.457,14.829" />
+    <path
+        android:fillColor="@drawable/quickactionbar_effect_icon_0"
+        android:fillType="evenOdd"
+        android:pathData="M16.286,14.829C17.422,14.829 18.343,15.75 18.343,16.886L18.343,30.257C18.343,31.393 17.422,32.314 16.286,32.314C15.15,32.314 14.229,31.393 14.229,30.257L14.229,16.886C14.229,15.75 15.15,14.829 16.286,14.829" />
+    <path
+        android:fillColor="@drawable/quickactionbar_effect_icon_1"
+        android:fillType="evenOdd"
+        android:pathData="M31.714,14.829C32.85,14.829 33.771,15.75 33.771,16.886L33.771,30.257C33.771,31.393 32.85,32.314 31.714,32.314C30.578,32.314 29.657,31.393 29.657,30.257L29.657,16.886C29.657,15.75 30.578,14.829 31.714,14.829" />
+</vector>

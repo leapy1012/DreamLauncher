@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_process_initializer_class" translatable="false">com.android.launcher3.CustomizeProcessInitializer</string>
+    <string name="model_delegate_class" translatable="false">com.android.launcher3.model.CustomizeModelDelegate</string>
+    <string name="calendar_component_name" translatable="false">com.android.calendar/com.android.calendar.AllInOneActivity</string>
+    <string name="clock_component_name" translatable="false"></string>
+</resources>

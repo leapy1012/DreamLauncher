@@ -1,0 +1,24 @@
+<resources>
+
+    <!-- icon label support display double lines. true:support  false:not support default:false -->
+    <bool name="config_iconlabel_double_lines">false</bool>
+
+    <!--All apps background transparent alpha value should 0 ~ 200-->
+    <integer name="allapps_bg_alpha">0</integer>
+
+    <bool name="config_hxy_grid">true</bool>
+    <string name="config_default_grid">6_by_4</string>
+    <!-- added by xiangchangsong for: 待机界面禁止下拉 start-->    
+    <bool name="config_workspaceProhibitsStatusbar">false</bool>
+    <!-- added by xiangchangsong for: 待机界面禁止下拉 end-->
+    <bool name="config_show_notification_number">true</bool>
+    <bool name="config_show_scroll_effect">true</bool>
+    <bool name="config_show_full_folder_style">true</bool>
+    <integer name="hxy_config_default_theme_blur_scrim_level">0</integer>
+    <!--hxy_leifengqi update to Dynamic clock 20230303 start-->
+    <string name="dynamic_clock_pkg" >com.android.deskclock</string>
+    <bool name="show_clock_second">true</bool>
+    <!--hxy_leifengqi update to Dynamic clock 20230303 end-->
+    <bool name="config_minusEnabled">true</bool>
+    <bool name="config_plusEnabled">true</bool>
+</resources>

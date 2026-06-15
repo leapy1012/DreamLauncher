@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2009 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<favorites xmlns:launcher="http://schemas.android.com/apk/res-auto/com.android.launcher3">
+
+    <!-- Hotseat (We use the screen as the position of the item in the hotseat) -->
+    <!-- Dialer, Messaging, [Maps/Music], Browser, Camera -->
+    <resolve
+        launcher:container="-101"
+        launcher:screen="0"
+        launcher:x="0"
+        launcher:y="0" >
+        <favorite
+             launcher:packageName="com.android.dialer"
+             launcher:className="com.android.contacts.dial.DialActivity" />
+    </resolve>
+
+    <resolve
+        launcher:container="-101"
+        launcher:screen="1"
+        launcher:x="1"
+        launcher:y="0" >
+        <favorite launcher:uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_MESSAGING;end" />
+        <favorite launcher:uri="sms:" />
+        <favorite launcher:uri="smsto:" />
+        <favorite launcher:uri="mms:" />
+        <favorite launcher:uri="mmsto:" />
+    </resolve>
+
+
+    <resolve
+        launcher:container="-101"
+        launcher:screen="2"
+        launcher:x="2"
+        launcher:y="0" >
+        <favorite
+            launcher:uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_BROWSER;end" />
+        <favorite launcher:uri="http://www.example.com/" />
+    </resolve>
+
+    <resolve
+        launcher:container="-101"
+        launcher:screen="3"
+        launcher:x="3"
+        launcher:y="0" >
+        <favorite launcher:uri="#Intent;action=android.media.action.STILL_IMAGE_CAMERA;end" />
+        <favorite launcher:uri="#Intent;action=android.intent.action.CAMERA_BUTTON;end" />
+    </resolve>
+
+    <!-- Bottom row -->
+    <resolve
+        launcher:screen="0"
+        launcher:x="0"
+        launcher:y="-1" >
+	        <favorite
+             launcher:packageName="com.android.launcher3"
+             launcher:className="com.android.launcher3.settings.WallpaperChangeActivity" />
+    </resolve>
+    <resolve
+        launcher:screen="0"
+        launcher:x="1"
+        launcher:y="-1" >
+	        <favorite
+             launcher:packageName="com.android.launcher3"
+             launcher:className="com.android.launcher3.big.memoryclean.MemoryCleanActivity" />
+    </resolve>
+    <resolve
+        launcher:screen="0"
+        launcher:x="2"
+        launcher:y="-1" >
+	        <favorite
+             launcher:packageName="com.android.toolbox"
+             launcher:className="com.android.toolbox.flashlight.FlashlightActivity" />
+    </resolve>
+    <resolve
+        launcher:screen="0"
+        launcher:x="3"
+        launcher:y="-1" > 
+	        <favorite
+             launcher:packageName="com.android.settings"
+             launcher:className="com.android.settings.Settings" />
+
+    </resolve>
+
+    <resolve
+        launcher:screen="1"
+        launcher:x="2"
+        launcher:y="-5" >
+	        <favorite 
+             launcher:packageName="com.android.calendar"
+             launcher:className="com.android.calendar.AllInOneActivity" />
+    </resolve>
+    <resolve
+        launcher:screen="1"
+        launcher:x="3"
+        launcher:y="-5" >
+	        <favorite
+             launcher:packageName="com.android.deskclock"
+             launcher:className="com.android.deskclock.DeskClock" />
+    </resolve>
+
+    <resolve
+        launcher:screen="1"
+        launcher:x="2"
+        launcher:y="-4" >
+	        <favorite 
+             launcher:packageName="com.android.music"
+             launcher:className="com.android.music.MusicBrowserActivity" />
+
+    </resolve>
+
+    <resolve
+        launcher:screen="1"
+        launcher:x="3"
+        launcher:y="-4" >
+	        <favorite 
+             launcher:packageName="com.android.soundrecorder"
+             launcher:className="com.sprd.soundrecorder.RecorderActivity" />
+
+    </resolve>
+
+    <!-- <resolve
+        launcher:screen="1"
+        launcher:x="0"
+        launcher:y="-3" >
+	        <favorite 
+             launcher:packageName="com.android.calculator2"
+             launcher:className="com.android.calculator2.Calculator" />
+
+    </resolve> -->
+
+    <folder launcher:screen="1" launcher:spanX="2" launcher:spanY="2" launcher:title="@string/daily_apps" launcher:x="0" launcher:y="-5">
+        <favorite launcher:className="com.android.toolbox.MainActivity" launcher:packageName="com.android.toolbox"/>
+        <favorite launcher:className="com.android.studentmode.StudentModelActivity" launcher:packageName="com.android.studentmode"/>
+        <favorite launcher:className="com.yft.gamemode.GameActivity" launcher:packageName="com.yft.gamemode"/>
+        <favorite launcher:className="com.hxy.easylauncher.simple.activity.MainActivity" launcher:packageName="com.hxy.easylauncher"/>
+        <favorite launcher:packageName="com.yft.systemmanager" launcher:className="com.yft.systemmanager.MainActivity" />
+        <favorite launcher:packageName="com.android.stk" launcher:className="com.android.stk.StkMain" />
+        <favorite launcher:packageName="com.android.contacts" launcher:className="com.android.contacts.activities.PeopleActivity" />
+        <favorite launcher:className="com.mediatek.camera.HxyQrCodeActivity" launcher:packageName="com.mediatek.camera"/>
+        <favorite launcher:className="com.hxy.chlidmode.workespace.ChlidActivity" launcher:packageName="com.hxy.chlidmode"/>
+    </folder>
+ <appwidget screen="1" x="0" y="-3" spanX="2" spanY="2" packageName="com.android.deskclock" className="com.android.alarmclock.AnalogAppWidgetProvider"/>
+</favorites>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="HomeSettings.Theme.Customize" parent="HomeSettings.Theme">
+        <item name="alertDialogTheme">@style/Theme.AppCompat.DayNight.Dialog</item>
+    </style>
+</resources>

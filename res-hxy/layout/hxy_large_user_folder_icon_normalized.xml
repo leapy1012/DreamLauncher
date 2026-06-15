@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.android.launcher3.folder.large.HxyLargeFolder xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/folder_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp">
+
+            <com.android.launcher3.big.ColorEditText
+                android:id="@+id/folder_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/fold_name_edit_bg"
+                android:fontFamily="google-sans-text"
+                android:gravity="center_horizontal"
+                android:hint="@string/folder_hint_text"
+                android:imeOptions="flagNoExtractUi"
+                android:maxLength="20"
+                android:paddingStart="40dp"
+                android:paddingEnd="40dp"
+                android:singleLine="true"
+                android:textColor="#ffffff"
+                android:textColorHighlight="?android:attr/colorControlHighlight"
+                android:textColorHint="#ffffff"
+                android:textSize="@dimen/folder_label_text_size" />
+
+            <ImageView
+                android:id="@+id/clear_text"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="10dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/clear_text"
+                android:visibility="gone" />
+        </RelativeLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/folder_content_ll"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/edit_enable_bg"
+        android:elevation="5dp"
+        android:orientation="vertical">
+
+        <com.android.launcher3.folder.FolderPagedView
+            android:id="@+id/folder_content"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingLeft="8dp"
+            android:paddingTop="16dp"
+            android:paddingRight="8dp"
+            app:pageIndicator="@+id/folder_page_indicator" />
+
+        <LinearLayout
+            android:id="@+id/folder_footer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp">
+
+            <com.android.launcher3.pageindicators.PageIndicatorDots
+                android:id="@+id/folder_page_indicator"
+                android:layout_width="wrap_content"
+                android:layout_height="25dp"
+                android:layout_gravity="center"
+                android:elevation="1dp" />
+        </LinearLayout>
+    </LinearLayout>
+</com.android.launcher3.folder.large.HxyLargeFolder>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="category_margin">88px</dimen>
+    <dimen name="category_bg_radius">50px</dimen>
+    <dimen name="category_icon_size">184px</dimen>
+    <dimen name="category_icon_margin">25px</dimen>
+    <dimen name="category_name_size">12dp</dimen>
+    <dimen name="category_name_margin">12dp</dimen>
+    <dimen name="category_folder_margin">75px</dimen>
+
+    <dimen name="folder_more_height">330dp</dimen>
+    <dimen name="search_bar_margin">16dp</dimen>
+    <dimen name="search_bar_padding">24dp</dimen>
+    <dimen name="search_bar_keyword">15dp</dimen>
+    <dimen name="search_section_header_margin">8dp</dimen>
+    <dimen name="search_sidebar_padding">8dp</dimen>
+    <dimen name="search_app_padding">32dp</dimen>
+
+    <dimen name="widget_section_name">16dp</dimen>
+    <dimen name="widget_section_name_margin">8dp</dimen>
+    <dimen name="widget_margin">24dp</dimen>
+    <dimen name="widget_bg_radius">12dp</dimen>
+    <dimen name="widget_name_size">12dp</dimen>
+
+    <dimen name="battery_padding">12dp</dimen>
+    <dimen name="battery_progress_margin">8dp</dimen>
+    <dimen name="battery_phone_icon_size">32dp</dimen>
+    <dimen name="battery_phone_icon_margin">16dp</dimen>
+    <dimen name="battery_percentage_size">12dp</dimen>
+    <dimen name="battery_percentage_margin">16dp</dimen>
+
+    <dimen name="usagestats_padding">12dp</dimen>
+    <dimen name="usagestats_rv_padding">8dp</dimen>
+    <dimen name="usagestats_icon_size">48dp</dimen>
+    <dimen name="usagestats_app_margin">8dp</dimen>
+    <dimen name="usagestats_app_name">12dp</dimen>
+
+    <dimen name="calendar_padding">12dp</dimen>
+
+    <dimen name="ram_padding">12dp</dimen>
+    <dimen name="ram_progress_margin">8dp</dimen>
+    <dimen name="ram_phone_icon_size">32dp</dimen>
+    <dimen name="ram_phone_icon_margin">16dp</dimen>
+    <dimen name="ram_percentage_size">12dp</dimen>
+    <dimen name="ram_percentage_margin">16dp</dimen>
+
+    <dimen name="photo_padding">8dp</dimen>
+</resources>

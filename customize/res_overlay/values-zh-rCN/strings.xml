@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_bar_placeholder">搜索应用</string>
+    <string name="search_error_empty">未搜索到相关应用</string>
+
+    <string name="usagestats_section_name">常用应用</string>
+</resources>

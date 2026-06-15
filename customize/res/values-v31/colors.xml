@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="notification_dot_color_light">#ee0000</color>
+    <color name="notification_dot_color_dark">#ee0000</color>
+
+    <color name="folder_text_color_light">#E2E2E9</color>
+    <color name="folder_text_color_dark">#E2E2E9</color>
+    <color name="folder_hint_text_color_light">#C5C6D0</color>
+    <color name="folder_hint_text_color_dark">#C5C6D0</color>
+
+    <color name="folder_background_light">#00000000</color>
+    <color name="folder_background_dark">#00000000</color>
+
+    <color name="folder_preview_light">#80AAAAAA</color>
+    <color name="folder_preview_dark">#80AAAAAA</color>
+
+    <color name="folder_pagination_color_light">#333333</color>
+    <color name="folder_pagination_color_dark">#333333</color>
+</resources>

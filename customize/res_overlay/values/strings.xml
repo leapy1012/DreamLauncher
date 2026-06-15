@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_bar_placeholder">Search application</string>
+    <string name="search_error_empty">No relevavant applications were found</string>
+
+    <string name="usagestats_section_name">Commonly used application</string>
+</resources>

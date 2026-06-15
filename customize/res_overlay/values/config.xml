@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="config_batteryCnOrAction" translatable="false">android.intent.action.POWER_USAGE_SUMMARY</string>
+    <string name="config_ramCnOrAction" translatable="false">android.settings.DEVICE_INFO_SETTINGS</string>
+    <string name="config_calendarCnOrAction" translatable="false">com.android.calendar/.AllInOneActivity</string>
+    <string name="config_galleryCnOrAction" translatable="false">com.android.gallery/com.tencent.cloud.smh.ui.module.MainActivity</string>
+</resources>
