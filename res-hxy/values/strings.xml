@@ -48,8 +48,14 @@
     <string name="wallpaper_choose_widget_title">Switch wallpaper</string>
     <string name="folder_unnamed">unnamed</string>
     <string name="accessibility_text_reading_options_title">Display size and text</string>
-    <string name="home_screen_layout_lock">Layout Lock</string>
-    <string name="home_screen_layout_lock_tips">After the layout is locked,the desktop application cannot be dragged or uninstalled</string>
+    <string name="home_screen_layout_lock">Lock layout</string>
+    <string name="home_screen_layout_lock_tips">Home screen layout has been locked and cannot be edited.</string>
+    <string name="launcher_locked_toast_look_setting">View settings</string>
+    <string name="launcher_layout">Layout</string>
+    <string name="launcher_locked">Lock layout</string>
+    <string name="launcher_is_compact_arrangement_title">Icon autofill</string>
+    <string name="tog_title_layout">Home screen layout</string>
+    <string name="tog_title_layout_summary">Set Home screen app layouts.</string>
     <string name="home_screen_docked_app">Docked App</string>
     <string name="home_screen_docked_app_tips">Display the name for apps located on bottom row of home screen</string>
     <string name="home_screen_app_name_length">App Name Length</string>

@@ -55,6 +55,7 @@ import com.android.launcher3.popup.ArrowPopup;
 import com.android.launcher3.shortcuts.DeepShortcutView;
 import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
+import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.util.PackageManagerHelper;
 import com.android.launcher3.widget.picker.WidgetsFullSheet;
 
@@ -224,6 +225,9 @@ public class OptionsPopupView extends ArrowPopup<Launcher>
 
     private static boolean enterHomeGardening(View view) {
         Launcher launcher = Launcher.getLauncher(view.getContext());
+        if (LayoutLockHelper.checkLockedAndShowMessage(launcher)) {
+            return false;
+        }
         launcher.getStateManager().goToState(EDIT_MODE);
         return true;
     }
@@ -235,6 +239,9 @@ public class OptionsPopupView extends ArrowPopup<Launcher>
     /** Returns WidgetsFullSheet that was opened, or null if nothing was opened. */
     @Nullable
     public static WidgetsFullSheet openWidgets(Launcher launcher) {
+        if (LayoutLockHelper.checkLockedAndShowMessage(launcher)) {
+            return null;
+        }
         if (launcher.getPackageManager().isSafeMode()) {
             Toast.makeText(launcher, R.string.safemode_widget_error, Toast.LENGTH_SHORT).show();
             return null;

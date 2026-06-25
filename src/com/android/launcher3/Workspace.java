@@ -18,6 +18,9 @@ package com.android.launcher3;
 
 import static com.android.launcher3.LauncherAnimUtils.SPRING_LOADED_EXIT_DELAY;
 import static com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_APPLICATION;
+import static com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_DEEP_SHORTCUT;
+import static com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_FOLDER;
+import static com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_SHORTCUT;
 import static com.android.launcher3.LauncherState.ALL_APPS;
 import static com.android.launcher3.LauncherState.EDIT_MODE;
 import static com.android.launcher3.LauncherState.FLAG_MULTI_PAGE;
@@ -3773,7 +3776,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     //begin add
     public void reorderIfNeed() {
         if (Launcher.isAutoFull()) {
-            postDelayed(this::reorderCurrentPage, 250);
+            postDelayed(this::compactWorkspaceIfNeeded, 250);
         }
     }
 
@@ -3793,6 +3796,136 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             }
         }
         stripEmptyScreens();
+    }
+
+    private void compactWorkspaceIfNeeded() {
+        if (!Launcher.isAutoFull()) {
+            return;
+        }
+
+        ArrayList<CompactSlot> slots = new ArrayList<>();
+        ArrayList<View> movableViews = new ArrayList<>();
+
+        for (int i = 0; i < mScreenOrder.size(); i++) {
+            int screenId = mScreenOrder.get(i);
+            if (screenId == EXTRA_EMPTY_SCREEN_ID || screenId == EXTRA_EMPTY_SCREEN_SECOND_ID) {
+                continue;
+            }
+            CellLayout screen = mWorkspaceScreens.get(screenId);
+            if (screen == null) {
+                continue;
+            }
+            boolean[][] blocked = new boolean[screen.getCountX()][screen.getCountY()];
+            ShortcutAndWidgetContainer container = screen.getShortcutsAndWidgets();
+            for (int childIndex = 0; childIndex < container.getChildCount(); childIndex++) {
+                View child = container.getChildAt(childIndex);
+                CellLayoutLayoutParams lp = (CellLayoutLayoutParams) child.getLayoutParams();
+                if (isCompactMovableItem(child)) {
+                    movableViews.add(child);
+                } else {
+                    markBlockedCells(blocked, lp.getCellX(), lp.getCellY(), lp.cellHSpan,
+                            lp.cellVSpan);
+                }
+            }
+            for (int y = 0; y < screen.getCountY(); y++) {
+                for (int x = 0; x < screen.getCountX(); x++) {
+                    if (!blocked[x][y]) {
+                        slots.add(new CompactSlot(screenId, x, y));
+                    }
+                }
+            }
+        }
+
+        movableViews.sort((left, right) -> {
+            ItemInfo leftInfo = (ItemInfo) left.getTag();
+            ItemInfo rightInfo = (ItemInfo) right.getTag();
+            int leftScreenIndex = mScreenOrder.indexOf(leftInfo.screenId);
+            int rightScreenIndex = mScreenOrder.indexOf(rightInfo.screenId);
+            if (leftScreenIndex != rightScreenIndex) {
+                return Integer.compare(leftScreenIndex, rightScreenIndex);
+            }
+            if (leftInfo.cellY != rightInfo.cellY) {
+                return Integer.compare(leftInfo.cellY, rightInfo.cellY);
+            }
+            return Integer.compare(leftInfo.cellX, rightInfo.cellX);
+        });
+
+        ArrayList<ItemInfo> movedItems = new ArrayList<>();
+        int count = Math.min(movableViews.size(), slots.size());
+        for (int i = 0; i < count; i++) {
+            View child = movableViews.get(i);
+            ItemInfo info = (ItemInfo) child.getTag();
+            CompactSlot slot = slots.get(i);
+            if (info.screenId == slot.screenId && info.cellX == slot.cellX
+                    && info.cellY == slot.cellY) {
+                continue;
+            }
+            CellLayout oldParent = getParentCellLayoutForView(child);
+            if (oldParent != null) {
+                oldParent.removeView(child);
+            }
+            addInScreen(child, LauncherSettings.Favorites.CONTAINER_DESKTOP, slot.screenId,
+                    slot.cellX, slot.cellY, info.spanX, info.spanY);
+
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) child.getLayoutParams();
+            lp.setTmpCellX(slot.cellX);
+            lp.setCellX(slot.cellX);
+            lp.setTmpCellY(slot.cellY);
+            lp.setCellY(slot.cellY);
+
+            info.cellX = slot.cellX;
+            info.cellY = slot.cellY;
+            info.screenId = slot.screenId;
+            info.container = LauncherSettings.Favorites.CONTAINER_DESKTOP;
+            movedItems.add(info);
+        }
+
+        if (!movedItems.isEmpty()) {
+            for (ItemInfo item : movedItems) {
+                mLauncher.getModelWriter().moveItemInDatabase(item,
+                        LauncherSettings.Favorites.CONTAINER_DESKTOP, item.screenId, item.cellX,
+                        item.cellY);
+            }
+            requestLayout();
+        }
+        stripEmptyScreens();
+        mLauncher.setAutoFull(false);
+    }
+
+    private boolean isCompactMovableItem(View child) {
+        if (!(child.getTag() instanceof ItemInfo)) {
+            return false;
+        }
+        ItemInfo info = (ItemInfo) child.getTag();
+        if (info.container != LauncherSettings.Favorites.CONTAINER_DESKTOP
+                || info.spanX != 1 || info.spanY != 1) {
+            return false;
+        }
+        return info.itemType == ITEM_TYPE_APPLICATION
+                || info.itemType == ITEM_TYPE_SHORTCUT
+                || info.itemType == ITEM_TYPE_DEEP_SHORTCUT
+                || info.itemType == ITEM_TYPE_FOLDER;
+    }
+
+    private void markBlockedCells(boolean[][] blocked, int cellX, int cellY, int spanX,
+            int spanY) {
+        for (int x = Math.max(0, cellX); x < Math.min(blocked.length, cellX + spanX); x++) {
+            for (int y = Math.max(0, cellY); y < Math.min(blocked[x].length, cellY + spanY); y++) {
+                blocked[x][y] = true;
+            }
+        }
+    }
+
+    private static final class CompactSlot {
+        final int screenId;
+        final int cellX;
+        final int cellY;
+
+        CompactSlot(int screenId, int cellX, int cellY) {
+            this.screenId = screenId;
+            this.cellX = cellX;
+            this.cellY = cellY;
+        }
     }
 
     private void reorderCurrentPage() {

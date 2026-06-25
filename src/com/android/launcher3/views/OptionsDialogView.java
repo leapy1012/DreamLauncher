@@ -37,10 +37,10 @@ import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
+import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.widget.picker.WidgetsFullSheet;
 import com.android.launcher3.util.PackageManagerHelper;
 import static com.android.launcher3.LauncherState.NORMAL;
-import com.android.launcher3.LauncherPrefs;
 import com.android.launcher3.screenedit.ScrollEffectAdapter;
 import com.android.launcher3.screenedit.GridGallery;
 import com.android.launcher3.screenedit.OverviewPanelStateTransAnimation;
@@ -240,6 +240,9 @@ public class OptionsDialogView extends AbstractFloatingView {
      /** Returns WidgetsFullSheet that was opened, or null if nothing was opened. */
      @Nullable
      public static WidgetsFullSheet openWidgets(Launcher launcher) {
+         if (LayoutLockHelper.checkLockedAndShowMessage(launcher)) {
+             return null;
+         }
          if (launcher.getPackageManager().isSafeMode()) {
              Toast.makeText(launcher, R.string.safemode_widget_error, Toast.LENGTH_SHORT).show();
              return null;

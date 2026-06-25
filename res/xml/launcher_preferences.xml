@@ -47,7 +47,13 @@
     </PreferenceCategory>
     <PreferenceCategory
         android:key="hxyos_desktop_layout"
+        android:title="@string/launcher_layout"
         android:order="10">
+        <Preference
+            android:key="pref_workspace_layout"
+            android:title="@string/tog_title_layout"
+            android:summary="@string/tog_title_layout_summary"
+            android:persistent="false"/>
         <Preference
             android:key="pref_text_size"
             android:title="@string/accessibility_text_reading_options_title"
@@ -63,8 +69,7 @@
         </Preference>
         <SwitchPreference
             android:key="pref_layout_dock"
-            android:title="@string/home_screen_layout_lock"
-            android:summary="@string/home_screen_layout_lock_tips"
+            android:title="@string/launcher_locked"
             android:defaultValue="false"
             android:persistent="true"/>
         <SwitchPreference
@@ -81,7 +86,7 @@
             android:persistent="true"/>
         <SwitchPreference
             android:key="pref_fill_cell"
-            android:title="@string/home_screen_fill_cell"
+            android:title="@string/launcher_is_compact_arrangement_title"
             android:defaultValue="false"
             android:persistent="true"/>
         <com.android.launcher3.settings.NotificationDotsPreference

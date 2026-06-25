@@ -21,9 +21,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 
+import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.util.TouchUtil;
-import android.widget.Toast;
-import com.android.launcher3.LauncherPrefs;
 
 /**
  * Utility class to handle tripper long press or right click on a view with custom timeout and
@@ -142,26 +141,24 @@ public class CheckLongPressHelper {
     }
 
     private void triggerLongPress() {
-        boolean dockedStatus = LauncherPrefs.getPrefs(mView.getContext()).getBoolean(LauncherPrefs.WORKSPACE_LAYOUT_DOCK, false);
-        if (dockedStatus) {
-            Toast.makeText(mView.getContext(), mView.getContext().getText(R.string.home_screen_layout_lock_tips), Toast.LENGTH_SHORT).show();
-        } else {
-            if ((mView.getParent() != null)
-                    && mView.hasWindowFocus()
-                    && (!mView.isPressed() || mListener != null)
-                    && !mHasPerformedLongPress) {
-                boolean handled;
-                if (mListener != null) {
-                    handled = mListener.onLongClick(mView);
-                } else {
-                    handled = mView.performLongClick();
-                }
-                if (handled) {
-                    mView.setPressed(false);
-                    mHasPerformedLongPress = true;
-                }
-                clearCallbacks();
+        if (LayoutLockHelper.checkLockedAndShowMessage(mView.getContext())) {
+            return;
+        }
+        if ((mView.getParent() != null)
+                && mView.hasWindowFocus()
+                && (!mView.isPressed() || mListener != null)
+                && !mHasPerformedLongPress) {
+            boolean handled;
+            if (mListener != null) {
+                handled = mListener.onLongClick(mView);
+            } else {
+                handled = mView.performLongClick();
             }
+            if (handled) {
+                mView.setPressed(false);
+                mHasPerformedLongPress = true;
+            }
+            clearCallbacks();
         }
     }
 

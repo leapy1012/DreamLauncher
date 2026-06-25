@@ -23,6 +23,7 @@ import static com.android.launcher3.states.RotationHelper.ALLOW_ROTATION_PREFERE
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.MenuItem;
@@ -45,6 +46,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.InvariantDeviceProfile;
+import com.android.launcher3.InvariantDeviceProfile.GridOption;
 import com.android.launcher3.LauncherFiles;
 import com.android.launcher3.LauncherPrefs;
 import com.android.launcher3.R;
@@ -304,6 +306,10 @@ public class SettingsActivity extends FragmentActivity
         //hxy-feature: desktop theme 202312
         private SwitchPreference mPlusPref;
         private SwitchPreference mMinusPref;
+        private Preference mHomeLayoutPref;
+        private Preference mIconSizePref;
+        private SwitchPreference mLayoutLockPref;
+        private SwitchPreference mIconAutofillPref;
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             final Bundle args = getArguments();
@@ -331,7 +337,33 @@ public class SettingsActivity extends FragmentActivity
             //hxy-feature: desktop theme 202312
             mLauncherThemePref = (Preference) findPreference(LAUNCHER_THEME_PREFERENCE_KEY);
             //hxy-feature: desktop theme 202312
-            Preference pref = findPreference("pref_plusEnabled");
+            mHomeLayoutPref = findPreference("pref_workspace_layout");
+            if (mHomeLayoutPref != null) {
+                mHomeLayoutPref.setOnPreferenceClickListener(this);
+                updateHomeLayoutSummary();
+            }
+            mIconSizePref = findPreference(WORKSPACE_ICON_SIZE);
+            Preference pref = findPreference(WORKSPACE_LAYOUT_DOCK);
+            if (pref instanceof SwitchPreference) {
+                mLayoutLockPref = (SwitchPreference) pref;
+                mLayoutLockPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    updateLayoutLockDependentPreferences(Boolean.TRUE.equals(newValue));
+                    return true;
+                });
+            }
+            pref = findPreference(WORKSPACE_FILL_CELL);
+            if (pref instanceof SwitchPreference) {
+                mIconAutofillPref = (SwitchPreference) pref;
+                mIconAutofillPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    if (Boolean.TRUE.equals(newValue)
+                            && LauncherApplication.getLauncher() != null) {
+                        LauncherApplication.getLauncher().setAutoFull(true);
+                        LauncherApplication.getLauncher().getWorkspace().reorderIfNeed();
+                    }
+                    return true;
+                });
+            }
+            pref = findPreference("pref_plusEnabled");
             if (pref instanceof SwitchPreference) {
                 mPlusPref = (SwitchPreference) pref;
             }
@@ -344,6 +376,7 @@ public class SettingsActivity extends FragmentActivity
                 Preference preference = screen.getPreference(i);
                 traversePreferenceTree(preference);
             }
+            updateLayoutLockDependentPreferences();
 
             if (getActivity() != null && !TextUtils.isEmpty(getPreferenceScreen().getTitle())) {
                 if (getPreferenceScreen().getTitle().equals(
@@ -409,8 +442,88 @@ public class SettingsActivity extends FragmentActivity
                     Toast.makeText(getContext(), R.string.home_screen_layout_lock_tips, Toast.LENGTH_SHORT).show();
                     return true;
                 }
+            } else if ("pref_workspace_layout".equals(preference.getKey())) {
+                showHomeLayoutDialog();
+                return true;
             }
             return false;
+        }
+
+        private void showHomeLayoutDialog() {
+            if (getContext() == null) {
+                return;
+            }
+            InvariantDeviceProfile idp = InvariantDeviceProfile.INSTANCE.get(getContext());
+            List<GridOption> options = idp.parseAllGridOptions(getContext());
+            if (options.isEmpty()) {
+                return;
+            }
+
+            CharSequence[] labels = new CharSequence[options.size()];
+            int checkedItem = -1;
+            for (int i = 0; i < options.size(); i++) {
+                GridOption option = options.get(i);
+                labels[i] = option.numColumns + " x " + option.numRows;
+                if (idp.numColumns == option.numColumns && idp.numRows == option.numRows) {
+                    checkedItem = i;
+                }
+            }
+
+            new AlertDialog.Builder(getContext())
+                    .setTitle(R.string.tog_title_layout)
+                    .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
+                        GridOption selected = options.get(which);
+                        idp.setCurrentGrid(getContext(), selected.name);
+                        updateHomeLayoutSummary(selected);
+                        dialog.dismiss();
+                    })
+                    .show();
+        }
+
+        private void updateHomeLayoutSummary() {
+            if (getContext() == null || mHomeLayoutPref == null) {
+                return;
+            }
+            InvariantDeviceProfile idp = InvariantDeviceProfile.INSTANCE.get(getContext());
+            updateHomeLayoutSummary(idp.numColumns, idp.numRows);
+        }
+
+        private void updateHomeLayoutSummary(GridOption option) {
+            updateHomeLayoutSummary(option.numColumns, option.numRows);
+        }
+
+        private void updateHomeLayoutSummary(int columns, int rows) {
+            if (mHomeLayoutPref != null) {
+                mHomeLayoutPref.setSummary(columns + " x " + rows);
+            }
+        }
+
+        private void updateLayoutLockDependentPreferences() {
+            if (getContext() == null) {
+                return;
+            }
+            boolean locked = LauncherPrefs.getPrefs(getContext())
+                    .getBoolean(LauncherPrefs.WORKSPACE_LAYOUT_DOCK, false);
+            updateLayoutLockDependentPreferences(locked);
+        }
+
+        private void updateLayoutLockDependentPreferences(boolean locked) {
+            if (mLauncherStylePref != null) {
+                mLauncherStylePref.setEnabled(!locked);
+                mLauncherStylePref.setSelectable(true);
+            }
+            if (mHomeLayoutPref != null) {
+                mHomeLayoutPref.setEnabled(!locked);
+                mHomeLayoutPref.setSelectable(true);
+            }
+            if (mIconSizePref != null) {
+                mIconSizePref.setEnabled(!locked);
+                mIconSizePref.setSelectable(true);
+            }
+            if (mIconAutofillPref != null) {
+                mIconAutofillPref.setEnabled(!locked);
+                mIconAutofillPref.setSelectable(true);
+            }
         }
 
         @Override
@@ -527,6 +640,8 @@ public class SettingsActivity extends FragmentActivity
             super.onResume();
 
             updateDeveloperOption();
+            updateHomeLayoutSummary();
+            updateLayoutLockDependentPreferences();
 
             if (isAdded() && !mPreferenceHighlighted) {
                 PreferenceHighlighter highlighter = createHighlighter();
