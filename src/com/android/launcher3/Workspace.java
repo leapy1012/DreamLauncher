@@ -45,6 +45,7 @@ import android.appwidget.AppWidgetProviderInfo;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -1419,6 +1420,44 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     public void setScrollEffectFromString(String str) {
         Log.d(WorkspaceLayoutManager.TAG, "zr_effect setScrollEffectFromString effectName = " + str);
         ScrollEffect.setFromString(this, str);
+    }
+
+    public float getScrollProgressForEffect(int screenCenter, View page, int pageIndex) {
+        return getScrollProgress(screenCenter, page, pageIndex);
+    }
+
+    public boolean drawChildForEffect(Canvas canvas, View child) {
+        return drawChild(canvas, child, getDrawingTime());
+    }
+
+    public boolean isPageInTransitionForEffect() {
+        return isPageInTransition();
+    }
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        if (mScrollEffect != null && mScrollEffect.drawWorkspaceWithHost(canvas)) {
+            return;
+        }
+        super.dispatchDraw(canvas);
+    }
+
+    public boolean drawVisiblePagesForEffect(Canvas canvas) {
+        int[] range = getVisibleChildrenRange();
+        if (range[0] < 0 || range[1] < 0) {
+            return false;
+        }
+        long drawingTime = getDrawingTime();
+        for (int i = getPageCount() - 1; i >= 0; i--) {
+            View child = getPageAt(i);
+            if (child == null || child.getVisibility() == View.GONE) {
+                continue;
+            }
+            if (i >= range[0] && i <= range[1]) {
+                drawChild(canvas, child, drawingTime);
+            }
+        }
+        return true;
     }
 
     protected void setWallpaperDimension() {

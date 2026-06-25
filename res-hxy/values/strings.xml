@@ -25,6 +25,11 @@
     <string name="transition_effect_cubeout">Outward cube</string>
     <string name="transition_effect_flip">Flip vertically</string>
     <string name="transition_effect_none">Default</string>
+    <string name="transition_effect_oppo_card">Card</string>
+    <string name="transition_effect_oppo_cube">Cube</string>
+    <string name="transition_effect_oppo_flip">Flip</string>
+    <string name="transition_effect_oppo_roll">Roll</string>
+    <string name="transition_effect_oppo_tilt">Tilt</string>
     <string name="transition_effect_overview">Overview</string>
     <string name="transition_effect_stack">Card pile</string>
     <string name="transition_effect_wheel">Wheel</string>

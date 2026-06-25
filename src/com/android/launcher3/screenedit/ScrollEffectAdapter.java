@@ -71,6 +71,11 @@ public class ScrollEffectAdapter extends GridGalleryAdapter {
         this.scrollEffectItems = new ArrayList<>();
         // 添加各种滚动效果项
         this.scrollEffectItems.add(new ScrollEffectItem("none", R.string.transition_effect_none, R.drawable.screen_edit_effect_normal));
+        this.scrollEffectItems.add(new ScrollEffectItem(ScrollEffect.SCROLL_EFFECT_OPPO_ROLL, R.string.transition_effect_oppo_roll, R.drawable.screen_edit_effect_carousel_left));
+        this.scrollEffectItems.add(new ScrollEffectItem(ScrollEffect.SCROLL_EFFECT_OPPO_CUBE, R.string.transition_effect_oppo_cube, R.drawable.screen_edit_effect_cube_in));
+        this.scrollEffectItems.add(new ScrollEffectItem(ScrollEffect.SCROLL_EFFECT_OPPO_FLIP, R.string.transition_effect_oppo_flip, R.drawable.screen_edit_effect_flip));
+        this.scrollEffectItems.add(new ScrollEffectItem(ScrollEffect.SCROLL_EFFECT_OPPO_CARD, R.string.transition_effect_oppo_card, R.drawable.screen_edit_effect_stack));
+        this.scrollEffectItems.add(new ScrollEffectItem(ScrollEffect.SCROLL_EFFECT_OPPO_TILT, R.string.transition_effect_oppo_tilt, R.drawable.screen_edit_effect_carousel_right));
         this.scrollEffectItems.add(new ScrollEffectItem(ScrollEffect.SCROLL_EFFECT_STACK, R.string.transition_effect_stack, R.drawable.screen_edit_effect_stack));
         this.scrollEffectItems.add(new ScrollEffectItem(ScrollEffect.SCROLL_EFFECT_ACCORDION, R.string.transition_effect_accordion, R.drawable.screen_edit_effect_accordian));
         this.scrollEffectItems.add(new ScrollEffectItem(ScrollEffect.SCROLL_EFFECT_CUBE_IN, R.string.transition_effect_cubein, R.drawable.screen_edit_effect_cube_in));
