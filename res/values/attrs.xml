@@ -32,7 +32,7 @@
     <attr name="popupShadeThird" format="color" />
     <attr name="isMainColorDark" format="boolean" />
     <attr name="isWorkspaceDarkText" format="boolean" />
-    <attr name="workspaceTextColor" format="color" />
+<!--    <attr name="workspaceTextColor" format="color" />-->
     <attr name="workspaceShadowColor" format="color" />
     <attr name="workspaceAmbientShadowColor" format="color" />
     <attr name="workspaceKeyShadowColor" format="color" />
@@ -566,51 +566,51 @@
     </declare-styleable>
 
     <!-- SignSeekBar custom attributes -->
-    <declare-styleable name="SignSeekBar">
-        <attr name="ssb_min" format="float" />
-        <attr name="ssb_max" format="float" />
-        <attr name="ssb_progress" format="float" />
-        <attr name="ssb_is_float_type" format="boolean" />
-        <attr name="ssb_track_size" format="dimension" />
-        <attr name="ssb_text_space" format="dimension" />
-        <attr name="ssb_second_track_size" format="dimension" />
-        <attr name="ssb_thumb_radius" format="dimension" />
-        <attr name="ssb_sign_border_size" format="dimension" />
-        <attr name="ssb_section_count" format="integer" />
-        <attr name="ssb_track_color" format="color" />
-        <attr name="ssb_second_track_color" format="color" />
-        <attr name="ssb_thumb_color" format="color" />
-        <attr name="ssb_show_section_text" format="boolean" />
-        <attr name="ssb_section_text_size" format="dimension" />
-        <attr name="ssb_section_text_color" format="color" />
-        <attr name="ssb_seek_by_section" format="boolean" />
-        <attr name="ssb_section_text_position" format="integer" />
-        <attr name="ssb_section_text_interval" format="integer" />
-        <attr name="ssb_show_thumb_text" format="boolean" />
-        <attr name="ssb_thumb_text_size" format="dimension" />
-        <attr name="ssb_thumb_text_color" format="color" />
-        <attr name="ssb_sign_color" format="color" />
-        <attr name="ssb_sign_border_color" format="color" />
-        <attr name="ssb_unusable_color" format="color" />
-        <attr name="ssb_sign_text_size" format="dimension" />
-        <attr name="ssb_sign_height" format="dimension" />
-        <attr name="ssb_sign_width" format="dimension" />
-        <attr name="ssb_sign_arrow_height" format="dimension" />
-        <attr name="ssb_sign_arrow_width" format="dimension" />
-        <attr name="ssb_sign_round" format="dimension" />
-        <attr name="ssb_sign_text_color" format="color" />
-        <attr name="ssb_show_section_mark" format="boolean" />
-        <attr name="ssb_auto_adjust_section_mark" format="boolean" />
-        <attr name="ssb_show_progress_in_float" format="boolean" />
-        <attr name="ssb_anim_duration" format="integer" />
-        <attr name="ssb_touch_to_seek" format="boolean" />
-        <attr name="ssb_sign_show_border" format="boolean" />
-        <attr name="ssb_sides_labels" format="reference" />
-        <attr name="ssb_thumb_bg_alpha" format="float" />
-        <attr name="ssb_thumb_ratio" format="float" />
-        <attr name="ssb_show_thumb_shadow" format="boolean" />
-        <attr name="ssb_show_sign" format="boolean" />
-        <attr name="ssb_sign_arrow_autofloat" format="boolean" />
-        <attr name="ssb_disable_thumb" format="boolean" />
-    </declare-styleable>
+<!--    <declare-styleable name="SignSeekBar">-->
+<!--        <attr name="ssb_min" format="float" />-->
+<!--        <attr name="ssb_max" format="float" />-->
+<!--        <attr name="ssb_progress" format="float" />-->
+<!--        <attr name="ssb_is_float_type" format="boolean" />-->
+<!--        <attr name="ssb_track_size" format="dimension" />-->
+<!--        <attr name="ssb_text_space" format="dimension" />-->
+<!--        <attr name="ssb_second_track_size" format="dimension" />-->
+<!--        <attr name="ssb_thumb_radius" format="dimension" />-->
+<!--        <attr name="ssb_sign_border_size" format="dimension" />-->
+<!--        <attr name="ssb_section_count" format="integer" />-->
+<!--        <attr name="ssb_track_color" format="color" />-->
+<!--        <attr name="ssb_second_track_color" format="color" />-->
+<!--        <attr name="ssb_thumb_color" format="color" />-->
+<!--        <attr name="ssb_show_section_text" format="boolean" />-->
+<!--        <attr name="ssb_section_text_size" format="dimension" />-->
+<!--        <attr name="ssb_section_text_color" format="color" />-->
+<!--        <attr name="ssb_seek_by_section" format="boolean" />-->
+<!--        <attr name="ssb_section_text_position" format="integer" />-->
+<!--        <attr name="ssb_section_text_interval" format="integer" />-->
+<!--        <attr name="ssb_show_thumb_text" format="boolean" />-->
+<!--        <attr name="ssb_thumb_text_size" format="dimension" />-->
+<!--        <attr name="ssb_thumb_text_color" format="color" />-->
+<!--        <attr name="ssb_sign_color" format="color" />-->
+<!--        <attr name="ssb_sign_border_color" format="color" />-->
+<!--        <attr name="ssb_unusable_color" format="color" />-->
+<!--        <attr name="ssb_sign_text_size" format="dimension" />-->
+<!--        <attr name="ssb_sign_height" format="dimension" />-->
+<!--        <attr name="ssb_sign_width" format="dimension" />-->
+<!--        <attr name="ssb_sign_arrow_height" format="dimension" />-->
+<!--        <attr name="ssb_sign_arrow_width" format="dimension" />-->
+<!--        <attr name="ssb_sign_round" format="dimension" />-->
+<!--        <attr name="ssb_sign_text_color" format="color" />-->
+<!--        <attr name="ssb_show_section_mark" format="boolean" />-->
+<!--        <attr name="ssb_auto_adjust_section_mark" format="boolean" />-->
+<!--        <attr name="ssb_show_progress_in_float" format="boolean" />-->
+<!--        <attr name="ssb_anim_duration" format="integer" />-->
+<!--        <attr name="ssb_touch_to_seek" format="boolean" />-->
+<!--        <attr name="ssb_sign_show_border" format="boolean" />-->
+<!--        <attr name="ssb_sides_labels" format="reference" />-->
+<!--        <attr name="ssb_thumb_bg_alpha" format="float" />-->
+<!--        <attr name="ssb_thumb_ratio" format="float" />-->
+<!--        <attr name="ssb_show_thumb_shadow" format="boolean" />-->
+<!--        <attr name="ssb_show_sign" format="boolean" />-->
+<!--        <attr name="ssb_sign_arrow_autofloat" format="boolean" />-->
+<!--        <attr name="ssb_disable_thumb" format="boolean" />-->
+<!--    </declare-styleable>-->
 </resources>

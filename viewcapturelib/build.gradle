@@ -1,0 +1,59 @@
+plugins {
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.protobuf)
+}
+
+final String PROTOS_DIR = "src/com/android/app/viewcapture/proto"
+
+android {
+    namespace = "com.android.app.viewcapture"
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ['src']
+            manifest.srcFile 'AndroidManifest.xml'
+            proto.srcDirs = ["${PROTOS_DIR}"]
+        }
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+dependencies {
+    compileOnly files('../libs/framework.jar')
+    implementation libs.core
+    implementation libs.protobuf.lite
+}
+
+protobuf {
+    // Configure the protoc executable
+    protoc {
+        artifact = libs.protoc.get()
+    }
+    plugins {
+        javalite {
+            // The codegen for lite comes as a separate artifact
+            artifact = "com.google.protobuf:protoc-gen-javalite:3.0.0"
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                remove java
+            }
+            task.plugins {
+                javalite { }
+            }
+        }
+    }
+}

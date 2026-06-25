@@ -1,42 +1,42 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        google()
-    }
-    dependencies {
-        classpath GRADLE_CLASS_PATH
-        classpath PROTOBUF_CLASS_PATH
-    }
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.protobuf)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.kapt) apply false
+    alias(libs.plugins.android.library) apply false
 }
 
-final String ANDROID_TOP = "${rootDir}/../../.."
-final String FRAMEWORK_PREBUILTS_DIR = "${ANDROID_TOP}/prebuilts/framework_intermediates/"
-
-apply plugin: 'com.android.application'
-apply plugin: 'com.google.protobuf'
-
 android {
-    compileSdkVersion COMPILE_SDK
-    buildToolsVersion BUILD_TOOLS_VERSION
-
+    namespace "com.android.launcher3"
     defaultConfig {
-        minSdkVersion 26
-        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
-    buildTypes {
-        debug {
-            minifyEnabled false
+
+    signingConfigs {
+        platform {
+            storeFile file("platform.keystore")
+            storePassword '123456'
+            keyAlias 'platform'
+            keyPassword '123456'
         }
     }
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+    buildTypes {
+        release {
+            debuggable false
+            minifyEnabled false
+            signingConfig signingConfigs.platform
+        }
+
+        debug {
+            debuggable true
+            minifyEnabled false
+            signingConfig signingConfigs.platform
+        }
     }
 
     // The flavor dimensions for build variants (e.g. aospWithQuickstep, aospWithoutQuickstep)
@@ -50,11 +50,11 @@ android {
             testApplicationId 'com.android.launcher3.tests'
         }
 
-        l3go {
-            dimension "app"
-            applicationId 'com.android.launcher3'
-            testApplicationId 'com.android.launcher3.tests'
-        }
+//        l3go {
+//            dimension "app"
+//            applicationId 'com.android.launcher3'
+//            testApplicationId 'com.android.launcher3.tests'
+//        }
 
         withQuickstep {
             dimension "recents"
@@ -67,118 +67,273 @@ android {
         }
     }
 
-    // Disable release builds for now
-    android.variantFilter { variant ->
-        if (variant.buildType.name.endsWith('release')) {
-            variant.setIgnore(true)
-        }
-    }
-
     sourceSets {
         main {
-            res.srcDirs = ['res']
-            java.srcDirs = ['src', 'src_plugins']
+            java.srcDirs = [
+                    'src',
+                    'src_plugins',
+                    'src_build_config',
+                    'tests/shared'
+            ]
+            res.srcDirs = [
+                    'res',
+                    'res-hxy'
+            ]
             manifest.srcFile 'AndroidManifest-common.xml'
-            proto {
-                srcDirs = ['protos/', 'protos_overrides/']
-            }
-        }
-
-        androidTest {
-            res.srcDirs = ['tests/res']
-            java.srcDirs = ['tests/src', 'tests/tapl']
-            manifest.srcFile "tests/AndroidManifest-common.xml"
-        }
-
-        androidTestDebug {
-            manifest.srcFile "tests/AndroidManifest.xml"
+            proto.srcDirs = [
+                    'protos'
+            ]
         }
 
         aosp {
-            java.srcDirs = ['src_flags', 'src_shortcuts_overrides']
-        }
-
-        aospWithoutQuickstep {
-            manifest.srcFile "AndroidManifest.xml"
-        }
-
-        aospWithQuickstep {
-            manifest.srcFile "quickstep/AndroidManifest-launcher.xml"
-        }
-
-        l3go {
-            res.srcDirs = ['go/res']
-            java.srcDirs = ['go/src']
-            manifest.srcFile "go/AndroidManifest.xml"
-        }
-
-        l3goWithoutQuickstepDebug {
-            manifest.srcFile "AndroidManifest.xml"
-        }
-
-        l3goWithQuickstepDebug {
-            manifest.srcFile "quickstep/AndroidManifest-launcher.xml"
+            java.srcDirs = [
+                    'src_shortcuts_overrides'
+            ]
         }
 
         withoutQuickstep {
-            java.srcDirs = ['src_ui_overrides']
+            java.srcDirs = [
+                    'src_ui_overrides',
+                    'ext_tests'
+            ]
+            res.srcDirs = [
+                    'ext_tests/res'
+            ]
+            proto.srcDirs = [
+                    'protos_overrides'
+            ]
+            manifest.srcFile 'AndroidManifest.xml'
         }
 
         withQuickstep {
-            res.srcDirs = ['quickstep/res', 'quickstep/recents_ui_overrides/res']
-            java.srcDirs = ['quickstep/src', 'quickstep/recents_ui_overrides/src']
-            manifest.srcFile "quickstep/AndroidManifest.xml"
+            java.srcDirs = [
+                    'quickstep/src',
+                    'src_shortcuts_overrides',
+                    'customize/src',
+                    'ext_tests',
+                    'quickstep/ext_tests'
+            ]
+            res.srcDirs = [
+                    'quickstep/res',
+                    'customize/res',
+                    'customize/res_overlay'
+            ]
+            assets.srcDirs = [
+                    'customize/assets_overlay'
+            ]
+            proto.srcDirs = [
+                    'quickstep/protos_overrides'
+            ]
+            manifest.srcFile 'quickstep/AndroidManifest.xml'
+        }
+
+        aospWithQuickstep {
+            manifest.srcFile 'customize/AndroidManifest-launcher.xml'
+        }
+
+//        l3go {
+//            java.srcDirs = [
+//                    'go/src'
+//            ]
+//            res.srcDirs = [
+//                    'go/res'
+//            ]
+//            manifest.srcFile 'go/AndroidManifest.xml'
+//        }
+//
+//        l3goWithoutQuickstep {
+//            java.srcDirs = [
+//                    'src_ui_overrides'
+//            ]
+//            manifest.srcFile 'AndroidManifest.xml'
+//        }
+//
+//        l3goWithQuickstep {
+//            java.srcDirs = [
+//                    'go/quickstep/src'
+//            ]
+//            res.srcDirs = [
+//                    'go/quickstep/res'
+//            ]
+//            manifest.srcFile 'go/AndroidManifest-launcher.xml'
+//        }
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach {
+            outputFileName = variant.buildType.name == "debug"
+                    ? "MtkLauncher3QuickStepDebug.apk"
+                    : "MtkLauncher3QuickStep.apk"
         }
     }
 }
 
-allprojects {
-    repositories {
-        maven { url "../../../prebuilts/sdk/current/androidx/m2repository" }
-        maven { url "../../../prebuilts/fullsdk-darwin/extras/android/m2repository" }
-        maven { url "../../../prebuilts/fullsdk-linux/extras/android/m2repository" }
-        mavenCentral()
-        google()
+androidComponents {
+    beforeVariants(selector().withFlavor("recents", "withoutQuickstep")) {
+        it.enable = false
     }
+
+//    beforeVariants(selector().withFlavor("app", "l3go")) {
+//        it.enable = false
+//    }
 }
 
 dependencies {
-    implementation "androidx.dynamicanimation:dynamicanimation:${ANDROID_X_VERSION}"
-    implementation "androidx.recyclerview:recyclerview:${ANDROID_X_VERSION}"
-    implementation "androidx.preference:preference:${ANDROID_X_VERSION}"
-    implementation project(':IconLoader')
-    implementation project(':UiTestsLibLauncher')
-    withQuickstepImplementation project(':SharedLibWrapper')
+    compileOnly files('libs/framework.jar')
+    compileOnly files('libs/core-all.jar')
 
-    // Recents lib dependency
-    withQuickstepImplementation fileTree(dir: "${FRAMEWORK_PREBUILTS_DIR}/quickstep/libs", include: 'sysui_shared.jar')
+    implementation project(':iconloaderlib')
+    implementation project(':viewcapturelib')
+    implementation project(':animationlib')
+    implementation files('libs/gson-2.8.9.jar')
+    implementation files('libs/xutils-3.8.5.aar')
+    implementation project(':animation')
+    implementation project(':shared')
+    implementation files('libs/SystemUI-statsd.jar')
+    implementation files('libs/WindowManager-Shell-clean.jar')
+    implementation project(':plugin_core')
+    implementation project(':unfold')
 
-    // Required for AOSP to compile. This is already included in the sysui_shared.jar
-    withoutQuickstepImplementation fileTree(dir: "${FRAMEWORK_PREBUILTS_DIR}/libs", include: 'plugin_core.jar')
+    implementation libs.appcompat
+    implementation libs.dynamicanimation
+    implementation libs.preference
+//    implementation libs.constraintlayout
+    implementation libs.slice.core
+    implementation libs.recyclerview
 
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation "org.mockito:mockito-core:1.9.5"
-    androidTestImplementation 'com.google.dexmaker:dexmaker:1.2'
-    androidTestImplementation 'com.google.dexmaker:dexmaker-mockito:1.2'
-    androidTestImplementation 'com.android.support.test:runner:1.0.0'
-    androidTestImplementation 'com.android.support.test:rules:1.0.0'
-    androidTestImplementation 'com.android.support.test.uiautomator:uiautomator-v18:2.1.2'
-    androidTestImplementation "androidx.annotation:annotation:${ANDROID_X_VERSION}"
-
-    api 'com.airbnb.android:lottie:3.3.0'
+    implementation libs.material
+    implementation libs.protobuf.lite
+    implementation libs.javax.inject
+    implementation libs.lottie
+    implementation libs.window
 }
 
 protobuf {
     // Configure the protoc executable
     protoc {
-        artifact = "com.google.protobuf:protoc:${protocVersion}${PROTO_ARCH_SUFFIX}"
+        artifact = libs.protoc.get()
+    }
+    // Configure the javalite plugin
+    plugins {
+        javalite {
+            artifact = "com.google.protobuf:protoc-gen-javalite:3.0.0"
+        }
     }
     generateProtoTasks {
         all().each { task ->
             task.builtins {
                 remove java
-                java {
-                    option "lite"
+            }
+            task.plugins {
+                javalite {}
+            }
+        }
+    }
+}
+
+allprojects { project ->
+    project.plugins.withId("com.android.library") {
+        applyReorderRule(project)
+        applyDefaultConfig(project)
+        applyAidlWindowsPathFix(project)
+    }
+    project.plugins.withId("com.android.application") {
+        applyReorderRule(project)
+        applyDefaultConfig(project)
+        applyAidlWindowsPathFix(project)
+    }
+}
+
+def applyReorderRule(Project project) {
+    project.gradle.projectsEvaluated {
+        // 匹配所有 Java 编译任务，包括带 productFlavors 的任务
+        project.tasks.matching { it.name.matches(/compile.*JavaWithJavac/) }.configureEach { task ->
+            task.doFirst {
+                task.classpath = reorderClasspath(task.classpath.files)
+            }
+        }
+    }
+}
+
+def reorderClasspath(Set<File> classpathSet) {
+    def androidJar = classpathSet.find { it.name == "android.jar" }
+    def others = classpathSet - (androidJar ? [androidJar] : [])
+    return files((others + (androidJar ?: [])).toArray())
+}
+
+def applyDefaultConfig(Project project) {
+    project.android {
+        compileSdk COMPILE_SDK.toInteger()
+
+        defaultConfig {
+            minSdk MIN_SDK_VERSION.toInteger()
+            targetSdk TARGET_SDK_VERSION.toInteger()
+        }
+
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_17
+            targetCompatibility JavaVersion.VERSION_17
+        }
+    }
+}
+
+allprojects {
+    tasks.withType(JavaCompile).configureEach { task ->
+        task.doFirst {
+            // 排除 Filter 模块
+            if (!task.project.path.contains(":Filter")) {
+                // 替换java.base
+                options.compilerArgs += ["--patch-module", "java.base=${rootDir}/libs/core-all.jar"]
+                // 允许访问 java.lang.runtime 包（Java record 需要）
+                options.compilerArgs += ["--add-exports", "java.base/java.lang.runtime=ALL-UNNAMED"]
+            }
+        }
+    }
+}
+
+// 解决注解在windows平台获取路径的时候，输出的分隔符为反斜杠，导致编译不通过
+// AIDL on Windows emits file paths with backslashes inside Java string literals and
+// comments (e.g. overrideSourcePosition="C:\Users\..."), which javac rejects.
+def fixAidlGeneratedWindowsPaths(Project project) {
+    if (!org.gradle.internal.os.OperatingSystem.current().isWindows()) {
+        return
+    }
+    def aidlDir = new File(project.buildDir, "generated/aidl_source_output_dir")
+    if (!aidlDir.exists()) {
+        return
+    }
+    aidlDir.eachFileRecurse { file ->
+        if (!file.file || !file.name.endsWith('.java')) {
+            return
+        }
+        def content = file.getText('UTF-8')
+        def fixed = content.replaceAll(/overrideSourcePosition="([^"]*)"/) { match, path ->
+            "overrideSourcePosition=\"${path.replace('\\', '/')}\""
+        }
+        fixed = fixed.replaceAll(/(?m)^(\s*\* Using: )(.*)$/) { match, prefix, path ->
+            "${prefix}${path.replace('\\', '/')}"
+        }
+        if (content != fixed) {
+            file.setText(fixed, 'UTF-8')
+        }
+    }
+}
+
+def applyAidlWindowsPathFix(Project project) {
+    project.gradle.projectsEvaluated {
+        project.tasks.configureEach { task ->
+            // Run immediately before any compilation that reads AIDL output. AIDL task names
+            // vary across AGP versions, and outputs can be regenerated after compile*Aidl.
+            if (task.name ==~ /compile.*Aidl/
+                    || task.name ==~ /compile.*JavaWithJavac/
+                    || task.name ==~ /kapt.*Kotlin/) {
+                task.doFirst {
+                    fixAidlGeneratedWindowsPaths(project)
                 }
             }
         }

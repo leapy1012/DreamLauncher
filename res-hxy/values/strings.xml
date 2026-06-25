@@ -15,7 +15,7 @@
     <!-- hxy-feature: desktop theme 202312 -->
     <string name="hxy_launcher_available">available</string>
     <string name="google_folder_title">Google</string>
-    <string name="shake_device_tips">Shake device to fill empty cells with icons</string>
+    <string name="shake_device_tips">SHAKE LEAPY to fill empty cells with icons</string>
     <string name="effect_button_text">Effect</string>
     <string name="transition_effect_accordion">Accordion</string>
     <string name="transition_effect_carousel_left">Carousel(left)</string>
