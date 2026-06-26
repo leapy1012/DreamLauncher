@@ -165,6 +165,10 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
             int cellPaddingY = dp.isScalableGrid && mContainerType == WORKSPACE
                     ? dp.cellYPaddingPx
                     : (int) Math.max(0, ((lp.height - cHeight) / 2f));
+            if (mContainerType == WORKSPACE && dp.useOppoWorkspaceMetrics()) {
+                cellPaddingY = getResources().getDimensionPixelSize(
+                        R.dimen.oplus_workspace_icon_padding_top);
+            }
 
             // No need to add padding when cell layout border spacing is present.
             boolean noPaddingX =

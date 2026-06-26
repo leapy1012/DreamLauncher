@@ -60,6 +60,8 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.Gravity;
+import android.view.InputDevice;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -172,12 +174,16 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     private static final boolean ENFORCE_DRAG_EVENT_ORDER = false;
 
     private static final int ADJACENT_SCREEN_DROP_DURATION = 300;
+    private static final long GENERIC_SCROLL_REPEAT_BLOCK_MS = 500;
 
     public static int DEFAULT_PAGE = 0;
 
     private final int mAllAppsIconSize;
 
     private LayoutTransition mLayoutTransition;
+    private long mLastGenericScrollTime;
+    private float mLastGenericScrollX;
+    private float mLastGenericScrollY;
     @Thunk
     final WallpaperManager mWallpaperManager;
 
@@ -354,8 +360,13 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             // overhang of the previous / next page into the current page viewport.
             // We assume symmetrical padding in portrait mode.
             int maxInsets = Math.max(insets.left, insets.right);
-            int maxPadding = Math.max(grid.edgeMarginPx, padding.left + 1);
-            setPageSpacing(Math.max(maxInsets, maxPadding));
+            if (grid.isTwoPanels) {
+                setPageSpacing(getResources().getDimensionPixelSize(
+                        R.dimen.launcher_workspace_page_spacing_two_panels));
+            } else {
+                int maxPadding = Math.max(grid.edgeMarginPx, padding.left + 1);
+                setPageSpacing(Math.max(maxInsets, maxPadding));
+            }
         }
 
         updateCellLayoutPadding();
@@ -377,7 +388,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         } else {
             lp.leftMargin = lp.rightMargin = 0;
             lp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
-            lp.bottomMargin = grid.hotseatBarSizePx;
+            lp.bottomMargin = grid.hotseatBarSizePx + grid.getOppoHotseatMarginBottomPx()
+                    + getResources().getDimensionPixelSize(
+                            R.dimen.workspace_page_indicator_bottom_padding_offset);
         }
         mPageIndicator.setLayoutParams(lp);
     }
@@ -1155,6 +1168,40 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         return shouldConsumeTouch(v);
+    }
+
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event) {
+        if (event != null && (event.getSource() & InputDevice.SOURCE_CLASS_POINTER) != 0
+                && event.getAction() == MotionEvent.ACTION_SCROLL) {
+            long now = System.currentTimeMillis();
+            if (event.getX() == mLastGenericScrollX && event.getY() == mLastGenericScrollY
+                    && now - mLastGenericScrollTime < GENERIC_SCROLL_REPEAT_BLOCK_MS) {
+                return false;
+            }
+
+            final float vscroll;
+            final float hscroll;
+            if ((event.getMetaState() & KeyEvent.META_SHIFT_ON) != 0) {
+                vscroll = 0;
+                hscroll = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
+            } else {
+                vscroll = -event.getAxisValue(MotionEvent.AXIS_VSCROLL);
+                hscroll = event.getAxisValue(MotionEvent.AXIS_HSCROLL);
+            }
+
+            boolean isForwardScroll = mIsRtl ? (hscroll < 0 || vscroll < 0)
+                    : (hscroll > 0 || vscroll > 0);
+            if (!isForwardScroll && (getCurrentPage() == 0 || getNextPage() == 0)) {
+                return false;
+            }
+            if (canScroll(Math.abs(vscroll), Math.abs(hscroll))) {
+                mLastGenericScrollX = event.getX();
+                mLastGenericScrollY = event.getY();
+                mLastGenericScrollTime = now;
+            }
+        }
+        return super.onGenericMotionEvent(event);
     }
 
     private boolean shouldConsumeTouch(View v) {

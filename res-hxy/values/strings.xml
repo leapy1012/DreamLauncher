@@ -79,4 +79,5 @@
     <string name="sure_set_theme">Are you sure you want to set this theme?</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="workspaceTopPercentage">0.333</string>
 </resources>

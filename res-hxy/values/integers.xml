@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="oplusLayoutCellLayoutPaddingHor3colDp">30</integer>
+    <integer name="oplusLayoutCellLayoutPaddingHor4colDp">16</integer>
+    <integer name="oplusLayoutCellLayoutPaddingHor5col9RowDp">15</integer>
+    <integer name="oplusLayoutCellLayoutPaddingHor5colDp">10</integer>
+</resources>

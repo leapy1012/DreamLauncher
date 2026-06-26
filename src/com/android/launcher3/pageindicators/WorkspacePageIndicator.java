@@ -57,6 +57,7 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
     private int mTotalScroll;
     private Paint mLinePaint;
     private final int mLineHeight;
+    private final int mHorizontalPadding;
 
     private static final Property<WorkspacePageIndicator, Integer> PAINT_ALPHA
             = new Property<WorkspacePageIndicator, Integer>(Integer.class, "paint_alpha") {
@@ -119,6 +120,11 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
 
         mLauncher = Launcher.getLauncher(context);
         mLineHeight = res.getDimensionPixelSize(R.dimen.workspace_page_indicator_line_height);
+        mHorizontalPadding = res.getDimensionPixelSize(
+                R.dimen.workspace_page_indicator_horizontal_padding);
+        setPadding(mHorizontalPadding, res.getDimensionPixelSize(
+                R.dimen.workspace_page_indicator_vertical_padding), mHorizontalPadding,
+                res.getDimensionPixelSize(R.dimen.workspace_page_indicator_vertical_padding));
 
         boolean darkText = Themes.getAttrBoolean(mLauncher, R.attr.isWorkspaceDarkText);
         mActiveAlpha = darkText ? BLACK_ALPHA : WHITE_ALPHA;
@@ -133,9 +139,12 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
 
         // Compute and draw line rect.
         float progress = Utilities.boundToRange(((float) mCurrentScroll) / mTotalScroll, 0f, 1f);
-        int availableWidth = getWidth();
+        int availableWidth = Math.max(0, getWidth() - getPaddingLeft() - getPaddingRight());
+        if (availableWidth == 0) {
+            return;
+        }
         int lineWidth = (int) (availableWidth / mNumPagesFloat);
-        int lineLeft = (int) (progress * (availableWidth - lineWidth));
+        int lineLeft = getPaddingLeft() + (int) (progress * (availableWidth - lineWidth));
         int lineRight = lineLeft + lineWidth;
 
         canvas.drawRoundRect(lineLeft, getHeight() / 2 - mLineHeight / 2, lineRight,

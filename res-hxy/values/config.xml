@@ -7,7 +7,7 @@
     <integer name="allapps_bg_alpha">0</integer>
 
     <bool name="config_hxy_grid">true</bool>
-    <string name="config_default_grid">6_by_4</string>
+    <string name="config_default_grid">4_by_6</string>
     <!-- added by xiangchangsong for: 待机界面禁止下拉 start-->    
     <bool name="config_workspaceProhibitsStatusbar">false</bool>
     <!-- added by xiangchangsong for: 待机界面禁止下拉 end-->

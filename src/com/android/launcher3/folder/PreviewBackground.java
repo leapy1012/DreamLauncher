@@ -166,7 +166,6 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
         mDotColor = Themes.getAttrColor(context, R.attr.notificationDotColor);
         mStrokeColor = ta.getColor(R.styleable.FolderIconPreview_folderIconBorderColor, 0);
         mBgColor = ta.getColor(R.styleable.FolderIconPreview_folderPreviewColor, 0);
-        mBgColor = context.getResources().getColor(R.color.hxy_folder_bg_round_color);
         ta.recycle();
 
         DeviceProfile grid = activity.getDeviceProfile();

@@ -35,6 +35,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.icu.text.MessageFormat;
@@ -263,6 +264,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         // liu-db add label double lines start
         setMaxLines(LauncherPrefs.getPrefs(context).getBoolean(LauncherPrefs.WORKSPACE_APP_NAME, true) ? 1 : 2);
         // liu-db add label double lines end
+        if (mDisplay == DISPLAY_WORKSPACE && grid.useOppoWorkspaceMetrics()) {
+            setMaxLines(2);
+            setIncludeFontPadding(false);
+            setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        }
         setEllipsize(TruncateAt.END);
         setAccessibilityDelegate(mActivity.getAccessibilityDelegate());
         setTextAlpha(1f);

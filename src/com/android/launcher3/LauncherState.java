@@ -188,6 +188,10 @@ public abstract class LauncherState implements BaseState<LauncherState> {
         return getWorkspaceScaleAndTranslation(launcher);
     }
 
+    public ScaleAndTranslation getPageIndicatorScaleAndTranslation(Launcher launcher) {
+        return new ScaleAndTranslation(NO_SCALE, NO_OFFSET, NO_OFFSET);
+    }
+
     /**
      * Returns an array of two elements.
      * The first specifies the scale for the overview

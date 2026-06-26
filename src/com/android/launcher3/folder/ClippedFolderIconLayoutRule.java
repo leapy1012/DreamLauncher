@@ -85,9 +85,9 @@ public class ClippedFolderIconLayoutRule {
     }
 
     private void getPosition(int index, int curNumItems, float[] result) {
-        int temp_curNumItems = curNumItems;
-        // The case of two items is homomorphic to the case of one.
-        curNumItems = Math.max(curNumItems, 4/*2*/);
+        // Oppo keeps two/three item previews in their own geometry instead of forcing
+        // them into the four-item layout.
+        curNumItems = Math.max(curNumItems, MIN_NUM_ITEMS_IN_PREVIEW);
 
         // We model the preview as a circle of items starting in the appropriate piece of the
         // upper left quadrant (to achieve horizontal and vertical symmetry).
@@ -98,7 +98,7 @@ public class ClippedFolderIconLayoutRule {
 
         double thetaShift = 0;
         if (curNumItems == 3) {
-            thetaShift = Math.PI / 4;
+            thetaShift = Math.PI / 2;
         } else if (curNumItems == 4) {
             thetaShift = Math.PI / 4;
         }
@@ -123,29 +123,15 @@ public class ClippedFolderIconLayoutRule {
         // Map the location along the circle, and offset the coordinates to represent the center
         // of the icon, and to be based from the top / left of the preview area. The y component
         // is inverted to match the coordinate system.
-        if(temp_curNumItems == 3)
-        {
-            result[0] = mAvailableSpace / 2 + (float) (radius * Math.cos(theta) / 2) - halfIconSize - (float)1.5;
-            result[1] = mAvailableSpace / 2 + (float) (- radius * Math.sin(theta) / 2) - halfIconSize - (float)1.5;
-        }
-        else
-        {
-            result[0] = mAvailableSpace / 2 + (float) (radius * Math.cos(theta) / 2) - halfIconSize;
-             result[1] = mAvailableSpace / 2 + (float) (- radius * Math.sin(theta) / 2) - halfIconSize;		
-        }
+        result[0] = mAvailableSpace / 2 + (float) (radius * Math.cos(theta) / 2) - halfIconSize;
+        result[1] = mAvailableSpace / 2 + (float) (-radius * Math.sin(theta) / 2) - halfIconSize;
 
     }
 
     public float scaleForItem(int numItems) {
         // Scale is determined by the number of items in the preview.
         final float scale;
-        if (numItems <= 2) {
-            scale = MIN_SCALE;
-        } else if (numItems == 3) {
-            scale = (MIN_SCALE + MAX_SCALE) / 2;
-        } else {
-            scale = MIN_SCALE;
-        }
+        scale = numItems <= 3 ? MAX_SCALE : MIN_SCALE;
         return scale * mBaselineIconScale;
     }
 

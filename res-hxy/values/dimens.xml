@@ -54,4 +54,33 @@
     <dimen name="hxy_task_thumbnail_top_margin">80dp</dimen>
     <dimen name="hxy_task_menu_height">30dp</dimen>
     <dimen name="split_recent_first_snapview_topmargin1">40dp</dimen>
+
+    <!-- Oppo workspace baseline metrics. -->
+    <dimen name="cell_layout_padding_top">0dp</dimen>
+    <dimen name="cell_layout_padding_bottom_gesture_nav">0dp</dimen>
+    <dimen name="cell_layout_padding_bottom_with_nav">0dp</dimen>
+    <dimen name="cell_layout_padding_left_right">16dp</dimen>
+    <dimen name="cellPaddingTopMin">7dp</dimen>
+    <dimen name="cellPaddingTopMin5Cols">6dp</dimen>
+    <dimen name="diffCellHeightWithCellWidth">8dp</dimen>
+    <dimen name="diffCellHeightWithCellWidth3x5">10dp</dimen>
+    <dimen name="diffCellHeightWithCellWidth3x6">-6dp</dimen>
+    <dimen name="diffCellHeightWithCellWidth4x5">30dp</dimen>
+    <dimen name="diffCellHeightWithCellWidth5x5">43dp</dimen>
+    <dimen name="diffCellHeightWithCellWidth5x6">25dp</dimen>
+    <dimen name="cell_layout_padding_top_multiwindow">14dp</dimen>
+    <dimen name="dynamic_grid_icon_drawable_padding">7dp</dimen>
+    <dimen name="workspace_padding_left">0dp</dimen>
+    <dimen name="workspace_padding_top_adjustment">16dp</dimen>
+    <dimen name="workspace_padding_top_adjustment_has_navigation_bar">20dp</dimen>
+    <dimen name="workspace_page_indicator_simple_mode_height">36dp</dimen>
+    <dimen name="workspace_page_indicator_horizontal_padding">14dp</dimen>
+    <dimen name="workspace_page_indicator_vertical_padding">11dp</dimen>
+    <dimen name="launcher_workspace_page_spacing_two_panels">42dp</dimen>
+    <dimen name="oplus_hotseat_height">84dp</dimen>
+    <dimen name="oplus_hotseat_padding_top">12dp</dimen>
+    <dimen name="oplus_hotseat_padding_bottom">12dp</dimen>
+    <dimen name="oplus_hotseat_margin_bottom_gesture">26dp</dimen>
+    <dimen name="oplus_hotseat_margin_bottom_nav">44dp</dimen>
+    <dimen name="oplus_workspace_icon_padding_top">9dp</dimen>
 </resources>

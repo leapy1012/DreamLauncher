@@ -991,12 +991,16 @@ public class CellLayout extends ViewGroup {
         int heightSize =  MeasureSpec.getSize(heightMeasureSpec);
         int childWidthSize = widthSize - (getPaddingLeft() + getPaddingRight());
         int childHeightSize = heightSize - (getPaddingTop() + getPaddingBottom());
+        DeviceProfile deviceProfile = mActivity.getDeviceProfile();
 
         if (mFixedCellWidth < 0 || mFixedCellHeight < 0) {
             int cw = DeviceProfile.calculateCellWidth(childWidthSize, mBorderSpace.x,
                     mCountX);
             int ch = DeviceProfile.calculateCellHeight(childHeightSize, mBorderSpace.y,
                     mCountY);
+            if (mContainerType == WORKSPACE && deviceProfile.useOppoWorkspaceMetrics()) {
+                ch = deviceProfile.getOppoWorkspaceCellHeight(cw);
+            }
             if (cw != mCellWidth || ch != mCellHeight) {
                 mCellWidth = cw;
                 mCellHeight = ch;

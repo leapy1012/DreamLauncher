@@ -68,7 +68,9 @@ public class HxyFolderAnimationManager {
         this.mIsOpening = isOpening;
         this.mPreviewVerifier = new HxyFolderGridOrganizer(launcher.getDeviceProfile().inv);
         Resources res = this.mContent.getResources();
-        this.mDuration = res.getInteger(R.integer.config_materialFolderExpandDuration);
+        this.mDuration = res.getInteger(isOpening
+                ? R.integer.folder_open_duration
+                : R.integer.folder_close_duration);
         this.mDelay = res.getInteger(R.integer.config_folderDelay);
         this.mFolderInterpolator = new DecelerateInterpolator();
     }
@@ -177,15 +179,9 @@ public class HxyFolderAnimationManager {
         play(a, this.mFolderIcon.getFolderName().createTextAlphaAnimator(!this.mIsOpening));
         this.mFolder.mFolderName.setAlpha(this.mIsOpening ? 0.0f : 1.0f);
         Animator animator2 = getAnimator((View) this.mFolder.mFolderName, View.ALPHA, 0.0f, 1.0f);
-        boolean z3 = this.mIsOpening;
-        if (z3) {
-            PropertyResetListener propertyResetListener = colorResetListener;
-            duration = (long) this.mDuration;
-        } else {
-            duration = 0;
-        }
         AnimatorSet a2 = a;
-        play(a, animator2, duration, z3 ? 800 : 32);
+        play(a, animator2, this.mIsOpening ? 32L : 0L,
+                this.mIsOpening ? Math.max(0, this.mDuration - 32) : 32);
         int midDuration = this.mDuration / 2;
         play(a2, getAnimator((View) this.mFolder, View.TRANSLATION_Z, -this.mFolder.getElevation(), 0.0f), this.mIsOpening ? (long) midDuration : 0, midDuration);
         a2.addListener(new AnimatorListenerAdapter() {

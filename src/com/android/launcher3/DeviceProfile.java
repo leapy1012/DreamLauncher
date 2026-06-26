@@ -40,6 +40,7 @@ import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.Surface;
 
@@ -76,6 +77,10 @@ import com.android.launcher3.big.IconSizeSettingActivity;
 @SuppressLint("NewApi")
 public class DeviceProfile {
 
+    private static final String TAG = "DeviceProfile";
+    private static final String WORKSPACE_GEOMETRY_DEBUG_PROPERTY =
+            "persist.launcher.workspace_geom_debug";
+
     private static final int DEFAULT_DOT_SIZE = 100;
     private static final float ALL_APPS_TABLET_MAX_ROWS = 5.5f;
     private static final float MIN_FOLDER_TEXT_SIZE_SP = 16f;
@@ -88,6 +93,7 @@ public class DeviceProfile {
     public final InvariantDeviceProfile inv;
     private final Info mInfo;
     private final DisplayMetrics mMetrics;
+    private final Resources mResources;
 
     // Device properties
     public final boolean isTablet;
@@ -145,6 +151,11 @@ public class DeviceProfile {
     public final int edgeMarginPx;
     public final float workspaceContentScale;
     public final int workspaceSpringLoadedMinNextPageVisiblePx;
+    private final boolean mUseOppoWorkspaceMetrics;
+    private final float mOppoWorkspaceTopPercentage;
+    private final int mOppoWorkspacePaddingLeftPx;
+    private int mOppoWorkspaceHeightPx = -1;
+    private int mOppoHotseatMarginBottomPx = 0;
 
     private final int extraSpace;
     private int maxEmptySpace;
@@ -331,6 +342,7 @@ public class DeviceProfile {
                         : Configuration.ORIENTATION_PORTRAIT,
                 windowBounds);
         final Resources res = context.getResources();
+        mResources = res;
         mMetrics = res.getDisplayMetrics();
 
         // Determine sizes.
@@ -383,6 +395,10 @@ public class DeviceProfile {
 
         edgeMarginPx = res.getDimensionPixelSize(R.dimen.dynamic_grid_edge_margin);
         workspaceContentScale = res.getFloat(R.dimen.workspace_content_scale);
+        mOppoWorkspaceTopPercentage = Float.parseFloat(
+                res.getString(R.string.workspaceTopPercentage));
+        mUseOppoWorkspaceMetrics = mOppoWorkspaceTopPercentage >= 0;
+        mOppoWorkspacePaddingLeftPx = res.getDimensionPixelSize(R.dimen.workspace_padding_left);
 
         desiredWorkspaceHorizontalMarginPx = getHorizontalMarginPx(inv, res);
         desiredWorkspaceHorizontalMarginOriginalPx = desiredWorkspaceHorizontalMarginPx;
@@ -588,6 +604,7 @@ public class DeviceProfile {
                         R.dimen.cell_layout_padding);
         cellLayoutPaddingPx = new Rect(cellLayoutPadding, cellLayoutPadding, cellLayoutPadding,
                 cellLayoutPadding);
+        applyOppoWorkspaceMetrics(res, extraSpace);
         updateWorkspacePadding();
 
         // Folder scaling requires correct workspace paddings
@@ -622,6 +639,7 @@ public class DeviceProfile {
         mViewScaleProvider = viewScaleProvider;
 
         dimensionOverrideProvider.accept(this);
+        logWorkspaceGeometryIfEnabled();
 
         // This is done last, after iconSizePx is calculated above.
         // mDotRendererWorkSpace = createDotRenderer(context, iconSizePx, dotRendererCache);
@@ -887,8 +905,10 @@ public class DeviceProfile {
     private int updateAvailableDimensions(Context context) {
         float invIconSizeDp = inv.iconSize[mTypeIndex];
         float invIconTextSizeSp = inv.iconTextSize[mTypeIndex];
-        iconSizePx = Math.max(1, pxFromDp(invIconSizeDp, mMetrics));
-        iconTextSizePx = pxFromSp(invIconTextSizeSp, mMetrics);
+        int baseIconSizePx = Math.max(1, pxFromDp(invIconSizeDp, mMetrics));
+        int baseIconTextSizePx = pxFromSp(invIconTextSizeSp, mMetrics);
+        iconSizePx = baseIconSizePx;
+        iconTextSizePx = baseIconTextSizePx;
 
         updateIconSize(1f, context);
 
@@ -915,6 +935,8 @@ public class DeviceProfile {
 
         if (shouldScale) {
             float scale = Math.min(scaleX, scaleY);
+            iconSizePx = baseIconSizePx;
+            iconTextSizePx = baseIconTextSizePx;
             updateIconSize(scale, context);
             extraHeight = Math.max(0, maxHeight - getCellLayoutHeightSpecification());
         }
@@ -948,7 +970,9 @@ public class DeviceProfile {
         iconDrawablePaddingPx = (int) (iconDrawablePaddingOriginalPx * iconScale);
         cellLayoutBorderSpacePx = getCellLayoutBorderSpace(inv, scale);
 
-        float f = PrefTools.getFloat(IconSizeSettingActivity.ICON_SIZE_PROGRESS, IconSizeSettingActivity.PROGRESS_DEFAULT_VALUE.floatValue(), context);
+        float f = mUseOppoWorkspaceMetrics ? 1f
+                : PrefTools.getFloat(IconSizeSettingActivity.ICON_SIZE_PROGRESS,
+                        IconSizeSettingActivity.PROGRESS_DEFAULT_VALUE.floatValue(), context);
         this.iconSizePx = (int) (((float) this.iconSizePx) * f);
 
         if (isScalableGrid) {
@@ -1154,7 +1178,10 @@ public class DeviceProfile {
                 (int) (folderChildTextSizePx * folderLabelTextScale));
 
         int textHeight = Utilities.calculateTextHeight(folderChildTextSizePx);
-        float f = PrefTools.getFloat(IconSizeSettingActivity.ICON_SIZE_PROGRESS, IconSizeSettingActivity.PROGRESS_DEFAULT_VALUE.floatValue(), LauncherApplication.getContext());
+        float f = mUseOppoWorkspaceMetrics ? 1f
+                : PrefTools.getFloat(IconSizeSettingActivity.ICON_SIZE_PROGRESS,
+                        IconSizeSettingActivity.PROGRESS_DEFAULT_VALUE.floatValue(),
+                        LauncherApplication.getContext());
         folderChildIconSizePx = (int) (((float) folderChildIconSizePx) * f);
 
         if (isScalableGrid) {
@@ -1223,7 +1250,55 @@ public class DeviceProfile {
                 getCellLayoutHeight() - (cellLayoutPaddingPx.top + cellLayoutPaddingPx.bottom);
         result.y = calculateCellHeight(shortcutAndWidgetContainerHeight, cellLayoutBorderSpacePx.y,
                 inv.numRows);
+        if (mUseOppoWorkspaceMetrics) {
+            result.y = getOppoWorkspaceCellHeight(result.x);
+        }
         return result;
+    }
+
+    public boolean useOppoWorkspaceMetrics() {
+        return mUseOppoWorkspaceMetrics;
+    }
+
+    public int getOppoHotseatMarginBottomPx() {
+        return mUseOppoWorkspaceMetrics ? mOppoHotseatMarginBottomPx : 0;
+    }
+
+    public int getOppoWorkspaceCellHeight(int cellWidth) {
+        int contentHeight = iconSizePx + iconDrawablePaddingPx + iconTextSizePx;
+        int minVerticalPadding = 2 * getOppoCellPaddingTopMin();
+        return Math.max(contentHeight + minVerticalPadding,
+                cellWidth + getOppoDiffCellHeightWithCellWidth());
+    }
+
+    private int getOppoCellPaddingTopMin() {
+        return inv.numColumns == 5
+                ? mResources.getDimensionPixelSize(R.dimen.cellPaddingTopMin5Cols)
+                : mResources.getDimensionPixelSize(R.dimen.cellPaddingTopMin);
+    }
+
+    private int getOppoDiffCellHeightWithCellWidth() {
+        Resources res = mResources;
+        if (inv.numColumns == 3 && inv.numRows == 5) {
+            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth3x5);
+        }
+        if (inv.numColumns == 3 && inv.numRows == 6) {
+            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth3x6);
+        }
+        if (inv.numColumns == 4 && inv.numRows == 5) {
+            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth4x5);
+        }
+        if (inv.numColumns == 5 && inv.numRows == 5) {
+            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth5x5);
+        }
+        if (inv.numColumns == 5 && inv.numRows == 6) {
+            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth5x6);
+        }
+        if ((inv.numColumns == 4 && inv.numRows == 7)
+                || (inv.numColumns == 5 && (inv.numRows == 8 || inv.numRows == 9))) {
+            return 0;
+        }
+        return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth);
     }
 
     /**
@@ -1307,12 +1382,100 @@ public class DeviceProfile {
      * <p>This is the height of a Workspace, less its vertical padding.
      */
     public int getCellLayoutHeight() {
+        if (mUseOppoWorkspaceMetrics && mOppoWorkspaceHeightPx > 0) {
+            return mOppoWorkspaceHeightPx;
+        }
         return availableHeightPx - getTotalWorkspacePadding().y;
     }
 
     public Point getTotalWorkspacePadding() {
         return new Point(workspacePadding.left + workspacePadding.right,
                 workspacePadding.top + workspacePadding.bottom);
+    }
+
+    private void applyOppoWorkspaceMetrics(Resources res, int extraHeight) {
+        if (!mUseOppoWorkspaceMetrics) {
+            return;
+        }
+
+        applyOppoHotseatMetrics(res);
+
+        int paddingTop = res.getDimensionPixelSize(R.dimen.cell_layout_padding_top);
+        if (isMultiWindowMode) {
+            paddingTop += res.getDimensionPixelSize(R.dimen.cell_layout_padding_top_multiwindow);
+        }
+        int paddingBottom = isTwoPanels
+                ? res.getDimensionPixelSize(isGestureMode
+                        ? R.dimen.cell_layout_padding_bottom_gesture_nav
+                        : R.dimen.cell_layout_padding_bottom_with_nav)
+                : res.getDimensionPixelSize(R.dimen.cell_layout_padding);
+        int paddingLeftRight = inv.numColumns == 3
+                ? res.getInteger(R.integer.oplusLayoutCellLayoutPaddingHor3colDp)
+                : inv.numColumns == 5 && inv.numRows == 9
+                        ? res.getInteger(R.integer.oplusLayoutCellLayoutPaddingHor5col9RowDp)
+                        : inv.numColumns == 5
+                                ? res.getInteger(R.integer.oplusLayoutCellLayoutPaddingHor5colDp)
+                                : res.getInteger(R.integer.oplusLayoutCellLayoutPaddingHor4colDp);
+        paddingLeftRight = pxFromDp(paddingLeftRight, mMetrics);
+        cellLayoutPaddingPx = new Rect(paddingLeftRight, paddingTop, paddingLeftRight,
+                paddingBottom);
+
+        int workspaceWidth = (availableWidthPx - (2 * mOppoWorkspacePaddingLeftPx))
+                / getPanelCount();
+        int contentWidth = workspaceWidth - cellLayoutPaddingPx.left - cellLayoutPaddingPx.right;
+        int cellWidth = calculateCellWidth(contentWidth, cellLayoutBorderSpacePx.x,
+                inv.numColumns);
+        int cellHeight = getOppoWorkspaceCellHeight(cellWidth);
+        mOppoWorkspaceHeightPx = cellLayoutPaddingPx.top + cellLayoutPaddingPx.bottom
+                + (cellHeight * inv.numRows);
+
+        int extra = Math.max(0, availableHeightPx - mOppoWorkspaceHeightPx - hotseatBarSizePx
+                - workspacePageIndicatorHeight - mOppoHotseatMarginBottomPx);
+        int topPadding = Math.round(extra * mOppoWorkspaceTopPercentage);
+        workspaceTopPadding = topPadding;
+        workspaceBottomPadding = Math.max(0, extra - topPadding);
+    }
+
+    private void applyOppoHotseatMetrics(Resources res) {
+        if (isVerticalBarLayout() || isTaskbarPresent) {
+            return;
+        }
+
+        hotseatBarSizePx = res.getDimensionPixelSize(R.dimen.oplus_hotseat_height);
+        int bottomPadding = res.getDimensionPixelSize(R.dimen.oplus_hotseat_padding_bottom);
+        hotseatCellHeightPx = Math.max(iconSizePx, hotseatBarSizePx - bottomPadding);
+        hotseatQsbSpace = 0;
+        mOppoHotseatMarginBottomPx = res.getDimensionPixelSize(isGestureMode
+                ? R.dimen.oplus_hotseat_margin_bottom_gesture
+                : R.dimen.oplus_hotseat_margin_bottom_nav);
+    }
+
+    private void logWorkspaceGeometryIfEnabled() {
+        if (!SystemProperties.getBoolean(WORKSPACE_GEOMETRY_DEBUG_PROPERTY, false)) {
+            return;
+        }
+        Point cellSize = getCellSize();
+        Log.i(TAG, "WorkspaceGeometry"
+                + " screen=" + widthPx + "x" + heightPx
+                + " available=" + availableWidthPx + "x" + availableHeightPx
+                + " density=" + mMetrics.density
+                + " insets=" + mInsets
+                + " grid=" + inv.numColumns + "x" + inv.numRows
+                + " workspacePadding=" + workspacePadding
+                + " cellLayoutPadding=" + cellLayoutPaddingPx
+                + " cellLayout=" + getCellLayoutWidth() + "x" + getCellLayoutHeight()
+                + " oppoWorkspaceHeight=" + mOppoWorkspaceHeightPx
+                + " cell=" + cellSize.x + "x" + cellSize.y
+                + " border=" + cellLayoutBorderSpacePx
+                + " icon=" + iconSizePx
+                + " text=" + iconTextSizePx
+                + " drawablePadding=" + iconDrawablePaddingPx
+                + " hotseat=" + hotseatBarSizePx
+                + " hotseatMarginBottom=" + mOppoHotseatMarginBottomPx
+                + " pageIndicator=" + workspacePageIndicatorHeight
+                + " workspaceTopPadding=" + workspaceTopPadding
+                + " workspaceBottomPadding=" + workspaceBottomPadding
+                + " extraSpace=" + extraSpace);
     }
 
     /**
@@ -1335,14 +1498,18 @@ public class DeviceProfile {
             // Pad the bottom of the workspace with hotseat bar
             // and leave a bit of space in case a widget go all the way down
             int paddingBottom = hotseatBarSizePx + workspaceBottomPadding
-                    + workspacePageIndicatorHeight - mWorkspacePageIndicatorOverlapWorkspace
-                    - mInsets.bottom;
+                    + workspacePageIndicatorHeight
+                    + (mUseOppoWorkspaceMetrics ? mOppoHotseatMarginBottomPx : 0)
+                    - mWorkspacePageIndicatorOverlapWorkspace - mInsets.bottom;
             int paddingTop = workspaceTopPadding + (isScalableGrid ? 0 : edgeMarginPx);
-            int paddingSide = desiredWorkspaceHorizontalMarginPx;
+            int paddingSide = mUseOppoWorkspaceMetrics
+                    ? mOppoWorkspacePaddingLeftPx : desiredWorkspaceHorizontalMarginPx;
 
             padding.set(paddingSide, paddingTop, paddingSide, paddingBottom);
         }
-        insetPadding(workspacePadding, cellLayoutPaddingPx);
+        if (!mUseOppoWorkspaceMetrics) {
+            insetPadding(workspacePadding, cellLayoutPaddingPx);
+        }
     }
 
     private void insetPadding(Rect paddings, Rect insets) {

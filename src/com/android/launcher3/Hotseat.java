@@ -103,6 +103,7 @@ public class Hotseat extends CellLayout implements Insettable {
             lp.gravity = Gravity.BOTTOM;
             lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
             lp.height = grid.hotseatBarSizePx;
+            lp.bottomMargin = grid.getOppoHotseatMarginBottomPx();
         }
 
         Rect padding = grid.getHotseatLayoutPadding(getContext());

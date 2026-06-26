@@ -64,28 +64,18 @@ public class AllAppsState extends LauncherState {
 
     @Override
     public ScaleAndTranslation getHotseatScaleAndTranslation(Launcher launcher) {
-        if (launcher.getDeviceProfile().isTablet) {
-            return getWorkspaceScaleAndTranslation(launcher);
-        } else {
-            ScaleAndTranslation overviewScaleAndTranslation = LauncherState.OVERVIEW
-                    .getWorkspaceScaleAndTranslation(launcher);
-            return new ScaleAndTranslation(
-                    launcher.getDeviceProfile().workspaceContentScale,
-                    overviewScaleAndTranslation.translationX,
-                    overviewScaleAndTranslation.translationY);
-        }
+        return getWorkspaceScaleAndTranslation(launcher);
+    }
+
+    @Override
+    public ScaleAndTranslation getPageIndicatorScaleAndTranslation(Launcher launcher) {
+        return getWorkspaceScaleAndTranslation(launcher);
     }
 
     @Override
     protected <DEVICE_PROFILE_CONTEXT extends Context & ActivityContext>
             float getDepthUnchecked(DEVICE_PROFILE_CONTEXT context) {
-        if (context.getDeviceProfile().isTablet) {
-            return context.getDeviceProfile().bottomSheetDepth;
-        } else {
-            // The scrim fades in at approximately 50% of the swipe gesture.
-            // This means that the depth should be greater than 1, in order to fully zoom out.
-            return 2f;
-        }
+        return 1f;
     }
 
     @Override
