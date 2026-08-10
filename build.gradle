@@ -39,6 +39,15 @@ android {
         }
     }
 
+    kotlinOptions {
+        jvmTarget = "17"
+        languageVersion = "1.7"
+        apiVersion = "1.7"
+        freeCompilerArgs += [
+                '-Xjvm-default=all-compatibility'
+        ]
+    }
+
     // The flavor dimensions for build variants (e.g. aospWithQuickstep, aospWithoutQuickstep)
     // See: https://developer.android.com/studio/build/build-variants#flavor-dimensions
     flavorDimensions "app", "recents"
@@ -195,7 +204,8 @@ dependencies {
     implementation project(':animation')
     implementation project(':shared')
     implementation files('libs/SystemUI-statsd.jar')
-    implementation files('libs/WindowManager-Shell-clean.jar')
+    implementation project(':Shell')
+//    implementation files('libs/WindowManager-Shell-clean.jar')
     implementation project(':plugin_core')
     implementation project(':unfold')
 

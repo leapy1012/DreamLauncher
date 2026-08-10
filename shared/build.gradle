@@ -45,11 +45,10 @@ android {
 dependencies {
     compileOnly files('../libs/framework.jar')
     compileOnly files('../libs/core-all.jar')
-    implementation files('../libs/WindowManager-Shell-clean.jar')
 //    implementation files('../libs/com_android_systemui_shared_flags_lib.jar')
 //    implementation files('../libs/tracinglib-platform.jar')
-//    implementation project(':Shell')
     implementation files('../libs/SystemUI-statsd.jar')
+    implementation project(':Shell')
     implementation project(':plugin')
     implementation project(':plugin_core')
     implementation project(':animation')
