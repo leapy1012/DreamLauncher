@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="coui_theme_arrays_default_patch">
+        <item>@style/COUIOverlay.Theme.Green.Default</item>
+        <item>@style/COUIOverlay.Theme.Red.Default</item>
+        <item>@style/COUIOverlay.Theme.Yellow.Default</item>
+        <item>@style/COUIOverlay.Theme.Blue.Default</item>
+        <item>@style/COUIOverlay.Theme.Orange.Default</item>
+        <item>@style/COUIOverlay.Theme.SkyBlue.Default</item>
+    </array>
+
+    <array name="coui_theme_arrays_single">
+        <item>@style/COUIOverlay.Theme.Single.First</item>
+        <item>@style/COUIOverlay.Theme.Single.Second</item>
+        <item>@style/COUIOverlay.Theme.Single.Third</item>
+        <item>@style/COUIOverlay.Theme.Single.Fourth</item>
+        <item>@style/COUIOverlay.Theme.Single.Fifth</item>
+        <item>@style/COUIOverlay.Theme.Single.Sixth</item>
+        <item>@style/COUIOverlay.Theme.Single.Seventh</item>
+        <item>@style/COUIOverlay.Theme.Single.Eighth</item>
+        <item>@style/COUIOverlay.Theme.Single.Ninth</item>
+        <item>@style/COUIOverlay.Theme.Single.Tenth</item>
+    </array>
+</resources>

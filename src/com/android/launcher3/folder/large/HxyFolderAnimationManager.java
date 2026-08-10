@@ -12,7 +12,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
 import android.util.Property;
 import android.view.View;
-import android.view.animation.DecelerateInterpolator;
+import android.view.animation.AnimationUtils;
 import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.util.DimenUtils;
 import com.android.launcher3.DeviceProfile;
@@ -22,7 +22,6 @@ import com.android.launcher3.LauncherState;
 import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.Workspace;
-import com.android.launcher3.anim.PropertyResetListener;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.folder.ClippedFolderIconLayoutRule;
 import com.android.launcher3.folder.Folder;
@@ -49,7 +48,7 @@ public class HxyFolderAnimationManager {
     private Folder mFolder;
     private GradientDrawable mFolderBackground;
     public FolderIcon mFolderIcon;
-    private final DecelerateInterpolator mFolderInterpolator;
+    private final TimeInterpolator mFolderInterpolator;
     private final boolean mIsOpening;
     private Launcher mLauncher;
     private PreviewBackground mPreviewBackground;
@@ -68,9 +67,12 @@ public class HxyFolderAnimationManager {
         this.mIsOpening = isOpening;
         this.mPreviewVerifier = new HxyFolderGridOrganizer(launcher.getDeviceProfile().inv);
         Resources res = this.mContent.getResources();
-        this.mDuration = res.getInteger(R.integer.config_materialFolderExpandDuration);
+        this.mDuration = res.getInteger(isOpening
+                ? R.integer.config_fullFolderOpenDuration
+                : R.integer.config_fullFolderCloseDuration);
         this.mDelay = res.getInteger(R.integer.config_folderDelay);
-        this.mFolderInterpolator = new DecelerateInterpolator();
+        this.mFolderInterpolator = AnimationUtils.loadInterpolator(
+                mContext, R.interpolator.folder_interpolator);
     }
 
     private List<BubbleTextView> getPreviewIconsOnPage(int page) {
@@ -82,7 +84,6 @@ public class HxyFolderAnimationManager {
         float initialAlpha;
         float finalAlpha;
         float from;
-        long duration;
         BaseDragLayer.LayoutParams lp = (BaseDragLayer.LayoutParams) this.mFolder.getLayoutParams();
         ClippedFolderIconLayoutRule rule = this.mFolderIcon.getLayoutRule();
         boolean isOnFirstPage = this.mFolder.mContent.getCurrentPage() == 0;
@@ -125,7 +126,6 @@ public class HxyFolderAnimationManager {
         AnimatorSet a = new AnimatorSet();
         a.setInterpolator(this.mFolderInterpolator);
         float pxFromDp = (float) DimenUtils.pxToDp(mContext, 2.0f);
-        PropertyResetListener colorResetListener = new PropertyResetListener(BubbleTextView.TEXT_ALPHA_PROPERTY, Float.valueOf(1.0f));
         // boolean isSpring = this.mLauncher.getStateManager().getCurrentStableState() == LauncherState.SPRING_LOADED_2;
         Animator t = getAnimator((View) this.mFolder, View.TRANSLATION_X, xDistance, 0.0f);
         call.accept(t);
@@ -177,15 +177,13 @@ public class HxyFolderAnimationManager {
         play(a, this.mFolderIcon.getFolderName().createTextAlphaAnimator(!this.mIsOpening));
         this.mFolder.mFolderName.setAlpha(this.mIsOpening ? 0.0f : 1.0f);
         Animator animator2 = getAnimator((View) this.mFolder.mFolderName, View.ALPHA, 0.0f, 1.0f);
-        boolean z3 = this.mIsOpening;
-        if (z3) {
-            PropertyResetListener propertyResetListener = colorResetListener;
-            duration = (long) this.mDuration;
-        } else {
-            duration = 0;
-        }
         AnimatorSet a2 = a;
-        play(a, animator2, duration, z3 ? 800 : 32);
+        // Keep the title fade inside the folder transition. The old implementation started an
+        // additional 800 ms fade after opening had completed, making the interaction feel laggy.
+        int titleFadeDuration = Math.min(FOLDER_NAME_ALPHA_DURATION, mDuration);
+        play(a, animator2,
+                mIsOpening ? mDuration - titleFadeDuration : 0,
+                titleFadeDuration);
         int midDuration = this.mDuration / 2;
         play(a2, getAnimator((View) this.mFolder, View.TRANSLATION_Z, -this.mFolder.getElevation(), 0.0f), this.mIsOpening ? (long) midDuration : 0, midDuration);
         a2.addListener(new AnimatorListenerAdapter() {
@@ -209,7 +207,7 @@ public class HxyFolderAnimationManager {
         });
         Iterator<Animator> it = a2.getChildAnimations().iterator();
         while (it.hasNext()) {
-            it.next().setInterpolator(new DecelerateInterpolator(1.0f));
+            it.next().setInterpolator(this.mFolderInterpolator);
         }
         return a2;
     }
