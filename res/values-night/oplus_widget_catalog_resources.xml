@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="color_background_widget_sheet">#000000</color>
+    <color name="coui_arrow_next_color">#33ffffff</color>
+    <color name="launcher_widget_full_sheet_item_name_color">#d9ffffff</color>
+    <color name="toggle_bar_widget_list_item_widget_bg">#1affffff</color>
+</resources>

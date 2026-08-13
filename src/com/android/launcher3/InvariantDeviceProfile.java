@@ -202,13 +202,19 @@ public class InvariantDeviceProfile {
 
     @TargetApi(23)
     private InvariantDeviceProfile(Context context) {
+        DeviceGridState persistedGridState = new DeviceGridState(context);
         String gridName = getCurrentGridName(context);
         String newGridName = initGrid(context, gridName);
         if (!newGridName.equals(gridName)) {
             LauncherPrefs.get(context).put(GRID_NAME, newGridName);
         }
         LockedUserState.get(context).runOnUserUnlocked(() -> {
-            new DeviceGridState(this).writeToPrefs(context);
+            // HXY uses one database for its phone grid. Keep its old dimensions available until
+            // ModelDbController has migrated the existing workspace to the new profile.
+            if (!context.getResources().getBoolean(R.bool.config_hxy_grid)
+                    || !persistedGridState.hasValidGridSize()) {
+                new DeviceGridState(this).writeToPrefs(context);
+            }
         });
 
         DisplayController.INSTANCE.get(context).setPriorityListener(
@@ -356,8 +362,6 @@ public class InvariantDeviceProfile {
 
         numFolderRows = closestProfile.numFolderRows;
         numFolderColumns = closestProfile.numFolderColumns;
-        numFolderRows = 3;
-        numFolderColumns = 3;
         folderStyle = closestProfile.folderStyle;
 
         cellStyle = closestProfile.cellStyle;

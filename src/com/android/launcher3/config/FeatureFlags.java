@@ -118,7 +118,7 @@ public final class FeatureFlags {
 
     // TODO(Block 4): Cleanup flags
     public static final BooleanFlag ENABLE_FLOATING_SEARCH_BAR =
-            getReleaseFlag(268388460, "ENABLE_FLOATING_SEARCH_BAR", DISABLED,
+            getReleaseFlag(268388460, "ENABLE_FLOATING_SEARCH_BAR", ENABLED,
                     "Keep All Apps search bar at the bottom (but above keyboard if open)");
 
     public static final BooleanFlag ENABLE_ALL_APPS_FROM_OVERVIEW =

@@ -340,6 +340,14 @@ public class QsbContainerView extends FrameLayout {
         };
     }
 
+    /** QSB hosted below the HXY dock, independent of the first-workspace-screen QSB flag. */
+    public static class HotseatQsbFragment extends QsbFragment {
+        @Override
+        public boolean isQsbEnabled() {
+            return true;
+        }
+    }
+
     public static class QsbWidgetHost extends AppWidgetHost {
 
         private final WidgetViewFactory mViewFactory;

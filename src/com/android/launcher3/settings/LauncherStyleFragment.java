@@ -23,17 +23,23 @@ import com.android.launcher3.R;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceDataStore;
-import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceScreen;
 import androidx.preference.PreferenceViewHolder;
 import androidx.preference.SwitchPreference;
+import com.coui.appcompat.preference.COUIPreferenceFragment;
+import com.coui.appcompat.darkmode.COUIDarkModeUtil;
+import androidx.recyclerview.widget.COUIRecyclerView;
+import androidx.recyclerview.widget.RecyclerView;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 
 /**
  * Dev-build only UI allowing developers to toggle flag settings and plugins.
  * See {@link FeatureFlags}.
  */
 @TargetApi(Build.VERSION_CODES.O)
-public class LauncherStyleFragment extends PreferenceFragmentCompat 
+public class LauncherStyleFragment extends COUIPreferenceFragment
 		implements RadioButtonPreference.OnClickListener {
 
     private static final String KEY_STYLE_DRAWER = "launcher_style_drawer";
@@ -53,8 +59,28 @@ public class LauncherStyleFragment extends PreferenceFragmentCompat
 		mDrawer.setChecked(mode == 0 ? true : false);
 		mNomal.setChecked(mode == 1 ? true : false);
 		mCurrentMode = mode;
+        requireActivity().setTitle(R.string.launcher_style_title);
     }
 	
+	@Override
+    public RecyclerView onCreateRecyclerView(LayoutInflater inflater, ViewGroup parent,
+            Bundle savedInstanceState) {
+        COUIRecyclerView recyclerView = (COUIRecyclerView) inflater.inflate(
+                com.coui.appcompat.R.layout.coui_preference_percent_recyclerview,
+                parent, false);
+        recyclerView.setEnablePointerDownAction(false);
+        recyclerView.setLayoutManager(onCreateLayoutManager());
+        COUIDarkModeUtil.setForceDarkAllow(recyclerView, false);
+        return recyclerView;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        requireActivity().getWindow().setBackgroundDrawableResource(
+                com.coui.appcompat.R.drawable.coui_window_background_with_card_selector);
+    }
+
 	@Override
     public void onRadioButtonClicked(RadioButtonPreference preference) {
 		if (preference.isChecked()) {

@@ -87,31 +87,39 @@ public class DotDrawUtils {
             Log.e(TAG, "Invalid null argument(s) passed in call to draw.");
             return;
         }
-        initPaint(dotNumParams.mScale);
+        NumberDotRenderer.DrawParams drawParams =
+                (NumberDotRenderer.DrawParams) dotNumParams.mDrawParams;
+        initPaint(drawParams.textSize);
         String text = getUnreadNumText(dotNumParams.mUnreadNum);
-        Rect adjustRect = adjustRect(getRect(text));
+        // Decoded OplusDotRenderer uses a 20dp circular minimum, 13dp bold text and 2dp
+        // ellipsize padding. Derive the pixel dimensions from the supplied 13dp text resource.
+        int diameter = Math.round(drawParams.textSize * (20f / 13f));
+        int textPadding = Math.round(drawParams.textSize * (2f / 13f));
+        int textWidth = Math.round(mPaint.measureText(text));
+        Rect adjustRect = new Rect(0, 0, Math.max(diameter, textWidth + textPadding * 2),
+                diameter);
         Point point = getPoint(adjustRect);
         canvas.save();
-        Rect rect = dotNumParams.mDrawParams.iconBounds;
+        Rect rect = drawParams.iconBounds;
         float width = ((float) rect.left) + (((float) rect.width()) * dotNumParams.mRect[0]);
         float height = ((float) rect.top) + (((float) rect.height()) * dotNumParams.mRect[1]);
         Rect clipBounds = canvas.getClipBounds();
-        canvas.translate(((width + ((float) (dotNumParams.mDrawParams.leftAlign ? Math.max(0, clipBounds.left - Math.round(width - ((float) adjustRect.centerX()))) :
+        canvas.translate(((width + ((float) (drawParams.leftAlign ? Math.max(0, clipBounds.left - Math.round(width - ((float) adjustRect.centerX()))) :
                         Math.min(0, clipBounds.right - Math.round(((float) adjustRect.centerX()) + width))))) - ((float) adjustRect.centerX())) + (isLargeFolder ? -6.0f : 0.0f),
                 ((height + Math.max(0.0f, ((float) clipBounds.top) - (height - ((float) adjustRect.centerY())))) - ((float) adjustRect.centerY())) + (isLargeFolder ? 45.0f : 0.0f));
-        float f = dotNumParams.mDrawParams.scale;
+        float f = drawParams.scale;
         canvas.scale(f, f);
         Paint paint = mPaintX;
         paint.setShadowLayer(0.0f, 0.0f, 0.0f, Color.DKGRAY);
-        paint.setColor(dotNumParams.mDrawParams.dotColor);
+        paint.setColor(drawParams.dotColor);
         canvas.drawRoundRect(new RectF(adjustRect), (float) adjustRect.centerY(), (float) adjustRect.centerY(), paint);
         canvas.drawText(text, (float) point.x, (float) point.y, mPaint);
         canvas.restore();
     }
 
-    public static void initPaint(int i) {
+    public static void initPaint(float textSize) {
         Paint paint = mPaint;
-        paint.setTextSize((((float) i) * 0.16f) - 1.0f);
+        paint.setTextSize(textSize);
         paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setAntiAlias(true);

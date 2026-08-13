@@ -149,7 +149,13 @@ public class Hotseat extends CellLayout implements Insettable {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
         DeviceProfile dp = mActivity.getDeviceProfile();
-        mQsb.measure(MeasureSpec.makeMeasureSpec(dp.hotseatQsbWidth, MeasureSpec.EXACTLY),
+        int qsbWidth = dp.hotseatQsbWidth;
+        if (getResources().getBoolean(R.bool.config_hxy_grid) && dp.hotseatQsbHeight > 0) {
+            int horizontalMargin = getResources().getDimensionPixelSize(
+                    R.dimen.coloros_hotseat_search_horizontal_margin);
+            qsbWidth = Math.max(0, getMeasuredWidth() - 2 * horizontalMargin);
+        }
+        mQsb.measure(MeasureSpec.makeMeasureSpec(qsbWidth, MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(dp.hotseatQsbHeight, MeasureSpec.EXACTLY));
     }
 

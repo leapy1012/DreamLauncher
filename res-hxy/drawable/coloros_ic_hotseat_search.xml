@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="@dimen/coloros_hotseat_search_icon_size"
+    android:height="@dimen/coloros_hotseat_search_icon_size"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9.5,3a6.5,6.5 0,1 0,3.98 11.64L18.84,20 20,18.84l-5.36,-5.36A6.5,6.5 0,0 0,9.5 3zM9.5,4.8a4.7,4.7 0,1 1,0 9.4,4.7 4.7,0 0,1 0,-9.4z" />
+</vector>

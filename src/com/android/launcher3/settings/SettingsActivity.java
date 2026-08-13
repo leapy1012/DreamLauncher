@@ -30,10 +30,10 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
-import androidx.core.view.WindowCompat;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
@@ -42,6 +42,7 @@ import androidx.preference.PreferenceFragmentCompat.OnPreferenceStartScreenCallb
 import androidx.preference.PreferenceGroup.PreferencePositionCallback;
 import androidx.preference.PreferenceScreen;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.COUIRecyclerView;
 
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.InvariantDeviceProfile;
@@ -81,7 +82,6 @@ import static com.android.launcher3.LauncherPrefs.WORKSPACE_MEMORY_CLEAN;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_WALLPAPER_SET;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_MINUS;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_PLUS;
-import com.android.launcher3.settings.RoundCornerPreferenceAdapter;
 import java.util.Objects;
 import java.util.Optional;
 import android.os.Process;
@@ -92,14 +92,14 @@ import androidx.preference.PreferenceCategory;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherApplication;
 import com.android.launcher3.model.data.ItemInfo;
-import android.app.ActionBar;
-import android.widget.Toolbar;
-import android.util.TypedValue;
+import com.coui.appcompat.preference.COUIPreferenceFragment;
+import com.coui.appcompat.darkmode.COUIDarkModeUtil;
+import com.coui.appcompat.toolbar.COUIToolbar;
 
 /**
  * Settings activity for Launcher. Currently implements the following setting: Allow rotation
  */
-public class SettingsActivity extends FragmentActivity
+public class SettingsActivity extends AppCompatActivity
         implements OnPreferenceStartFragmentCallback, OnPreferenceStartScreenCallback,
         SharedPreferences.OnSharedPreferenceChangeListener{
 
@@ -129,13 +129,16 @@ public class SettingsActivity extends FragmentActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings_activity);
-        setActionBar(findViewById(R.id.action_bar));
+        COUIToolbar toolbar = findViewById(R.id.action_bar);
+        setSupportActionBar(toolbar);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeButtonEnabled(true);
+            actionBar.setDisplayShowTitleEnabled(true);
+        }
 
         Intent intent = getIntent();
-        if (intent.hasExtra(EXTRA_FRAGMENT) || intent.hasExtra(EXTRA_FRAGMENT_ARGS)
-                || intent.hasExtra(EXTRA_FRAGMENT_ARG_KEY)) {
-            getActionBar().setDisplayHomeAsUpEnabled(true);
-        }
 
         if (savedInstanceState == null) {
             Bundle args = intent.getBundleExtra(EXTRA_FRAGMENT_ARGS);
@@ -156,21 +159,6 @@ public class SettingsActivity extends FragmentActivity
             fm.beginTransaction().replace(R.id.content_frame, f).commit();
         }
 
-        ActionBar actionBar = getActionBar();
-        if (actionBar != null) {
-            android.util.Log.d("liu-db", "setActionBar");
-            actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeButtonEnabled(true);
-            actionBar.setDisplayShowTitleEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.drawable.hxy_ic_back);
-        }
-        Toolbar toolbar = findViewById(R.id.action_bar);
-        if (toolbar != null) {
-            android.util.Log.d("liu-db", "setToolbar");
-            TypedValue typedValue = new TypedValue();
-            getTheme().resolveAttribute(android.R.attr.colorPrimaryDark, typedValue, true);
-            toolbar.setBackgroundColor(typedValue.data);
-        }
     }
 
     /**
@@ -288,7 +276,8 @@ public class SettingsActivity extends FragmentActivity
     /**
      * This fragment shows the launcher preferences.
      */
-    public static class LauncherSettingsFragment extends PreferenceFragmentCompat implements Preference.OnPreferenceClickListener {
+    public static class LauncherSettingsFragment extends COUIPreferenceFragment
+            implements Preference.OnPreferenceClickListener {
 
         private String mHighLightKey;
         private boolean mPreferenceHighlighted = false;
@@ -304,6 +293,7 @@ public class SettingsActivity extends FragmentActivity
         //hxy-feature: desktop theme 202312
         private SwitchPreference mPlusPref;
         private SwitchPreference mMinusPref;
+
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             final Bundle args = getArguments();
@@ -414,8 +404,22 @@ public class SettingsActivity extends FragmentActivity
         }
 
         @Override
+        public RecyclerView onCreateRecyclerView(android.view.LayoutInflater inflater,
+                android.view.ViewGroup parent, Bundle savedInstanceState) {
+            COUIRecyclerView recyclerView = (COUIRecyclerView) inflater.inflate(
+                    com.coui.appcompat.R.layout.coui_preference_percent_recyclerview,
+                    parent, false);
+            recyclerView.setEnablePointerDownAction(false);
+            recyclerView.setLayoutManager(onCreateLayoutManager());
+            COUIDarkModeUtil.setForceDarkAllow(recyclerView, false);
+            return recyclerView;
+        }
+
+        @Override
         public void onViewCreated(View view, Bundle savedInstanceState) {
             super.onViewCreated(view, savedInstanceState);
+            requireActivity().getWindow().setBackgroundDrawableResource(
+                    com.coui.appcompat.R.drawable.coui_window_background_with_card_selector);
             View listView = getListView();
             final int bottomPadding = listView.getPaddingBottom();
             listView.setOnApplyWindowInsetsListener((v, insets) -> {
@@ -428,12 +432,6 @@ public class SettingsActivity extends FragmentActivity
             });
             // Overriding Text Direction in the Androidx preference library to support RTL
             view.setTextDirection(View.TEXT_DIRECTION_LOCALE);
-        }
-
-        @NonNull
-        @Override
-        protected RecyclerView.Adapter onCreateAdapter(@NonNull PreferenceScreen preferenceScreen) {
-            return new RoundCornerPreferenceAdapter(preferenceScreen);
         }
 
         @Override

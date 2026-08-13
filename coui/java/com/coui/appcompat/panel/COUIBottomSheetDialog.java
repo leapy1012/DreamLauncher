@@ -71,7 +71,6 @@ import com.oplus.dynamicframerate.DynamicFrameRateManager;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
-import okio.Segment;
 
 
 public class COUIBottomSheetDialog extends BottomSheetDialog {
@@ -2028,7 +2027,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         }
         View decorView = window.getDecorView();
         int systemUiVisibility = decorView.getSystemUiVisibility();
-        int i2 = systemUiVisibility | Segment.SHARE_MINIMUM;
+        int i2 = systemUiVisibility | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
         window.setStatusBarColor(0);
         window.addFlags(Integer.MIN_VALUE);
         decorView.setSystemUiVisibility(COUIDarkModeUtil.isNightMode(getContext()) ? i2 & (-8209) : systemUiVisibility | 1280);

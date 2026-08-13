@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="toggle_bar_widget_hz_item_spacing">8dp</dimen>
+    <dimen name="toggle_bar_widget_list_padding_bottom">50dp</dimen>
+    <dimen name="toggle_bar_widget_panel_background_radius">22dp</dimen>
+    <dimen name="toggle_bar_widget_item_sub_text_padding_top">2dp</dimen>
+    <dimen name="toggle_bar_widget_item_width">140dp</dimen>
+    <dimen name="toggle_bar_widget_name_size">12sp</dimen>
+    <dimen name="toggle_bar_widget_thumbnail_padding">8dp</dimen>
+    <dimen name="toggle_bar_widget_title_margin_top">10dp</dimen>
+    <dimen name="widget_popup_list_divider_height">22dp</dimen>
+    <dimen name="widget_popup_list_padding">24dp</dimen>
+    <dimen name="widget_popup_list_padding_end">16dp</dimen>
+    <dimen name="widget_popup_row_section_drawable_padding">8.669983dp</dimen>
+    <dimen name="widget_popup_row_section_height">20dp</dimen>
+    <!-- OPPO's OplusBubbleTextView binding renders the package icon at launcher app-icon size
+         even though the decoded XML's generic override is 20dp. Verified runtime size: 48dp. -->
+    <dimen name="widget_popup_row_section_icon_size">48dp</dimen>
+    <dimen name="widget_popup_row_section_padding_bottom">20dp</dimen>
+    <dimen name="widget_popup_row_section_padding_horizontal">5dp</dimen>
+    <dimen name="widget_popup_row_section_scroller_margin_top">12dp</dimen>
+    <dimen name="widget_popup_row_section_text_size">14sp</dimen>
+    <dimen name="widget_popup_row_section_widget_bg_radius">14dp</dimen>
+    <color name="launcher_widget_full_sheet_item_name_color">#d9000000</color>
+    <color name="color_background_widget_sheet">#fafafa</color>
+    <color name="coui_arrow_next_color">#33000000</color>
+    <color name="toggle_bar_widget_list_item_widget_bg">#33000000</color>
+    <color name="toggle_bar_widget_list_item_widget_bg_stroke">#1f000000</color>
+</resources>

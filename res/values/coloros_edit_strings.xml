@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="edit_mode_done">Done</string>
+    <string name="edit_mode_wallpapers_style">Wallpapers &amp; style</string>
+    <string name="edit_mode_widgets">Widgets</string>
+    <string name="edit_mode_layout">Layout</string>
+    <string name="edit_mode_home_settings">Home screen settings</string>
+    <string name="edit_mode_choose_layout">Home screen layout</string>
+    <string name="edit_mode_grid_4x5">4 × 5</string>
+    <string name="edit_mode_grid_4x6">4 × 6</string>
+    <string name="edit_mode_grid_5x6">5 × 6</string>
+    <string name="edit_mode_grid_5x7">5 × 7</string>
+    <string name="edit_mode_cancel">Cancel</string>
+    <string name="edit_mode_apply">Apply</string>
+    <string name="edit_mode_hide_icon_names">Hide icon names</string>
+    <string name="edit_mode_layout_change_description">Your Home screen layout will change.</string>
+    <string name="coloros_widget_close">Close</string>
+    <string name="coloros_widget_back">Back</string>
+    <string name="coloros_home_screen_widgets">Home screen widgets</string>
+    <string name="coloros_smart_suggestions">Smart suggestions</string>
+    <string name="coloros_widget_clock">Clock</string>
+    <string name="coloros_widget_app_suggestions">App suggestions</string>
+    <string name="coloros_all_widgets">All widgets</string>
+</resources>

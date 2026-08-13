@@ -246,7 +246,7 @@ public class COUICheckBox extends AppCompatButton implements Checkable {
         return getResources().getString(R.string.coui_accessibility_partchecked);
     }
 
-    private boolean isLayoutRtl() {
+    private boolean isLayoutRtlCompat() {
         return ViewCompat.getLayoutDirection(this) == ViewCompat.LAYOUT_DIRECTION_RTL;
     }
 
@@ -272,7 +272,7 @@ public class COUICheckBox extends AppCompatButton implements Checkable {
         int drawableWidth = mButtonDrawable.getIntrinsicWidth();
         int top = gravity == 16 ? (getHeight() - drawableHeight) / 2
                 : gravity == 80 ? getHeight() - drawableHeight : 0;
-        if (isLayoutRtl()) {
+        if (isLayoutRtlCompat()) {
             BUTTON_DRAWABLE_BOUNDS.set(getWidth() - drawableWidth - getPaddingRight(), top,
                     getWidth() - getPaddingRight(), top + drawableHeight);
         } else {
@@ -333,7 +333,7 @@ public class COUICheckBox extends AppCompatButton implements Checkable {
     @Override
     public int getCompoundPaddingLeft() {
         int padding = super.getCompoundPaddingLeft();
-        if (isLayoutRtl() || mButtonDrawable == null) {
+        if (isLayoutRtlCompat() || mButtonDrawable == null) {
             return padding;
         }
         padding += mButtonDrawable.getIntrinsicWidth();
@@ -343,7 +343,7 @@ public class COUICheckBox extends AppCompatButton implements Checkable {
     @Override
     public int getCompoundPaddingRight() {
         int padding = super.getCompoundPaddingRight();
-        if (!isLayoutRtl() || mButtonDrawable == null) {
+        if (!isLayoutRtlCompat() || mButtonDrawable == null) {
             return padding;
         }
         padding += mButtonDrawable.getIntrinsicWidth();

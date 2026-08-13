@@ -21,7 +21,7 @@
     android:orientation="vertical"
     android:theme="?attr/widgetsTheme">
 
-    <com.android.launcher3.views.SpringRelativeLayout
+    <com.android.launcher3.views.TopRoundedCornerView
         android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -34,7 +34,7 @@
             android:layout_height="@dimen/bottom_sheet_handle_height"
             android:layout_marginTop="@dimen/bottom_sheet_handle_margin"
             android:layout_centerHorizontal="true"
-            android:background="@drawable/widget_picker_collapse_handle"/>
+            android:background="@drawable/drag_bar_common"/>
 
         <TextView
             style="@style/PrimaryHeadline"
@@ -73,5 +73,5 @@
             android:visibility="gone"
             android:clipToPadding="false" />
 
-    </com.android.launcher3.views.SpringRelativeLayout>
+    </com.android.launcher3.views.TopRoundedCornerView>
 </com.android.launcher3.widget.picker.WidgetsFullSheet>

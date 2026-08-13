@@ -1,25 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.android.launcher3.folder.large.HxyLargeFolder xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingTop="@dimen/coloros_folder_top_offset"
     android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/folder_header"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="@dimen/coloros_folder_title_height"
+        android:layout_marginStart="@dimen/coloros_folder_header_margin_horizontal"
+        android:layout_marginEnd="@dimen/coloros_folder_header_margin_horizontal"
         android:gravity="center_horizontal">
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp">
+            android:layout_height="match_parent">
 
             <com.android.launcher3.big.ColorEditText
                 android:id="@+id/folder_name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_width="@dimen/coloros_folder_title_width"
+                android:layout_height="match_parent"
+                android:layout_centerInParent="true"
                 android:background="@drawable/fold_name_edit_bg"
                 android:fontFamily="google-sans-text"
                 android:gravity="center_horizontal"
@@ -29,47 +32,50 @@
                 android:paddingStart="40dp"
                 android:paddingEnd="40dp"
                 android:singleLine="true"
-                android:textColor="#ffffff"
+                android:textColor="@color/coloros_folder_title_text"
                 android:textColorHighlight="?android:attr/colorControlHighlight"
-                android:textColorHint="#ffffff"
-                android:textSize="@dimen/folder_label_text_size" />
+                android:textColorHint="@color/coloros_folder_title_hint"
+                android:textSize="@dimen/coloros_folder_title_text_size" />
 
             <ImageView
                 android:id="@+id/clear_text"
-                android:layout_width="25dp"
-                android:layout_height="25dp"
+                android:layout_width="@dimen/coloros_folder_clear_size"
+                android:layout_height="@dimen/coloros_folder_clear_size"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                android:layout_marginEnd="10dp"
+                android:layout_marginEnd="@dimen/coloros_folder_clear_margin_end"
                 android:scaleType="fitXY"
                 android:src="@drawable/clear_text"
                 android:visibility="gone" />
         </RelativeLayout>
     </LinearLayout>
 
-    <LinearLayout
+    <FrameLayout
         android:id="@+id/folder_content_ll"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/edit_enable_bg"
-        android:elevation="5dp"
-        android:orientation="vertical">
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginStart="@dimen/coloros_folder_content_margin_horizontal"
+        android:layout_marginEnd="@dimen/coloros_folder_content_margin_horizontal"
+        android:layout_marginTop="@dimen/coloros_folder_content_top_gap"
+        android:clipChildren="false">
 
         <com.android.launcher3.folder.FolderPagedView
             android:id="@+id/folder_content"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:paddingLeft="8dp"
-            android:paddingTop="16dp"
-            android:paddingRight="8dp"
+            android:paddingLeft="@dimen/coloros_folder_content_padding_horizontal"
+            android:paddingTop="@dimen/coloros_folder_content_padding_top"
+            android:paddingRight="@dimen/coloros_folder_content_padding_horizontal"
             app:pageIndicator="@+id/folder_page_indicator" />
 
         <LinearLayout
             android:id="@+id/folder_footer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginBottom="@dimen/coloros_folder_page_indicator_bottom_space"
             android:clipChildren="false"
             android:gravity="center"
             android:orientation="horizontal"
@@ -79,9 +85,9 @@
             <com.android.launcher3.pageindicators.PageIndicatorDots
                 android:id="@+id/folder_page_indicator"
                 android:layout_width="wrap_content"
-                android:layout_height="25dp"
+                android:layout_height="@dimen/coloros_folder_page_indicator_height"
                 android:layout_gravity="center"
                 android:elevation="1dp" />
         </LinearLayout>
-    </LinearLayout>
+    </FrameLayout>
 </com.android.launcher3.folder.large.HxyLargeFolder>

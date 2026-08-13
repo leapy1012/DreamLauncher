@@ -57,6 +57,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.launcher3.DeviceProfile;
+import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
@@ -66,12 +67,16 @@ import com.android.launcher3.model.UserManagerState;
 import com.android.launcher3.model.WidgetItem;
 import com.android.launcher3.pm.UserCache;
 import com.android.launcher3.views.ArrowTipView;
+import com.android.launcher3.views.ColorOsWidgetHubView;
+import com.android.launcher3.views.OplusWidgetDividerItemDecoration;
+import com.coui.appcompat.toolbar.COUIToolbar;
 import com.android.launcher3.views.RecyclerViewFastScroller;
 import com.android.launcher3.views.SpringRelativeLayout;
 import com.android.launcher3.views.StickyHeaderLayout;
 import com.android.launcher3.views.WidgetsEduView;
 import com.android.launcher3.widget.BaseWidgetSheet;
 import com.android.launcher3.widget.LauncherWidgetHolder.ProviderChangedListener;
+import com.android.launcher3.widget.PendingAddWidgetInfo;
 import com.android.launcher3.widget.model.WidgetsListBaseEntry;
 import com.android.launcher3.widget.picker.search.SearchModeListener;
 import com.android.launcher3.widget.picker.search.WidgetsSearchBar;
@@ -168,6 +173,7 @@ public class WidgetsFullSheet extends BaseWidgetSheet
     @Nullable PersonalWorkPagedView mViewPager;
     private boolean mIsInSearchMode;
     private boolean mIsNoWidgetsViewNeeded;
+    private boolean mReturnToColorOsWidgetHub;
     @Px private int mMaxSpanPerRow;
     private DeviceProfile mDeviceProfile;
 
@@ -179,7 +185,7 @@ public class WidgetsFullSheet extends BaseWidgetSheet
     protected View mTabBar;
     protected View mSearchBarContainer;
     protected WidgetsSearchBar mSearchBar;
-    protected TextView mHeaderTitle;
+    protected View mHeaderTitle;
     protected RecyclerViewFastScroller mFastScroller;
 
     public WidgetsFullSheet(Context context, AttributeSet attrs, int defStyleAttr) {
@@ -212,10 +218,32 @@ public class WidgetsFullSheet extends BaseWidgetSheet
         super.onFinishInflate();
 
         mContent = findViewById(R.id.container);
-        setContentBackgroundWithParent(getContext().getDrawable(R.drawable.bg_widgets_full_sheet),
+        boolean colorOsCatalog = getResources().getBoolean(R.bool.config_hxy_grid);
+        if (colorOsCatalog) {
+            // OPPO applies background_widget_sheet to OplusWidgetsFullSheet itself, not only its
+            // inset content. This keeps the navigation-bar scrim over the same #FAFAFA surface.
+            setBackgroundResource(R.drawable.background_widget_sheet);
+        }
+        setContentBackgroundWithParent(getContext().getDrawable(colorOsCatalog
+                        ? R.drawable.background_widget_sheet
+                        : R.drawable.bg_widgets_full_sheet),
                 mContent);
-        mContent.setOutlineProvider(mViewOutlineProvider);
-        mContent.setClipToOutline(true);
+        if (colorOsCatalog) {
+            View handle = findViewById(R.id.collapse_handle);
+            ViewGroup.MarginLayoutParams handleLp =
+                    (ViewGroup.MarginLayoutParams) handle.getLayoutParams();
+            handleLp.width = Math.round(34 * getResources().getDisplayMetrics().density);
+            handleLp.height = Math.round(4 * getResources().getDisplayMetrics().density);
+            handleLp.topMargin = Math.round(10 * getResources().getDisplayMetrics().density);
+            handle.setLayoutParams(handleLp);
+        }
+        if (colorOsCatalog) {
+            // TopRoundedCornerView owns the decoded OPPO top-only outline.
+            mContent.setClipToOutline(true);
+        } else {
+            mContent.setOutlineProvider(mViewOutlineProvider);
+            mContent.setClipToOutline(true);
+        }
         setupSheet();
     }
 
@@ -243,6 +271,11 @@ public class WidgetsFullSheet extends BaseWidgetSheet
         mNoWidgetsView = findViewById(R.id.no_widgets_text);
         mFastScroller = findViewById(R.id.fast_scroller);
         mFastScroller.setPopupView(findViewById(R.id.fast_scroller_popup));
+        if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+            // Decoded widgets_full_sheet keeps both fast-scroller views gone at 0x0.
+            mFastScroller.setVisibility(GONE);
+            findViewById(R.id.fast_scroller_popup).setVisibility(GONE);
+        }
         mAdapters.get(AdapterHolder.PRIMARY).setup(findViewById(R.id.primary_widgets_list_view));
         mAdapters.get(AdapterHolder.SEARCH).setup(findViewById(R.id.search_widgets_list_view));
         if (mHasWorkProfile) {
@@ -269,6 +302,13 @@ public class WidgetsFullSheet extends BaseWidgetSheet
 
         mSearchBar.initialize(
                 mActivityContext.getPopupDataProvider(), /* searchModeListener= */ this);
+        if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+            mSearchBarContainer.setVisibility(GONE);
+            View catalogToolbar = mSearchScrollView.findViewById(R.id.title);
+            if (catalogToolbar instanceof COUIToolbar) {
+                ((COUIToolbar) catalogToolbar).setNavigationOnClickListener(v -> close(true));
+            }
+        }
     }
 
     private void setDeviceManagementResources() {
@@ -295,7 +335,9 @@ public class WidgetsFullSheet extends BaseWidgetSheet
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void onBackProgressed(@NonNull BackEvent backEvent) {
         super.onBackProgressed(backEvent);
-        mFastScroller.setVisibility(backEvent.getProgress() > 0 ? View.INVISIBLE : View.VISIBLE);
+        mFastScroller.setVisibility(getResources().getBoolean(R.bool.config_hxy_grid)
+                ? View.GONE
+                : backEvent.getProgress() > 0 ? View.INVISIBLE : View.VISIBLE);
     }
 
     private void attachScrollbarToRecyclerView(WidgetsRecyclerView recyclerView) {
@@ -435,10 +477,28 @@ public class WidgetsFullSheet extends BaseWidgetSheet
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        doMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+            int topPadding = Math.round(40 * getResources().getDisplayMetrics().density);
+            measureChildWithMargins(mContent, widthMeasureSpec,
+                    mInsets.left + mInsets.right, heightMeasureSpec,
+                    topPadding + mInsets.bottom);
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec),
+                    MeasureSpec.getSize(heightMeasureSpec));
+        } else {
+            doMeasure(widthMeasureSpec, heightMeasureSpec);
+        }
 
         if (updateMaxSpansPerRow()) {
-            doMeasure(widthMeasureSpec, heightMeasureSpec);
+            if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+                int topPadding = Math.round(40 * getResources().getDisplayMetrics().density);
+                measureChildWithMargins(mContent, widthMeasureSpec,
+                        mInsets.left + mInsets.right, heightMeasureSpec,
+                        topPadding + mInsets.bottom);
+                setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec),
+                        MeasureSpec.getSize(heightMeasureSpec));
+            } else {
+                doMeasure(widthMeasureSpec, heightMeasureSpec);
+            }
         }
     }
 
@@ -478,8 +538,16 @@ public class WidgetsFullSheet extends BaseWidgetSheet
         // Content is laid out as center bottom aligned
         int contentWidth = mContent.getMeasuredWidth();
         int contentLeft = (width - contentWidth - mInsets.left - mInsets.right) / 2 + mInsets.left;
-        mContent.layout(contentLeft, height - mContent.getMeasuredHeight(),
-                contentLeft + contentWidth, height);
+        if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+            // OPPO widget_full_sheet remains full-height, while its inner container is laid out
+            // from the decoded 40dp panel top to the navigation-bar inset.
+            int contentTop = Math.round(40 * getResources().getDisplayMetrics().density);
+            mContent.layout(contentLeft, contentTop,
+                    contentLeft + contentWidth, height - mInsets.bottom);
+        } else {
+            mContent.layout(contentLeft, height - mContent.getMeasuredHeight(),
+                    contentLeft + contentWidth, height);
+        }
 
         setTranslationShift(mTranslationShift);
     }
@@ -636,7 +704,41 @@ public class WidgetsFullSheet extends BaseWidgetSheet
                 * RECOMMENDATION_TABLE_HEIGHT_RATIO;
     }
 
+    @Override
+    protected boolean onWidgetClick(PendingAddWidgetInfo info) {
+        if (!getResources().getBoolean(R.bool.config_hxy_grid)) {
+            return false;
+        }
+
+        // Decoded ToggleBarWidgetUIController.onClickWidget() performs direct placement and
+        // leaves the widget-list/Card Store state only when Launcher accepted the item.
+        if (mActivityContext.getAccessibilityDelegate().addToWorkspace(info, false)) {
+            mReturnToColorOsWidgetHub = false;
+            ColorOsWidgetHubView hub = AbstractFloatingView.getAnyView(
+                    mActivityContext, TYPE_LISTENER);
+            if (hub != null) {
+                hub.close(false);
+            }
+            close(true);
+        }
+        // OPPO consumes widget taps even when no workspace cell is available.
+        return true;
+    }
+
     private void open(boolean animate) {
+        if (animate && getResources().getBoolean(R.bool.config_hxy_grid)
+                && mReturnToColorOsWidgetHub) {
+            // Decoded OplusWidgetsFullSheet ALPHA_FAST transition used when the native widget
+            // catalog is opened over Card Store: 250 ms with card_store_interpolator.
+            setTranslationShift(TRANSLATION_SHIFT_OPENED);
+            mContent.setAlpha(0f);
+            mContent.animate().alpha(1f).setDuration(250L)
+                    .setInterpolator(AnimationUtils.loadInterpolator(
+                            getContext(), R.interpolator.card_store_interpolator))
+                    .withEndAction(this::announceAccessibilityChanges)
+                    .start();
+            return;
+        }
         if (animate) {
             if (getPopupContainer().getInsets().bottom > 0) {
                 mContent.setAlpha(0);
@@ -645,7 +747,9 @@ public class WidgetsFullSheet extends BaseWidgetSheet
             mOpenCloseAnimator.setValues(
                     PropertyValuesHolder.ofFloat(TRANSLATION_SHIFT, TRANSLATION_SHIFT_OPENED));
             mOpenCloseAnimator
-                    .setDuration(mActivityContext.getDeviceProfile().bottomSheetOpenDuration)
+                    // Decoded OPPO WidgetsFullSheet.open(): literal 0x10b milliseconds.
+                    .setDuration(getResources().getBoolean(R.bool.config_hxy_grid)
+                            ? 267L : mActivityContext.getDeviceProfile().bottomSheetOpenDuration)
                     .setInterpolator(AnimationUtils.loadInterpolator(
                             getContext(), android.R.interpolator.linear_out_slow_in));
             mOpenCloseAnimator.addListener(new AnimatorListenerAdapter() {
@@ -666,7 +770,20 @@ public class WidgetsFullSheet extends BaseWidgetSheet
 
     @Override
     protected void handleClose(boolean animate) {
-        handleClose(animate, mActivityContext.getDeviceProfile().bottomSheetCloseDuration);
+        if (animate && getResources().getBoolean(R.bool.config_hxy_grid)
+                && mReturnToColorOsWidgetHub) {
+            // OPPO returns to Card Store with the matching 320 ms ALPHA_FAST close.
+            mContent.animate().cancel();
+            mContent.animate().alpha(0f).setDuration(320L)
+                    .setInterpolator(AnimationUtils.loadInterpolator(
+                            getContext(), R.interpolator.card_store_interpolator))
+                    .withEndAction(() -> handleClose(false, 0L))
+                    .start();
+            return;
+        }
+        // Decoded OPPO WidgetsFullSheet.handleClose(): literal 0x10b milliseconds.
+        handleClose(animate, getResources().getBoolean(R.bool.config_hxy_grid)
+                ? 267L : mActivityContext.getDeviceProfile().bottomSheetCloseDuration);
     }
 
     @Override
@@ -720,10 +837,17 @@ public class WidgetsFullSheet extends BaseWidgetSheet
                     false);
         }
 
+        sheet.mReturnToColorOsWidgetHub = isOpenedFromColorOsWidgetHub(launcher);
+
         sheet.attachToContainer();
         sheet.mIsOpen = true;
         sheet.open(animate);
         return sheet;
+    }
+
+    private static boolean isOpenedFromColorOsWidgetHub(Launcher launcher) {
+        return launcher.getResources().getBoolean(R.bool.config_hxy_grid)
+                && AbstractFloatingView.getAnyView(launcher, TYPE_LISTENER) != null;
     }
 
     @Override
@@ -792,6 +916,14 @@ public class WidgetsFullSheet extends BaseWidgetSheet
             mLatestEducationalTip.close(false);
         }
         AccessibilityManagerCompat.sendStateEventToTest(getContext(), NORMAL_STATE_ORDINAL);
+        if (getResources().getBoolean(R.bool.config_hxy_grid)
+                && mReturnToColorOsWidgetHub) {
+            ColorOsWidgetHubView hub = AbstractFloatingView.getAnyView(
+                    mActivityContext, TYPE_LISTENER);
+            if (hub != null) {
+                hub.restoreAfterCatalog();
+            }
+        }
     }
 
     @Override
@@ -840,6 +972,15 @@ public class WidgetsFullSheet extends BaseWidgetSheet
 
     @Override
     public void onDragStart(boolean start, float startDisplacement) {
+        if (start && getResources().getBoolean(R.bool.config_hxy_grid)) {
+            // A widget drag targets the workspace, not the Assistant Screen surface underneath.
+            mReturnToColorOsWidgetHub = false;
+            ColorOsWidgetHubView hub = AbstractFloatingView.getAnyView(
+                    mActivityContext, TYPE_LISTENER);
+            if (hub != null) {
+                hub.close(false);
+            }
+        }
         super.onDragStart(start, startDisplacement);
         getWindowInsetsController().hide(WindowInsets.Type.ime());
     }
@@ -885,6 +1026,9 @@ public class WidgetsFullSheet extends BaseWidgetSheet
     }
 
     protected void setUpEducationViewsIfNeeded() {
+        if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+            return;
+        }
         if (!hasSeenEducationDialog()) {
             postDelayed(() -> {
                 WidgetsEduView eduDialog = showEducationDialog();
@@ -956,6 +1100,10 @@ public class WidgetsFullSheet extends BaseWidgetSheet
             mWidgetsRecyclerView.setClipToOutline(true);
             mWidgetsRecyclerView.setClipChildren(false);
             mWidgetsRecyclerView.setAdapter(mWidgetsListAdapter);
+            if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+                mWidgetsRecyclerView.addItemDecoration(
+                        new OplusWidgetDividerItemDecoration(getContext()));
+            }
             mWidgetsRecyclerView.bindFastScrollbar(mFastScroller);
             mWidgetsRecyclerView.setItemAnimator(mWidgetsListItemAnimator);
             mWidgetsRecyclerView.setHeaderViewDimensionsProvider(WidgetsFullSheet.this);

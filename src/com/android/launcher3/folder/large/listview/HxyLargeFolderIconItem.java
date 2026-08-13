@@ -112,6 +112,25 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         }
     }
 
+    public void setRenderedSize(int size) {
+        if (size <= 0 || mDrawableList.isEmpty()) return;
+        mIconSize = size;
+        if (mCountOut) {
+            int space = HxyLargeFolderProxy.getFolderIconOutSpace(getContext());
+            int iconSize = Math.max(1, (size - space) / 2);
+            for (int index = 0; index < mDrawableList.size(); index++) {
+                int left = getOutLeft(index, iconSize, space);
+                int top = getOutTop(index, iconSize, space);
+                mDrawableList.get(index).setBounds(left, top,
+                        left + iconSize, top + iconSize);
+            }
+        } else {
+            mDrawableList.get(0).setBounds(0, 0, size, size);
+        }
+        bindIcon();
+        invalidate();
+    }
+
     public void setIconVisible(boolean visible) {
         setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
     }

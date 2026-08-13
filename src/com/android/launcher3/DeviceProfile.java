@@ -583,11 +583,13 @@ public class DeviceProfile {
             workspaceBottomPadding = Math.round(paddingWorkspaceBottom * cellScaleToFit);
         }
 
-        int cellLayoutPadding =
-                isTwoPanels ? cellLayoutBorderSpacePx.x / 2 : res.getDimensionPixelSize(
-                        R.dimen.cell_layout_padding);
-        cellLayoutPaddingPx = new Rect(cellLayoutPadding, cellLayoutPadding, cellLayoutPadding,
-                cellLayoutPadding);
+        int cellLayoutPaddingHorizontal = isTwoPanels
+                ? cellLayoutBorderSpacePx.x / 2
+                : res.getDimensionPixelSize(R.dimen.oplus_cell_layout_horizontal_padding);
+        // ColorOS only applies the profile's cell-layout inset horizontally. Vertical geometry is
+        // derived from cell width and the grid-specific height delta.
+        cellLayoutPaddingPx = new Rect(cellLayoutPaddingHorizontal, 0,
+                cellLayoutPaddingHorizontal, 0);
         updateWorkspacePadding();
 
         // Folder scaling requires correct workspace paddings
@@ -702,6 +704,14 @@ public class DeviceProfile {
                     + hotseatBarBottomSpacePx
                     + (showHotseatText ? hotseatTextSizePx : 0);
             hotseatCellHeightPx += showHotseatText ? hotseatTextSizePx : 0;
+        }
+
+        if (isPhone && !isLandscape && isColorOsWorkspaceGrid()) {
+            int colorOsCellHeight = LauncherApplication.getContext().getResources()
+                    .getDimensionPixelSize(R.dimen.oplus_hotseat_cell_height);
+            int heightIncrease = Math.max(0, colorOsCellHeight - hotseatCellHeightPx);
+            hotseatCellHeightPx = colorOsCellHeight;
+            hotseatBarSizePx += heightIncrease;
         }
     }
 
@@ -1343,6 +1353,36 @@ public class DeviceProfile {
             padding.set(paddingSide, paddingTop, paddingSide, paddingBottom);
         }
         insetPadding(workspacePadding, cellLayoutPaddingPx);
+
+        if (isPhone && !isLandscape && isColorOsWorkspaceGrid()) {
+            Resources resources = LauncherApplication.getContext().getResources();
+            int horizontalInset = resources.getDimensionPixelSize(
+                    R.dimen.oplus_cell_layout_horizontal_padding);
+            cellLayoutPaddingPx.left = horizontalInset;
+            cellLayoutPaddingPx.right = horizontalInset;
+            padding.left = 0;
+            padding.right = 0;
+            int contentWidth = availableWidthPx - horizontalInset * 2;
+            int cellWidth = calculateCellWidth(contentWidth, cellLayoutBorderSpacePx.x,
+                    inv.numColumns);
+            int difference = resources.getDimensionPixelSize(
+                    inv.numColumns == 5 && inv.numRows == 6
+                            ? R.dimen.oplus_cell_height_width_difference_5x6
+                            : R.dimen.oplus_cell_height_width_difference);
+            int desiredCellHeight = cellWidth + difference;
+            int desiredGridHeight = desiredCellHeight * inv.numRows
+                    + cellLayoutBorderSpacePx.y * (inv.numRows - 1);
+            int requiredBottom = availableHeightPx - padding.top - desiredGridHeight;
+            if (requiredBottom >= 0) {
+                padding.bottom = requiredBottom;
+            }
+        }
+    }
+
+    private boolean isColorOsWorkspaceGrid() {
+        return (inv.numColumns == 4 && inv.numRows == 6)
+                || (inv.numColumns == 5 && inv.numRows == 6)
+                || (inv.numColumns == 5 && inv.numRows == 7);
     }
 
     private void insetPadding(Rect paddings, Rect insets) {

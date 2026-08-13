@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <!-- Decoded toggle_bar_widget_preview_bg values. smooth-rect is an OPPO framework-only
+         extension; the standard rounded rectangle carries the same radius, fill and stroke. -->
+    <corners android:radius="14dp" />
+    <solid android:color="#33000000" />
+    <stroke android:width="0.33000004dp" android:color="#1F000000" />
+    <padding
+        android:left="0.33000004dp"
+        android:top="0.33000004dp"
+        android:right="0.33000004dp"
+        android:bottom="0.33000004dp" />
+</shape>

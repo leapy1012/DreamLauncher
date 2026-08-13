@@ -51,6 +51,7 @@ import com.android.launcher3.icons.RoundDrawableWrapper;
 import com.android.launcher3.icons.cache.HandlerRunnable;
 import com.android.launcher3.model.WidgetItem;
 import com.android.launcher3.views.ActivityContext;
+import com.android.launcher.widget.OplusWidgetImageView;
 
 import java.util.function.Consumer;
 
@@ -96,8 +97,10 @@ public class WidgetCell extends LinearLayout {
 
     private RemoteViews mRemoteViewsPreview;
     private NavigableAppWidgetHostView mAppWidgetHostViewPreview;
+    private FrameLayout mAppWidgetHostViewPreviewContainer;
     private float mAppWidgetHostViewScale = 1f;
     private int mSourceContainer = CONTAINER_WIDGETS_TRAY;
+    private int mColorOsPreviewSize;
 
     public WidgetCell(Context context) {
         this(context, null);
@@ -126,6 +129,9 @@ public class WidgetCell extends LinearLayout {
         super.onFinishInflate();
 
         mWidgetImageContainer = findViewById(R.id.widget_preview_container);
+        if (mWidgetImageContainer == null) {
+            mWidgetImageContainer = findViewById(R.id.oplus_widget_preview_container);
+        }
         mWidgetImage = findViewById(R.id.widget_preview);
         mWidgetBadge = findViewById(R.id.widget_badge);
         mWidgetName = findViewById(R.id.widget_name);
@@ -169,9 +175,12 @@ public class WidgetCell extends LinearLayout {
             mActiveRequest = null;
         }
         mRemoteViewsPreview = null;
-        if (mAppWidgetHostViewPreview != null) {
+        if (mAppWidgetHostViewPreviewContainer != null) {
+            mWidgetImageContainer.removeView(mAppWidgetHostViewPreviewContainer);
+        } else if (mAppWidgetHostViewPreview != null) {
             mWidgetImageContainer.removeView(mAppWidgetHostViewPreview);
         }
+        mAppWidgetHostViewPreviewContainer = null;
         mAppWidgetHostViewPreview = null;
         mAppWidgetHostViewScale = 1f;
         mPreviewContainerScale = 1f;
@@ -210,6 +219,9 @@ public class WidgetCell extends LinearLayout {
 
         Context context = getContext();
         mItem = item;
+        if (mWidgetImage instanceof OplusWidgetImageView) {
+            ((OplusWidgetImageView) mWidgetImage).setWidgetItem(item);
+        }
         mWidgetSize = getWidgetItemSizePx(getContext(), mActivity.getDeviceProfile(), mItem);
 
         mWidgetName.setText(mItem.label);
@@ -271,7 +283,24 @@ public class WidgetCell extends LinearLayout {
 
         FrameLayout.LayoutParams widgetHostLP = new FrameLayout.LayoutParams(
                 mWidgetSize.getWidth(), mWidgetSize.getHeight(), Gravity.CENTER);
-        mWidgetImageContainer.addView(appWidgetHostViewPreview, /* index= */ 0, widgetHostLP);
+        if (this instanceof OplusWidgetCell) {
+            mAppWidgetHostViewPreviewContainer = new FrameLayout(getContext());
+            mAppWidgetHostViewPreviewContainer.setBackgroundResource(
+                    R.drawable.toggle_bar_widget_preview_bg);
+            int previewPadding = getResources().getDimensionPixelSize(
+                    R.dimen.toggle_bar_widget_thumbnail_padding);
+            mAppWidgetHostViewPreviewContainer.setPadding(previewPadding, previewPadding,
+                    previewPadding, previewPadding);
+            mAppWidgetHostViewPreviewContainer.setClipChildren(false);
+            mAppWidgetHostViewPreviewContainer.setClipToPadding(false);
+            mAppWidgetHostViewPreviewContainer.addView(appWidgetHostViewPreview, widgetHostLP);
+            mWidgetImageContainer.addView(mAppWidgetHostViewPreviewContainer, 0,
+                    new FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT));
+        } else {
+            mWidgetImageContainer.addView(appWidgetHostViewPreview, /* index= */ 0, widgetHostLP);
+        }
         mWidgetImage.setVisibility(View.GONE);
         applyPreview(null);
 
@@ -298,8 +327,12 @@ public class WidgetCell extends LinearLayout {
         if (contentWidth <= 0 || contentHeight <= 0) {
             mAppWidgetHostViewScale = 1;
         } else {
-            float pWidth = mWidgetImageContainer.getWidth();
-            float pHeight = mWidgetImageContainer.getHeight();
+            View previewContainer = mAppWidgetHostViewPreviewContainer != null
+                    ? mAppWidgetHostViewPreviewContainer : mWidgetImageContainer;
+            float pWidth = previewContainer.getWidth()
+                    - previewContainer.getPaddingLeft() - previewContainer.getPaddingRight();
+            float pHeight = previewContainer.getHeight()
+                    - previewContainer.getPaddingTop() - previewContainer.getPaddingBottom();
             mAppWidgetHostViewScale = Math.min(pWidth / contentWidth, pHeight / contentHeight);
         }
         view.setScaleToFit(mAppWidgetHostViewScale);
@@ -314,8 +347,19 @@ public class WidgetCell extends LinearLayout {
         return mAppWidgetHostViewPreview;
     }
 
+    @Nullable
+    public View getAppWidgetHostViewPreviewContainer() {
+        return mAppWidgetHostViewPreviewContainer;
+    }
+
     public void setAnimatePreview(boolean shouldAnimate) {
         mAnimatePreview = shouldAnimate;
+    }
+
+    /** Forces the square ColorOS catalog preview footprint while retaining widget scaling. */
+    public void setColorOsPreviewSize(int previewSize) {
+        mColorOsPreviewSize = previewSize;
+        requestLayout();
     }
 
     private void applyPreview(Bitmap bitmap) {
@@ -324,8 +368,12 @@ public class WidgetCell extends LinearLayout {
                     new FastBitmapDrawable(bitmap), mEnforcedCornerRadius);
             mWidgetImage.setDrawable(drawable);
             mWidgetImage.setVisibility(View.VISIBLE);
-            if (mAppWidgetHostViewPreview != null) {
-                removeView(mAppWidgetHostViewPreview);
+            if (mAppWidgetHostViewPreviewContainer != null) {
+                mWidgetImageContainer.removeView(mAppWidgetHostViewPreviewContainer);
+                mAppWidgetHostViewPreviewContainer = null;
+                mAppWidgetHostViewPreview = null;
+            } else if (mAppWidgetHostViewPreview != null) {
+                mWidgetImageContainer.removeView(mAppWidgetHostViewPreview);
                 mAppWidgetHostViewPreview = null;
             }
         }
@@ -394,6 +442,18 @@ public class WidgetCell extends LinearLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         ViewGroup.LayoutParams containerLp = mWidgetImageContainer.getLayoutParams();
+
+        if (mColorOsPreviewSize > 0) {
+            containerLp.width = mColorOsPreviewSize;
+            containerLp.height = mColorOsPreviewSize;
+            int widgetWidth = Math.max(1, mWidgetSize.getWidth());
+            int widgetHeight = Math.max(1, mWidgetSize.getHeight());
+            mAppWidgetHostViewScale = Math.min(
+                    (float) mColorOsPreviewSize / widgetWidth,
+                    (float) mColorOsPreviewSize / widgetHeight);
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            return;
+        }
 
         mAppWidgetHostViewScale = mPreviewContainerScale;
         int maxWidth = MeasureSpec.getSize(widthMeasureSpec);

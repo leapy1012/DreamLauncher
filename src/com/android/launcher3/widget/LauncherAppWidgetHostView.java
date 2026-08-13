@@ -49,9 +49,14 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.LauncherAppWidgetInfo;
 import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.BaseDragLayer.TouchCompleteListener;
+import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
 
 import static com.android.launcher3.LauncherState.NORMAL;
 import com.android.launcher3.Launcher;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * {@inheritDoc}
@@ -70,6 +75,8 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
     private static final SparseBooleanArray sAutoAdvanceWidgetIds = new SparseBooleanArray();
     // Maximum duration for which updates can be deferred.
     private static final long UPDATE_LOCK_TIMEOUT_MILLIS = 1000;
+    private static final Set<LauncherAppWidgetHostView> EDIT_MODE_HOSTS =
+            Collections.newSetFromMap(new WeakHashMap<>());
 
     private static final String TRACE_METHOD_NAME = "appwidget load-widget ";
 
@@ -109,6 +116,45 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
             setOnLightBackground(true);
         }
         mColorExtractor = LocalColorExtractor.newInstance(getContext());
+        synchronized (EDIT_MODE_HOSTS) {
+            EDIT_MODE_HOSTS.add(this);
+        }
+    }
+
+    public void applyColorOsEditMode(boolean editMode) {
+        // Decoration is hosted by ColorOsWidgetEditOverlay, matching OPPO's separate
+        // WidgetRemoveIndicatorView. Retained as a compatibility hook for edit-mode callers.
+    }
+
+    public static void applyColorOsEditModeToAll(boolean editMode) {
+        ArrayList<LauncherAppWidgetHostView> hosts;
+        synchronized (EDIT_MODE_HOSTS) {
+            hosts = new ArrayList<>(EDIT_MODE_HOSTS);
+        }
+        for (LauncherAppWidgetHostView host : hosts) {
+            host.applyColorOsEditMode(editMode);
+        }
+    }
+
+    public static ArrayList<LauncherAppWidgetHostView> getColorOsEditModeHosts() {
+        synchronized (EDIT_MODE_HOSTS) {
+            return new ArrayList<>(EDIT_MODE_HOSTS);
+        }
+    }
+
+    public void showColorOsRemoveWidgetDialog() {
+        if (!(getTag() instanceof LauncherAppWidgetInfo)) return;
+        LauncherAppWidgetInfo info = (LauncherAppWidgetInfo) getTag();
+        androidx.appcompat.app.AlertDialog dialog = new COUIAlertDialogBuilder(mLauncher)
+                .setTitle(R.string.coloros_remove_widget_title)
+                .setMessage(R.string.coloros_remove_widget_message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.coloros_remove_widget_title,
+                        (dialogInterface, which) -> mLauncher.removeItem(this, info, true,
+                                "ColorOS edit-mode widget remove"))
+                .create();
+        dialog.setCanceledOnTouchOutside(true);
+        dialog.show();
     }
 
     @Override

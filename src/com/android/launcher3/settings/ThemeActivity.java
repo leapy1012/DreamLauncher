@@ -56,8 +56,9 @@ import android.graphics.drawable.BitmapDrawable;
 import com.android.launcher3.settings.SettingsBaseActivity;
 import android.widget.TextView;
 import android.app.ProgressDialog;
-import android.app.ActionBar;
-import android.app.AlertDialog;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
+import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
 import com.android.launcher3.util.Executors;
 
 public class ThemeActivity extends SettingsBaseActivity {
@@ -97,7 +98,7 @@ public class ThemeActivity extends SettingsBaseActivity {
         mAdapter = initAdapter();
         allThemeGridView.setAdapter(mAdapter);
         allThemeGridView.setOnItemClickListener(new OnGridviewItemClick());
-        ActionBar actionBar = getActionBar();
+        ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeButtonEnabled(true);
@@ -126,9 +127,7 @@ public class ThemeActivity extends SettingsBaseActivity {
             try {
                 String packageName = themeStringList[i];
                 Resources resall = mPackageManager.getResourcesForApplication(packageName);
-                if(TextUtils.equals(themeStringList[i],themeName)) {
-                    mChooseitemId = i;
-                }
+                themeData.selected = TextUtils.equals(themeStringList[i], themeName);
 
                 title = resall.getString(resall.getIdentifier(THEME_TITLE, "string", packageName));
                 preview =  resall.getDrawable(resall.getIdentifier(THEME_PREVIEW , "drawable", packageName));
@@ -158,16 +157,17 @@ public class ThemeActivity extends SettingsBaseActivity {
         public Drawable preview = null;
         public String themeTitle = "";
         public String key = "";
+        public boolean selected;
     }
 
     private class OnGridviewItemClick implements OnItemClickListener {
         @Override
         public void onItemClick(AdapterView<?> arg0, View view, int position,
                 long id) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(ThemeActivity.this);
+            COUIAlertDialogBuilder builder = new COUIAlertDialogBuilder(ThemeActivity.this);
             builder.setTitle(getString(R.string.settings_style));
             builder.setMessage(getString(R.string.sure_set_theme));
-            builder.setCancelable(false);
+            builder.setCancelable(true);
             builder.setPositiveButton(getString(R.string.ok), (dialog, which) -> {
                 dialog.dismiss();
 
@@ -185,6 +185,7 @@ public class ThemeActivity extends SettingsBaseActivity {
             builder.setNegativeButton(getString(R.string.cancel),
                     (dialog, which) -> dialog.dismiss());
             AlertDialog dialog = builder.create();
+            dialog.setCanceledOnTouchOutside(true);
             dialog.show();
         }
     }

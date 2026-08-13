@@ -21,6 +21,7 @@ import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.ImageView;
 
 import androidx.core.content.res.TypedArrayUtils;
 import androidx.preference.CheckBoxPreference;
@@ -94,6 +95,19 @@ public class RadioButtonPreference extends CheckBoxPreference {
             title.setSingleLine(false);
             title.setMaxLines(3);
         }
+
+        ImageView firstPreview = (ImageView) view.findViewById(R.id.launcher_preview_first);
+        ImageView secondPreview = (ImageView) view.findViewById(R.id.launcher_preview_second);
+        if (firstPreview != null && secondPreview != null) {
+            boolean isDrawer = "launcher_style_drawer".equals(getKey());
+            firstPreview.setImageResource(isDrawer
+                    ? R.drawable.launcher_two_layer_preview1
+                    : R.drawable.launcher_one_layer_preview1);
+            secondPreview.setImageResource(isDrawer
+                    ? R.drawable.launcher_two_layer_preview2
+                    : R.drawable.launcher_one_layer_preview2);
+        }
+        view.itemView.setSelected(isChecked());
     }
 
     public void setAppendixVisibility(int visibility) {

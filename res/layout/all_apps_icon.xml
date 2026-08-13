@@ -16,6 +16,10 @@
     xmlns:launcher="http://schemas.android.com/apk/res-auto"
     style="@style/BaseIcon.AllApps"
     android:id="@+id/icon"
+    android:textColor="@color/coloros_all_apps_text"
+    android:shadowColor="#80000000"
+    android:shadowDx="0"
+    android:shadowDy="1"
+    android:shadowRadius="1.5"
     launcher:iconDisplay="all_apps"
     launcher:centerVertically="true" />
-

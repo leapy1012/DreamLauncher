@@ -470,6 +470,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
     /** This is used for testing to forcefully set the display to ALL_APPS */
     @VisibleForTesting
+    public int getIconDisplay() {
+        return mDisplay;
+    }
+
+    @VisibleForTesting
     public void setDisplayAllApps() {
         mDisplay = DISPLAY_ALL_APPS;
     }
@@ -784,6 +789,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     }
 
     public void setTextVisibility(boolean visible) {
+        if (mDisplay == DISPLAY_WORKSPACE && LauncherPrefs.getPrefs(getContext())
+                .getBoolean("coloros_hide_icon_names", false)) {
+            visible = false;
+        }
         boolean visibleStatus = LauncherPrefs.getPrefs(getContext()).getBoolean(LauncherPrefs.WORKSPACE_DOCKED_APP, false);
         if (visibleStatus) {
             visible = true;

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="ColorOS.TextAppearance.SectionLabel" parent="@style/couiTextAppearanceBody">
+        <item name="android:textColor">@color/coloros_text_secondary</item>
+        <item name="android:textSize">@dimen/coloros_text_size_section</item>
+    </style>
+
+    <style name="ColorOS.TextAppearance.Caption" parent="@style/couiTextAppearanceBody">
+        <item name="android:textColor">@color/coloros_text_secondary</item>
+        <item name="android:textSize">@dimen/coloros_text_size_caption</item>
+    </style>
+
+    <style name="ColorOS.TextAppearance.ThemeTitle" parent="@style/couiTextAppearanceBody">
+        <item name="android:textColor">@color/coloros_text_primary</item>
+        <item name="android:textSize">@dimen/coloros_text_size_theme_title</item>
+    </style>
+
+    <style name="ColorOS.Widget.PrimaryButton" parent="@style/Widget.COUI.Button.Large">
+        <item name="android:layout_height">@dimen/coloros_action_height</item>
+        <item name="android:textSize">@dimen/coloros_text_size_action</item>
+    </style>
+</resources>

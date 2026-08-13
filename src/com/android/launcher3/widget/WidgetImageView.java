@@ -32,10 +32,10 @@ import com.android.launcher3.R;
  */
 public class WidgetImageView extends View {
 
-    private final RectF mDstRectF = new RectF();
+    protected final RectF mDstRectF = new RectF();
     private final int mBadgeMargin;
 
-    private Drawable mDrawable;
+    protected Drawable mDrawable;
 
     public WidgetImageView(Context context) {
         this(context, null);
@@ -66,7 +66,7 @@ public class WidgetImageView extends View {
     protected void onDraw(Canvas canvas) {
         if (mDrawable != null) {
             updateDstRectF();
-            mDrawable.setBounds(getBitmapBounds());
+            mDrawable.setBounds(getBitmapBoundsPlugin());
             mDrawable.draw(canvas);
         }
     }
@@ -79,7 +79,7 @@ public class WidgetImageView extends View {
         return false;
     }
 
-    private void updateDstRectF() {
+    protected void updateDstRectF() {
         float myWidth = getWidth();
         float myHeight = getHeight();
         float bitmapWidth = mDrawable.getIntrinsicWidth();
@@ -108,5 +108,10 @@ public class WidgetImageView extends View {
         Rect rect = new Rect();
         mDstRectF.round(rect);
         return rect;
+    }
+
+    /** Extension point used by OPPO's catalog preview renderer. */
+    public Rect getBitmapBoundsPlugin() {
+        return getBitmapBounds();
     }
 }

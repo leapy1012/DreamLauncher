@@ -214,6 +214,10 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         icon.setClipToPadding(false);
         icon.mFolderName = icon.findViewById(R.id.folder_icon_name);
         icon.mFolderName.setText(TextUtils.isEmpty(folderInfo.title) ? icon.getContext().getString(R.string.folder_unnamed) : folderInfo.title);
+        if (com.android.launcher3.LauncherPrefs.getPrefs(icon.getContext())
+                .getBoolean("coloros_hide_icon_names", false)) {
+            icon.mFolderName.setTextAlpha(0);
+        }
         icon.mFolderName.setCompoundDrawablePadding(0);
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) icon.mFolderName.getLayoutParams();
         lp.topMargin = grid.iconSizePx + grid.iconDrawablePaddingPx;
@@ -966,12 +970,18 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
     }
 
     public void setTextVisibility(boolean visible) {
+        if (com.android.launcher3.LauncherPrefs.getPrefs(getContext())
+                .getBoolean("coloros_hide_icon_names", false)) {
+            visible = false;
+        }
         mFolderName.setTextAlpha(visible ? 1 : 0);
     }
 
     public boolean shouldTextBeVisible() {
         // Text should be visible everywhere but the hotseat.
-        return (mInfo.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT
+        return !com.android.launcher3.LauncherPrefs.getPrefs(getContext())
+                .getBoolean("coloros_hide_icon_names", false)
+                && (mInfo.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT
                 && mInfo.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION);
     }
 }

@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
@@ -19,6 +20,7 @@ import android.view.ViewConfiguration;
 
 import com.android.launcher3.Insettable;
 import com.android.launcher3.Launcher;
+import com.android.launcher3.LauncherState;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.util.Themes;
@@ -57,6 +59,16 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
     private int mTotalScroll;
     private Paint mLinePaint;
     private final int mLineHeight;
+
+    // ColorOS OplusPageIndicator phone-profile metrics from the decoded OPPO resources.
+    private final float mOplusItemSize;
+    private final float mOplusItemSpacing;
+    private final float mOplusHorizontalPadding;
+    private final Paint mOplusBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint mOplusInactivePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint mOplusActivePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF mOplusBackgroundRect = new RectF();
+    private final RectF mOplusActiveRect = new RectF();
 
     private static final Property<WorkspacePageIndicator, Integer> PAINT_ALPHA
             = new Property<WorkspacePageIndicator, Integer>(Integer.class, "paint_alpha") {
@@ -123,11 +135,24 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
         boolean darkText = Themes.getAttrBoolean(mLauncher, R.attr.isWorkspaceDarkText);
         mActiveAlpha = darkText ? BLACK_ALPHA : WHITE_ALPHA;
         mLinePaint.setColor(darkText ? Color.BLACK : Color.WHITE);
+
+        float density = res.getDisplayMetrics().density;
+        mOplusItemSize = 6f * density;
+        mOplusItemSpacing = 6f * density;
+        mOplusHorizontalPadding = 14f * density;
+        mOplusBackgroundPaint.setColor(Color.parseColor(darkText ? "#66A6A6A6" : "#66E0E0E0"));
+        mOplusInactivePaint.setColor(darkText ? 0x4D000000 : 0x4DFFFFFF);
+        mOplusActivePaint.setColor(darkText ? Color.BLACK : Color.WHITE);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         if (mTotalScroll == 0 || mNumPagesFloat == 0) {
+            return;
+        }
+
+        if (mLauncher.isInState(LauncherState.EDIT_MODE)) {
+            drawOplusIndicator(canvas);
             return;
         }
 
@@ -142,12 +167,55 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
                 getHeight() / 2 + mLineHeight / 2, mLineHeight, mLineHeight, mLinePaint);
     }
 
+    /** Draws the ColorOS path indicator used while ToggleBarState is active. */
+    private void drawOplusIndicator(Canvas canvas) {
+        int pageCount = Math.max(1, Math.round(mNumPagesFloat));
+        int backgroundSlots = Math.max(4, pageCount);
+        float backgroundWidth = mOplusHorizontalPadding * 2
+                + backgroundSlots * mOplusItemSize
+                + (backgroundSlots - 1) * mOplusItemSpacing;
+        float backgroundHeight = getHeight();
+        float backgroundLeft = (getWidth() - backgroundWidth) / 2f;
+        mOplusBackgroundRect.set(backgroundLeft, 0f,
+                backgroundLeft + backgroundWidth, backgroundHeight);
+        canvas.drawRoundRect(mOplusBackgroundRect, backgroundHeight / 2f,
+                backgroundHeight / 2f, mOplusBackgroundPaint);
+
+        float contentWidth = pageCount * mOplusItemSize
+                + (pageCount - 1) * mOplusItemSpacing;
+        float step = mOplusItemSize + mOplusItemSpacing;
+        float contentLeft = (getWidth() - contentWidth) / 2f;
+        float centerY = getHeight() / 2f;
+        float radius = mOplusItemSize / 2f;
+        for (int i = 0; i < pageCount; i++) {
+            float centerX = contentLeft + radius + i * step;
+            canvas.drawCircle(centerX, centerY, radius, mOplusInactivePaint);
+        }
+
+        float progress = Utilities.boundToRange(((float) mCurrentScroll) / mTotalScroll, 0f, 1f);
+        float position = progress * (pageCount - 1);
+        int startPage = Math.min(pageCount - 1, (int) position);
+        float delta = position - startPage;
+        float left = contentLeft + startPage * step;
+        float right = left + mOplusItemSize;
+        if (delta < 0.5f) {
+            right += delta * step * 2f;
+        } else {
+            right += step;
+            left += (delta - 0.5f) * step * 2f;
+        }
+        mOplusActiveRect.set(left, centerY - radius, right, centerY + radius);
+        canvas.drawRoundRect(mOplusActiveRect, radius, radius, mOplusActivePaint);
+    }
+
     @Override
     public void setScroll(int currentScroll, int totalScroll) {
         if (getAlpha() == 0) {
             return;
         }
-        animateLineToAlpha(mActiveAlpha);
+        if (!mLauncher.isInState(LauncherState.EDIT_MODE)) {
+            animateLineToAlpha(mActiveAlpha);
+        }
 
         mCurrentScroll = currentScroll;
         if (mTotalScroll == 0) {
@@ -158,7 +226,7 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
             invalidate();
         }
 
-        if (mShouldAutoHide) {
+        if (mShouldAutoHide && !mLauncher.isInState(LauncherState.EDIT_MODE)) {
             hideAfterDelay();
         }
     }

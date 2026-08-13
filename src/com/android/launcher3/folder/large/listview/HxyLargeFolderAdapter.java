@@ -50,7 +50,9 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
 
     public boolean isCountOut(int position) {
         int i = this.mMaxSize;
-        return i > 0 && position >= this.mMaxSize - 1;
+        // Four apps fill the four large slots. Starting with the fifth app,
+        // slot four represents a stack containing items 4..7.
+        return i > 0 && super.getItemCount() > i && position == i - 1;
     }
 
     public static class IVM extends BasePageLinearAdapter.ItemViewModel<WorkspaceItemInfo> {

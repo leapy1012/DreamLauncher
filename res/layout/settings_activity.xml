@@ -18,18 +18,20 @@
     android:id="@+id/content_parent"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:fitsSystemWindows="true">
+    android:background="@color/coloros_surface_page"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
 
-    <Toolbar
+    <com.coui.appcompat.toolbar.COUIToolbar
         android:id="@+id/action_bar"
-        style="?android:attr/actionBarStyle"
+        style="?attr/toolbarStyle"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="?android:attr/actionBarTheme" />
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/coloros_surface_toolbar" />
 
     <FrameLayout
         android:id="@+id/content_frame"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 </LinearLayout>

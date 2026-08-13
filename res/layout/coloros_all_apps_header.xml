@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.android.launcher3.allapps.ColorOsAllAppsHeaderView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/coloros_all_apps_header_height"
+    android:tag="coloros_all_apps_header"
+    android:clipChildren="false">
+
+    <FrameLayout
+        android:id="@+id/coloros_all_apps_mode_switch"
+        android:layout_width="@dimen/coloros_all_apps_segment_width"
+        android:layout_height="32dp"
+        android:layout_gravity="center"
+        android:background="@drawable/coloros_all_apps_segment_container"
+        android:clipChildren="false">
+
+        <View
+            android:id="@+id/coloros_all_apps_selection"
+            android:layout_width="84dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/coloros_all_apps_segment_selected" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/coloros_all_apps_all"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/coloros_all_apps_all"
+                android:textColor="#FF101010"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/coloros_all_apps_categories"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1.18"
+                android:gravity="center"
+                android:text="@string/coloros_all_apps_categories"
+                android:textColor="@color/coloros_all_apps_text_secondary"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <ImageButton
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="end|center_vertical"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/coloros_all_apps_menu_background"
+        android:contentDescription="@string/coloros_all_apps_more_options"
+        android:padding="8dp"
+        android:src="@drawable/coloros_ic_all_apps_more" />
+
+</com.android.launcher3.allapps.ColorOsAllAppsHeaderView>

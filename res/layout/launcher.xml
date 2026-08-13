@@ -18,7 +18,7 @@
     android:id="@+id/launcher"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="false">
     <com.android.launcher3.big.LauncherBackgroudView android:id="@+id/wallpaper_set_anim" android:layout_width="match_parent" android:layout_height="match_parent"/>
     <com.android.launcher3.dragndrop.DragLayer
         android:id="@+id/drag_layer"

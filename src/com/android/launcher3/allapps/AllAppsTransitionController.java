@@ -421,6 +421,15 @@ public class AllAppsTransitionController
                 ActivityAllAppsContainerView.BOTTOM_SHEET_ALPHA, hasAllAppsContent ? 1 : 0,
                 config.getInterpolator(ANIM_ALL_APPS_BOTTOM_SHEET_FADE, INSTANT));
 
+        if (mLauncher.getResources().getBoolean(R.bool.config_hxy_grid)) {
+            View searchContainer = mAppsView.findViewById(R.id.search_container_all_apps);
+            if (searchContainer != null) {
+                // OPPO's bottom search surface grows from 80% as the drawer content appears.
+                setter.setFloat(searchContainer, SCALE_PROPERTY,
+                        hasAllAppsContent ? 1f : 0.8f, allAppsFade);
+            }
+        }
+
         boolean shouldProtectHeader = !config.hasAnimationFlag(StateAnimationConfig.SKIP_SCRIM)
                 && (ALL_APPS == state || mLauncher.getStateManager().getState() == ALL_APPS);
         mScrimView.setDrawingController(shouldProtectHeader ? mAppsView : null);

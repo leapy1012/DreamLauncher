@@ -377,6 +377,8 @@ public class Launcher extends StatefulActivity<LauncherState>
     // Scrim view for the all apps and overview state.
     @Thunk
     ScrimView mScrimView;
+    private int mFolderScrimPreviousColor = Color.TRANSPARENT;
+    private boolean mFolderScrimApplied;
 
     // UI and state for the overview panel
     private View mOverviewPanel;
@@ -628,19 +630,25 @@ public class Launcher extends StatefulActivity<LauncherState>
 
     public void setLauncherBlurBg(boolean isBlur) {
         if (isBlur) {
-            DisplayMetrics metrics = new DisplayMetrics();
-            getWindowManager().getDefaultDisplay().getRealMetrics(metrics);
-            int i = metrics.heightPixels;
-            int i2 = metrics.widthPixels;
-            Bitmap bitmap = captureScreenshot(new Rect(0, 0, metrics.widthPixels, metrics.heightPixels));
-            if (bitmap != null) {
-                mScrimView.setRenderEffect(RenderEffect.createBlurEffect(50.0f, 50.0f, RenderEffect.createBitmapEffect(bitmap), Shader.TileMode.CLAMP));
-                bitmap.recycle();
-                return;
+            // The old path blurred a screenshot of the complete launcher, leaving giant blurred
+            // workspace icons behind the folder. ColorOS removes launcher content and keeps only
+            // a softly dimmed wallpaper. The wallpaper layer is already prepared independently;
+            // this view now contributes only the contrast scrim.
+            mScrimView.setRenderEffect(null);
+            if (!mFolderScrimApplied) {
+                mFolderScrimPreviousColor = mScrimView.getBackgroundColor();
+                mFolderScrimApplied = true;
             }
+            getHxyGroupAnimTool().getWallpaperBg().setAlpha(0f);
+            mScrimView.setBackgroundColor(Color.argb(42, 0, 0, 0));
             return;
         }
         mScrimView.setRenderEffect(null);
+        if (mFolderScrimApplied) {
+            mScrimView.setBackgroundColor(mFolderScrimPreviousColor);
+            getHxyGroupAnimTool().getWallpaperBg().setAlpha(1f);
+            mFolderScrimApplied = false;
+        }
     }
 
     /**
@@ -1833,6 +1841,17 @@ public class Launcher extends StatefulActivity<LauncherState>
     protected void showAllAppsFromIntent(boolean alreadyOnHome) {
         AbstractFloatingView.closeAllOpenViews(this);
         getStateManager().goToState(ALL_APPS, alreadyOnHome);
+    }
+
+    /** Opens All Apps and focuses its search field for the ColorOS-style hotseat search bar. */
+    public void startAllAppsSearch() {
+        showAllAppsFromIntent(true);
+        mAppsView.post(() -> {
+            ExtendedEditText searchField = mAppsView.getSearchUiManager().getEditText();
+            if (searchField != null) {
+                searchField.showKeyboard();
+            }
+        });
     }
 
     private void showAllAppsWorkTabFromIntent(boolean alreadyOnHome) {
@@ -3465,7 +3484,18 @@ public class Launcher extends StatefulActivity<LauncherState>
      * @param progress Transition progress from 0 to 1; where 0 => home and 1 => all apps.
      */
     public void onAllAppsTransition(float progress) {
-        // No-Op
+        if (!getResources().getBoolean(R.bool.config_hxy_grid)) return;
+
+        // Some MTK SystemUI builds restore an opaque black status-bar background when Launcher
+        // changes its navigation-bar appearance for All Apps. ColorOS keeps this window fully
+        // edge-to-edge and lets the wallpaper plus All Apps scrim continue behind the status icons.
+        // Reassert the transparent, contrast-free status bar at the state transition boundary.
+        getWindow().clearFlags(LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        getWindow().addFlags(LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setStatusBarContrastEnforced(false);
+        }
     }
 
     /**

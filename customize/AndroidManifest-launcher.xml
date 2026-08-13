@@ -43,6 +43,7 @@
         -->
         <activity
             android:name="com.android.launcher3.CustomizeLauncher"
+            android:theme="@style/LauncherActivityTheme"
             android:launchMode="singleTask"
             android:clearTaskOnLaunch="true"
             android:stateNotNeeded="true"

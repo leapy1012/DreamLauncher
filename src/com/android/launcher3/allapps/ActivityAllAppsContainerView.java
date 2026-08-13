@@ -156,6 +156,9 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     protected FloatingHeaderView mHeader;
     protected View mBottomSheetBackground;
     protected RecyclerViewFastScroller mFastScroller;
+    private ColorOsCategoriesView mCategoriesView;
+    private ColorOsAllAppsHeaderView mColorOsModeHeader;
+    private boolean mShowingCategories;
 
     /**
      * View that defines the search box. Result is rendered inside {@link #mSearchRecyclerView}.
@@ -194,10 +197,15 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         super(context, attrs, defStyleAttr);
         mActivityContext = ActivityContext.lookupContext(context);
 
-        mScrimColor = Themes.getAttrColor(context, R.attr.allAppsScrimColor);
+        boolean useColorOsAllApps = getResources().getBoolean(R.bool.config_hxy_grid);
+        mScrimColor = useColorOsAllApps
+                ? getResources().getColor(R.color.coloros_all_apps_scrim, context.getTheme())
+                : Themes.getAttrColor(context, R.attr.allAppsScrimColor);
         mHeaderThreshold = getResources().getDimensionPixelSize(
                 R.dimen.dynamic_grid_cell_border_spacing);
-        mHeaderProtectionColor = Themes.getAttrColor(context, R.attr.allappsHeaderProtectionColor);
+        mHeaderProtectionColor = useColorOsAllApps
+                ? mScrimColor
+                : Themes.getAttrColor(context, R.attr.allappsHeaderProtectionColor);
 
         mWorkManager = new WorkProfileManager(
                 mActivityContext.getSystemService(UserManager.class),
@@ -206,7 +214,9 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         mNavBarScrimPaint = new Paint();
         // All apps bg transparent need change text color same with workspace start
         //mNavBarScrimPaint.setColor(Themes.getNavBarScrimColor(mActivityContext));
-        mNavBarScrimPaint.setColor(android.os.SystemProperties.getBoolean("ro.launcher.allapp.bgtransp",false)
+        mNavBarScrimPaint.setColor(useColorOsAllApps
+                ? getResources().getColor(android.R.color.transparent)
+                : android.os.SystemProperties.getBoolean("ro.launcher.allapp.bgtransp",false)
                 ? getResources().getColor(android.R.color.transparent)
                 : Themes.getAttrColor(context, R.attr.allAppsNavBarScrimColor));
         // All apps bg transparent need change text color same with workspace end
@@ -254,6 +264,15 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         mSearchRecyclerView = findViewById(R.id.search_results_list_view);
         mFastScroller = findViewById(R.id.fast_scroller);
         mFastScroller.setPopupView(findViewById(R.id.fast_scroller_popup));
+        mCategoriesView = findViewById(R.id.coloros_categories_view);
+        View colorOsHeader = findViewWithTag("coloros_all_apps_header");
+        if (colorOsHeader instanceof ColorOsAllAppsHeaderView) {
+            mColorOsModeHeader = (ColorOsAllAppsHeaderView) colorOsHeader;
+            mColorOsModeHeader.setOnModeChangeListener(this::setCategoriesMode);
+        }
+        if (mCategoriesView != null) {
+            mCategoriesView.initialize(mAllAppsStore, mActivityContext);
+        }
 
         // Add the search box above everything else.
         // mSearchContainer = inflateSearchBox();
@@ -650,7 +669,12 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
                 getCurrentPage(),
                 tabsHidden);
 
-        int padding = mHeader.getMaxTranslation();
+        int headerPadding = mHeader.getMaxTranslation();
+        if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+            headerPadding += getResources().getDimensionPixelSize(
+                    R.dimen.coloros_all_apps_header_content_padding);
+        }
+        final int padding = headerPadding;
         mAH.forEach(adapterHolder -> {
             adapterHolder.mPadding.top = padding;
             adapterHolder.applyPadding();
@@ -702,6 +726,13 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     }
 
     protected int getHeaderColor(float blendRatio) {
+        if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+            // The stock implementation replaces the scrim's alpha with the search view's alpha.
+            // With ColorOS' translucent All Apps surface that turns the header protection into an
+            // opaque black rectangle across the status bar. Preserve the design-token alpha; the
+            // header renderer can then correctly treat it as the same continuous scrim surface.
+            return mScrimColor;
+        }
         return ColorUtils.setAlphaComponent(
                 ColorUtils.blendARGB(mScrimColor, mHeaderProtectionColor, blendRatio),
                 (int) (mSearchContainer.getAlpha() * 255));
@@ -1066,7 +1097,7 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         } else {
             int topPadding = grid.allAppsTopPadding;
             if (isSearchBarOnBottom() && !grid.isTablet) {
-                topPadding += getResources().getDimensionPixelSize(
+                topPadding += insets.top + getResources().getDimensionPixelSize(
                         R.dimen.all_apps_additional_top_padding_floating_search);
             }
             setPadding(grid.allAppsLeftRightMargin, topPadding, grid.allAppsLeftRightMargin, 0);
@@ -1107,17 +1138,56 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     }
 
     protected void updateSearchResultsVisibility() {
+        View colorOsHeader = findViewWithTag("coloros_all_apps_header");
         if (isSearching()) {
             getSearchRecyclerView().setVisibility(VISIBLE);
             getAppsRecyclerViewContainer().setVisibility(GONE);
             mHeader.setVisibility(GONE);
+            if (mCategoriesView != null) mCategoriesView.setVisibility(GONE);
+            mFastScroller.setVisibility(INVISIBLE);
+            if (colorOsHeader != null) colorOsHeader.setVisibility(GONE);
+        } else if (mShowingCategories) {
+            getSearchRecyclerView().setVisibility(GONE);
+            getAppsRecyclerViewContainer().setVisibility(GONE);
+            mHeader.setVisibility(GONE);
+            if (mCategoriesView != null) mCategoriesView.setVisibility(VISIBLE);
+            mFastScroller.setVisibility(INVISIBLE);
+            if (colorOsHeader != null) colorOsHeader.setVisibility(VISIBLE);
         } else {
             getSearchRecyclerView().setVisibility(GONE);
             getAppsRecyclerViewContainer().setVisibility(VISIBLE);
             mHeader.setVisibility(VISIBLE);
+            if (mCategoriesView != null) mCategoriesView.setVisibility(GONE);
+            mFastScroller.setVisibility(VISIBLE);
+            if (colorOsHeader != null) colorOsHeader.setVisibility(VISIBLE);
         }
         if (mHeader.isSetUp()) {
             mHeader.setActiveRV(getCurrentPage());
+        }
+    }
+
+    /** Switches between the standard alphabetical grid and ColorOS smart categories. */
+    public void setCategoriesMode(boolean categories) {
+        if (mShowingCategories == categories) return;
+        mShowingCategories = categories;
+        if (isSearching()) return;
+        if (categories && mCategoriesView != null) {
+            getAppsRecyclerViewContainer().setVisibility(GONE);
+            mHeader.setVisibility(GONE);
+            mFastScroller.setVisibility(INVISIBLE);
+            mCategoriesView.scrollTo(0, 0);
+            mCategoriesView.showWithAnimation();
+        } else {
+            if (mCategoriesView != null) {
+                mCategoriesView.animate().cancel();
+                mCategoriesView.setVisibility(GONE);
+            }
+            getAppsRecyclerViewContainer().setVisibility(VISIBLE);
+            mHeader.setVisibility(VISIBLE);
+            mFastScroller.setVisibility(VISIBLE);
+            getActiveRecyclerView().setAlpha(0f);
+            getActiveRecyclerView().setTranslationY(getResources().getDisplayMetrics().density * 12);
+            getActiveRecyclerView().animate().alpha(1f).translationY(0).setDuration(280).start();
         }
     }
 

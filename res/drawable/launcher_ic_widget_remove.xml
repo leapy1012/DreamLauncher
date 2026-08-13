@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ported verbatim from decoded OPPO Launcher. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="20"
+    android:viewportHeight="20">
+    <path
+        android:fillColor="#ffebebeb"
+        android:pathData="M10 20c5.52 0 10-4.48 10-10S15.52 0 10 0 0 4.48 0 10s4.48 10 10 10Z" />
+    <path
+        android:fillColor="#8a000000"
+        android:pathData="M15 9.2H5v1.6h10V9.2Z" />
+</vector>

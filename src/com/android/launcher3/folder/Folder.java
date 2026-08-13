@@ -121,7 +121,6 @@ import com.android.launcher3.views.FloatingIconView;
 import com.android.launcher3.folder.large.HxyFolderAnimationManager;
 import java.util.function.Consumer;
 import com.android.launcher3.LauncherApplication;
-import androidx.core.content.ContextCompat;
 import com.android.launcher3.util.DimenUtils;
 import com.android.launcher3.LauncherState;
 
@@ -290,13 +289,16 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     protected void onFinishInflate() {
         super.onFinishInflate();
         final DeviceProfile dp = mActivityContext.getDeviceProfile();
-        final int paddingLeftRight = dp.folderContentPaddingLeftRight;
+        final int paddingLeftRight = getResources().getDimensionPixelSize(
+                R.dimen.coloros_folder_content_padding_horizontal);
+        final int paddingTop = getResources().getDimensionPixelSize(
+                R.dimen.coloros_folder_content_padding_top);
 
         mBackground = (GradientDrawable) ResourcesCompat.getDrawable(getResources(),
                 R.drawable.round_rect_folder, getContext().getTheme());
 
         mContent = findViewById(R.id.folder_content);
-        mContent.setPadding(paddingLeftRight, dp.folderContentPaddingTop, paddingLeftRight, 0);
+        mContent.setPadding(paddingLeftRight, paddingTop, paddingLeftRight, 0);
         mContent.setFolder(this);
 
         mPageIndicator = findViewById(R.id.folder_page_indicator);
@@ -304,7 +306,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         mFooter = findViewById(R.id.folder_footer);
         mFooterHeight = dp.folderFooterHeightPx;
         mFolderName = findViewById(R.id.folder_name);
-        mFolderName.setTextSize(TypedValue.COMPLEX_UNIT_PX, dp.folderLabelTextSizePx);
+        mFolderName.setTextSize(TypedValue.COMPLEX_UNIT_PX,
+                getResources().getDimensionPixelSize(R.dimen.coloros_folder_title_text_size));
         mFolderName.setOnBackKeyListener(this);
         mFolderName.setOnEditorActionListener(this);
         mFolderName.setSelectAllOnFocus(true);
@@ -313,10 +316,15 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                 | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
                 | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         mFolderName.forceDisableSuggestions(true);
-        mFolderName.setPadding(mFolderName.getPaddingLeft(),
-                (mFooterHeight - mFolderName.getLineHeight()) / 2,
-                mFolderName.getPaddingRight(),
-                (mFooterHeight - mFolderName.getLineHeight()) / 2);
+        if (isColorOsFullFolder()) {
+            mFolderName.setPadding(mFolderName.getPaddingLeft(), 0,
+                    mFolderName.getPaddingRight(), 0);
+        } else {
+            mFolderName.setPadding(mFolderName.getPaddingLeft(),
+                    (mFooterHeight - mFolderName.getLineHeight()) / 2,
+                    mFolderName.getPaddingRight(),
+                    (mFooterHeight - mFolderName.getLineHeight()) / 2);
+        }
 
         if (Utilities.ATLEAST_R) {
             mKeyboardInsetAnimationCallback = new KeyboardInsetAnimationCallback(this);
@@ -1198,6 +1206,19 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         int width = getFolderWidth();
         int height = getFolderHeight();
 
+        if (isColorOsFullFolder()) {
+            lp.width = width;
+            lp.height = height;
+            lp.x = 0;
+            lp.y = 0;
+            mBackground.setBounds(0, 0, width, height);
+            mFolderIconPivotX = mFolderIcon.getMeasuredWidth() / 2f;
+            mFolderIconPivotY = mFolderIcon.getMeasuredHeight() / 2f;
+            mFolderIcon.setPivotX(mFolderIconPivotX);
+            mFolderIcon.setPivotY(mFolderIconPivotY);
+            return;
+        }
+
         parent.getDescendantRectRelativeToSelf(mFolderIcon, sTempRect);
         int centerX = sTempRect.centerX();
         int centerY = sTempRect.centerY();
@@ -1262,7 +1283,9 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         lp.x = targetX;
         lp.y = targetY;
 
-        // mBackground.setBounds(0, 0, width, height);
+        // The animation manager reveals this temporary surface from the closed preview. At rest
+        // the layout-owned rounded content panel is used instead.
+        mBackground.setBounds(0, 0, width, height);
         mFolderIcon.setPivotX(mFolderIconPivotX);
         mFolderIcon.setPivotY(mFolderIconPivotY);
     }
@@ -1281,10 +1304,16 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     }
 
     private int getFolderWidth() {
+        if (isColorOsFullFolder()) {
+            return mActivityContext.getDeviceProfile().widthPx;
+        }
         return getPaddingLeft() + getPaddingRight() + mContent.getDesiredWidth();
     }
 
     private int getFolderHeight() {
+        if (isColorOsFullFolder()) {
+            return mActivityContext.getDeviceProfile().heightPx;
+        }
         return getFolderHeight(getContentAreaHeight());
     }
 
@@ -1293,6 +1322,41 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     }
 
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (isColorOsFullFolder()) {
+            DeviceProfile dp = mActivityContext.getDeviceProfile();
+            int width = dp.widthPx;
+            int height = dp.heightPx;
+            int headerMargin = getResources().getDimensionPixelSize(
+                    R.dimen.coloros_folder_header_margin_horizontal);
+            int contentMargin = getResources().getDimensionPixelSize(
+                    R.dimen.coloros_folder_content_margin_horizontal);
+            int contentTopGap = getResources().getDimensionPixelSize(
+                    R.dimen.coloros_folder_content_top_gap);
+            int headerHeight = getResources().getDimensionPixelSize(
+                    R.dimen.coloros_folder_title_height);
+            int bottomInset = dp.getInsets().bottom;
+            int contentContainerHeight = Math.max(0, height - getPaddingTop()
+                    - headerHeight - contentTopGap - bottomInset);
+            int contentWidth = Math.max(0, width - (contentMargin * 2));
+            int contentHeight = contentContainerHeight;
+
+            int contentWidthSpec = MeasureSpec.makeMeasureSpec(
+                    contentWidth, MeasureSpec.EXACTLY);
+            int contentHeightSpec = MeasureSpec.makeMeasureSpec(
+                    contentHeight, MeasureSpec.EXACTLY);
+            mContent.setFixedSize(contentWidth, contentHeight);
+            mContent.measure(contentWidthSpec, contentHeightSpec);
+            mFooter.measure(contentWidthSpec, MeasureSpec.makeMeasureSpec(
+                    mFooterHeight, MeasureSpec.EXACTLY));
+            mHeader.measure(MeasureSpec.makeMeasureSpec(
+                            Math.max(0, width - (headerMargin * 2)), MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(headerHeight, MeasureSpec.EXACTLY));
+            mContentLl.measure(contentWidthSpec, MeasureSpec.makeMeasureSpec(
+                    contentContainerHeight, MeasureSpec.EXACTLY));
+            setMeasuredDimension(width, height);
+            return;
+        }
+
         int contentWidth = getContentAreaWidth();
         int contentHeight = getContentAreaHeight();
 
@@ -1311,6 +1375,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         mHeader.measure(contentAreaWidthSpec, View.MeasureSpec.makeMeasureSpec(this.mHeaderHeight, MeasureSpec.EXACTLY));
         mContentLl.measure(contentAreaWidthSpec, View.MeasureSpec.makeMeasureSpec(this.mFooterHeight + contentHeight, MeasureSpec.EXACTLY));
         setMeasuredDimension(getPaddingLeft() + getPaddingRight() + contentWidth, getFolderHeight(contentHeight));
+    }
+
+    private boolean isColorOsFullFolder() {
+        return getResources().getBoolean(R.bool.config_show_full_folder_style);
     }
 
     /**
@@ -1735,12 +1803,37 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                     return true;
                 }
                 return false;
-            } else if (!dl.isEventOverView(this, ev)
+            } else if (!(isColorOsFullFolder()
+                            ? isEventOverColorOsFolderContent(dl, ev)
+                            : dl.isEventOverView(this, ev))
                     && mLauncherDelegate.interceptOutsideTouch(ev, dl, this)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private boolean isEventOverColorOsFolderContent(BaseDragLayer dragLayer, MotionEvent ev) {
+        if (dragLayer.isEventOverView(mHeader, ev)) {
+            return true;
+        }
+
+        View firstItem = mContent.getFirstItem();
+        View lastItem = mContent.getLastItem();
+        if (firstItem == null || lastItem == null) {
+            return false;
+        }
+
+        Rect activeGrid = new Rect();
+        Rect lastItemRect = new Rect();
+        dragLayer.getDescendantRectRelativeToSelf(mContent, activeGrid);
+        dragLayer.getDescendantRectRelativeToSelf(firstItem, lastItemRect);
+        activeGrid.top = lastItemRect.top;
+        dragLayer.getDescendantRectRelativeToSelf(lastItem, lastItemRect);
+        activeGrid.bottom = lastItemRect.bottom;
+        return activeGrid.contains(Math.round(ev.getX()), Math.round(ev.getY()))
+                || (mPageIndicator.getVisibility() == View.VISIBLE
+                        && dragLayer.isEventOverView(mPageIndicator, ev));
     }
 
     @Override
@@ -1767,8 +1860,6 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             canvas.restoreToCount(count);
             super.dispatchDraw(canvas);
         } else {
-            mBackground.setColor(ContextCompat.getColor(getContext(), R.color.hxy_folder_bg_round_color));
-            mBackground.draw(canvas);
             super.dispatchDraw(canvas);
         }
     }

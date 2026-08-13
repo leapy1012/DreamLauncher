@@ -64,6 +64,9 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.util.RunnableList;
 import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.views.BaseDragLayer;
+import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
+import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
+import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
 
 /** A custom view for rendering an icon, folder, shortcut or widget during drag-n-drop. */
 public abstract class DragView<T extends Context & ActivityContext> extends FrameLayout {
@@ -94,11 +97,13 @@ public abstract class DragView<T extends Context & ActivityContext> extends Fram
     private final BaseDragLayer<T> mDragLayer;
     private boolean mHasDrawn = false;
 
-    final ValueAnimator mScaleAnim;
+    private final COUISpringAnimation mScaleXAnim;
+    private final COUISpringAnimation mScaleYAnim;
     final ValueAnimator mShiftAnim;
 
     // Whether mAnim has started. Unlike mAnim.isStarted(), this is true even after mAnim ends.
     private boolean mScaleAnimStarted;
+    private int mRunningScaleAnimCount;
     private Runnable mOnAnimEndCallback = null;
 
     private int mLastTouchX;
@@ -166,31 +171,19 @@ public abstract class DragView<T extends Context & ActivityContext> extends Fram
         setScaleX(initialScale);
         setScaleY(initialScale);
 
-        // Animate the view into the correct position
-        mScaleAnim = ValueAnimator.ofFloat(0f, 1f);
-        mScaleAnim.setDuration(VIEW_ZOOM_DURATION);
-        mScaleAnim.addUpdateListener(animation -> {
-            final float value = (Float) animation.getAnimatedValue();
-            setScaleX(Utilities.mapRange(value, initialScale, mEndScale));
-            setScaleY(Utilities.mapRange(value, initialScale, mEndScale));
-            if (!isAttachedToWindow()) {
-                animation.cancel();
-            }
-        });
-        mScaleAnim.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationStart(Animator animation) {
-                mScaleAnimStarted = true;
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                super.onAnimationEnd(animation);
-                if (mOnAnimEndCallback != null) {
-                    mOnAnimEndCallback.run();
-                }
-            }
-        });
+        // Decoded OPPO DragViewAnimHelper: SpringType(bounce=0, response=0.5).
+        COUISpringForce scaleXForce = new COUISpringForce(mEndScale)
+                .setBounce(0f).setResponse(0.5f);
+        COUISpringForce scaleYForce = new COUISpringForce(mEndScale)
+                .setBounce(0f).setResponse(0.5f);
+        mScaleXAnim = new COUISpringAnimation(this, COUIDynamicAnimation.SCALE_X, mEndScale)
+                .setSpring(scaleXForce).setStartValue(initialScale)
+                .setMinimumVisibleChange(0.00390625f);
+        mScaleYAnim = new COUISpringAnimation(this, COUIDynamicAnimation.SCALE_Y, mEndScale)
+                .setSpring(scaleYForce).setStartValue(initialScale)
+                .setMinimumVisibleChange(0.00390625f);
+        mScaleXAnim.addEndListener((animation, canceled, value, velocity) -> onScaleAnimEnd());
+        mScaleYAnim.addEndListener((animation, canceled, value, velocity) -> onScaleAnimEnd());
         // Set up the shift animator.
         mShiftAnim = ValueAnimator.ofFloat(0f, 1f);
 
@@ -408,18 +401,34 @@ public abstract class DragView<T extends Context & ActivityContext> extends Fram
         }
 
         move(touchX, touchY);
-        // Post the animation to skip other expensive work happening on the first frame
-        post(mScaleAnim::start);
+        // Match OPPO: attach/move the drag view before starting its two COUI scale springs.
+        post(this::startScaleAnimation);
     }
 
-    public void cancelAnimation() {
-        if (mScaleAnim != null && mScaleAnim.isRunning()) {
-            mScaleAnim.cancel();
+    private void startScaleAnimation() {
+        if (!isAttachedToWindow()) {
+            return;
+        }
+        mScaleAnimStarted = true;
+        mRunningScaleAnimCount = 2;
+        mScaleXAnim.start();
+        mScaleYAnim.start();
+    }
+
+    private void onScaleAnimEnd() {
+        if (mRunningScaleAnimCount > 0 && --mRunningScaleAnimCount == 0
+                && mOnAnimEndCallback != null) {
+            mOnAnimEndCallback.run();
         }
     }
 
+    public void cancelAnimation() {
+        if (mScaleXAnim.isRunning()) mScaleXAnim.cancel();
+        if (mScaleYAnim.isRunning()) mScaleYAnim.cancel();
+    }
+
     public boolean isScaleAnimationFinished() {
-        return mScaleAnimStarted && !mScaleAnim.isRunning();
+        return mScaleAnimStarted && !mScaleXAnim.isRunning() && !mScaleYAnim.isRunning();
     }
 
     /**

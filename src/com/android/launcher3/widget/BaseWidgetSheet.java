@@ -125,12 +125,24 @@ public abstract class BaseWidgetSheet extends AbstractSlideInView<Launcher>
         } else if (v.getParent() instanceof WidgetCell) {
             tag = ((WidgetCell) v.getParent()).getTag();
         }
+        if (tag instanceof PendingAddWidgetInfo
+                && onWidgetClick((PendingAddWidgetInfo) tag)) {
+            return;
+        }
         if (tag instanceof PendingAddShortcutInfo) {
             mWidgetInstructionToast = showShortcutToast(getContext(), mWidgetInstructionToast);
         } else {
             mWidgetInstructionToast = showWidgetToast(getContext(), mWidgetInstructionToast);
         }
 
+    }
+
+    /**
+     * Gives product-specific widget sheets a chance to implement direct click-to-add.
+     * Returning {@code true} consumes the click and suppresses the AOSP instruction toast.
+     */
+    protected boolean onWidgetClick(PendingAddWidgetInfo info) {
+        return false;
     }
 
     @Override
@@ -235,7 +247,8 @@ public abstract class BaseWidgetSheet extends AbstractSlideInView<Launcher>
             int[] loc = new int[2];
             getPopupContainer().getLocationInDragLayer(image, loc);
 
-            dragHelper.startDrag(image.getBitmapBounds(), image.getDrawable().getIntrinsicWidth(),
+            dragHelper.startDrag(image.getBitmapBoundsPlugin(),
+                    image.getDrawable().getIntrinsicWidth(),
                     image.getWidth(), new Point(loc[0], loc[1]), this, new DragOptions());
         } else {
             NavigableAppWidgetHostView preview = v.getAppWidgetHostViewPreview();

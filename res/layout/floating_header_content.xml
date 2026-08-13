@@ -13,4 +13,18 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<merge />
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Required by QuickstepLauncher.bindExtraContainerItems. Keep these prediction views in
+         Launcher3's managed floating header; the ColorOS selector is a separate fixed sibling. -->
+    <com.android.launcher3.appprediction.PredictionRowView
+        android:id="@+id/prediction_row"
+        android:accessibilityPaneTitle="@string/title_app_suggestions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <com.android.launcher3.appprediction.AppsDividerView
+        android:id="@+id/apps_divider_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+</merge>

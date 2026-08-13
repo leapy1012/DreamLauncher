@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/coloros_widget_hub_panel"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginTop="40dp"
+    android:background="@drawable/coloros_widget_sheet_background"
+    android:clipChildren="true"
+    android:clipToPadding="true">
+
+    <com.coui.appcompat.panel.COUIPanelContentLayout
+        android:id="@+id/coloros_widget_panel_content_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:orientation="vertical">
+
+        <!-- Exact coui_panel_view_layout drag hierarchy from OPPO Assistant Screen. -->
+        <FrameLayout
+            android:id="@+id/coloros_widget_drag_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/coui_panel_drag_view_height"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="@dimen/coui_panel_drag_view_shadow_margin_top">
+            <View
+                android:layout_width="@dimen/coui_panel_drag_view_shadow_width"
+                android:layout_height="@dimen/coui_panel_drag_view_shadow_height"
+                android:alpha="0"
+                android:background="@drawable/coui_pannel_press_shadow_bg"
+                android:forceDarkAllowed="false" />
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/coloros_widget_drag_image"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="@dimen/coui_panel_drag_view_padding_horizontal"
+                android:paddingTop="@dimen/coui_panel_drag_view_padding_vertical"
+                android:paddingRight="@dimen/coui_panel_drag_view_padding_horizontal"
+                android:src="@drawable/coui_panel_drag_view" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/coloros_widget_panel_content"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <com.coui.appcompat.toolbar.COUIToolbar
+                android:id="@+id/coloros_widget_hub_toolbar"
+                style="@style/ColorOsWidgetStoreToolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="-4dp"
+                app:titleCenter="true" />
+
+            <androidx.recyclerview.widget.COUIRecyclerView
+                android:id="@+id/coloros_widget_hub_recycler"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:paddingTop="8dp"
+                android:paddingBottom="24dp" />
+        </LinearLayout>
+
+        <!-- fragment_card_store_dialog uses an exact 44dp navigation-bar placeholder. -->
+        <View
+            android:id="@+id/coloros_widget_nav_bar_placeholder"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:background="@color/coloros_widget_nav_bar_surface" />
+    </com.coui.appcompat.panel.COUIPanelContentLayout>
+</FrameLayout>

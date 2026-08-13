@@ -27,7 +27,9 @@ import static com.android.launcher3.anim.Interpolators.DEACCEL_1_5;
 import static com.android.launcher3.compat.AccessibilityManagerCompat.sendCustomAccessibilityEvent;
 
 import android.animation.Animator;
+import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
 import android.animation.TimeInterpolator;
 import android.animation.TypeEvaluator;
 import android.content.Context;
@@ -50,6 +52,7 @@ import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.anim.Interpolators;
+import com.android.launcher3.anim.OSpringInterpolator;
 import com.android.launcher3.anim.PendingAnimation;
 import com.android.launcher3.anim.SpringProperty;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
@@ -71,6 +74,15 @@ public class DragLayer extends BaseDragLayer<Launcher> implements LauncherOverla
 
     public static final int ANIMATION_END_DISAPPEAR = 0;
     public static final int ANIMATION_END_REMAIN_VISIBLE = 2;
+    // ItemsRippleAnimator.AnimParam.ItemDrag from the decoded OPPO launcher.
+    private static final long OPPO_DROP_SCALE_OUT_DURATION = 179L;
+    private static final long OPPO_DROP_SCALE_BACK_DURATION = 453L;
+    private static final int OPPO_DROP_RIPPLE_DURATION = 632;
+    private static final float OPPO_DROP_MIDDLE_SCALE = 0.9f;
+    private static final TimeInterpolator OPPO_DROP_SCALE_OUT =
+            new OSpringInterpolator(36d, 1d, 0d, 1f);
+    private static final TimeInterpolator OPPO_DROP_SCALE_BACK =
+            new OSpringInterpolator(30d, 0.5d, 0d, 1f);
 
     private final boolean mIsRtl;
 
@@ -335,6 +347,8 @@ public class DragLayer extends BaseDragLayer<Launcher> implements LauncherOverla
         final float dist = (float) Math.hypot(to.left - from[0], to.top - from[1]);
         final Resources res = getResources();
         final float maxDist = (float) res.getInteger(R.integer.config_dropAnimMaxDist);
+        final boolean useOppoDropRipple = animationEndStyle == ANIMATION_END_DISAPPEAR
+                && finalAlpha == 1f;
 
         // If duration < 0, this is a cue to compute the duration based on the distance
         if (duration < 0) {
@@ -342,8 +356,9 @@ public class DragLayer extends BaseDragLayer<Launcher> implements LauncherOverla
             if (dist < maxDist) {
                 duration *= DEACCEL_1_5.getInterpolation(dist / maxDist);
             }
-            duration = Math.max(duration, res.getInteger(R.integer.config_dropAnimMinDuration));
+            duration = Math.max(duration, 350);
         }
+        if (useOppoDropRipple) duration = Math.max(duration, OPPO_DROP_RIPPLE_DURATION);
 
         // Fall back to cubic ease out interpolator for the animation if none is specified
         TimeInterpolator interpolator =
@@ -351,8 +366,13 @@ public class DragLayer extends BaseDragLayer<Launcher> implements LauncherOverla
 
         // Animate the view
         PendingAnimation anim = new PendingAnimation(duration);
-        anim.add(ofFloat(view, View.SCALE_X, finalScaleX), interpolator, SpringProperty.DEFAULT);
-        anim.add(ofFloat(view, View.SCALE_Y, finalScaleY), interpolator, SpringProperty.DEFAULT);
+        if (useOppoDropRipple) {
+            anim.addWithoutDuration(createOppoDropScaleAnimator(view, finalScaleX, finalScaleY,
+                    duration - OPPO_DROP_RIPPLE_DURATION));
+        } else {
+            anim.add(ofFloat(view, View.SCALE_X, finalScaleX), interpolator, SpringProperty.DEFAULT);
+            anim.add(ofFloat(view, View.SCALE_Y, finalScaleY), interpolator, SpringProperty.DEFAULT);
+        }
         anim.setViewAlpha(view, finalAlpha, interpolator);
         anim.setFloat(view, VIEW_TRANSLATE_Y, to.top, interpolator);
 
@@ -368,6 +388,26 @@ public class DragLayer extends BaseDragLayer<Launcher> implements LauncherOverla
             anim.addListener(forEndCallback(onCompleteRunnable));
         }
         playDropAnimation(view, anim.buildAnim(), animationEndStyle);
+    }
+
+    private static Animator createOppoDropScaleAnimator(DragView view, float finalScaleX,
+            float finalScaleY, long startDelay) {
+        ObjectAnimator scaleOut = ObjectAnimator.ofPropertyValuesHolder(view,
+                PropertyValuesHolder.ofFloat(View.SCALE_X, view.getScaleX(),
+                        OPPO_DROP_MIDDLE_SCALE),
+                PropertyValuesHolder.ofFloat(View.SCALE_Y, view.getScaleY(),
+                        OPPO_DROP_MIDDLE_SCALE));
+        scaleOut.setDuration(OPPO_DROP_SCALE_OUT_DURATION);
+        scaleOut.setInterpolator(OPPO_DROP_SCALE_OUT);
+        ObjectAnimator scaleBack = ObjectAnimator.ofPropertyValuesHolder(view,
+                PropertyValuesHolder.ofFloat(View.SCALE_X, OPPO_DROP_MIDDLE_SCALE, finalScaleX),
+                PropertyValuesHolder.ofFloat(View.SCALE_Y, OPPO_DROP_MIDDLE_SCALE, finalScaleY));
+        scaleBack.setDuration(OPPO_DROP_SCALE_BACK_DURATION);
+        scaleBack.setInterpolator(OPPO_DROP_SCALE_BACK);
+        AnimatorSet result = new AnimatorSet();
+        result.setStartDelay(Math.max(0L, startDelay));
+        result.playSequentially(scaleOut, scaleBack);
+        return result;
     }
 
     /**

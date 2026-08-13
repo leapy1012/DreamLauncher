@@ -70,7 +70,8 @@ public class IconSizeSettingAdapter extends RecyclerView.Adapter<IconSizeSetting
         RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) icon.getLayoutParams();
         RelativeLayout.LayoutParams titleParams = (RelativeLayout.LayoutParams) title.getLayoutParams();
         icon.setLayoutParams(params);
-        titleParams.topMargin = params.width + 10;
+        titleParams.topMargin = params.width + mContext.getResources()
+                .getDimensionPixelSize(R.dimen.coloros_icon_label_gap);
         title.setLayoutParams(titleParams);
         this.translationYD = (int) (((float) params.width) * 0.5f);
         return new MyViewHolder(view);

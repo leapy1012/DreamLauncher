@@ -44,14 +44,14 @@
     <string name="folder_unnamed">unnamed</string>
     <string name="accessibility_text_reading_options_title">Display size and text</string>
     <string name="home_screen_layout_lock">Layout Lock</string>
-    <string name="home_screen_layout_lock_tips">After the layout is locked,the desktop application cannot be dragged or uninstalled</string>
+    <string name="home_screen_layout_lock_tips">When the layout is locked, Home screen apps cannot be moved or uninstalled</string>
     <string name="home_screen_docked_app">Docked App</string>
     <string name="home_screen_docked_app_tips">Display the name for apps located on bottom row of home screen</string>
     <string name="home_screen_app_name_length">App Name Length</string>
     <string name="home_screen_app_name_length_tips">Display name of app in single line</string>
     <string name="home_screen_fill_cell">Fill cells of uninstalled apps</string>
     <string name="home_screen_double_tap_to_off">Double click to turn off the screen</string>
-    <string name="home_screen_double_tap_to_off_summary">On the lockscreen or standby interface,double-click on the blank space to turn off the screen</string>
+    <string name="home_screen_double_tap_to_off_summary">Double-tap an empty area of the Lock screen or Home screen to turn off the display</string>
     <string name="home_screen_memory_clean">Cleanup</string>
     <string name="home_screen_wallpaper_set">Switch wallpaper</string>
     <string name="home_screen_icon_shape">Icon Shape</string>
@@ -68,4 +68,19 @@
     <string name="sure_set_theme">Are you sure you want to set this theme?</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="coloros_all_apps_all">All</string>
+    <string name="coloros_all_apps_categories">Categories</string>
+    <string name="coloros_all_apps_sort_alphabetically">Sorted alphabetically</string>
+    <string name="coloros_all_apps_more_options">More options</string>
+    <string name="coloros_all_apps_alphabet_index">Alphabetical app index</string>
+    <string name="coloros_category_recent">Recently installed</string>
+    <string name="coloros_category_social">Social</string>
+    <string name="coloros_category_tools">Tools</string>
+    <string name="coloros_category_photography">Photography</string>
+    <string name="coloros_category_entertainment">Entertainment</string>
+    <string name="coloros_category_games">Games</string>
+    <string name="coloros_category_shopping">Shopping</string>
+    <string name="coloros_category_travel">Travel</string>
+    <string name="coloros_category_productivity">Productivity</string>
+    <string name="coloros_category_other">Other</string>
 </resources>

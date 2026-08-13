@@ -19,16 +19,14 @@
 
 <resources>
 
-    <style name="HomeSettings.Theme" parent="@android:style/Theme.DeviceDefault.Settings">
-        <item name="android:listPreferredItemPaddingEnd">16dp</item>
-        <item name="android:listPreferredItemPaddingStart">24dp</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:switchStyle">@style/SwitchStyle</item>
-        <item name="android:textAppearanceListItem">@style/HomeSettings.PreferenceTitle</item>
-        <item name="android:windowActionBar">true</item>
+    <style name="HomeSettings.Theme"
+            parent="@style/OplusSupportAppNoTitleTheme.PreferenceFragment.LauncherSettings">
+        <item name="android:navigationBarColor">@color/coloros_surface_toolbar</item>
+        <item name="android:statusBarColor">@color/coloros_surface_toolbar</item>
+        <item name="android:windowLightStatusBar">@bool/home_settings_light_status_bar</item>
+        <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
-        <item name="preferenceTheme">@style/SettingsPreferenceTheme</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay.COUITheme.FullScreen.OnlyTitleBar</item>
     </style>
 
     <style name="HomeSettings.PreferenceTheme" parent="@style/PreferenceThemeOverlay">

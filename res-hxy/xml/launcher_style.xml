@@ -20,13 +20,7 @@
         <com.android.launcher3.settings.RadioButtonPreference
             android:key="launcher_style_nomal"
             android:title="@string/home_screen_style_regular" />
- 		<Preference
-            android:key="launcher_style_dan"
-            android:layout="@layout/launcher_mode_item_stand" />
         <com.android.launcher3.settings.RadioButtonPreference
             android:key="launcher_style_drawer"
             android:title="@string/home_screen_style_single" />
-         <Preference
-            android:key="launcher_style_chou"
-            android:layout="@layout/launcher_mode_item_chou" />
 </androidx.preference.PreferenceScreen>

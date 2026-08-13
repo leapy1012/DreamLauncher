@@ -44,6 +44,7 @@ import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherState;
+import com.android.launcher3.R;
 import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.states.StateAnimationConfig;
 
@@ -76,6 +77,33 @@ public class AllAppsSwipeController extends AbstractStateChangeTouchController {
     private static final float SCRIM_FADE_START_ATOMIC = 0.2642f;
     private static final float SCRIM_FADE_START_MANUAL = 0.117f;
     private static final float WORKSPACE_MOTION_START_ATOMIC = 0.1667f;
+
+    // ColorOS drawer timing reconstructed from Oplus AllAppsSwipeController. These are kept
+    // separate from the AOSP responders because the non-HXY variants retain Launcher3 motion.
+    private static final float COLOROS_STATE_TRANSITION = 0.305f;
+    private static final float COLOROS_FADE_END = 0.4717f;
+    private static final Interpolator COLOROS_STAGGERED_FADE_EARLY =
+            Interpolators.clampToProgress(LINEAR, 0f, 0.5f);
+    private static final Interpolator COLOROS_STAGGERED_FADE_LATE =
+            Interpolators.clampToProgress(LINEAR, 0.5f, 1f);
+    private static final Interpolator COLOROS_BLUR = Interpolators.clampToProgress(
+            Interpolators.mapToProgress(EMPHASIZED_DECELERATE, 0f, 0.5f),
+            WORKSPACE_MOTION_START_ATOMIC, COLOROS_STATE_TRANSITION);
+    private static final Interpolator COLOROS_WORKSPACE_FADE =
+            Interpolators.clampToProgress(FINAL_FRAME, 0f, COLOROS_STATE_TRANSITION);
+    private static final Interpolator COLOROS_WORKSPACE_SCALE = Interpolators.clampToProgress(
+            EMPHASIZED_DECELERATE, WORKSPACE_MOTION_START_ATOMIC, COLOROS_STATE_TRANSITION);
+    private static final Interpolator COLOROS_HOTSEAT_TRANSLATE = Interpolators.clampToProgress(
+            EMPHASIZED_ACCELERATE, WORKSPACE_MOTION_START_ATOMIC, COLOROS_STATE_TRANSITION);
+    private static final Interpolator COLOROS_SCRIM_FADE = Interpolators.clampToProgress(
+            Interpolators.mapToProgress(LINEAR, 0f, 0.8f),
+            WORKSPACE_MOTION_START_ATOMIC, COLOROS_STATE_TRANSITION);
+    private static final Interpolator COLOROS_ALL_APPS_FADE = Interpolators.clampToProgress(
+            Interpolators.mapToProgress(Interpolators.DECELERATED_EASE, 0.2f, 1f),
+            COLOROS_STATE_TRANSITION, COLOROS_FADE_END);
+    private static final Interpolator COLOROS_VERTICAL_PROGRESS = Interpolators.clampToProgress(
+            Interpolators.mapToProgress(EMPHASIZED_DECELERATE, 0.4f, 1f),
+            COLOROS_STATE_TRANSITION, 1f);
 
     private static final Interpolator LINEAR_EARLY_MANUAL =
             Interpolators.clampToProgress(LINEAR, 0f, ALL_APPS_STATE_TRANSITION_MANUAL);
@@ -202,6 +230,11 @@ public class AllAppsSwipeController extends AbstractStateChangeTouchController {
      * Applies Animation config values for transition from all apps to home.
      */
     public static void applyAllAppsToNormalConfig(Launcher launcher, StateAnimationConfig config) {
+        if (launcher.getResources().getBoolean(R.bool.config_hxy_grid)) {
+            config.setInterpolator(ANIM_SCRIM_FADE, COLOROS_STAGGERED_FADE_LATE);
+            config.setInterpolator(ANIM_ALL_APPS_FADE, COLOROS_STAGGERED_FADE_EARLY);
+            return;
+        }
         if (launcher.getDeviceProfile().isTablet) {
             config.setInterpolator(ANIM_SCRIM_FADE,
                     Interpolators.reverse(ALL_APPS_SCRIM_RESPONDER));
@@ -244,6 +277,18 @@ public class AllAppsSwipeController extends AbstractStateChangeTouchController {
      */
     public static void applyNormalToAllAppsAnimConfig(
             Launcher launcher, StateAnimationConfig config) {
+        if (launcher.getResources().getBoolean(R.bool.config_hxy_grid)) {
+            config.setInterpolator(ANIM_DEPTH, COLOROS_BLUR);
+            config.setInterpolator(ANIM_WORKSPACE_FADE, COLOROS_WORKSPACE_FADE);
+            config.setInterpolator(ANIM_WORKSPACE_SCALE, COLOROS_WORKSPACE_SCALE);
+            config.setInterpolator(ANIM_HOTSEAT_FADE, COLOROS_WORKSPACE_FADE);
+            config.setInterpolator(ANIM_HOTSEAT_SCALE, COLOROS_WORKSPACE_FADE);
+            config.setInterpolator(ANIM_HOTSEAT_TRANSLATE, COLOROS_HOTSEAT_TRANSLATE);
+            config.setInterpolator(ANIM_SCRIM_FADE, COLOROS_SCRIM_FADE);
+            config.setInterpolator(ANIM_ALL_APPS_FADE, COLOROS_ALL_APPS_FADE);
+            config.setInterpolator(ANIM_VERTICAL_PROGRESS, COLOROS_VERTICAL_PROGRESS);
+            return;
+        }
         if (launcher.getDeviceProfile().isTablet) {
             config.setInterpolator(ANIM_ALL_APPS_FADE, INSTANT);
             config.setInterpolator(ANIM_SCRIM_FADE, ALL_APPS_SCRIM_RESPONDER);

@@ -2027,7 +2027,7 @@ public class COUIToolbar extends Toolbar implements PopupMenuConfigRule {
     }
 
     public COUIToolbar(Context context, AttributeSet attributeSet) {
-        this(context, attributeSet, android.R.attr.toolbarStyle);
+        this(context, attributeSet, androidx.appcompat.R.attr.toolbarStyle);
     }
 
     private int measureChildCollapseMargins(View view, int parentWidthSpec, int widthUsed, int parentHeightSpec, int heightUsed, int verticalMargins, int[] collapsingMargins) {

@@ -23,6 +23,7 @@ dependencyResolutionManagement {
 }
 
 include ':Filter'
+include ':coui'
 include ':iconloaderlib'
 include ':animationlib'
 include ':viewcapturelib'

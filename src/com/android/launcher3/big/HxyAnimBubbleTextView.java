@@ -16,7 +16,7 @@ import com.android.launcher3.anim.BaseParams;
 import com.android.launcher3.icons.FastBitmapDrawable;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.ItemInfoWithIcon;
-import com.android.launcher3.views.DoubleShadowBubbleTextView;
+import com.android.launcher3.OplusBubbleTextView;
 import com.android.launcher3.R;
 import com.android.launcher3.big.anim.TranslateParams;
 import com.android.launcher3.big.anim.RotateParms;
@@ -26,7 +26,7 @@ import android.provider.Settings;
 import static com.android.launcher3.util.Themes.KEY_THEMED;
 
 @RemoteViews.RemoteView
-public class HxyAnimBubbleTextView extends DoubleShadowBubbleTextView {
+public class HxyAnimBubbleTextView extends OplusBubbleTextView {
     private static final String TAG = "HxyAnimBubbleTextView";
     boolean isClear;
     boolean isFlashLight;

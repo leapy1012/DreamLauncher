@@ -50,7 +50,6 @@ import com.coui.appcompat.view.MaterialResource;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import okio.Segment;
 
 
 public class COUITouchSearchView extends View implements View.OnClickListener {
@@ -1105,7 +1104,7 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             this.mFirstPopupAlpha = 1.0f;
         }
         startFirstAnimationToShow();
-        sendAccessibilityEvent(Segment.SIZE);
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED);
     }
 
     private void onSecondaryPointerUp(MotionEvent motionEvent) {

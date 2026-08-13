@@ -90,6 +90,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     private int mMinFlingVelocity;
     private int mMinSnapVelocity;
     private int mPageSnapAnimationDuration;
+    protected int mPageSnapVelocity;
 
     protected boolean mFirstLayout = true;
 
@@ -107,6 +108,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     protected int mMaxScroll;
     protected int mMinScroll;
     protected OverScroller mScroller;
+    private int mOplusUnboundedScroll;
     private VelocityTracker mVelocityTracker;
     protected int mPageSpacing = 0;
 
@@ -260,6 +262,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     }
 
     private void abortScrollerAnimation(boolean resetNextPage) {
+        abortPageSnapAnimation();
         mScroller.abortAnimation();
         onScrollerAnimationAborted();
         // We need to clean up the next page here to avoid computeScrollHelper from
@@ -275,6 +278,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
      * mNextPage = INVALID_PAGE and calls pageEndTransition().
      */
     public void forceFinishScroller() {
+        abortPageSnapAnimation();
         mScroller.forceFinished(true);
         // We need to clean up the next page here to avoid computeScrollHelper from
         // updating current page on the pass.
@@ -425,6 +429,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
      * Sets the current page.
      */
     public void setCurrentPage(int currentPage, int overridePrevPage) {
+        abortPageSnapAnimation();
         if (!mScroller.isFinished()) {
             abortScrollerAnimation(true);
         }
@@ -515,6 +520,10 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
 
     @Override
     public void scrollTo(int x, int y) {
+        if (useOplusWorkspaceOverscroll()) {
+            super.scrollTo(x, y);
+            return;
+        }
         x = Utilities.boundToRange(x,
                 mOrientationHandler.getPrimaryValue(mMinScroll, 0), mMaxScroll);
         y = Utilities.boundToRange(y,
@@ -552,7 +561,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
                 mOrientationHandler.setPrimary(this, VIEW_SCROLL_TO, mScroller.getCurrX());
             }
 
-            if (mAllowOverScroll) {
+            if (mAllowOverScroll && !useOplusWorkspaceOverscroll()) {
                 if (newPos < mMinScroll && oldPos >= mMinScroll) {
                     mEdgeGlowLeft.onAbsorb((int) mScroller.getCurrVelocity());
                     abortScrollerAnimation(false);
@@ -572,6 +581,9 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
                 abortScrollerAnimation(false);
             }
 
+            invalidate();
+            return true;
+        } else if (isPageSnapAnimationRunning()) {
             invalidate();
             return true;
         } else if (mNextPage != INVALID_PAGE) {
@@ -1235,6 +1247,18 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
         mAllowOverScroll = enable;
     }
 
+    /** Whether this paged view uses ColorOS' translated workspace-edge resistance. */
+    protected boolean useOplusWorkspaceOverscroll() {
+        return false;
+    }
+
+    protected boolean isPageSnapAnimationRunning() {
+        return false;
+    }
+
+    protected void abortPageSnapAnimation() {
+    }
+
     protected boolean isSignificantMove(float absoluteDelta, int pageOrientedSize) {
         return absoluteDelta > pageOrientedSize * SIGNIFICANT_MOVE_THRESHOLD;
     }
@@ -1250,6 +1274,9 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
 
         switch (action & MotionEvent.ACTION_MASK) {
         case MotionEvent.ACTION_DOWN:
+            if (isPageSnapAnimationRunning()) {
+                abortPageSnapAnimation();
+            }
             updateIsBeingDraggedOnTouchDown(ev);
 
             /*
@@ -1268,6 +1295,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
             mTotalMotion = 0;
             mAllowEasyFling = false;
             mActivePointerId = ev.getPointerId(0);
+            mOplusUnboundedScroll = mOrientationHandler.getPrimaryScroll(this);
             if (mIsBeingDragged) {
                 pageBeginTransition();
             }
@@ -1300,7 +1328,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
                                 / mOrientationHandler.getSecondaryValue(width, height);
                 mTotalMotion += Math.abs(delta);
 
-                if (mAllowOverScroll) {
+                if (mAllowOverScroll && !useOplusWorkspaceOverscroll()) {
                     int consumed = 0;
                     if (delta < 0 && mEdgeGlowRight.getDistance() != 0f) {
                         consumed = Math.round(size *
@@ -1319,9 +1347,20 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
                 mLastMotion = direction;
 
                 if (delta != 0) {
-                    mOrientationHandler.setPrimary(this, VIEW_SCROLL_BY, delta);
+                    if (mAllowOverScroll && useOplusWorkspaceOverscroll()) {
+                        mOplusUnboundedScroll += delta;
+                        int bounded = Utilities.boundToRange(
+                                mOplusUnboundedScroll, mMinScroll, mMaxScroll);
+                        int amount = mOplusUnboundedScroll - bounded;
+                        int resistedAmount = com.android.launcher3.touch.OverScroll.dampedScroll(
+                                amount, Math.round(size));
+                        mOrientationHandler.setPrimary(
+                                this, VIEW_SCROLL_TO, bounded + resistedAmount);
+                    } else {
+                        mOrientationHandler.setPrimary(this, VIEW_SCROLL_BY, delta);
+                    }
 
-                    if (mAllowOverScroll) {
+                    if (mAllowOverScroll && !useOplusWorkspaceOverscroll()) {
                         final float pulledToX = oldScroll + delta;
 
                         if (pulledToX < mMinScroll) {
@@ -1648,6 +1687,16 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
         return (float) Math.sin(f);
     }
 
+    /** Allows device-specific paged views to use their source-defined velocity factor. */
+    protected int calculateScrollDuration(float distance, int velocity) {
+        return 4 * Math.round(1000 * Math.abs(distance / velocity));
+    }
+
+    /** Starts the physical scroll for a page snap. Subclasses may supply a source-matched spring. */
+    protected void startPageSnapScroll(int start, int delta, int duration, int velocity) {
+        mScroller.startScroll(start, 0, delta, 0, duration);
+    }
+
     protected boolean snapToPageWithVelocity(int whichPage, int velocity) {
         whichPage = validateNewPage(whichPage);
         int halfScreenSize = mOrientationHandler.getMeasuredSize(this) / 2;
@@ -1669,6 +1718,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
         float distanceRatio = Math.min(1f, 1.0f * Math.abs(delta) / (2 * halfScreenSize));
         float distance = halfScreenSize + halfScreenSize *
                 distanceInfluenceForSnapDuration(distanceRatio);
+        int signedVelocity = velocity;
 
         velocity = Math.abs(velocity);
         velocity = Math.max(mMinSnapVelocity, velocity);
@@ -1676,9 +1726,12 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
         // we want the page's snap velocity to approximately match the velocity at which the
         // user flings, so we scale the duration by a value near to the derivative of the scroll
         // interpolator at zero, ie. 5. We use 4 to make it a little slower.
-        duration = 4 * Math.round(1000 * Math.abs(distance / velocity));
+        duration = calculateScrollDuration(distance, velocity);
 
-        return snapToPage(whichPage, delta, duration);
+        mPageSnapVelocity = signedVelocity;
+        boolean result = snapToPage(whichPage, delta, duration);
+        mPageSnapVelocity = 0;
+        return result;
     }
 
     public boolean snapToPage(int whichPage) {
@@ -1735,7 +1788,8 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
             abortScrollerAnimation(false);
         }
 
-        mScroller.startScroll(mOrientationHandler.getPrimaryScroll(this), 0, delta, 0, duration);
+        startPageSnapScroll(mOrientationHandler.getPrimaryScroll(this), delta, duration,
+                mPageSnapVelocity);
         updatePageIndicator();
 
         // Trigger a compute() to finish switching pages if necessary

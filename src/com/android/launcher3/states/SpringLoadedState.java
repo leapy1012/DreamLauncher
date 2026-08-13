@@ -39,11 +39,17 @@ public class SpringLoadedState extends LauncherState {
 
     @Override
     public int getTransitionDuration(Context context, boolean isToState) {
+        if (context.getResources().getBoolean(com.android.launcher3.R.bool.config_hxy_grid)) {
+            return 320;
+        }
         return 150;
     }
 
     @Override
     public ScaleAndTranslation getWorkspaceScaleAndTranslation(Launcher launcher) {
+        if (launcher.getResources().getBoolean(com.android.launcher3.R.bool.config_hxy_grid)) {
+            return new ScaleAndTranslation(0.85f, 0f, 0f);
+        }
         DeviceProfile grid = launcher.getDeviceProfile();
         Workspace<?> ws = launcher.getWorkspace();
         if (ws.getChildCount() == 0) {
@@ -62,6 +68,12 @@ public class SpringLoadedState extends LauncherState {
 
     @Override
     protected float getDepthUnchecked(Context context) {
+        if (context.getResources().getBoolean(com.android.launcher3.R.bool.config_hxy_grid)) {
+            // OPPO's ToggleBar state requests full wallpaper blur while keeping wallpaper zoom
+            // disabled. BaseDepthController already keeps HXY wallpaper zoom at zero, so use the
+            // full depth value here only to drive the surface blur pipeline.
+            return 1f;
+        }
         return 0.5f;
     }
 
@@ -72,6 +84,9 @@ public class SpringLoadedState extends LauncherState {
 
     @Override
     public float getWorkspaceBackgroundAlpha(Launcher launcher) {
+        if (launcher.getResources().getBoolean(com.android.launcher3.R.bool.config_hxy_grid)) {
+            return 0f;
+        }
         return 0.2f;
     }
 }

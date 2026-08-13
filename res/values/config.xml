@@ -67,8 +67,8 @@
     <integer name="config_folderDelay">30</integer>
     <!-- ColorOS-style full folder transition durations. Keep these separate from the
          material folder duration, which is still used by the standard AOSP layout. -->
-    <integer name="config_fullFolderOpenDuration">850</integer>
-    <integer name="config_fullFolderCloseDuration">800</integer>
+    <integer name="config_fullFolderOpenDuration">330</integer>
+    <integer name="config_fullFolderCloseDuration">280</integer>
 
     <!-- The distance at which the animation should take the max duration -->
     <integer name="config_dropAnimMaxDist">800</integer>
@@ -138,7 +138,7 @@
     <!-- Scalable Grid configuration -->
     <!-- This is a float because it is converted to dp later in DeviceProfile -->
     <dimen name="hotseat_bar_bottom_space_default">48</dimen>
-    <dimen name="hotseat_qsb_space_default">0</dimen>
+    <dimen name="hotseat_qsb_space_default">16</dimen>
 
     <!-- Recents -->
     <item type="id" name="overview_panel"/>

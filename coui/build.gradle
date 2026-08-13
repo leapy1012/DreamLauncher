@@ -1,0 +1,58 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+}
+
+android {
+    namespace = "com.coui.appcompat"
+
+    defaultConfig {
+        // Launcher currently ships on API 28+, while the two comparison devices are API 34+
+        // and all vendor-specific calls in this source snapshot use compatibility wrappers.
+        minSdk 28
+        consumerProguardFiles 'proguard-consumer.flags'
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ['java']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+            manifest.srcFile 'AndroidManifest.xml'
+        }
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+        languageVersion = "1.7"
+        apiVersion = "1.7"
+        freeCompilerArgs += ['-Xjvm-default=all-compatibility']
+    }
+}
+
+dependencies {
+    // Keep the same framework visibility used by the launcher application. COUI's Oplus
+    // compatibility layer falls back to public APIs when vendor extensions are unavailable.
+    compileOnly files("${rootDir}/libs/framework.jar")
+    compileOnly files("${rootDir}/libs/core-all.jar")
+
+    api libs.core
+    api libs.collection
+    api libs.appcompat
+    api libs.fragment
+    api libs.constraintlayout
+    api libs.dynamicanimation
+    api libs.preference
+    api libs.recyclerview
+    api libs.viewpager
+    api libs.viewpager2
+    api libs.material
+    api libs.lottie
+
+    implementation files('libs/rebound-0.3.8.jar')
+}

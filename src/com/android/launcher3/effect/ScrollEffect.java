@@ -9,8 +9,11 @@ import android.view.animation.DecelerateInterpolator;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.R;
+import com.android.launcher3.CellLayout;
+import com.android.launcher3.ShortcutAndWidgetContainer;
 
 public abstract class ScrollEffect {
+    public static final String SCROLL_EFFECT_OPPO_ROLL = "oppo-roll";
     public static final String SCROLL_EFFECT_ACCORDION = "accordion";
     public static final String SCROLL_EFFECT_CAROUSEL_LEFT = "carousel-left";
     public static final String SCROLL_EFFECT_CAROUSEL_RIGHT = "carousel-right";
@@ -93,6 +96,77 @@ public abstract class ScrollEffect {
             view.setPivotX(f3);
             view.setPivotY(((float) view.getMeasuredHeight()) * 0.5f);
             view.setRotationY(f2);
+        }
+    }
+
+    /**
+     * ColorOS workspace cube transition reconstructed from OPPO's CubeEffectAgent.
+     *
+     * Unlike the legacy MTK cube variants, ColorOS rotates both pages around their adjoining
+     * vertical edges and uses a shorter 4200dp camera distance. The hotseat is outside Workspace,
+     * so it remains stationary while the pages turn.
+     */
+    public static class OppoRoll extends ScrollEffect {
+        private static final float COLOROS_CAMERA_DISTANCE = 4200.0f;
+        private static final float COLOROS_MAX_ROTATION = 90.0f;
+        private static final float COLOROS_COLUMN_CURVE = 34.0f;
+
+        public OppoRoll(Workspace workspace) {
+            super(workspace, SCROLL_EFFECT_OPPO_ROLL);
+        }
+
+        @Override
+        public void onScreenScrolled(View view, int page, float progress) {
+            // ColorOS' roll/cylinder effect bends each workspace column independently. Applying
+            // the transform to the page itself produces a flat cube and is especially obvious on
+            // widgets, so operate on the actual shortcut/widget children instead.
+            view.setRotationY(0.0f);
+            view.setTranslationX(0.0f);
+            view.setAlpha(1.0f);
+            if (!(view instanceof CellLayout)) {
+                return;
+            }
+
+            ShortcutAndWidgetContainer container =
+                    ((CellLayout) view).getShortcutsAndWidgets();
+            float amount = Math.min(1.0f, Math.abs(progress) * 2.0f);
+            float pageCenter = Math.max(1.0f, container.getMeasuredWidth()) * 0.5f;
+            for (int i = 0; i < container.getChildCount(); i++) {
+                View child = container.getChildAt(i);
+                float columnPosition = (child.getLeft() + child.getRight()) * 0.5f;
+                float normalizedColumn = (columnPosition - pageCenter) / pageCenter;
+                float rotation = (-COLOROS_MAX_ROTATION * progress)
+                        + (normalizedColumn * COLOROS_COLUMN_CURVE * amount);
+
+                child.setCameraDistance(mDensity * COLOROS_CAMERA_DISTANCE);
+                child.setPivotX(child.getMeasuredWidth() * 0.5f);
+                child.setPivotY(child.getMeasuredHeight() * 0.5f);
+                child.setRotationY(rotation);
+                child.setTranslationX(-normalizedColumn * child.getMeasuredWidth()
+                        * 0.14f * amount);
+                child.setScaleX(1.0f - (0.08f * amount * Math.abs(normalizedColumn)));
+                child.setScaleY(1.0f);
+                child.setAlpha(1.0f);
+            }
+        }
+    }
+
+    /** Clears transforms placed on workspace items by effects such as ColorOS roll. */
+    public static void resetNestedTransforms(View page) {
+        if (!(page instanceof CellLayout)) {
+            return;
+        }
+        ShortcutAndWidgetContainer container =
+                ((CellLayout) page).getShortcutsAndWidgets();
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            child.setRotationX(0.0f);
+            child.setRotationY(0.0f);
+            child.setScaleX(1.0f);
+            child.setScaleY(1.0f);
+            child.setTranslationX(0.0f);
+            child.setTranslationY(0.0f);
+            child.setAlpha(1.0f);
         }
     }
 
@@ -233,7 +307,9 @@ public abstract class ScrollEffect {
 
     public static void setFromString(Workspace workspace, String str) {
         Log.d("ScrollEffect", "zr_effect setFromString effect = " + str + ", mDensity=" + mDensity);
-        if (str.equals("none")) {
+        if (SCROLL_EFFECT_OPPO_ROLL.equals(str)) {
+            workspace.setScrollEffect(new OppoRoll(workspace));
+        } else if (str.equals("none")) {
             workspace.setScrollEffect((ScrollEffect) null);
         } else if (str.equals(SCROLL_EFFECT_STACK)) {
             workspace.setScrollEffect(new Stack(workspace));

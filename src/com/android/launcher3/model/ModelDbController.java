@@ -301,15 +301,18 @@ public class ModelDbController {
             DeviceGridState destDeviceState = new DeviceGridState(idp);
             boolean same = TextUtils.equals(srcDeviceState.getDbFile(),destDeviceState.getDbFile());
             Log.d("zsq","srcDeviceState = " + srcDeviceState + " ,destDeviceState = " + destDeviceState + " ,same = " + same );
+            if (same && srcDeviceState.hasGridSize(4, 5)
+                    && destDeviceState.hasGridSize(4, 6)) {
+                migrateHxyWorkspaceToSixRows();
+            }
             if(!same){
-                destDeviceState.writeToPrefs(mContext);
-
                 DatabaseHelper oldHelper = mOpenHelper;
                 mOpenHelper = (mContext instanceof SandboxContext) ? oldHelper: createDatabaseHelper(false /* forMigration */);
                 if (mOpenHelper != oldHelper) {
                     oldHelper.close();
                 }
             }
+            destDeviceState.writeToPrefs(mContext);
             return same;
         }
         //added by zhushuangqian for hxy grid end
@@ -331,6 +334,20 @@ public class ModelDbController {
             if (mOpenHelper != oldHelper) {
                 oldHelper.close();
             }
+        }
+    }
+
+    /** Expands the HXY phone workspace without resetting or reflowing the user's layout. */
+    private void migrateHxyWorkspaceToSixRows() {
+        try (SQLiteTransaction transaction = new SQLiteTransaction(
+                mOpenHelper.getWritableDatabase())) {
+            SQLiteDatabase db = transaction.getDb();
+            db.execSQL("UPDATE " + Favorites.TABLE_NAME
+                    + " SET " + Favorites.CELLY + " = " + Favorites.CELLY + " + 1"
+                    + " WHERE " + Favorites.CONTAINER + " = " + Favorites.CONTAINER_DESKTOP
+                    + " AND " + Favorites.CELLY + " >= 0"
+                    + " AND " + Favorites.CELLY + " + " + Favorites.SPANY + " = 5");
+            transaction.commit();
         }
     }
 

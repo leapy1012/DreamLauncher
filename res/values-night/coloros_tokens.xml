@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Night-qualified concrete endpoints keep framework window color resolution safe. -->
+    <color name="coloros_surface_page">@color/coui_color_background_with_card_dark</color>
+    <color name="coloros_surface_card">@color/coui_color_card_background_dark</color>
+    <color name="coloros_surface_toolbar">@color/coui_color_background_dark</color>
+    <color name="coloros_surface_pressed">@color/coui_color_card_pressed_dark</color>
+    <color name="coloros_surface_subtle">@color/coui_color_container8_dark</color>
+    <color name="coloros_accent">@color/coui_color_primary_blue_dark</color>
+    <color name="coloros_divider">@color/coui_color_divider_dark</color>
+    <color name="coloros_text_primary">@color/coui_color_label_primary_dark</color>
+    <color name="coloros_text_secondary">@color/coui_color_label_secondary_dark</color>
+    <color name="coloros_text_tertiary">@color/coui_color_label_tertiary_dark</color>
+    <color name="coloros_text_on_accent">@color/coui_color_label_on_color_dark</color>
+
+    <!-- Keep enough translucency for wallpaper context while reducing glare at night. -->
+    <color name="coloros_folder_content_surface">#66A6A6A6</color>
+    <color name="coloros_folder_preview_surface">#66E0E0E0</color>
+    <color name="coloros_folder_surface_stroke">#66C6C6C6</color>
+    <color name="coloros_folder_title_text">#FFFFFFFF</color>
+    <color name="coloros_folder_title_hint">#B3FFFFFF</color>
+</resources>

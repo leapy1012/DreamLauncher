@@ -1,85 +1,141 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:layout_height="match_parent"
+    android:background="@color/coloros_surface_page"
+    android:clipToPadding="false"
+    android:fillViewport="true">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="15sp"
-            android:text="@string/home_screen_icon_size"
-            android:textColor="?android:attr/textColorPrimary" />
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/iconsizeRv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="7dp"
-            android:background="@drawable/hxy_icon_size_rv_shape"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:paddingTop="15dp" />
+        android:orientation="vertical"
+        android:paddingStart="@dimen/coloros_page_horizontal_padding"
+        android:paddingTop="@dimen/coloros_page_top_padding"
+        android:paddingEnd="@dimen/coloros_page_horizontal_padding"
+        android:paddingBottom="@dimen/coloros_page_bottom_padding">
 
-        <com.android.launcher3.customer.seekbar.SignSeekBar
-            android:id="@+id/demo_5_seek_bar_2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/density_30dp"
-            android:paddingStart="40dp"
-            android:paddingEnd="40dp"
-            app:ssb_anim_duration="300"
-            app:ssb_auto_adjust_section_mark="false"
-            app:ssb_second_track_color="@color/home_settings_header_accent"
-            app:ssb_second_track_size="28dp"
-            app:ssb_section_text_color="@color/text_color_tertiary_dark"
-            app:ssb_section_text_size="15sp"
-            app:ssb_show_section_mark="true"
-            app:ssb_show_section_text="true"
-            app:ssb_show_thumb_shadow="false"
-            app:ssb_show_thumb_text="false"
-            app:ssb_sides_labels="@array/labels"
-            app:ssb_text_space="20dp"
-            app:ssb_thumb_color="@color/home_settings_header_accent"
-            app:ssb_thumb_radius="14dp"
-            app:ssb_thumb_radius_on_dragging="0dp"
-            app:ssb_thumb_text_size="16sp"
-            app:ssb_touch_to_seek="true"
-            app:ssb_track_color="#b4b4b4"
-            app:ssb_track_size="28dp"
-            app:ssb_unusable_color="#585858" />
-        
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="15sp"
+            style="@style/ColorOS.TextAppearance.SectionLabel"
+            android:layout_marginStart="@dimen/coloros_section_label_inset"
+            android:layout_marginBottom="@dimen/coloros_space_small"
+            android:text="@string/home_screen_icon_size"
+            />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/settings_card"
+            android:orientation="vertical"
+            android:paddingTop="@dimen/coloros_card_content_padding"
+            android:paddingBottom="@dimen/coloros_icon_card_bottom_padding">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/iconsizeRv"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="@dimen/coloros_space_small"
+                android:paddingEnd="@dimen/coloros_space_small"
+                android:paddingTop="@dimen/coloros_space_small" />
+
+            <com.coui.appcompat.seekbar.COUISectionSeekBar
+                android:id="@+id/demo_5_seek_bar_2"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/coloros_control_height"
+                android:layout_marginTop="@dimen/coloros_space_medium"
+                android:layout_marginStart="@dimen/coloros_space_xlarge"
+                android:layout_marginEnd="@dimen/coloros_space_xlarge"
+                android:max="4"
+                android:min="0"
+                app:couiSeekBarEnableVibrator="true"
+                app:couiSeekBarShowGlitterEffect="true"
+                app:couiSeekBarShowProgress="true"
+                app:couiSeekBarShowThumb="true" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/coloros_space_xlarge"
+                android:layout_marginEnd="@dimen/coloros_space_xlarge"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="start"
+                    android:text="XS"
+                    style="@style/ColorOS.TextAppearance.Caption" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="S"
+                    style="@style/ColorOS.TextAppearance.Caption" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="M"
+                    style="@style/ColorOS.TextAppearance.Caption" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="L"
+                    style="@style/ColorOS.TextAppearance.Caption" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="end"
+                    android:text="XL"
+                    style="@style/ColorOS.TextAppearance.Caption" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/ColorOS.TextAppearance.SectionLabel"
+            android:layout_marginStart="@dimen/coloros_section_label_inset"
+            android:layout_marginTop="@dimen/coloros_section_gap"
+            android:layout_marginBottom="@dimen/coloros_space_small"
             android:text="@string/home_screen_icon_shape"
-            android:textColor="?android:attr/textColorPrimary" />
+            />
 
         <com.android.launcher3.views.RadioGroupLinearLayout
             android:id="@+id/radioIcon"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="7dp"
-            android:background="@drawable/hxy_icon_style_rv_shape"
+            android:background="@drawable/settings_card"
             android:orientation="horizontal"
-            android:padding="10dp" />
+            android:paddingStart="@dimen/coloros_space_small"
+            android:paddingTop="@dimen/coloros_card_content_padding"
+            android:paddingEnd="@dimen/coloros_space_small"
+            android:paddingBottom="@dimen/coloros_card_content_padding" />
 
-        <TextView
+        <com.coui.appcompat.button.COUIButton
             android:id="@+id/applyTv"
+            style="@style/ColorOS.Widget.PrimaryButton"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/density_45dp"
-            android:layout_alignParentBottom="true"
-            android:layout_marginStart="20dp"
-            android:layout_marginEnd="20dp"
-            android:layout_marginTop="30dp"
-            android:background="@drawable/custom_icon_size_apply_bg"
-            android:gravity="center"
+            android:layout_height="@dimen/coloros_action_height"
+            android:layout_marginStart="@dimen/coloros_space_small"
+            android:layout_marginTop="@dimen/coloros_space_xxlarge"
+            android:layout_marginEnd="@dimen/coloros_space_small"
             android:text="@android:string/ok"
-            android:textColor="#fff"
-            android:textSize="15sp" />
+            />
     </LinearLayout>
-</LinearLayout>
+</ScrollView>

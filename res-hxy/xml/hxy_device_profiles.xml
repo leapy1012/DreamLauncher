@@ -120,44 +120,107 @@
         launcher:numRows="5"
         launcher:numColumns="4"
         launcher:numFolderRows="4"
-        launcher:numFolderColumns="4"
+        launcher:numFolderColumns="3"
         launcher:numHotseatIcons="4"
         launcher:numExtendedHotseatIcons="5"
-        launcher:dbFile="launcher.db"
+        launcher:numAllAppsColumns="5"
+        launcher:dbFile="launcher_4_by_5.db"
         launcher:inlineNavButtonsEndSpacing="@dimen/taskbar_button_margin_split"
         launcher:defaultLayoutId="@xml/default_workspace_5x4"
         launcher:deviceCategory="phone|multi_display" >
 
         <display-option
-            launcher:name="Large Phone"
-            launcher:minWidthDps="406"
-            launcher:minHeightDps="694"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="14.4"
+            launcher:name="ColorOS Comfortable"
+            launcher:minWidthDps="360"
+            launcher:minHeightDps="640"
+            launcher:iconImageSize="56"
+            launcher:iconTextSize="12"
+            launcher:allAppsIconSize="68"
+            launcher:allAppsIconTextSize="12"
             launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
+            launcher:allAppsCellHeight="100"
             launcher:canBeDefault="true" />
+
+    </grid-option>
+
+    <grid-option
+        launcher:name="4_by_6"
+        launcher:numRows="6"
+        launcher:numColumns="4"
+        launcher:numFolderRows="4"
+        launcher:numFolderColumns="3"
+        launcher:numHotseatIcons="4"
+        launcher:numExtendedHotseatIcons="5"
+        launcher:numAllAppsColumns="5"
+        launcher:dbFile="launcher.db"
+        launcher:inlineNavButtonsEndSpacing="@dimen/taskbar_button_margin_split"
+        launcher:defaultLayoutId="@xml/default_workspace_6x4"
+        launcher:deviceCategory="phone|multi_display" >
 
         <display-option
-            launcher:name="Large Phone Split Display"
-            launcher:minWidthDps="406"
-            launcher:minHeightDps="694"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="14.4"
+            launcher:name="ColorOS Phone"
+            launcher:minWidthDps="360"
+            launcher:minHeightDps="640"
+            launcher:iconImageSize="56"
+            launcher:iconTextSize="12"
+            launcher:allAppsIconSize="68"
+            launcher:allAppsIconTextSize="12"
             launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
+            launcher:allAppsCellHeight="100"
             launcher:canBeDefault="true" />
 
+    </grid-option>
+
+    <grid-option
+        launcher:name="5_by_6"
+        launcher:numRows="6"
+        launcher:numColumns="5"
+        launcher:numFolderRows="4"
+        launcher:numFolderColumns="3"
+        launcher:numHotseatIcons="5"
+        launcher:numExtendedHotseatIcons="5"
+        launcher:numAllAppsColumns="5"
+        launcher:dbFile="launcher_5_by_6.db"
+        launcher:inlineNavButtonsEndSpacing="@dimen/taskbar_button_margin_split"
+        launcher:defaultLayoutId="@xml/default_workspace_6x4"
+        launcher:deviceCategory="phone|multi_display" >
         <display-option
-            launcher:name="Shorter Stubby"
-            launcher:minWidthDps="255"
-            launcher:minHeightDps="400"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="13.0"
+            launcher:name="ColorOS 5 by 6"
+            launcher:minWidthDps="360"
+            launcher:minHeightDps="640"
+            launcher:iconImageSize="54"
+            launcher:iconTextSize="12"
+            launcher:allAppsIconSize="68"
+            launcher:allAppsIconTextSize="12"
             launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
+            launcher:allAppsCellHeight="100"
             launcher:canBeDefault="true" />
+    </grid-option>
 
+    <grid-option
+        launcher:name="5_by_7"
+        launcher:numRows="7"
+        launcher:numColumns="5"
+        launcher:numFolderRows="4"
+        launcher:numFolderColumns="3"
+        launcher:numHotseatIcons="5"
+        launcher:numExtendedHotseatIcons="5"
+        launcher:numAllAppsColumns="5"
+        launcher:dbFile="launcher_5_by_7.db"
+        launcher:inlineNavButtonsEndSpacing="@dimen/taskbar_button_margin_split"
+        launcher:defaultLayoutId="@xml/default_workspace_6x4"
+        launcher:deviceCategory="phone|multi_display" >
+        <display-option
+            launcher:name="ColorOS 5 by 7"
+            launcher:minWidthDps="360"
+            launcher:minHeightDps="640"
+            launcher:iconImageSize="50"
+            launcher:iconTextSize="11"
+            launcher:allAppsIconSize="68"
+            launcher:allAppsIconTextSize="12"
+            launcher:allAppsBorderSpace="16"
+            launcher:allAppsCellHeight="100"
+            launcher:canBeDefault="true" />
     </grid-option>
 
     <grid-option

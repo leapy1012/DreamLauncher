@@ -644,7 +644,7 @@ public class COUINumberPicker extends LinearLayout {
             selectorPaint.setColor(focusTextColor);
             selectorPaint.setTextAlign(Paint.Align.LEFT);
             float unitX = lastTextX + (selectedValueWidth / 2f) + unitMargin;
-            if (isLayoutRtl()) {
+            if (isLayoutRtlCompat()) {
                 unitX = (getMeasuredWidth() - unitX) - selectorPaint.measureText(unitText);
             }
             canvas.drawText(unitText, unitX, unitBaseline - unitMarginBottom, selectorPaint);
@@ -1598,13 +1598,13 @@ public class COUINumberPicker extends LinearLayout {
         return (left + right) / 2;
     }
 
-    private boolean isLayoutRtl() {
+    private boolean isLayoutRtlCompat() {
         return getLayoutDirection() == LAYOUT_DIRECTION_RTL;
     }
 
     private float unitTextAnchor() {
         float right = textMargin() + (selectedValueWidth / 2f);
-        if (isLayoutRtl()) {
+        if (isLayoutRtlCompat()) {
             right = ((getMeasuredWidth() - right) - numberPickerPaddingRight) - numberPickerPaddingLeft;
         }
         return right;

@@ -19,11 +19,13 @@ package com.android.launcher3;
 import static androidx.dynamicanimation.animation.DynamicAnimation.MIN_VISIBLE_CHANGE_SCALE;
 
 import static com.android.launcher3.LauncherAnimUtils.HOTSEAT_SCALE_PROPERTY_FACTORY;
+import static com.android.launcher3.LauncherAnimUtils.SCALE_PROPERTY;
 import static com.android.launcher3.LauncherAnimUtils.SCALE_INDEX_WORKSPACE_STATE;
 import static com.android.launcher3.LauncherAnimUtils.VIEW_ALPHA;
 import static com.android.launcher3.LauncherAnimUtils.VIEW_TRANSLATE_X;
 import static com.android.launcher3.LauncherAnimUtils.VIEW_TRANSLATE_Y;
 import static com.android.launcher3.LauncherAnimUtils.WORKSPACE_SCALE_PROPERTY_FACTORY;
+import static com.android.launcher3.LauncherState.EDIT_MODE;
 import static com.android.launcher3.LauncherState.FLAG_HAS_SYS_UI_SCRIM;
 import static com.android.launcher3.LauncherState.FLAG_HOTSEAT_INACCESSIBLE;
 import static com.android.launcher3.LauncherState.HINT_STATE;
@@ -153,6 +155,10 @@ public class WorkspaceStateTransitionAnimation {
         float workspacePageIndicatorAlpha = (elements & WORKSPACE_PAGE_INDICATOR) != 0 ? 1 : 0;
         propertySetter.setViewAlpha(mLauncher.getWorkspace().getPageIndicator(),
                 workspacePageIndicatorAlpha, workspaceFadeInterpolator);
+        // ToggleBarState scales the page indicator with the workspace, not with the hotseat.
+        // Reset to one for every other state so the transform cannot leak after Done.
+        propertySetter.setFloat(mWorkspace.getPageIndicator(), SCALE_PROPERTY,
+                state == EDIT_MODE ? mNewScale : 1f, scaleInterpolator);
         Interpolator hotseatFadeInterpolator = config.getInterpolator(ANIM_HOTSEAT_FADE,
                 workspaceFadeInterpolator);
         float hotseatIconsAlpha = (elements & HOTSEAT_ICONS) != 0 ? 1 : 0;

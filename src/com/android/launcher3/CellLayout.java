@@ -195,7 +195,8 @@ public class CellLayout extends ViewGroup {
     private static final boolean DEBUG_VISUALIZE_OCCUPIED = false;
 
     private static final float REORDER_PREVIEW_MAGNITUDE = 0.12f;
-    private static final int REORDER_ANIMATION_DURATION = 150;
+    // Source parity with decoded OPPO CellLayout.
+    private static final int REORDER_ANIMATION_DURATION = 450;
     @Thunk final float mReorderPreviewAnimationMagnitude;
 
     private final ArrayList<View> mIntersectingViews = new ArrayList<>();
@@ -573,9 +574,14 @@ public class CellLayout extends ViewGroup {
     }
 
     protected void updateBgAlpha() {
-        if (!getWorkspace().mLauncher.isInState(EDIT_MODE)) {
-            mBackground.setAlpha((int) (mSpringLoadedProgress * 255));
-        }
+        // ToggleBarState does not draw a CellLayout/page background on phones. Explicitly clear
+        // it for the entire transition because StateManager commits EDIT_MODE only at the end.
+        boolean colorOsEditOpen = com.android.launcher3.AbstractFloatingView.getOpenView(
+                getWorkspace().mLauncher,
+                com.android.launcher3.AbstractFloatingView.TYPE_OPTIONS_POPUP_DIALOG) != null;
+        mBackground.setAlpha((getWorkspace().mLauncher.isInState(EDIT_MODE) || colorOsEditOpen)
+                ? 0
+                : (int) (mSpringLoadedProgress * 255));
     }
 
     /**
@@ -765,6 +771,10 @@ public class CellLayout extends ViewGroup {
         if (child instanceof BubbleTextView) {
             BubbleTextView bubbleChild = (BubbleTextView) child;
             bubbleChild.setTextVisibility(mContainerType != HOTSEAT);
+        } else if (child instanceof com.android.launcher3.folder.FolderIcon) {
+            com.android.launcher3.folder.FolderIcon folderChild =
+                    (com.android.launcher3.folder.FolderIcon) child;
+            folderChild.setTextVisibility(mContainerType != HOTSEAT);
         }
 
         child.setScaleX(mChildScale);

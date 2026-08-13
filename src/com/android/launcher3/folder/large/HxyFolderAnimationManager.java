@@ -9,13 +9,12 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.Property;
 import android.view.View;
-import android.view.animation.AnimationUtils;
+import android.view.animation.PathInterpolator;
 import com.android.launcher3.BubbleTextView;
-import com.android.launcher3.util.DimenUtils;
-import com.android.launcher3.DeviceProfile;
+import com.android.launcher3.anim.RoundedRectRevealOutlineProvider;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAnimUtils;
 import com.android.launcher3.LauncherState;
@@ -30,25 +29,27 @@ import com.android.launcher3.folder.FolderPagedView;
 import com.android.launcher3.folder.PreviewBackground;
 import com.android.launcher3.folder.PreviewItemDrawingParams;
 import com.android.launcher3.folder.large.HxyFolderGridOrganizer;
-import com.android.launcher3.statehandlers.DepthController;
 import com.android.launcher3.views.BaseDragLayer;
 import com.android.launcher3.R;
+import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 
 public class HxyFolderAnimationManager {
-    public static final int FOLDER_BG_DURATION = 750;
-    private static final int FOLDER_NAME_ALPHA_DURATION = 32;
+    private static final int FOLDER_NAME_ALPHA_DURATION = 180;
+    private static final int FOLDER_SURFACE_ALPHA_DURATION = 160;
+    private static final int WORKSPACE_ALPHA_DURATION = 160;
+    private static final float COLOROS_WORKSPACE_SCALE = 0.92f;
     private FolderPagedView mContent;
     private Context mContext;
     private final int mDelay;
     private final int mDuration;
     private Folder mFolder;
-    private GradientDrawable mFolderBackground;
     public FolderIcon mFolderIcon;
     private final TimeInterpolator mFolderInterpolator;
+    private final TimeInterpolator mWorkspaceInterpolator;
     private final boolean mIsOpening;
     private Launcher mLauncher;
     private PreviewBackground mPreviewBackground;
@@ -71,8 +72,14 @@ public class HxyFolderAnimationManager {
                 ? R.integer.config_fullFolderOpenDuration
                 : R.integer.config_fullFolderCloseDuration);
         this.mDelay = res.getInteger(R.integer.config_folderDelay);
-        this.mFolderInterpolator = AnimationUtils.loadInterpolator(
-                mContext, R.interpolator.folder_interpolator);
+        // These are the normal ColorOS folder curves used by OPPO. Opening accelerates from the
+        // tapped icon, while closing settles more firmly back into the preview.
+        this.mFolderInterpolator = isOpening
+                ? new PathInterpolator(0.1f, 0.0f, 0.1f, 1.0f)
+                : new PathInterpolator(0.3f, 0.0f, 0.0f, 1.0f);
+        this.mWorkspaceInterpolator = isOpening
+                ? new COUIMoveEaseInterpolator()
+                : this.mFolderInterpolator;
     }
 
     private List<BubbleTextView> getPreviewIconsOnPage(int page) {
@@ -124,40 +131,30 @@ public class HxyFolderAnimationManager {
         Rect startRect = new Rect(Math.round(((float) initialY2) / initialScale), Math.round(((float) paddingOffsetY) / initialScale), Math.round((((float) initialY2) + initialSize) / initialScale), Math.round((((float) paddingOffsetY) + initialSize) / initialScale));
         Rect endRect = new Rect(0, 0, lp.width, lp.height);
         AnimatorSet a = new AnimatorSet();
-        a.setInterpolator(this.mFolderInterpolator);
-        float pxFromDp = (float) DimenUtils.pxToDp(mContext, 2.0f);
-        // boolean isSpring = this.mLauncher.getStateManager().getCurrentStableState() == LauncherState.SPRING_LOADED_2;
         Animator t = getAnimator((View) this.mFolder, View.TRANSLATION_X, xDistance, 0.0f);
         call.accept(t);
         play(a, t);
         play(a, getAnimator((View) this.mFolder, View.TRANSLATION_Y, yDistance, 0.0f));
-        play(a, getAnimator((View) this.mFolder, (Property) LauncherAnimUtils.SCALE_PROPERTY, initialScale, 1.0f));
-        // play(a, getAnimator1(this.mFolderIcon, View.SCALE_X, 1.0f, 3.0f));
-        // play(a, getAnimator1(this.mFolderIcon, View.SCALE_Y, 1.0f, 3.0f));
-        // play(a, getAnimator1(this.mFolderIcon, View.ALPHA, 1.0f, 0.8f));
-        // Animator animatorWallpaper = getAnimatorWallpaper(this.mLauncher.getHxyGroupAnimTool().getWallpaperBg(), View.ALPHA, 0.0f, 1.0f);
-        // if (!this.mIsOpening || !isSpring) {
-        // }
-        // play(a, animatorWallpaper, this.mDuration);
-        // if (isSpring && !this.mLauncher.isInState(LauncherState.OVERVIEW)) {
-        //     play(a, getAnimator(this.mLauncher.getHxyGroupAnimTool().mUpView, View.ALPHA, 1.0f, 0.0f));
-        // }
+        // The destination is full-screen and is not square. Independent axes make the initial
+        // root match the closed square preview instead of stretching it vertically.
+        play(a, getAnimator((View) this.mFolder, View.SCALE_X, scalePreviewX, 1.0f));
+        play(a, getAnimator((View) this.mFolder, View.SCALE_Y, scalePreviewY, 1.0f));
         if (!this.mLauncher.isInState(LauncherState.OVERVIEW)) {
             finalAlpha = 0.0f;
             initialAlpha = 1.0f;
-            play(a, getAnimator((View) this.mLauncher.getDragLayer().findViewById(R.id.page_indicator), View.ALPHA, 1.0f, 0.0f));
+            play(a, getAnimator((View) this.mLauncher.getDragLayer().findViewById(R.id.page_indicator), View.ALPHA, 1.0f, 0.0f), WORKSPACE_ALPHA_DURATION);
         } else {
             finalAlpha = 0.0f;
             initialAlpha = 1.0f;
         }
-        // play(a, getAnimator((View) this.mLauncher.getWorkspace(), View.ALPHA, initialAlpha, finalAlpha));
-        // play(a, getAnimator(this.mLauncher.getAppsView().getSearchView(), View.ALPHA, initialAlpha, finalAlpha));
+        Animator workspaceAlphaAnimator = getAnimator(
+                (View) this.mLauncher.getWorkspace(), View.ALPHA, initialAlpha, finalAlpha);
+        play(a, workspaceAlphaAnimator, WORKSPACE_ALPHA_DURATION);
         Launcher launcher = this.mLauncher;
         View tempView = launcher.getHotseat();
-        float workspace_target = 0.9f;
-        DeviceProfile grid = this.mLauncher.getDeviceProfile();
+        float workspace_target = COLOROS_WORKSPACE_SCALE;
         from = 1.0f;
-        play(a, getAnimator(tempView, View.ALPHA, 1.0f, 0.0f));
+        play(a, getAnimator(tempView, View.ALPHA, 1.0f, 0.0f), WORKSPACE_ALPHA_DURATION);
         
         View pageIndicator = this.mLauncher.getDragLayer().findViewById(R.id.page_indicator);
         Workspace workspaceView = this.mLauncher.getWorkspace();
@@ -166,24 +163,63 @@ public class HxyFolderAnimationManager {
         pageIndicator.setPivotY((float) centerY);
         tempView.setPivotX(workspaceView.getPivotX());
         pageIndicator.setPivotX(workspaceView.getPivotX());
-        play(a, getAnimator(tempView, View.SCALE_X, 1.0f, 0.9f));
-        play(a, getAnimator(tempView, View.SCALE_Y, 1.0f, 0.9f));
+        play(a, getAnimator(tempView, View.SCALE_X, 1.0f, COLOROS_WORKSPACE_SCALE));
+        play(a, getAnimator(tempView, View.SCALE_Y, 1.0f, COLOROS_WORKSPACE_SCALE));
         play(a, getAnimator((View) workspaceView, View.SCALE_X, from, workspace_target));
         play(a, getAnimator((View) workspaceView, View.SCALE_Y, from, workspace_target));
-        play(a, getAnimator(pageIndicator, View.SCALE_X, 1.0f, 0.9f));
-        play(a, getAnimator(pageIndicator, View.SCALE_Y, 1.0f, 0.9f));
+        play(a, getAnimator(pageIndicator, View.SCALE_X, 1.0f, COLOROS_WORKSPACE_SCALE));
+        play(a, getAnimator(pageIndicator, View.SCALE_Y, 1.0f, COLOROS_WORKSPACE_SCALE));
+
+        // Labels are not present in the closed preview. Fade them independently so tiny text
+        // does not travel outward with the preview icons during the morph.
+        for (BubbleTextView icon : this.mFolder.getItemsOnPage(
+                this.mFolder.mContent.getCurrentPage())) {
+            if (this.mIsOpening) {
+                icon.setTextVisibility(false);
+            }
+            Animator itemTextAlpha = icon.createTextAlphaAnimator(this.mIsOpening);
+            play(a, itemTextAlpha,
+                    this.mIsOpening ? 90 : 0,
+                    FOLDER_NAME_ALPHA_DURATION);
+            itemTextAlpha.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    icon.setTextVisibility(true);
+                }
+            });
+        }
         
-        play(a, getAnimator((View) this.mFolder, View.ALPHA, 0.0f, 1.0f));
-        play(a, this.mFolderIcon.getFolderName().createTextAlphaAnimator(!this.mIsOpening));
+        Animator folderSurfaceAlpha = getAnimator((View) this.mFolder, View.ALPHA, 0.65f, 1.0f);
+        play(a, folderSurfaceAlpha,
+                this.mIsOpening ? 0 : this.mDuration - FOLDER_SURFACE_ALPHA_DURATION,
+                FOLDER_SURFACE_ALPHA_DURATION);
+        Animator closedFolderNameAlpha =
+                this.mFolderIcon.getFolderName().createTextAlphaAnimator(!this.mIsOpening);
+        play(a, closedFolderNameAlpha, 0, FOLDER_NAME_ALPHA_DURATION);
         this.mFolder.mFolderName.setAlpha(this.mIsOpening ? 0.0f : 1.0f);
         Animator animator2 = getAnimator((View) this.mFolder.mFolderName, View.ALPHA, 0.0f, 1.0f);
         AnimatorSet a2 = a;
-        // Keep the title fade inside the folder transition. The old implementation started an
-        // additional 800 ms fade after opening had completed, making the interaction feel laggy.
         int titleFadeDuration = Math.min(FOLDER_NAME_ALPHA_DURATION, mDuration);
         play(a, animator2,
-                mIsOpening ? mDuration - titleFadeDuration : 0,
+                mIsOpening ? 70 : 0,
                 titleFadeDuration);
+
+        Drawable transitionSurface = this.mFolder.getBackground();
+        transitionSurface.setAlpha(this.mIsOpening ? 255 : 0);
+        Animator transitionSurfaceAlpha = ObjectAnimator.ofInt(transitionSurface, "alpha",
+                this.mIsOpening ? new int[]{255, 0} : new int[]{0, 255});
+        play(a, transitionSurfaceAlpha,
+                this.mIsOpening ? 0 : Math.max(0, mDuration - FOLDER_SURFACE_ALPHA_DURATION),
+                FOLDER_SURFACE_ALPHA_DURATION);
+
+        float startRadius = mContext.getResources().getDimension(
+                R.dimen.coloros_folder_preview_radius) / Math.max(initialScale, 0.01f);
+        float endRadius = mContext.getResources().getDimension(
+                R.dimen.coloros_folder_content_radius);
+        Animator revealAnimator = new RoundedRectRevealOutlineProvider(
+                startRadius, endRadius, startRect, endRect)
+                .createRevealAnimator(this.mFolder, !this.mIsOpening);
+        play(a, revealAnimator);
         int midDuration = this.mDuration / 2;
         play(a2, getAnimator((View) this.mFolder, View.TRANSLATION_Z, -this.mFolder.getElevation(), 0.0f), this.mIsOpening ? (long) midDuration : 0, midDuration);
         a2.addListener(new AnimatorListenerAdapter() {
@@ -194,6 +230,24 @@ public class HxyFolderAnimationManager {
                 HxyFolderAnimationManager.this.mFolder.setTranslationZ(0.0f);
                 HxyFolderAnimationManager.this.mFolder.setScaleX(1.0f);
                 HxyFolderAnimationManager.this.mFolder.setScaleY(1.0f);
+                HxyFolderAnimationManager.this.mFolder.setAlpha(1.0f);
+                HxyFolderAnimationManager.this.mFolder.mFolderName.setAlpha(1.0f);
+                HxyFolderAnimationManager.this.mFolder.getBackground().setAlpha(
+                        HxyFolderAnimationManager.this.mIsOpening ? 0 : 255);
+                float launcherContentAlpha = HxyFolderAnimationManager.this.mIsOpening
+                        ? 0.0f : 1.0f;
+                float launcherContentScale = HxyFolderAnimationManager.this.mIsOpening
+                        ? COLOROS_WORKSPACE_SCALE : 1.0f;
+                workspaceView.setAlpha(launcherContentAlpha);
+                workspaceView.setScaleX(launcherContentScale);
+                workspaceView.setScaleY(launcherContentScale);
+                tempView.setAlpha(launcherContentAlpha);
+                tempView.setScaleX(launcherContentScale);
+                tempView.setScaleY(launcherContentScale);
+                pageIndicator.setAlpha(HxyFolderAnimationManager.this.mLauncher.isInState(
+                        LauncherState.OVERVIEW) ? 0.0f : launcherContentAlpha);
+                pageIndicator.setScaleX(launcherContentScale);
+                pageIndicator.setScaleY(launcherContentScale);
                 if (HxyFolderAnimationManager.this.mLauncher.isInState(LauncherState.OVERVIEW)) {
                     HxyFolderAnimationManager.this.mLauncher.getDragLayer().findViewById(R.id.page_indicator).setAlpha(0.0f);
                 }
@@ -209,6 +263,15 @@ public class HxyFolderAnimationManager {
         while (it.hasNext()) {
             it.next().setInterpolator(this.mFolderInterpolator);
         }
+        workspaceAlphaAnimator.setInterpolator(this.mWorkspaceInterpolator);
+        closedFolderNameAlpha.setInterpolator(this.mWorkspaceInterpolator);
+        animator2.setInterpolator(this.mWorkspaceInterpolator);
+
+        int radiusDiff = this.mPreviewBackground.getScaledRadius()
+                - this.mPreviewBackground.getRadius();
+        addPreviewItemAnimators(a2, initialScale / scaleRelativeToDragLayer,
+                (int) (previewItemOffsetX / scaleRelativeToDragLayer) + radiusDiff,
+                radiusDiff);
         return a2;
     }
 
@@ -369,13 +432,6 @@ public class HxyFolderAnimationManager {
         return this.mFolderInterpolator;
     }
 
-    private Animator getAnimator(DepthController view, Property property, float v1, float v2) {
-        if (this.mIsOpening) {
-            return ObjectAnimator.ofFloat(view, property, new float[]{v2});
-        }
-        return ObjectAnimator.ofFloat(view, property, new float[]{v1});
-    }
-
     private Animator getAnimator(View view, Property property, float v1, float v2) {
         if (this.mIsOpening) {
             return ObjectAnimator.ofFloat(view, property, new float[]{v1, v2});
@@ -383,24 +439,4 @@ public class HxyFolderAnimationManager {
         return ObjectAnimator.ofFloat(view, property, new float[]{v2, v1});
     }
 
-    private Animator getAnimatorWallpaper(View view, Property property, float v1, float v2) {
-        if (this.mIsOpening) {
-            return ObjectAnimator.ofFloat(view, property, new float[]{view.getAlpha(), v2});
-        }
-        return ObjectAnimator.ofFloat(view, property, new float[]{view.getAlpha(), v1});
-    }
-
-    private Animator getAnimator1(View view, Property property, float v1, float v2) {
-        if (this.mIsOpening) {
-            return ObjectAnimator.ofFloat(view, property, new float[]{v1, v1});
-        }
-        return ObjectAnimator.ofFloat(view, property, new float[]{v2, v1});
-    }
-
-    private Animator getAnimator(GradientDrawable drawable, String property, int v1, int v2) {
-        if (this.mIsOpening) {
-            return ObjectAnimator.ofArgb(drawable, property, new int[]{v1, v2});
-        }
-        return ObjectAnimator.ofArgb(drawable, property, new int[]{v2, v1});
-    }
 }

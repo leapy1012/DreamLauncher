@@ -53,6 +53,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Parcelable;
 import android.util.AttributeSet;
+import android.util.FloatProperty;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -71,6 +72,7 @@ import com.android.launcher3.accessibility.AccessibleDragListenerAdapter;
 import com.android.launcher3.accessibility.WorkspaceAccessibilityHelper;
 import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.anim.PendingAnimation;
+import com.android.launcher3.anim.SpringAnimationBuilder;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.celllayout.CellPosMapper;
 import com.android.launcher3.celllayout.CellPosMapper.CellPos;
@@ -295,6 +297,8 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     private final StatsLogManager mStatsLogManager;
     public ScrollEffect mScrollEffect;
+    private Animator mOplusPageSpring;
+    private boolean mCancellingOplusPageSpring;
 
     /**
      * Used to inflate the Workspace from XML.
@@ -329,7 +333,82 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         setMotionEventSplittingEnabled(true);
         setOnTouchListener(new WorkspaceTouchListener(mLauncher, this));
         mStatsLogManager = StatsLogManager.newInstance(context);
-        ScrollEffect.setFromString(this, LauncherPrefs.get(context).get(LauncherPrefs.WORKSPACE_SCROLL_EFFECT));
+        String workspaceScrollEffect = LauncherPrefs.get(context).get(
+                LauncherPrefs.WORKSPACE_SCROLL_EFFECT);
+        // "oppo-roll" was an earlier local approximation and is not an OPPO default effect.
+        if (ScrollEffect.SCROLL_EFFECT_OPPO_ROLL.equals(workspaceScrollEffect)) {
+            workspaceScrollEffect = "";
+        }
+        ScrollEffect.setFromString(this, workspaceScrollEffect);
+    }
+
+    @Override
+    protected int calculateScrollDuration(float distance, int velocity) {
+        float duration = Math.abs(distance / velocity) * 1000f * 3.5f;
+        return Float.isNaN(duration) ? 0 : Math.round(duration);
+    }
+
+    @Override
+    protected boolean useOplusWorkspaceOverscroll() {
+        return getResources().getBoolean(R.bool.config_hxy_grid) && mScrollEffect == null;
+    }
+
+    @Override
+    protected void startPageSnapScroll(int start, int delta, int duration, int velocity) {
+        if (!useOplusWorkspaceOverscroll() || velocity == 0) {
+            super.startPageSnapScroll(start, delta, duration, velocity);
+            return;
+        }
+        abortPageSnapAnimation();
+        float springVelocity = Math.max(-8000f, Math.min(8000f, -velocity));
+        mOplusPageSpring = new SpringAnimationBuilder(getContext())
+                .setStartValue(start)
+                .setEndValue(start + delta)
+                .setStartVelocity(springVelocity)
+                .setStiffness(200f)
+                .setDampingRatio(0.9f)
+                .setMinimumVisibleChange(1f)
+                .build(this, new FloatProperty<Workspace>("oplusWorkspaceScroll") {
+                    @Override
+                    public void setValue(Workspace workspace, float value) {
+                        workspace.mOrientationHandler.setPrimary(workspace,
+                                com.android.launcher3.touch.PagedOrientationHandler.VIEW_SCROLL_TO,
+                                Math.round(value));
+                        workspace.invalidate();
+                    }
+
+                    @Override
+                    public Float get(Workspace workspace) {
+                        return (float) workspace.mOrientationHandler.getPrimaryScroll(workspace);
+                    }
+                });
+        mOplusPageSpring.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (mOplusPageSpring == animation) {
+                    mOplusPageSpring = null;
+                    invalidate();
+                    computeScroll();
+                }
+            }
+        });
+        mOplusPageSpring.start();
+    }
+
+    @Override
+    protected boolean isPageSnapAnimationRunning() {
+        return mOplusPageSpring != null && mOplusPageSpring.isRunning();
+    }
+
+    @Override
+    protected void abortPageSnapAnimation() {
+        Animator spring = mOplusPageSpring;
+        if (spring != null && !mCancellingOplusPageSpring) {
+            mCancellingOplusPageSpring = true;
+            mOplusPageSpring = null;
+            spring.cancel();
+            mCancellingOplusPageSpring = false;
+        }
     }
 
     @Override
@@ -1401,6 +1480,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         for (int i = 0; i < getChildCount(); i++) {
             View pageAt = getPageAt(i);
             if (pageAt != null) {
+                ScrollEffect.resetNestedTransforms(pageAt);
                 pageAt.setPivotX(((float) pageAt.getMeasuredWidth()) * 0.5f);
                 pageAt.setPivotY(((float) pageAt.getMeasuredHeight()) * 0.5f);
                 pageAt.setRotation(0.0f);
@@ -1418,6 +1498,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     public void setScrollEffectFromString(String str) {
         Log.d(WorkspaceLayoutManager.TAG, "zr_effect setScrollEffectFromString effectName = " + str);
+        if (ScrollEffect.SCROLL_EFFECT_OPPO_ROLL.equals(str)) {
+            str = "";
+        }
         ScrollEffect.setFromString(this, str);
     }
 
@@ -1556,6 +1639,21 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                 }
             }
         }
+    }
+
+    @Override
+    public int[] getVisibleChildrenRange() {
+        int[] visibleChildren = super.getVisibleChildrenRange();
+        // Port of OplusWorkspace.handleVisibleChildrenForEdit: prepare one page on each side
+        // while ToggleBarState is entering so the scale transition never exposes an undrawn page.
+        if (isSwitchingState() && mLauncher.isInState(EDIT_MODE)
+                && visibleChildren[0] >= 0 && visibleChildren[1] >= 0
+                && visibleChildren[1] - visibleChildren[0] < getPageCount()) {
+            visibleChildren[0] = Math.min(visibleChildren[0],
+                    Math.max(0, visibleChildren[0] - 1));
+            visibleChildren[1] = Math.min(getChildCount() - 1, visibleChildren[1] + 1);
+        }
+        return visibleChildren;
     }
 
     private void enableHwLayersOnVisiblePages() {
@@ -2658,6 +2756,10 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                     if (layout != null) break;
                 }
             }
+
+            // OPPO falls back to every workspace page while the edge snap is in flight. Without
+            // this, the target briefly becomes null and reorder/drop feedback flickers.
+            if (layout == null) layout = checkDragObjectIsOverAllPages(d, centerX);
         }
 
         // Update the current drop layout if the target changed
@@ -2721,6 +2823,20 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         return null;
     }
 
+    private CellLayout checkDragObjectIsOverAllPages(DragObject d, float centerX) {
+        int nextPage = getNextPage();
+        for (int pageIndex = 0; pageIndex < getChildCount(); pageIndex++) {
+            float touchX = (((pageIndex < nextPage) && !mIsRtl)
+                    || (pageIndex > nextPage && mIsRtl))
+                    ? Math.min(d.x, centerX) : Math.max(d.x, centerX);
+            CellLayout layout = verifyInsidePage(pageIndex, touchX, d.y);
+            if (layout != null) {
+                return layout;
+            }
+        }
+        return null;
+    }
+
     /**
      * Gets the given view's bounds relative to Workspace
      */
@@ -2736,13 +2852,16 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
      * Returns the child CellLayout if the point is inside the page coordinates, null otherwise.
      */
     private CellLayout verifyInsidePage(int pageNo, float x, float y) {
-        if (pageNo >= 0 && pageNo < getPageCount()) {
-            CellLayout cl = (CellLayout) getChildAt(pageNo);
-            if (x >= cl.getLeft() && x <= cl.getRight()
-                    && y >= cl.getTop() && y <= cl.getBottom()) {
-                // This point is inside the cell layout
-                return cl;
-            }
+        if (pageNo < 0 || pageNo >= getPageCount()) {
+            return null;
+        }
+        CellLayout cl = (CellLayout) getChildAt(pageNo);
+        // Decoded OplusWorkspace uses scroll_zone=22dp on both horizontal sides, allowing
+        // continuous ownership while the finger waits just beyond a scaled page edge.
+        int scrollZone = Math.round(22f * getResources().getDisplayMetrics().density);
+        if (x >= cl.getLeft() - scrollZone && x <= cl.getRight() + scrollZone
+                && y >= 0 && y <= cl.getBottom()) {
+            return cl;
         }
         return null;
     }
@@ -3354,6 +3473,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                     if (scrollEffect == null || z2 || z) {
                         pageAt.setAlpha(1.0f);
                         resetViewPropertyValues(pageAt);
+                        ScrollEffect.resetNestedTransforms(pageAt);
                     } else {
                         scrollEffect.screenScrolled(pageAt, i2, scrollProgress);
                     }

@@ -166,7 +166,7 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
         mDotColor = Themes.getAttrColor(context, R.attr.notificationDotColor);
         mStrokeColor = ta.getColor(R.styleable.FolderIconPreview_folderIconBorderColor, 0);
         mBgColor = ta.getColor(R.styleable.FolderIconPreview_folderPreviewColor, 0);
-        mBgColor = context.getResources().getColor(R.color.hxy_folder_bg_round_color);
+        mBgColor = context.getResources().getColor(R.color.coloros_folder_preview_surface);
         ta.recycle();
 
         DeviceProfile grid = activity.getDeviceProfile();
@@ -263,7 +263,13 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
         mPaint.setStyle(Paint.Style.FILL);
         mPaint.setColor(getBgColor());
 
-        getShape().drawShape(canvas, getOffsetX(), getOffsetY(), getScaledRadius(), mPaint);
+        float left = getOffsetX();
+        float top = getOffsetY();
+        float diameter = getScaledRadius() * 2f;
+        float cornerRadius = mContext.getResources().getDimension(
+                R.dimen.coloros_folder_preview_radius) * mScale;
+        mRectF.set(left, top, left + diameter, top + diameter);
+        canvas.drawRoundRect(mRectF, cornerRadius, cornerRadius, mPaint);
         drawShadow(canvas);
     }
 
@@ -381,7 +387,10 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
         float radiusDifference = radius - getRadius();
         float offsetX = basePreviewOffsetX - radiusDifference;
         float offsetY = basePreviewOffsetY - radiusDifference;
-        getShape().addToPath(mPath, offsetX, offsetY, radius);
+        float cornerRadius = mContext.getResources().getDimension(
+                R.dimen.coloros_folder_preview_radius) * mScale * ICON_OVERLAP_FACTOR;
+        mRectF.set(offsetX, offsetY, offsetX + (radius * 2f), offsetY + (radius * 2f));
+        mPath.addRoundRect(mRectF, cornerRadius, cornerRadius, Path.Direction.CW);
         return mPath;
     }
 

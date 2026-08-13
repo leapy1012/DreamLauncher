@@ -31,6 +31,10 @@ import com.android.launcher3.views.ActivityContext;
  */
 public class AllAppsState extends LauncherState {
 
+    private static final int COLOROS_OPEN_DURATION_MS = 380;
+    private static final int COLOROS_CLOSE_DURATION_MS = 517;
+    private static final float COLOROS_WORKSPACE_SCALE = 0.92f;
+
     private static final int STATE_FLAGS =
             FLAG_WORKSPACE_INACCESSIBLE | FLAG_CLOSE_POPUPS | FLAG_HOTSEAT_INACCESSIBLE;
 
@@ -41,6 +45,9 @@ public class AllAppsState extends LauncherState {
     @Override
     public <DEVICE_PROFILE_CONTEXT extends Context & ActivityContext>
     int getTransitionDuration(DEVICE_PROFILE_CONTEXT context, boolean isToState) {
+        if (context.getResources().getBoolean(R.bool.config_hxy_grid)) {
+            return isToState ? COLOROS_OPEN_DURATION_MS : COLOROS_CLOSE_DURATION_MS;
+        }
         return isToState
                 ? context.getDeviceProfile().allAppsOpenDuration
                 : context.getDeviceProfile().allAppsCloseDuration;
@@ -58,12 +65,18 @@ public class AllAppsState extends LauncherState {
 
     @Override
     public ScaleAndTranslation getWorkspaceScaleAndTranslation(Launcher launcher) {
+        if (launcher.getResources().getBoolean(R.bool.config_hxy_grid)) {
+            return new ScaleAndTranslation(COLOROS_WORKSPACE_SCALE, NO_OFFSET, NO_OFFSET);
+        }
         return new ScaleAndTranslation(launcher.getDeviceProfile().workspaceContentScale, NO_OFFSET,
                 NO_OFFSET);
     }
 
     @Override
     public ScaleAndTranslation getHotseatScaleAndTranslation(Launcher launcher) {
+        if (launcher.getResources().getBoolean(R.bool.config_hxy_grid)) {
+            return getWorkspaceScaleAndTranslation(launcher);
+        }
         if (launcher.getDeviceProfile().isTablet) {
             return getWorkspaceScaleAndTranslation(launcher);
         } else {
@@ -79,6 +92,11 @@ public class AllAppsState extends LauncherState {
     @Override
     protected <DEVICE_PROFILE_CONTEXT extends Context & ActivityContext>
             float getDepthUnchecked(DEVICE_PROFILE_CONTEXT context) {
+        if (context.getResources().getBoolean(R.bool.config_hxy_grid)) {
+            // ColorOS uses a single-depth drawer state. Wallpaper scaling remains disabled by
+            // BaseDepthController on MTK, while this value keeps the scrim/blur timeline aligned.
+            return 1f;
+        }
         if (context.getDeviceProfile().isTablet) {
             return context.getDeviceProfile().bottomSheetDepth;
         } else {

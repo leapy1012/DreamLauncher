@@ -3,6 +3,7 @@ package com.android.launcher3.big.popup;
 import android.view.View;
 import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.Launcher;
+import com.android.launcher3.R;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.popup.SystemShortcut;
 import com.android.launcher3.views.ActivityContext;
@@ -13,7 +14,12 @@ public class SwitchFolderShortcut extends SystemShortcut<Launcher> {
     private final HxyLargeFolderIcon mView;
 
     public SwitchFolderShortcut(Launcher target, ItemInfo itemInfo, View originalView) {
-        super(HxyLargeFolderProxy.getSwitchIconResId(itemInfo), HxyLargeFolderProxy.getSwitchLabelResId(itemInfo), target, itemInfo, originalView);
+        super(HxyLargeFolderProxy.isLargeFolder(itemInfo)
+                        ? R.drawable.ic_folder_convert_icon_minification
+                        : R.drawable.ic_folder_convert_icon_enlarge,
+                HxyLargeFolderProxy.isLargeFolder(itemInfo)
+                        ? R.string.coloros_folder_shrink : R.string.coloros_folder_enlarge,
+                target, itemInfo, originalView);
         this.mView = (HxyLargeFolderIcon) originalView;
     }
 

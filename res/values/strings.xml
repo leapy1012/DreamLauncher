@@ -450,4 +450,25 @@
     <!-- Failed action error message: e.g. Failed: Pause -->
     <string name="remote_action_failed">Failed: <xliff:g id="what" example="Pause">%1$s</xliff:g></string>
     <string name="daily_apps">Daily apps</string>
+
+    <!-- ColorOS folder long-press actions. Wording follows the decoded OPPO launcher. -->
+    <string name="coloros_folder_shrink">Shrink folder</string>
+    <string name="coloros_folder_enlarge">Enlarge folder</string>
+    <string name="coloros_folder_open">Open folder</string>
+    <string name="coloros_folder_rename">Rename</string>
+    <string name="coloros_folder_ungroup">Ungroup</string>
+    <string name="coloros_folder_ungroup_title">Ungroup ?%1$s??</string>
+    <string name="coloros_folder_ungroup_message">Apps in this folder will be placed on the Home screen.</string>
+    <string name="coloros_folder_ungroup_confirm">Ungroup</string>
+    <string name="coloros_folder_ungroup_no_space">There isn?t enough space to ungroup this folder.</string>
+    <string name="coloros_folder_style_nine_grid">3 ? 3 grid folder button</string>
+    <string name="coloros_folder_style_four_grid">2 ? 2 grid folder button</string>
+    <string name="coloros_folder_style_hierarchical">Hierarchical grid folder button</string>
+    <string name="coloros_shortcut_share">Share</string>
+    <string name="coloros_shortcut_edit">Edit</string>
+    <string name="coloros_shortcut_app_lock">App Lock</string>
+    <string name="coloros_shortcut_more_features">More features</string>
+    <string name="coloros_edit_app_name">Edit app name</string>
+    <string name="coloros_remove_widget_title">Remove widget</string>
+    <string name="coloros_remove_widget_message">Removing this widget will not delete any app data.</string>
 </resources>

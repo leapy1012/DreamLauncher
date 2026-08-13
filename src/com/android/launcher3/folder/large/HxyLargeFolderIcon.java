@@ -23,6 +23,7 @@ import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.touch.ItemClickHandler;
 import com.android.launcher3.touch.ItemLongClickListener;
 import com.android.launcher3.R;
+import com.android.launcher3.big.popup.ColorOsFolderStyleView;
 
 import java.util.function.Predicate;
 
@@ -30,7 +31,6 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     public static final int LARGE_FOLDER_SPAN_X = 2;
     public static final int LARGE_FOLDER_SPAN_Y = 2;
     private static final int RECURSION_LOAD_COUNT = 3;
-    private boolean isFirstFolderNameTop;
     private HxyLargeFolderAdapter mAdapter;
     private HxyLargeFolderListView mListView;
     private HxyLargeFolderSwitcher mSwitcher;
@@ -44,7 +44,6 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         this.mListView = null;
         this.mAdapter = null;
         this.mSwitcher = null;
-        this.isFirstFolderNameTop = true;
         initData();
     }
 
@@ -67,14 +66,11 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     @Override
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        if (this.isFirstFolderNameTop) {
-            this.isFirstFolderNameTop = false;
-            setFolderNameTop();
-        }
         if (isLargeFolder()) {
             updateListViewPadding();
             measureChildren(widthMeasureSpec, heightMeasureSpec);
         }
+        setFolderNameTop();
         refreshListData();
     }
 
@@ -104,13 +100,15 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private int getLargeFolderNameTop() {
-        DeviceProfile grid = this.mActivity.getDeviceProfile();
-        return grid.iconDrawablePaddingPx + HxyLargeFolderProxy.computePreviewHeight((View) this, getMeasuredHeight(), grid.iconSizePx);
+        return HxyLargeFolderProxy.getFolderPreviewHeight()
+                + getResources().getDimensionPixelSize(R.dimen.coloros_large_folder_name_gap);
     }
 
     private void updateListViewPadding() {
-        int paddingLeft = getPreviewOffsetX() + HxyLargeFolderProxy.getHorizontalSpace();
-        int paddingTop = getPreviewOffsetY() + HxyLargeFolderProxy.getVerticalSpace() / 2;
+        int paddingLeft = Math.max(0, getPreviewOffsetX()
+                + HxyLargeFolderProxy.getHorizontalSpace() - getPaddingLeft());
+        int paddingTop = Math.max(0, getPreviewOffsetY()
+                + HxyLargeFolderProxy.getVerticalSpace() - getPaddingTop());
         if (paddingLeft != this.mListView.getPaddingLeft() || paddingTop != this.mListView.getPaddingTop()) {
             this.mListView.setVerticalSpace(HxyLargeFolderProxy.getVerticalSpace());
             this.mListView.setHorizontalSpace(HxyLargeFolderProxy.getHorizontalSpace());
@@ -152,8 +150,8 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     public void initLargeFolderIcon() {
         this.mListView = (HxyLargeFolderListView) findViewById(R.id.folder_icon_content);
         this.mAdapter = new HxyLargeFolderAdapter(getContext());
-        this.mAdapter.setMaxSize(HxyLargeFolderProxy.getMaxSize());
         this.mListView.setAdapter(this.mAdapter);
+        setColorOsFolderStyle(resolveColorOsFolderStyle());
         this.mAdapter.setItemListener(new BasePageLinearAdapter.ItemClickListener<WorkspaceItemInfo>() {
             @Override
             public void onItemClick(View view, WorkspaceItemInfo workspaceItemInfo) {
@@ -170,6 +168,25 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         // this.mListView.setOnLongClickListener(new HxyLargeFolderIconLongClickListener(this));
         // this.mListView.setOnClickListener(new HxyLargeFolderIconClickListener(this));
         initLoadListData();
+    }
+
+    private int resolveColorOsFolderStyle() {
+        if ((mInfo.options & ColorOsFolderStyleView.STYLE_FOUR_GRID) != 0) {
+            return ColorOsFolderStyleView.STYLE_FOUR_GRID;
+        }
+        if ((mInfo.options & ColorOsFolderStyleView.STYLE_HIERARCHICAL) != 0) {
+            return ColorOsFolderStyleView.STYLE_HIERARCHICAL;
+        }
+        return ColorOsFolderStyleView.STYLE_NINE_GRID;
+    }
+
+    public void setColorOsFolderStyle(int style) {
+        if (mListView == null || mAdapter == null) return;
+        mListView.setFolderStyle(style);
+        mAdapter.setMaxSize(mListView.getPreviewSlotCount());
+        refreshListView();
+        requestLayout();
+        invalidate();
     }
 
     private void executeLargeFolderIconLongClick(View view, WorkspaceItemInfo data) {

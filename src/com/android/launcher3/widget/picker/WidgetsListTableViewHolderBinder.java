@@ -27,17 +27,21 @@ import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.widget.TableLayout;
 import android.widget.TableRow;
+import android.widget.TextView;
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Px;
 
 import com.android.launcher3.R;
+import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.model.WidgetItem;
 import com.android.launcher3.recyclerview.ViewHolderBinder;
 import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.widget.WidgetCell;
 import com.android.launcher3.widget.model.WidgetsListContentEntry;
 import com.android.launcher3.widget.util.WidgetsTableUtils;
+import com.android.launcher.widget.OplusWidgetsHzAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,13 +81,19 @@ public final class WidgetsListTableViewHolderBinder
             Log.v(TAG, "\nonCreateViewHolder");
         }
 
-        return new WidgetsRowViewHolder(mLayoutInflater.inflate(
-                        R.layout.widgets_table_container, parent, false));
+        int layout = mContext.getResources().getBoolean(R.bool.config_hxy_grid)
+                ? R.layout.widgets_list_row_view
+                : R.layout.widgets_table_container;
+        return new WidgetsRowViewHolder(mLayoutInflater.inflate(layout, parent, false));
     }
 
     @Override
     public void bindViewHolder(WidgetsRowViewHolder holder, WidgetsListContentEntry entry,
             @ListPosition int position, List<Object> payloads) {
+        if (mContext.getResources().getBoolean(R.bool.config_hxy_grid)) {
+            bindColorOsWidgets(holder, entry, payloads);
+            return;
+        }
         for (Object payload : payloads) {
             Pair<WidgetItem, Bitmap> pair = (Pair) payload;
             holder.previewCache.put(pair.first, pair.second);
@@ -124,6 +134,27 @@ public final class WidgetsListTableViewHolderBinder
                         holder.previewCache.get(widgetItem));
             }
         }
+    }
+
+    private void bindColorOsWidgets(WidgetsRowViewHolder holder,
+            WidgetsListContentEntry entry, List<Object> payloads) {
+        for (Object payload : payloads) {
+            Pair<WidgetItem, Bitmap> pair = (Pair) payload;
+            holder.previewCache.put(pair.first, pair.second);
+        }
+
+        holder.colorOsTitle.applyFromPackageItemInfo(entry.mPkgItem);
+
+        OplusWidgetsHzAdapter adapter = new OplusWidgetsHzAdapter(
+                mContext, entry.mWidgets, mIconClickListener, mIconLongClickListener);
+        holder.colorOsRecyclerView.setAdapter(adapter);
+        if (holder.colorOsRecyclerView.getItemDecorationCount() == 0) {
+            holder.colorOsRecyclerView.addItemDecoration(
+                    new OplusWidgetsHzAdapter.WidgetsHzItemDecoration(
+                            mContext.getResources().getDimensionPixelSize(
+                                    R.dimen.toggle_bar_widget_hz_item_spacing)));
+        }
+        holder.colorOsRecyclerView.setHasFixedSize(true);
     }
 
     /**
@@ -171,6 +202,16 @@ public final class WidgetsListTableViewHolderBinder
 
     @Override
     public void unbindViewHolder(WidgetsRowViewHolder holder) {
+        if (holder.colorOsRecyclerView != null) {
+            holder.colorOsRecyclerView.setAdapter(null);
+            holder.previewCache.clear();
+            return;
+        }
+        if (holder.colorOsContainer != null) {
+            for (int i = 0; i < holder.colorOsContainer.getChildCount(); i++) {
+                ((WidgetCell) holder.colorOsContainer.getChildAt(i)).clear();
+            }
+        }
         int numOfRows = holder.tableContainer.getChildCount();
         holder.previewCache.clear();
         for (int i = 0; i < numOfRows; i++) {

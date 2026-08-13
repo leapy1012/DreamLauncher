@@ -126,7 +126,17 @@ public class BaseDepthController {
             // The API's full zoom-out is three times larger than the zoom-out we apply to the
             // icons. To keep the two consistent throughout the animation while keeping Launcher's
             // concept of full depth unchanged, we divide the depth by 3 here.
-            mWallpaperManager.setWallpaperZoomOut(windowToken, depth / 3);
+            // The MTK wallpaper engine scales only the inset app-content rectangle for zoom-out.
+            // In All Apps that exposes opaque black strips behind both system bars. ColorOS keeps
+            // its wallpaper continuous edge-to-edge, so retain the wallpaper scale for our
+            // ColorOS configuration while leaving depth available to the blur/surface pipeline.
+            // MTK applies wallpaper zoom before Launcher commits the destination state. Keep the
+            // ColorOS wallpaper scale throughout the gesture as well as at rest, otherwise a black
+            // inset strip flashes above the translating All Apps content.
+            boolean keepColorOsWallpaperScale = mLauncher.getResources().getBoolean(
+                    R.bool.config_hxy_grid);
+            mWallpaperManager.setWallpaperZoomOut(
+                    windowToken, keepColorOsWallpaperScale ? 0f : depth / 3);
         }
 
         if (!BlurUtils.supportsBlursOnWindows()) {

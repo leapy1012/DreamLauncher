@@ -20,30 +20,40 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     android:focusable="true"
     android:descendantFocusability="afterDescendants">
 
-    <!-- Section info -->
-
-    <com.android.launcher3.BubbleTextView
+    <com.android.launcher3.OplusBubbleTextView
         android:id="@+id/section"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/widget_section_height"
-        android:background="?android:attr/colorPrimary"
-        android:drawablePadding="@dimen/widget_section_horizontal_padding"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/coloros_widget_catalog_section_height"
+        android:layout_marginHorizontal="19dp"
+        android:background="@null"
+        android:drawablePadding="@dimen/widget_popup_row_section_drawable_padding"
         android:focusable="true"
         android:gravity="start|center_vertical"
-        android:paddingBottom="@dimen/widget_section_vertical_padding"
-        android:paddingLeft="@dimen/widget_section_horizontal_padding"
-        android:paddingRight="@dimen/widget_section_horizontal_padding"
-        android:paddingTop="@dimen/widget_section_vertical_padding"
+        android:minHeight="@dimen/widget_popup_row_section_height"
+        android:paddingBottom="@dimen/widget_popup_row_section_padding_bottom"
+        android:paddingStart="@dimen/widget_popup_row_section_padding_horizontal"
+        android:paddingEnd="@dimen/widget_popup_row_section_padding_horizontal"
         android:singleLine="true"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="16sp"
+        android:textColor="@color/launcher_widget_full_sheet_item_name_color"
+        android:textSize="@dimen/widget_popup_row_section_text_size"
         android:textAlignment="viewStart"
-        launcher:iconDisplay="widget_section"
-        launcher:iconSizeOverride="@dimen/widget_section_icon_size"
+        launcher:iconDisplay="all_app_widgets_list"
+        launcher:iconSizeOverride="@dimen/widget_popup_row_section_icon_size"
         launcher:layoutHorizontal="true" />
 
-    <include layout="@layout/widgets_table_container" />
+    <com.android.launcher.widget.OplusWidgetsHzRecyclerView
+        android:id="@+id/widgets_scroll_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/widget_popup_row_section_scroller_margin_top"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/widget_popup_list_padding"
+        android:paddingEnd="@dimen/widget_popup_list_padding_end"
+        android:scrollbars="none" />
 </LinearLayout>

@@ -24,13 +24,16 @@ import static com.android.launcher3.icons.IconNormalizer.ICON_VISIBLE_AREA_FACTO
 
 import android.content.Context;
 import android.graphics.Rect;
+import android.os.Build;
 import android.text.Selection;
 import android.text.SpannableStringBuilder;
 import android.text.method.TextKeyListener;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.ViewGroup.MarginLayoutParams;
+import android.widget.RelativeLayout;
 
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.ExtendedEditText;
@@ -40,6 +43,7 @@ import com.android.launcher3.allapps.ActivityAllAppsContainerView;
 import com.android.launcher3.allapps.AllAppsStore;
 import com.android.launcher3.allapps.BaseAllAppsAdapter.AdapterItem;
 import com.android.launcher3.allapps.SearchUiManager;
+import com.android.launcher3.anim.KeyboardInsetAnimationCallback;
 import com.android.launcher3.search.SearchCallback;
 import com.android.launcher3.views.ActivityContext;
 
@@ -81,6 +85,10 @@ public class AppsSearchContainerLayout extends ExtendedEditText
 
         mContentOverlap =
                 getResources().getDimensionPixelSize(R.dimen.all_apps_search_bar_content_overlap);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            setWindowInsetsAnimationCallback(new KeyboardInsetAnimationCallback(this));
+        }
     }
 
     @Override
@@ -97,6 +105,13 @@ public class AppsSearchContainerLayout extends ExtendedEditText
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        MarginLayoutParams ownLayoutParams = (MarginLayoutParams) getLayoutParams();
+        if (ownLayoutParams instanceof RelativeLayout.LayoutParams
+                && ((RelativeLayout.LayoutParams) ownLayoutParams).getRule(
+                RelativeLayout.ALIGN_PARENT_BOTTOM) == RelativeLayout.TRUE) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            return;
+        }
         // Update the width to match the grid padding
         DeviceProfile dp = mLauncher.getDeviceProfile();
         int myRequestedWidth = getSize(widthMeasureSpec);
@@ -183,8 +198,29 @@ public class AppsSearchContainerLayout extends ExtendedEditText
     @Override
     public void setInsets(Rect insets) {
         MarginLayoutParams mlp = (MarginLayoutParams) getLayoutParams();
-        mlp.topMargin = insets.top;
+        if (mlp instanceof RelativeLayout.LayoutParams
+                && ((RelativeLayout.LayoutParams) mlp).getRule(
+                RelativeLayout.ALIGN_PARENT_BOTTOM) == RelativeLayout.TRUE) {
+            mlp.topMargin = 0;
+            mlp.bottomMargin = insets.bottom + getResources().getDimensionPixelSize(
+                    R.dimen.coloros_all_apps_search_bottom_margin);
+        } else {
+            mlp.topMargin = insets.top;
+        }
         requestLayout();
+    }
+
+    @Override
+    public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                && getLayoutParams() instanceof RelativeLayout.LayoutParams
+                && ((RelativeLayout.LayoutParams) getLayoutParams()).getRule(
+                RelativeLayout.ALIGN_PARENT_BOTTOM) == RelativeLayout.TRUE) {
+            int imeBottom = insets.getInsets(WindowInsets.Type.ime()).bottom;
+            int navigationBottom = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+            setTranslationY(-Math.max(0, imeBottom - navigationBottom));
+        }
+        return super.onApplyWindowInsets(insets);
     }
 
     @Override

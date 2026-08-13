@@ -1,63 +1,118 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout 
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/edit_mode_container"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
-    <LinearLayout
-        android:id="@+id/overview_panel_main_menu"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_gravity="center_vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:orientation="horizontal">
+    <View android:id="@+id/edit_mode_scrim" android:layout_width="0dp" android:layout_height="0dp"
+        android:background="@android:color/transparent" android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" />
 
-        <com.android.launcher3.screenedit.IconTextView
-            android:id="@+id/theme_button"
-            style="@style/PannelButton"
-            android:drawableTop="@drawable/quickactionbar_theme_icon"
-            android:drawableTint="?attr/workspaceTextColor"
-            android:text="@string/launcher_theme_title" />
-        
-        <com.android.launcher3.screenedit.IconTextView
-            android:id="@+id/wallpaper_button"
-            style="@style/PannelButton"
-            android:drawableTop="@drawable/quickactionbar_wallpaper_icon"
-            android:drawableTint="?attr/workspaceTextColor"
-            android:text="@string/styles_wallpaper_button_text" />
+    <com.android.launcher3.views.ColorOsDoneButton
+        android:id="@+id/edit_mode_cancel" android:layout_width="72dp" android:layout_height="30dp"
+        android:layout_marginStart="24dp" android:layout_marginTop="5dp" android:gravity="center"
+        android:text="@string/edit_mode_cancel" android:textSize="12sp" android:textStyle="bold"
+        android:visibility="gone" app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <com.android.launcher3.screenedit.IconTextView
-            android:id="@+id/widget_button"
-            style="@style/PannelButton"
-            android:drawableTop="@drawable/quickactionbar_add_widget_icon"
-            android:drawableTint="?attr/workspaceTextColor"
-            android:text="@string/widget_button_text" />
+    <TextView android:id="@+id/edit_mode_secondary_title" android:layout_width="wrap_content"
+        android:layout_height="30dp" android:layout_marginTop="5dp" android:gravity="center"
+        android:text="@string/edit_mode_layout" android:textColor="#FFFFFFFF" android:textSize="16sp"
+        android:textStyle="bold" android:visibility="gone" app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent" />
 
-        <com.android.launcher3.screenedit.IconTextView
-            android:id="@+id/effect_button"
-            style="@style/PannelButton"
-            android:drawableTop="@drawable/quickactionbar_effect_icon"
-            android:drawableTint="?attr/workspaceTextColor"
-            android:text="@string/effect_button_text" />
+    <com.android.launcher3.views.ColorOsDoneButton
+        android:id="@+id/edit_mode_done" android:layout_width="72dp" android:layout_height="30dp"
+        android:layout_marginTop="5dp" android:layout_marginEnd="24dp" android:paddingStart="6dp"
+        android:paddingEnd="6dp" android:gravity="center" android:ellipsize="end" android:maxLines="1"
+        android:text="@string/edit_mode_done" android:textSize="12sp" android:textStyle="bold"
+        android:visibility="gone" app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <com.android.launcher3.screenedit.IconTextView
-            android:id="@+id/settings_button"
-            style="@style/PannelButton"
-            android:drawableTop="@drawable/quickactionbar_launcher_setting_icon"
-            android:drawableTint="?attr/workspaceTextColor"
-            android:text="@string/settings_button_text" />
+    <LinearLayout android:id="@+id/overview_panel_main_menu" android:layout_width="match_parent"
+        android:layout_height="91dp" android:clipToPadding="false" android:gravity="top|center_horizontal"
+        android:orientation="horizontal" android:paddingStart="20dp" android:paddingTop="18dp"
+        android:paddingEnd="20dp" app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+        <com.android.launcher3.views.ColorOsEditActionView android:id="@+id/widget_button"
+            style="@style/ColorOsEditAction" android:drawableTop="@drawable/ic_togglebar_widget_item"
+            android:text="@string/edit_mode_widgets" />
+        <com.android.launcher3.views.ColorOsEditActionView android:id="@+id/wallpaper_button"
+            style="@style/ColorOsEditAction" android:drawableTop="@drawable/ic_togglebar_wallpaper_item"
+            android:text="@string/edit_mode_wallpapers_style" />
+        <com.android.launcher3.views.ColorOsEditActionView android:id="@+id/layout_button"
+            style="@style/ColorOsEditAction" android:drawableTop="@drawable/ic_togglebar_layout_item"
+            android:text="@string/edit_mode_layout" />
+        <com.android.launcher3.views.ColorOsEditActionView android:id="@+id/settings_button"
+            style="@style/ColorOsEditAction" android:drawableTop="@drawable/ic_togglebar_settings_item"
+            android:text="@string/edit_mode_home_settings" />
+        <View android:id="@+id/theme_button" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <View android:id="@+id/effect_button" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
     </LinearLayout>
 
+    <LinearLayout android:id="@+id/coloros_layout_panel" android:layout_width="match_parent"
+        android:layout_height="220dp" android:background="#FFFFFFFF"
+        android:orientation="vertical" android:visibility="gone" app:layout_constraintBottom_toBottomOf="parent">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="117dp"
+            android:layout_marginTop="15dp" android:layout_marginBottom="20dp" android:gravity="center"
+            android:orientation="horizontal">
+            <LinearLayout android:id="@+id/coloros_grid_4x6" android:layout_width="108dp"
+                android:layout_height="108dp" android:clickable="true" android:focusable="true"
+                android:gravity="center" android:orientation="vertical">
+                <com.android.launcher3.views.ColorOsGridPreviewView android:id="@+id/coloros_grid_4x6_preview"
+                    android:layout_width="48dp" android:layout_height="68dp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp" android:text="@string/edit_mode_grid_4x6"
+                    android:textColor="#E6000000" android:textSize="11sp" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/coloros_grid_5x6" android:layout_width="108dp"
+                android:layout_height="108dp" android:clickable="true" android:focusable="true"
+                android:gravity="center" android:orientation="vertical">
+                <com.android.launcher3.views.ColorOsGridPreviewView android:id="@+id/coloros_grid_5x6_preview"
+                    android:layout_width="48dp" android:layout_height="68dp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp" android:text="@string/edit_mode_grid_5x6"
+                    android:textColor="#E6000000" android:textSize="11sp" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/coloros_grid_5x7" android:layout_width="108dp"
+                android:layout_height="108dp" android:clickable="true" android:focusable="true"
+                android:gravity="center" android:orientation="vertical">
+                <com.android.launcher3.views.ColorOsGridPreviewView android:id="@+id/coloros_grid_5x7_preview"
+                    android:layout_width="48dp" android:layout_height="68dp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp" android:text="@string/edit_mode_grid_5x7"
+                    android:textColor="#E6000000" android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+        <View android:layout_width="match_parent" android:layout_height="0.33dp" android:background="#14000000" />
+        <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent"
+            android:layout_height="82.67dp">
+            <com.coui.appcompat.textview.COUITextView android:id="@+id/coloros_hide_names_title"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="24dp"
+                android:layout_marginEnd="16dp" android:fontFamily="sans-serif-medium" android:maxLines="2"
+                android:text="@string/edit_mode_hide_icon_names" android:textColor="#E6000000" android:textSize="16sp"
+                app:layout_constraintBottom_toTopOf="@id/coloros_hide_names_description"
+                app:layout_constraintEnd_toStartOf="@id/coloros_hide_names_switch"
+                app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+            <com.coui.appcompat.textview.COUITextView android:id="@+id/coloros_hide_names_description"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="24dp"
+                android:layout_marginEnd="16dp" android:fontFamily="sans-serif-medium" android:maxLines="2"
+                android:text="@string/edit_mode_layout_change_description" android:textColor="#99000000" android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toStartOf="@id/coloros_hide_names_switch"
+                app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/coloros_hide_names_title" />
+            <com.coui.appcompat.couiswitch.COUISwitch android:id="@+id/coloros_hide_names_switch"
+                android:layout_width="36dp" android:layout_height="22dp" android:layout_marginEnd="20dp"
+                android:clickable="true" android:focusable="true"
+                app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
-    <com.android.launcher3.screenedit.GridGallery
-        android:id="@+id/effect_gallery"
-        style="@style/GridGallery"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_gravity="center_vertical"
-        android:orientation="vertical"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <com.android.launcher3.screenedit.GridGallery android:id="@+id/effect_gallery" style="@style/GridGallery"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_gravity="center_vertical"
+        android:orientation="vertical" android:visibility="invisible" app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

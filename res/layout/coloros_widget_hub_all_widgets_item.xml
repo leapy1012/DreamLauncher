@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exact Assistant Screen layout_card_store_main_page_widget_entry_item hierarchy. -->
+<com.coui.appcompat.cardlist.COUICardListSelectedItemLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/coloros_widget_hub_all_widgets"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="22dp"
+    android:clickable="true"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:focusable="true"
+    android:minHeight="48dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="0dp"
+        android:paddingHorizontal="16dp">
+        <androidx.cardview.widget.CardView
+            android:id="@+id/coloros_widget_hub_all_widgets_icon_card"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="@color/coui_color_card_background"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+            <ImageView
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:src="@drawable/coloros_widget_store_icon" />
+        </androidx.cardview.widget.CardView>
+        <com.coui.appcompat.textview.COUITextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/coloros_all_widgets"
+            android:textAlignment="viewStart"
+            android:textColor="@color/coloros_widget_store_item_title"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="@id/coloros_widget_hub_all_widgets_icon_card"
+            app:layout_constraintEnd_toStartOf="@id/coloros_widget_hub_all_widgets_arrow"
+            app:layout_constraintStart_toEndOf="@id/coloros_widget_hub_all_widgets_icon_card"
+            app:layout_constraintTop_toTopOf="@id/coloros_widget_hub_all_widgets_icon_card" />
+        <ImageView
+            android:id="@+id/coloros_widget_hub_all_widgets_arrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:autoMirrored="true"
+            android:src="@drawable/coloros_ic_card_store_item_next"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.coui.appcompat.cardlist.COUICardListSelectedItemLayout>

@@ -15,40 +15,22 @@
  */
 package com.android.launcher3.settings;
 
-import static android.text.Layout.HYPHENATION_FREQUENCY_NORMAL_FAST;
-
 import android.annotation.LayoutRes;
-import android.app.ActivityManager;
-import android.content.ComponentName;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.res.TypedArray;
 import android.os.Bundle;
-import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.util.TypedValue;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.widget.Toolbar;
-
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
-import androidx.fragment.app.FragmentActivity;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.launcher3.R;
+import com.coui.appcompat.toolbar.COUIToolbar;
 
-import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.appbar.CollapsingToolbarLayout;
-import com.google.android.material.resources.TextAppearanceConfig;
-import androidx.core.content.res.ResourcesCompat;
-import android.app.ActionBar;
 import android.view.MenuItem;
 
 /** Base activity for Settings pages */
-public class SettingsBaseActivity extends FragmentActivity {
+public class SettingsBaseActivity extends AppCompatActivity {
 
     /**
      * What type of page transition should be apply.
@@ -58,10 +40,7 @@ public class SettingsBaseActivity extends FragmentActivity {
     protected static final boolean DEBUG_TIMING = false;
     private static final String TAG = "SettingsBaseActivity";
     private static final int DEFAULT_REQUEST = -1;
-    private static final float TOOLBAR_LINE_SPACING_MULTIPLIER = 1.1f;
-    protected CollapsingToolbarLayout mCollapsingToolbarLayout;
-    protected AppBarLayout mAppBarLayout;
-    protected Toolbar mToolbar;
+    protected COUIToolbar mToolbar;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -70,37 +49,17 @@ public class SettingsBaseActivity extends FragmentActivity {
             return;
         }
 
-        super.setContentView(R.layout.collapsing_toolbar_base_layout);
-        mCollapsingToolbarLayout = findViewById(R.id.collapsing_toolbar);
-        mAppBarLayout = findViewById(R.id.app_bar);
-        if (mCollapsingToolbarLayout != null) {
-            mCollapsingToolbarLayout.setLineSpacingMultiplier(TOOLBAR_LINE_SPACING_MULTIPLIER);
-            mCollapsingToolbarLayout.setHyphenationFrequency(HYPHENATION_FREQUENCY_NORMAL_FAST);
-        }
-        disableCollapsingToolbarLayoutScrollingBehavior();
-        setActionBar(findViewById(R.id.action_bar));
+        super.setContentView(R.layout.settings_base_activity);
+        mToolbar = findViewById(R.id.action_bar);
+        setSupportActionBar(mToolbar);
 
-        ActionBar actionBar = getActionBar();
+        ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             android.util.Log.d(TAG, "setActionBar");
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeButtonEnabled(true);
             actionBar.setDisplayShowTitleEnabled(true);
         }
-        Toolbar toolbar = findViewById(R.id.action_bar);
-        if (toolbar != null) {
-            android.util.Log.d(TAG, "setToolbar");
-            TypedValue typedValue = new TypedValue();
-            getTheme().resolveAttribute(android.R.attr.colorPrimaryDark, typedValue, true);
-            toolbar.setBackgroundColor(typedValue.data);
-        }
-    }
-
-    @Override
-    public void setActionBar(@androidx.annotation.Nullable Toolbar toolbar) {
-        super.setActionBar(toolbar);
-
-        mToolbar = toolbar;
     }
 
     @Override
@@ -122,22 +81,6 @@ public class SettingsBaseActivity extends FragmentActivity {
         ((ViewGroup) findViewById(R.id.content_frame)).addView(view, params);
     }
 
-    @Override
-    public void setTitle(CharSequence title) {
-        super.setTitle(title);
-        if (mCollapsingToolbarLayout != null) {
-            mCollapsingToolbarLayout.setTitle(title);
-        }
-    }
-
-    @Override
-    public void setTitle(int titleId) {
-        super.setTitle(getText(titleId));
-        if (mCollapsingToolbarLayout != null) {
-            mCollapsingToolbarLayout.setTitle(getText(titleId));
-        }
-    }
-
     /**
      * SubSetting page should show a toolbar by default. If the page wouldn't show a toolbar,
      * override this method and return false value.
@@ -155,22 +98,5 @@ public class SettingsBaseActivity extends FragmentActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    private void disableCollapsingToolbarLayoutScrollingBehavior() {
-        if (mAppBarLayout == null) {
-            return;
-        }
-        final CoordinatorLayout.LayoutParams params =
-                (CoordinatorLayout.LayoutParams) mAppBarLayout.getLayoutParams();
-        final AppBarLayout.Behavior behavior = new AppBarLayout.Behavior();
-        behavior.setDragCallback(
-                new AppBarLayout.Behavior.DragCallback() {
-                    @Override
-                    public boolean canDrag(@NonNull AppBarLayout appBarLayout) {
-                        return false;
-                    }
-                });
-        params.setBehavior(behavior);
     }
 }

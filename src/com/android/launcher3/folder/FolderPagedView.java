@@ -23,10 +23,12 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Path;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.util.ArrayMap;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewDebug;
@@ -134,7 +136,13 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
 
         // Update grid size
         for (int i = getPageCount() - 1; i >= 0; i--) {
-            getPageAt(i).setGridSize(mGridCountX, mGridCountY);
+            CellLayout page = getPageAt(i);
+            page.setGridSize(mGridCountX, mGridCountY);
+            if (getResources().getBoolean(R.bool.config_show_full_folder_style)) {
+                page.setCellDimensions(
+                        getColorOsCellWidth(),
+                        getResources().getDimensionPixelSize(R.dimen.coloros_folder_cell_height));
+            }
         }
     }
 
@@ -175,10 +183,16 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
         if (!getContext().getResources().getBoolean(R.bool.config_show_full_folder_style)) {
             isAdd = false;
         }
-        if (isAdd && addFlag) {
+        // ColorOS keeps folder management out of the app grid. The legacy full-folder layout
+        // inserted a synthetic Add cell, which does not exist in OPPO's opened folders.
+        if (isAdd && addFlag
+                && !getContext().getResources().getBoolean(
+                        R.bool.config_show_full_folder_style)) {
             list.add(this.mAdd);
         }
-        arrangeChildren(list, addFlag);//arrangeChildren(items.stream().map(this::createNewView).collect(Collectors.toList()));
+        arrangeChildren(list, addFlag
+                && !getContext().getResources().getBoolean(
+                        R.bool.config_show_full_folder_style));
         mViewsBound = true;
     }
 
@@ -194,11 +208,11 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
                 if (container.getChildAt(j) instanceof HxyAddBubbleTextView) {
                     mViewCache.recycleView(R.layout.add_folder_application, container.getChildAt(j));
                 } else if (container.getChildAt(j) instanceof BubbleTextView) {
-                    mViewCache.recycleView(R.layout.folder_application, container.getChildAt(j));
+                    mViewCache.recycleView(getFolderApplicationLayout(), container.getChildAt(j));
                 }
             }
             page.removeAllViews();
-            mViewCache.recycleView(R.layout.folder_page, page);
+            mViewCache.recycleView(getFolderPageLayout(), page);
         }
         removeAllViews();
         mViewsBound = false;
@@ -257,7 +271,22 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
             return null;
         }
         final BubbleTextView textView = mViewCache.getView(
-                R.layout.folder_application, getContext(), null);
+                getFolderApplicationLayout(), getContext(), null);
+        if (getResources().getBoolean(R.bool.config_show_full_folder_style)) {
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_PX,
+                    getResources().getDimensionPixelSize(
+                            R.dimen.coloros_folder_child_text_size));
+            textView.setCompoundDrawablePadding(getResources().getDimensionPixelSize(
+                    R.dimen.coloros_folder_child_drawable_gap));
+            textView.setCenterVertically(false);
+            textView.setPadding(textView.getPaddingLeft(),
+                    getResources().getDimensionPixelSize(
+                            R.dimen.coloros_folder_child_icon_padding_top),
+                    textView.getPaddingRight(), textView.getPaddingBottom());
+            textView.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+            textView.setSingleLine(false);
+            textView.setMaxLines(2);
+        }
         textView.applyFromWorkspaceItem(item);
         textView.setOnClickListener(mFolder.mActivityContext.getItemOnClickListener());
         textView.setOnLongClickListener(mFolder);
@@ -299,6 +328,10 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
     }
 
     public void dropCompleted(ArrayList<View> list) {
+        if (getContext().getResources().getBoolean(R.bool.config_show_full_folder_style)) {
+            arrangeChildren(list, false);
+            return;
+        }
         if (!list.contains(this.mAdd)) {
             list.add(this.mAdd);
             arrangeChildren(list, true);
@@ -318,8 +351,14 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
 
     private CellLayout createAndAddNewPage() {
         DeviceProfile grid = mFolder.mActivityContext.getDeviceProfile();
-        CellLayout page = mViewCache.getView(R.layout.folder_page, getContext(), this);
-        page.setCellDimensions(grid.folderCellWidthPx, grid.folderCellHeightPx);
+        CellLayout page = mViewCache.getView(getFolderPageLayout(), getContext(), this);
+        if (getResources().getBoolean(R.bool.config_show_full_folder_style)) {
+            page.setCellDimensions(
+                    getColorOsCellWidth(),
+                    getResources().getDimensionPixelSize(R.dimen.coloros_folder_cell_height));
+        } else {
+            page.setCellDimensions(grid.folderCellWidthPx, grid.folderCellHeightPx);
+        }
         page.getShortcutsAndWidgets().setMotionEventSplittingEnabled(false);
         page.setInvertIfRtl(true);
         page.setGridSize(mGridCountX, mGridCountY);
@@ -328,8 +367,31 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
         return page;
     }
 
+    private int getFolderApplicationLayout() {
+        return getResources().getBoolean(R.bool.config_show_full_folder_style)
+                ? R.layout.coloros_folder_application
+                : R.layout.folder_application;
+    }
+
+    private int getFolderPageLayout() {
+        return getResources().getBoolean(R.bool.config_show_full_folder_style)
+                ? R.layout.coloros_folder_page
+                : R.layout.folder_page;
+    }
+
+    private int getColorOsCellWidth() {
+        DeviceProfile dp = mFolder.mActivityContext.getDeviceProfile();
+        int sideInset = getResources().getDimensionPixelSize(
+                R.dimen.coloros_folder_header_margin_horizontal);
+        return Math.max(1, (dp.widthPx - (sideInset * 2)) / 3);
+    }
+
     @Override
     protected int getChildGap(int fromIndex, int toIndex) {
+        if (getResources().getBoolean(R.bool.config_show_full_folder_style)) {
+            return getResources().getDimensionPixelSize(
+                    R.dimen.coloros_folder_page_spacing);
+        }
         return getPaddingLeft() + getPaddingRight();
     }
 

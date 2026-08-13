@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/coloros_folder_content_surface" />
+    <stroke
+        android:width="@dimen/coloros_folder_content_stroke_width"
+        android:color="@color/coloros_folder_surface_stroke" />
+    <corners android:radius="@dimen/coloros_folder_content_radius" />
+</shape>

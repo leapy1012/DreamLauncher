@@ -79,6 +79,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.android.launcher3.big.popup.ColorOsFolderShortcuts;
+import com.android.launcher3.big.popup.ColorOsFolderStyleView;
 import com.android.launcher3.big.popup.SwitchFolderShortcut;
 import com.android.launcher3.folder.large.HxyLargeFolderIcon;
 
@@ -101,6 +103,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     private final float mShortcutHeight;
     private HxyLargeFolderIcon mFolderIcon;
     private BubbleTextView mOriginalIcon;
+    private ColorOsPopupBlurView mColorOsBlurView;
     private int mNumNotifications;
     private NotificationContainer mNotificationContainer;
     private int mContainerWidth;
@@ -234,15 +237,22 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         PopupContainerWithArrow<Launcher> container;
         PopupDataProvider popupDataProvider = launcher.getPopupDataProvider();
         int deepShortcutCount = popupDataProvider.getShortcutCountForItem(item);
-        List<SystemShortcut> systemShortcuts = launcher.getSupportedShortcuts()
+        boolean colorOsPopup = launcher.getResources().getBoolean(R.bool.config_hxy_grid);
+        List<SystemShortcut> systemShortcuts = colorOsPopup
+                ? ColorOsAppShortcuts.create(launcher, item, icon, deepShortcutCount)
+                : launcher.getSupportedShortcuts()
                 .map(s -> s.getShortcut(launcher, item, icon))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        if (ENABLE_MATERIAL_U_POPUP.get()) {
+        if (ENABLE_MATERIAL_U_POPUP.get() || colorOsPopup) {
             container = (PopupContainerWithArrow) launcher.getLayoutInflater().inflate(
                     R.layout.popup_container_material_u, launcher.getDragLayer(), false);
             container.configureForLauncher(launcher, item);
-            container.populateAndShowRowsMaterialU(icon, deepShortcutCount, systemShortcuts);
+            if (colorOsPopup) {
+                container.populateAndShowColorOs(icon, deepShortcutCount, systemShortcuts);
+            } else {
+                container.populateAndShowRowsMaterialU(icon, deepShortcutCount, systemShortcuts);
+            }
         } else {
             container = (PopupContainerWithArrow) launcher.getLayoutInflater().inflate(
                     R.layout.popup_container, launcher.getDragLayer(), false);
@@ -375,6 +385,22 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         }
         show();
         loadAppShortcuts((ItemInfo) originalIcon.getTag(), /* notificationKeys= */ emptyList());
+    }
+
+    /** OPPO keeps system actions as full text rows when app deep shortcuts are present. */
+    public void populateAndShowColorOs(final BubbleTextView originalIcon,
+            int deepShortcutCount, List<SystemShortcut> systemShortcuts) {
+        mOriginalIcon = originalIcon;
+        mContainerWidth = getResources().getDimensionPixelSize(R.dimen.bg_popup_item_width);
+        addSystemShortcutsMaterialU(systemShortcuts,
+                R.layout.system_shortcut_rows_container_material_u,
+                R.layout.system_shortcut);
+        if (deepShortcutCount > 0) {
+            addDeepShortcutsMaterialU(deepShortcutCount,
+                    mShortcutHeight * systemShortcuts.size());
+        }
+        show();
+        loadAppShortcuts((ItemInfo) originalIcon.getTag(), emptyList());
     }
 
     /**
@@ -716,6 +742,17 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     }
 
     @Override
+    protected void setupForDisplay() {
+        if (getResources().getBoolean(R.bool.config_hxy_grid)
+                && mColorOsBlurView == null) {
+            View pressedView = mOriginalIcon != null ? mOriginalIcon : mFolderIcon;
+            mColorOsBlurView = ColorOsPopupBlurView.show(
+                    Launcher.getLauncher(getContext()), pressedView);
+        }
+        super.setupForDisplay();
+    }
+
+    @Override
     public void onDropCompleted(View target, DragObject d, boolean success) {  }
 
     @Override
@@ -748,11 +785,18 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
             anim.play(mOriginalIcon.createTextAlphaAnimator(true /* fadeIn */));
             mOriginalIcon.setForceHideDot(false);
         }
+        if (mColorOsBlurView != null) {
+            anim.play(mColorOsBlurView.createCloseAnimator());
+        }
     }
 
     @Override
     protected void closeComplete() {
         super.closeComplete();
+        if (mColorOsBlurView != null) {
+            mColorOsBlurView.removeAndRecycle();
+            mColorOsBlurView = null;
+        }
         if (mActivityContext.getDragController() != null) {
             mActivityContext.getDragController().removeDragListener(this);
         }
@@ -887,15 +931,20 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         }
         PopupContainerWithArrow container = (PopupContainerWithArrow) launcher.getLayoutInflater().inflate(R.layout.folder_popup_container, launcher.getDragLayer(), false);
         container.configureForLauncher(launcher, (ItemInfo) icon.getTag());
-        container.populateAndShow((SystemShortcut) new SwitchFolderShortcut(launcher, (ItemInfo) icon.getTag(), icon), icon);
+        container.populateAndShow(ColorOsFolderShortcuts.create(
+                launcher, (com.android.launcher3.model.data.FolderInfo) icon.getTag(), icon), icon);
         return container;
     }
 
-    public void populateAndShow(SystemShortcut systemShortcut, HxyLargeFolderIcon view) {
+    public void populateAndShow(
+            List<SystemShortcut<Launcher>> systemShortcuts, HxyLargeFolderIcon view) {
         mFolderIcon = view;
         int viewsToFlip = getChildCount();
         mSystemShortcutContainer = this;
-        initializeSystemShortcut(R.layout.system_shortcut, this, systemShortcut, false);
+        addView(new ColorOsFolderStyleView(Launcher.getLauncher(getContext()), view));
+        for (SystemShortcut<Launcher> systemShortcut : systemShortcuts) {
+            initializeSystemShortcut(R.layout.system_shortcut, this, systemShortcut, false);
+        }
         reorderAndShow(viewsToFlip);
         setAccessibilityPaneTitle(getTitleForAccessibility());
         setLayoutTransition(new LayoutTransition());

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Exact CardStore values from the OPPO Assistant Screen resource table. -->
+    <color name="coloros_widget_toolbar_cancel">#FF0066FF</color>
+    <color name="coloros_widget_toolbar_title">#E6000000</color>
+    <color name="coloros_widget_store_item_title">#D9000000</color>
+    <color name="coloros_widget_panel_mask">#33000000</color>
+    <color name="coloros_widget_nav_bar_surface">#FFF0F1F2</color>
+
+    <style name="ColorOsWidgetStoreToolbar" parent="@style/COUIToolBarInAppBarLayoutStyle">
+        <item name="supportTitleTextAppearance">@style/ColorOsWidgetStoreToolbarTitle</item>
+    </style>
+    <style name="ColorOsWidgetStoreToolbarTitle" parent="@style/textAppearanceSecondTitle">
+        <item name="android:textSize">18sp</item>
+    </style>
+</resources>

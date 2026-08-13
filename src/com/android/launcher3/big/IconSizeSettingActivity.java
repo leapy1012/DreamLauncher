@@ -13,7 +13,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.launcher3.customer.seekbar.SignSeekBar;
+import com.coui.appcompat.seekbar.COUISeekBar;
+import com.coui.appcompat.seekbar.COUISectionSeekBar;
 import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.model.data.AppInfo;
@@ -29,7 +30,7 @@ import com.android.launcher3.views.RadioGroupLinearLayout;
 import com.android.launcher3.util.Themes;
 import android.provider.Settings;
 import android.app.ProgressDialog;
-import android.app.ActionBar;
+import androidx.appcompat.app.ActionBar;
 
 public class IconSizeSettingActivity extends SettingsBaseActivity {
     private static final String TAG = "IconSizeSettingActivity";
@@ -61,27 +62,34 @@ public class IconSizeSettingActivity extends SettingsBaseActivity {
         LoadThemeTask loadThemeTask = new LoadThemeTask();
         this.task = loadThemeTask;
         loadThemeTask.execute(new Void[0]);
-        Float progress = Float.valueOf((PrefTools.getFloat(ICON_SIZE_PROGRESS, PROGRESS_DEFAULT_VALUE.floatValue(), this) - 0.75f) / 0.4f);
+        Float progress = Float.valueOf((PrefTools.getFloat(ICON_SIZE_PROGRESS,
+                PROGRESS_DEFAULT_VALUE.floatValue(), this) - 0.75f) / 0.4f);
+        final int sectionProgress = Math.max(0, Math.min(4, Math.round(progress * 4f)));
         IconSizeSettingAdapter iconSizeSettingAdapter = new IconSizeSettingAdapter(this, this.list);
         this.adapter = iconSizeSettingAdapter;
-        iconSizeSettingAdapter.setProgress(progress);
+        iconSizeSettingAdapter.setProgress(sectionProgress / 4f);
         this.adapter.firstTag = true;
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.iconsizeRv);
         this.mRv = recyclerView;
         recyclerView.setLayoutManager(new GridLayoutManager(this, 4));
         this.mRv.setAdapter(this.adapter);
         this.mRv.setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
-        final SignSeekBar signSeekBar = (SignSeekBar) findViewById(R.id.demo_5_seek_bar_2);
-        signSeekBar.getConfigBuilder().min(0.0f).max(1.0f).progress(progress.floatValue()).sectionCount(4).sectionTextPosition(2).build();
-        signSeekBar.setOnProgressChangedListener(new SignSeekBar.OnProgressChangedListener() {
-            public void onProgressChanged(SignSeekBar signSeekBar, int progress, float progressFloat, boolean fromUser) {
-                IconSizeSettingActivity.this.adapter.setProgress(Float.valueOf(progressFloat));
+        final COUISectionSeekBar sectionSeekBar = findViewById(R.id.demo_5_seek_bar_2);
+        sectionSeekBar.setMin(0);
+        sectionSeekBar.setMax(4);
+        sectionSeekBar.setProgress(sectionProgress);
+        sectionSeekBar.setOnSeekBarChangeListener(new COUISeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(COUISeekBar seekBar, int progress, boolean fromUser) {
+                IconSizeSettingActivity.this.adapter.setProgress(progress / 4f);
             }
 
-            public void getProgressOnActionUp(SignSeekBar signSeekBar, int progress, float progressFloat) {
+            @Override
+            public void onStartTrackingTouch(COUISeekBar seekBar) {
             }
 
-            public void getProgressOnFinally(SignSeekBar signSeekBar, int progress, float progressFloat, boolean fromUser) {
+            @Override
+            public void onStopTrackingTouch(COUISeekBar seekBar) {
             }
         });
         ((TextView) findViewById(R.id.applyTv)).setOnClickListener(new View.OnClickListener() {
@@ -98,7 +106,9 @@ public class IconSizeSettingActivity extends SettingsBaseActivity {
                     true /* cancelable */);
 
                 Executors.MODEL_EXECUTOR.execute(new OverrideApplyHandler(IconSizeSettingActivity.this));
-                PrefTools.putFloat(IconSizeSettingActivity.ICON_SIZE_PROGRESS, (signSeekBar.getProgressFloat() * 0.4f) + 0.75f, IconSizeSettingActivity.this);
+                PrefTools.putFloat(IconSizeSettingActivity.ICON_SIZE_PROGRESS,
+                        ((sectionSeekBar.getProgress() / 4f) * 0.4f) + 0.75f,
+                        IconSizeSettingActivity.this);
                 // Intent intent = new Intent();
                 // intent.setAction("android.intent.action.MAIN");
                 // intent.addCategory("android.intent.category.HOME");
@@ -121,7 +131,7 @@ public class IconSizeSettingActivity extends SettingsBaseActivity {
                 mCurrentIndex = index;
             }
         });
-        ActionBar actionBar = getActionBar();
+        ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeButtonEnabled(true);

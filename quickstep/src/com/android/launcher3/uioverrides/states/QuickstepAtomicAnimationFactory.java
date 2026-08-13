@@ -18,6 +18,7 @@ package com.android.launcher3.uioverrides.states;
 import static android.view.View.VISIBLE;
 
 import static com.android.launcher3.LauncherState.ALL_APPS;
+import static com.android.launcher3.LauncherState.EDIT_MODE;
 import static com.android.launcher3.LauncherState.HINT_STATE;
 import static com.android.launcher3.LauncherState.HINT_STATE_TWO_BUTTON;
 import static com.android.launcher3.LauncherState.NORMAL;
@@ -26,6 +27,7 @@ import static com.android.launcher3.LauncherState.OVERVIEW_SPLIT_SELECT;
 import static com.android.launcher3.QuickstepTransitionManager.TASKBAR_TO_HOME_DURATION;
 import static com.android.launcher3.WorkspaceStateTransitionAnimation.getWorkspaceSpringScaleAnimator;
 import static com.android.launcher3.anim.Interpolators.ACCEL;
+import static com.android.launcher3.anim.Interpolators.ACCEL_2;
 import static com.android.launcher3.anim.Interpolators.ACCEL_DEACCEL;
 import static com.android.launcher3.anim.Interpolators.DEACCEL;
 import static com.android.launcher3.anim.Interpolators.DEACCEL_1_7;
@@ -54,7 +56,9 @@ import static com.android.launcher3.states.StateAnimationConfig.ANIM_WORKSPACE_S
 import static com.android.launcher3.states.StateAnimationConfig.ANIM_WORKSPACE_TRANSLATE;
 import static com.android.quickstep.views.RecentsView.RECENTS_SCALE_PROPERTY;
 
+import android.view.animation.Interpolator;
 import android.animation.ValueAnimator;
+import android.view.animation.PathInterpolator;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.Hotseat;
@@ -91,9 +95,41 @@ public class QuickstepAtomicAnimationFactory extends
         super(activity);
     }
 
+    /** Exact three-point scale path decoded from ToggleBarAnimHelper. */
+    private static Interpolator createColorOsEditScaleInterpolator(float targetScale) {
+        final PathInterpolator segment = new PathInterpolator(0.33f, 0f, 0.67f, 1f);
+        final float middleScale = targetScale - 0.01f;
+        final float totalDelta = targetScale - 1f;
+        final float middleFraction = Math.abs(totalDelta) < 0.0001f
+                ? 1f : (middleScale - 1f) / totalDelta;
+        return input -> {
+            if (input <= 0.576f) {
+                return segment.getInterpolation(input / 0.576f) * middleFraction;
+            }
+            float tail = segment.getInterpolation((input - 0.576f) / 0.424f);
+            return middleFraction + (1f - middleFraction) * tail;
+        };
+    }
+
     @Override
     public void prepareForAtomicAnimation(LauncherState fromState, LauncherState toState,
             StateAnimationConfig config) {
+
+        if (fromState == EDIT_MODE || toState == EDIT_MODE) {
+            PathInterpolator toggleWorkspace = new PathInterpolator(0.33f, 0f, 0.67f, 1f);
+            PathInterpolator toggleExit = new PathInterpolator(0.3f, 0f, 0.1f, 1f);
+            PathInterpolator gaussian = new PathInterpolator(0.42f, 0f, 0.58f, 1f);
+            Interpolator workspaceScale = toState == EDIT_MODE
+                    ? createColorOsEditScaleInterpolator(
+                            EDIT_MODE.getWorkspaceScaleAndTranslation(mActivity).scale)
+                    : toggleExit;
+            config.setInterpolator(ANIM_WORKSPACE_SCALE, workspaceScale);
+            config.setInterpolator(ANIM_WORKSPACE_TRANSLATE,
+                    toState == EDIT_MODE ? toggleWorkspace : toggleExit);
+            config.setInterpolator(ANIM_WORKSPACE_FADE, ACCEL_2);
+            config.setInterpolator(ANIM_DEPTH, gaussian);
+            config.setInterpolator(ANIM_SCRIM_FADE, LINEAR);
+        }
 
         RecentsView overview = mActivity.getOverviewPanel();
         if ((fromState == OVERVIEW || fromState == OVERVIEW_SPLIT_SELECT) && toState == NORMAL) {

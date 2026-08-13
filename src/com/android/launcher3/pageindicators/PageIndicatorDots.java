@@ -67,7 +67,8 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
     private static final int ENTER_ANIMATION_DURATION = 400;
 
     private static final int PAGE_INDICATOR_ALPHA = 255;
-    private static final int DOT_ALPHA = 128;
+    // ColorOS uses 30% white for inactive folder/workspace dots (#4DFFFFFF).
+    private static final int DOT_ALPHA = 77;
     private static final float DOT_ALPHA_FRACTION = 0.5f;
     private static final int DOT_GAP_FACTOR = SHOW_DOT_PAGINATION.get() ? 4 : 3;
     private static final int VISIBLE_ALPHA = 255;

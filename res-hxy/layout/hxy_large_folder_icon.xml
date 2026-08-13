@@ -11,9 +11,9 @@
         android:id="@+id/folder_icon_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:max_row="3"
+        app:max_row="2"
         app:orientation="2"
-        app:span_count="3"
+        app:span_count="2"
         app:horizontal_space="@dimen/hxy_large_folder_horizontal_space_4x6"
         app:vertical_space="@dimen/hxy_large_folder_vertical_space_4x6" />
 

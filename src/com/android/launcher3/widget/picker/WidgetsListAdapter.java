@@ -190,9 +190,12 @@ public class WidgetsListAdapter extends Adapter<ViewHolder> implements OnHeaderC
         OptionalInt topForPackageUserKey =
                 getOffsetForPosition(previousPositionForPackageUserKey);
 
+        final boolean colorOsCatalog = mContext.getResources().getBoolean(R.bool.config_hxy_grid);
         List<WidgetsListBaseEntry> newVisibleEntries = mAllEntries.stream()
                 .filter(entry -> (((mFilter == null || mFilter.test(entry))
-                        && mHeaderAndSelectedContentFilter.test(entry))
+                        && (colorOsCatalog
+                                ? entry instanceof WidgetsListContentEntry
+                                : mHeaderAndSelectedContentFilter.test(entry)))
                         || entry instanceof WidgetListSpaceEntry)
                         && (mHeaderChangeListener == null
                         || !(entry instanceof WidgetsListContentEntry)))

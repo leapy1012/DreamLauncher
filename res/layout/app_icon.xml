@@ -14,4 +14,7 @@
      limitations under the License.
 -->
 
-<com.android.launcher3.views.DoubleShadowBubbleTextView style="@style/BaseIcon.Workspace" />
+<com.android.launcher3.OplusBubbleTextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:textColor="@color/oplus_launcher_mainmenu_default_text_color"
+    style="@style/BaseIcon.Workspace" />

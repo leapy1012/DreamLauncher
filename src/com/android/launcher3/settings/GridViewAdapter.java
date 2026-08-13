@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import com.android.launcher3.settings.ThemeActivity.ThemeData;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.AbsListView;
+import android.widget.GridView;
 
 public class GridViewAdapter extends BaseAdapter {
     private Context mContext;
@@ -56,6 +58,13 @@ public class GridViewAdapter extends BaseAdapter {
         } else {
             view = convertView;
         }
+        if (parent instanceof GridView) {
+            int columnWidth = ((GridView) parent).getColumnWidth();
+            if (columnWidth > 0) {
+                view.setLayoutParams(new AbsListView.LayoutParams(
+                        columnWidth, AbsListView.LayoutParams.WRAP_CONTENT));
+            }
+        }
         bindView(item, view);
         return view;
     }
@@ -64,7 +73,8 @@ public class GridViewAdapter extends BaseAdapter {
          ImageView imageView =
          (ImageView)view.findViewById(R.id.theme_preview);
          TextView textView = (TextView) view.findViewById(R.id.theme_title);
-            imageView.setImageDrawable(item.preview);
+         view.setSelected(item.selected);
+         imageView.setImageDrawable(item.preview);
          textView.setText(item.themeTitle);
     }
 }

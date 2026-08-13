@@ -2,7 +2,6 @@ package com.android.launcher3.folder.large;
 
 import android.content.Context;
 import android.os.UserHandle;
-import android.util.Log;
 import android.view.View;
 import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.LauncherAppState;
@@ -13,8 +12,15 @@ import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.R;
 
 public class HxyLargeFolderProxy {
-    private static final int MAX_3X3_SIZE = 9;
-    private static final int SPAN_3X3_COUNT = 3;
+    // ColorOS renders a 2 x 2 large-folder preview. The first three slots are
+    // directly launchable apps and the last slot becomes a 2 x 2 stack when
+    // more than four items are present.
+    private static final int MAX_PREVIEW_SLOT_COUNT = 4;
+    private static final int PREVIEW_SPAN_COUNT = 2;
+    private static final float PREVIEW_WIDTH_FACTOR = 0.80f;
+    private static final float PREVIEW_HEIGHT_FACTOR = 0.87f;
+    private static final float PREVIEW_ITEM_WIDTH_FACTOR = 0.38f;
+    private static final float PREVIEW_ITEM_HEIGHT_FACTOR = 0.42f;
     public static final boolean SUPPORT_LARGE_FOLDER = HxyOption.HXY_LAUNCHER_SUPPORT_LARGE_FOLDER;
     private static int sCellHeight = 0;
     private static int sCellWidth = 0;
@@ -31,11 +37,11 @@ public class HxyLargeFolderProxy {
     private static  int sPreviewOffsetX = 0;
 
     public static int getSpanCount() {
-        return SPAN_3X3_COUNT;
+        return PREVIEW_SPAN_COUNT;
     }
 
     public static int getMaxSize() {
-        return MAX_3X3_SIZE;
+        return MAX_PREVIEW_SLOT_COUNT;
     }
 
     public static float getMaxDistanceForFolderCreation() {
@@ -80,10 +86,6 @@ public class HxyLargeFolderProxy {
         return profile.numColumns == 4 && profile.numRows == 6;
     }
 
-    private static int getDimension(Context context, int id) {
-        return (int) context.getResources().getDimension(id);
-    }
-
     public static void setFolderPaddingTop(int topPadding) {
         if (sFolderIconPaddingTop != topPadding && topPadding != 0) {
             sFolderIconPaddingTop = topPadding;
@@ -103,38 +105,23 @@ public class HxyLargeFolderProxy {
     }
 
     private static void initFolderIconSize2(Context context, ActivityContext activity, int cellWidth, int cellHeight, int paddingLeft, int paddingRight,int paddingTop, int paddingBottom) {
-        if (is4X6Grid(context)) {
-            sHorizontalSpace = getDimension(context, R.dimen.hxy_large_folder_horizontal_space_4x6);
-            sVerticalSpace = getDimension(context, R.dimen.hxy_large_folder_vertical_space_4x6);
-        } else if (is4X5Grid(context)) {
-            sHorizontalSpace = getDimension(context, R.dimen.hxy_large_folder_horizontal_space_4x5);
-            sVerticalSpace = getDimension(context, R.dimen.hxy_large_folder_vertical_space_4x5);
-        } else {
-            sHorizontalSpace = getDimension(context, R.dimen.hxy_large_folder_horizontal_space_4x4);
-            sVerticalSpace = getDimension(context, R.dimen.hxy_large_folder_vertical_space_4x4);
-        }
-        sHorizontalSpace = 0;
-        // sVerticalSpace = 0;
         int folderIconSizePx = activity.getDeviceProfile().folderIconSizePx;
         int availableSpaceX = cellWidth * 2;
         int availableSpaceY = cellHeight * 2;
-        int previewWidth = availableSpaceX - paddingLeft - paddingRight;
-        int previewHeight = computePreviewHeight(availableSpaceY, folderIconSizePx, 2);
-        int horizontalSpaces = sHorizontalSpace * (getSpanCount() + 1);
-        int verticalSpaces = sVerticalSpace * (getSpanCount() + 1);
-        int childWidth = (previewWidth - horizontalSpaces - paddingLeft - paddingRight) / getSpanCount();
-        int childHeight = (previewHeight - verticalSpaces - paddingTop - paddingBottom) / getSpanCount();
-        childWidth = (previewWidth) / getSpanCount();
-        childHeight = (previewHeight) / getSpanCount();
-        int min = Math.min(childWidth, childHeight);
+        int previewWidth = computePreviewWidth(availableSpaceX, folderIconSizePx, 2);
+        int previewHeight = Math.round(previewWidth * PREVIEW_HEIGHT_FACTOR);
+        int min = Math.round(Math.min(previewWidth * PREVIEW_ITEM_WIDTH_FACTOR,
+                previewHeight * PREVIEW_ITEM_HEIGHT_FACTOR));
+        sHorizontalSpace = Math.max(0,
+                (previewWidth - (min * getSpanCount())) / (getSpanCount() + 1));
+        sVerticalSpace = Math.max(0,
+                (previewHeight - (min * getSpanCount())) / (getSpanCount() + 1));
         sFolderIconSize = min;
         initFolderIconOutSize(context, min);
         sMaxDistanceForFolderCreation = (float) Math.max(previewWidth, previewHeight);
         sFolderPreviewHeight = previewHeight;
-        sPreviewOffsetY = previewHeight -  sFolderIconSize * getSpanCount() - sVerticalSpace * (getSpanCount() - 1);
-        sPreviewOffsetX = previewWidth - sFolderIconSize* getSpanCount() - sHorizontalSpace * (getSpanCount() - 1);
-        Log.d("HxyLargeFolderProxy", "initFolderIconSize previewWidth = " + previewWidth + "; horizontalSpaces = " + horizontalSpaces + "; paddingLeft = " + paddingLeft + "; paddingRight = " + paddingRight
-        + "; previewHeight = " + previewHeight + "; verticalSpaces = " + verticalSpaces + "; paddingTop = " + paddingTop + "; paddingBottom = " + paddingBottom);
+        sPreviewOffsetY = sVerticalSpace;
+        sPreviewOffsetX = sHorizontalSpace;
         
     }
 
@@ -207,7 +194,7 @@ public class HxyLargeFolderProxy {
     }
 
     private static int computePreviewWidth(int availableSpaceX, int folderIconSizePx, int scale) {
-        return availableSpaceX - (((availableSpaceX / scale) - folderIconSizePx) / 2);
+        return scale > 1 ? Math.round(availableSpaceX * PREVIEW_WIDTH_FACTOR) : folderIconSizePx;
     }
 
     public static int computePreviewHeight(View view, int availableSpaceY, int folderIconSizePx) {
@@ -219,7 +206,11 @@ public class HxyLargeFolderProxy {
     }
 
     private static int computePreviewHeight(int availableSpaceY, int folderIconSizePx, int scale) {
-        return (availableSpaceY / scale) + folderIconSizePx;
+        if (scale > 1 && sCellWidth > 0) {
+            int previewWidth = computePreviewWidth(sCellWidth * scale, folderIconSizePx, scale);
+            return Math.min(availableSpaceY, Math.round(previewWidth * PREVIEW_HEIGHT_FACTOR));
+        }
+        return scale > 1 ? Math.round(availableSpaceY * 0.55f) : folderIconSizePx;
     }
 
     public static int getPreviewOffsetX(int availableSpaceX, int previewWidth) {
@@ -227,7 +218,7 @@ public class HxyLargeFolderProxy {
     }
 
     public static int getPreviewOffsetY(int topPadding, int folderIconOffsetYPx) {
-        return sPreviewOffsetY / 2;
+        return topPadding + folderIconOffsetYPx;
     }
 
     public static View getFloatingIconView(View originalView, String targetPackageName, UserHandle user) {

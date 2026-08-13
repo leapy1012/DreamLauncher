@@ -86,6 +86,8 @@
             <enum name="taskbar" value="5" />
             <enum name="search_result_tall" value="6" />
             <enum name="search_result_small" value="7" />
+            <!-- Decoded OPPO BubbleTextView icon-display mode used by widgets_list_row_view. -->
+            <enum name="all_app_widgets_list" value="10" />
         </attr>
         <attr name="centerVertically" format="boolean" />
     </declare-styleable>
@@ -613,4 +615,5 @@
 <!--        <attr name="ssb_sign_arrow_autofloat" format="boolean" />-->
 <!--        <attr name="ssb_disable_thumb" format="boolean" />-->
 <!--    </declare-styleable>-->
+    <attr name="iconTintColor" format="color" />
 </resources>

@@ -68,6 +68,12 @@ public class PendingAnimation extends AnimatedPropertySetter {
         addAnimationHoldersRecur(a, mDuration, springProperty, mAnimHolders);
     }
 
+    /** Adds a pre-timed animator without replacing its child durations (ColorOS parity). */
+    public void addWithoutDuration(Animator animator) {
+        mAnim.play(animator);
+        addAnimationHoldersRecur(animator, mDuration, SpringProperty.DEFAULT, mAnimHolders);
+    }
+
     /**
      * Configures interpolator of the underlying AnimatorSet.
      */

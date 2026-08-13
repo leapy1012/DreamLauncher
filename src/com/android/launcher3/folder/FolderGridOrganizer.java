@@ -50,6 +50,11 @@ public class FolderGridOrganizer {
     public FolderGridOrganizer(InvariantDeviceProfile profile) {
         mMaxCountX = profile.numFolderColumns;
         mMaxCountY = profile.numFolderRows;
+        if (LauncherApplication.getContext().getResources().getBoolean(
+                R.bool.config_show_full_folder_style)) {
+            mMaxCountX = 3;
+            mMaxCountY = 4;
+        }
         mMaxItemsPerPage = mMaxCountX * mMaxCountY;
     }
 
@@ -103,8 +108,8 @@ public class FolderGridOrganizer {
             done = false;
         }
         if (LauncherApplication.getContext().getResources().getBoolean(R.bool.config_show_full_folder_style)) {
-            gridCountX = mMaxCountX;
-            gridCountY = mMaxCountY;
+            gridCountX = 3;
+            gridCountY = 4;
             done = true;
         }
         while (!done) {
@@ -187,15 +192,14 @@ public class FolderGridOrganizer {
     /**
      * @param page The page the item is on.
      * @param rank The rank of the item.
-     * @return True iff the icon is in the 2x2 upper left quadrant of the Folder.
+     * @return True iff the icon is in the 3x3 ColorOS preview area of the Folder.
      */
     public boolean isItemInPreview(int page, int rank) {
-        // First page items are laid out such that the first 4 items are always in the upper
-        // left quadrant. For all other pages, we need to check the row and col.
+        // ColorOS uses the first 3 x 3 items from each page for its closed-folder preview.
         if (page > 0 || mDisplayingUpperLeftQuadrant) {
             int col = rank % mCountX;
             int row = rank / mCountX;
-            return col < 2 && row < 2;
+            return col < 3 && row < 3;
         }
         return rank < MAX_NUM_ITEMS_IN_PREVIEW;
     }

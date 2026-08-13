@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Local WidgetItem renderer occupying OPPO's 324dp operating-card slot. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:paddingBottom="8dp">
+
+    <com.android.launcher3.widget.OplusWidgetCell
+        android:id="@+id/coloros_widget_hub_card_cell"
+        android:layout_width="324dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:clipChildren="false"
+        android:focusable="true"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+        <include layout="@layout/widget_cell_content" />
+    </com.android.launcher3.widget.OplusWidgetCell>
+</FrameLayout>

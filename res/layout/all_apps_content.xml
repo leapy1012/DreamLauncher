@@ -45,6 +45,20 @@
 
     </com.android.launcher3.allapps.FloatingHeaderView>
 
+    <com.android.launcher3.allapps.ColorOsCategoriesView
+        android:id="@+id/coloros_categories_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/search_container_all_apps"
+        android:layout_alignParentTop="true"
+        android:visibility="gone" />
+
+    <!-- The ColorOS mode selector is fixed; it does not collapse with Launcher3's prediction
+         rows and is hidden explicitly when the search result surface becomes active. -->
+    <include
+        layout="@layout/coloros_all_apps_header"
+        android:layout_alignParentTop="true" />
+
     <include layout="@layout/all_apps_fast_scroller" />
 
     <ViewStub
@@ -52,5 +66,8 @@
         android:inflatedId="@+id/search_container_all_apps"
         android:layout="@layout/search_container_all_apps"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="@dimen/all_apps_search_bar_field_height"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp" />
 </merge>

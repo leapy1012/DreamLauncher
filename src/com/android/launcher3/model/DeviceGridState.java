@@ -88,6 +88,40 @@ public class DeviceGridState implements Comparable<DeviceGridState> {
         return mNumHotseat;
     }
 
+    /** Returns whether this persisted state contains the requested workspace dimensions. */
+    public boolean hasGridSize(int columns, int rows) {
+        if (TextUtils.isEmpty(mGridSizeString)) {
+            return false;
+        }
+        String[] dimensions = mGridSizeString.split(",");
+        if (dimensions.length != 2) {
+            return false;
+        }
+        try {
+            return Integer.parseInt(dimensions[0]) == columns
+                    && Integer.parseInt(dimensions[1]) == rows;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /** Returns whether this state has workspace dimensions saved in preferences. */
+    public boolean hasValidGridSize() {
+        if (TextUtils.isEmpty(mGridSizeString)) {
+            return false;
+        }
+        String[] dimensions = mGridSizeString.split(",");
+        if (dimensions.length != 2) {
+            return false;
+        }
+        try {
+            return Integer.parseInt(dimensions[0]) > 0
+                    && Integer.parseInt(dimensions[1]) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     /**
      * Stores the device state to shared preferences
      */

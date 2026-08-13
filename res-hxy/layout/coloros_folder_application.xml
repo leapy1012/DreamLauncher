@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.android.launcher3.BubbleTextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:launcher="http://schemas.android.com/apk/res-auto"
+    style="@style/BaseIcon"
+    android:fontFamily="sans-serif"
+    android:hapticFeedbackEnabled="false"
+    android:includeFontPadding="false"
+    android:paddingTop="@dimen/coloros_folder_child_icon_padding_top"
+    android:textColor="?attr/folderTextColor"
+    android:textStyle="normal"
+    launcher:centerVertically="false"
+    launcher:iconDisplay="folder"
+    launcher:iconSizeOverride="@dimen/coloros_folder_child_icon_size" />
