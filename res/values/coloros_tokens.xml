@@ -61,12 +61,12 @@
     <dimen name="coloros_folder_title_height">62dp</dimen>
     <dimen name="coloros_folder_title_width">228dp</dimen>
     <dimen name="coloros_folder_title_text_size">24sp</dimen>
-    <dimen name="coloros_folder_header_margin_horizontal">30dp</dimen>
+    <dimen name="coloros_folder_header_margin_horizontal">10dp</dimen>
     <dimen name="coloros_folder_content_margin_horizontal">20dp</dimen>
     <dimen name="coloros_folder_content_top_gap">14dp</dimen>
     <dimen name="coloros_folder_content_radius">30dp</dimen>
     <dimen name="coloros_folder_content_stroke_width">1dp</dimen>
-    <dimen name="coloros_folder_content_padding_horizontal">0dp</dimen>
+    <dimen name="coloros_folder_content_padding_horizontal">8dp</dimen>
     <dimen name="coloros_folder_content_padding_top">15dp</dimen>
     <dimen name="coloros_folder_page_padding_horizontal">2dp</dimen>
     <dimen name="coloros_folder_page_padding_bottom">120dp</dimen>
@@ -80,9 +80,12 @@
     <dimen name="coloros_folder_child_drawable_gap">6dp</dimen>
     <dimen name="coloros_folder_child_text_size">12sp</dimen>
     <dimen name="coloros_folder_clear_size">24dp</dimen>
-    <dimen name="coloros_folder_clear_margin_end">12dp</dimen>
+    <dimen name="coloros_folder_clear_margin_end">10dp</dimen>
     <dimen name="coloros_folder_preview_radius">9dp</dimen>
-    <dimen name="coloros_large_folder_name_gap">8dp</dimen>
+    <dimen name="coloros_large_folder_name_gap">3dp</dimen>
+    <dimen name="coloros_large_folder_bg_horizontal_inset">9dp</dimen>
+    <dimen name="coloros_workspace_folder_title_height">23.333dp</dimen>
+    <dimen name="coloros_workspace_folder_preview_top">7.667dp</dimen>
 
     <!-- All Apps surface tokens measured against the ColorOS reference launcher. -->
     <color name="coloros_all_apps_scrim">#8A000000</color>

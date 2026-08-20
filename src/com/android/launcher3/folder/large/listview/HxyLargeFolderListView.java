@@ -6,6 +6,7 @@ import android.view.View;
 
 import com.android.launcher3.big.popup.ColorOsFolderStyleView;
 import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.model.data.FolderInfo;
 
 /** Mode-aware renderer for OPPO's nine-grid, four-grid and highlight folder previews. */
 public class HxyLargeFolderListView extends PageLinearLayout {
@@ -13,6 +14,12 @@ public class HxyLargeFolderListView extends PageLinearLayout {
     private int mFolderStyle;
     private int mHorizontalGap;
     private int mVerticalGap;
+    private int mPreviewColumns = 3;
+    private int mPreviewRows = 3;
+    private int mPreviewLeft;
+    private int mPreviewTop;
+    private int mPreviewWidth;
+    private int mPreviewHeight;
 
     public HxyLargeFolderListView(Context context) {
         super(context);
@@ -26,42 +33,59 @@ public class HxyLargeFolderListView extends PageLinearLayout {
         super(context, attrs, defStyleAttr);
     }
 
-    public void setFolderStyle(int style) {
-        if (mFolderStyle == style) return;
-        mFolderStyle = style;
-        setSpanCount(style == ColorOsFolderStyleView.STYLE_FOUR_GRID ? 2 : 3);
+    public void setFolderConfiguration(FolderInfo info, int style, int previewLeft,
+            int previewTop, int previewWidth, int previewHeight) {
+        boolean is2x2 = info.hasGrid2x2();
+        mFolderStyle = is2x2 ? style : ColorOsFolderStyleView.STYLE_NINE_GRID;
+        mPreviewColumns = info.getPreviewColumn();
+        mPreviewRows = info.getPreviewRow();
+        mPreviewLeft = previewLeft;
+        mPreviewTop = previewTop;
+        mPreviewWidth = previewWidth;
+        mPreviewHeight = previewHeight;
+        setSpanCount(mPreviewColumns);
         requestLayout();
     }
 
     public int getPreviewSlotCount() {
-        if (mFolderStyle == ColorOsFolderStyleView.STYLE_FOUR_GRID) return 4;
-        if (mFolderStyle == ColorOsFolderStyleView.STYLE_HIERARCHICAL) return 6;
-        return 9;
+        if (mFolderStyle == ColorOsFolderStyleView.STYLE_HIERARCHICAL
+                && mPreviewColumns == 3 && mPreviewRows == 3) return 6;
+        return mPreviewColumns * mPreviewRows;
     }
 
     public int getChildSize() {
         return mChildSize;
     }
 
+    public int getRenderedChildSize(int index) {
+        return isHighlightLead(index) ? (mChildSize * 2) + mHorizontalGap : mChildSize;
+    }
+
     @Override
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int fourSize = HxyLargeFolderProxy.getFolderIconSize();
-        int sourceGapX = HxyLargeFolderProxy.getHorizontalSpace();
-        int sourceGapY = HxyLargeFolderProxy.getVerticalSpace();
-        mHorizontalGap = sourceGapX;
-        mVerticalGap = sourceGapY;
-        boolean fourGrid = mFolderStyle == ColorOsFolderStyleView.STYLE_FOUR_GRID;
+        boolean fourGrid = mFolderStyle == ColorOsFolderStyleView.STYLE_FOUR_GRID
+                && mPreviewColumns == 2 && mPreviewRows == 2;
         if (fourGrid) {
             mChildSize = fourSize;
-            setSpanCount(2);
         } else {
-            int previewWidth = (fourSize * 2) + (sourceGapX * 3);
-            int previewHeight = (fourSize * 2) + (sourceGapY * 3);
-            mChildSize = Math.max(1, Math.min(
-                    (previewWidth - (sourceGapX * 4)) / 3,
-                    (previewHeight - (sourceGapY * 4)) / 3));
-            setSpanCount(3);
+            mChildSize = Math.max(1, Math.round(fourSize * 0.6666667f));
         }
+        setSpanCount(mPreviewColumns);
+        mHorizontalGap = mPreviewColumns > 1 ? Math.max(0,
+                (mPreviewWidth - (mPreviewColumns * mChildSize))
+                        / (mPreviewColumns + 1)) : 0;
+        mVerticalGap = mPreviewRows > 1 ? Math.max(0,
+                (mPreviewHeight - (mPreviewRows * mChildSize))
+                        / (mPreviewRows + 1)) : 0;
+        int contentWidth = (mPreviewColumns * mChildSize)
+                + ((mPreviewColumns - 1) * mHorizontalGap);
+        int contentHeight = (mPreviewRows * mChildSize)
+                + ((mPreviewRows - 1) * mVerticalGap);
+        int leftInset = Math.max(0, (mPreviewWidth - contentWidth) / 2);
+        int topInset = Math.max(0, (mPreviewHeight - contentHeight) / 2);
+        setPadding(Math.max(0, mPreviewLeft + leftInset),
+                Math.max(0, mPreviewTop + topInset), 0, 0);
         setHorizontalSpace(mHorizontalGap);
         setVerticalSpace(mVerticalGap);
         int count = getChildCount();
@@ -70,27 +94,31 @@ public class HxyLargeFolderListView extends PageLinearLayout {
             if (child.getVisibility() == View.GONE) continue;
             int size = isHighlightLead(index)
                     ? (mChildSize * 2) + mHorizontalGap : mChildSize;
+            child.measure(MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY));
             if (child instanceof HxyLargeFolderIconItem) {
                 ((HxyLargeFolderIconItem) child).setRenderedSize(size);
             }
-            child.measure(MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY),
-                    MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY));
         }
-        int rows = fourGrid ? 2 : 3;
-        int contentHeight = (rows * mChildSize) + ((rows - 1) * mVerticalGap)
-                + getPaddingTop() + getPaddingBottom();
-        setMeasuredDimension(widthMeasureSpec,
-                MeasureSpec.makeMeasureSpec(contentHeight, MeasureSpec.EXACTLY));
+        // OPPO's preview overlay keeps the complete workspace-cell bounds. A packed MeasureSpec
+        // cannot be passed as a pixel width, and shrinking height clips rectangular previews.
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec),
+                MeasureSpec.getSize(heightMeasureSpec));
     }
 
     @Override
     public void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        if (mFolderStyle != ColorOsFolderStyleView.STYLE_HIERARCHICAL) {
+        if (mFolderStyle != ColorOsFolderStyleView.STYLE_HIERARCHICAL
+                || mPreviewColumns != 3 || mPreviewRows != 3) {
             super.onLayout(changed, left, top, right, bottom);
             return;
         }
         for (int index = 0; index < getChildCount(); index++) {
             View child = getChildAt(index);
+            if (index >= getPreviewSlotCount()) {
+                child.setVisibility(View.GONE);
+                continue;
+            }
             if (child.getVisibility() != View.VISIBLE) continue;
             int childLeft = getHighlightLeft(index);
             int childTop = getHighlightTop(index);
@@ -101,7 +129,8 @@ public class HxyLargeFolderListView extends PageLinearLayout {
     }
 
     private boolean isHighlightLead(int index) {
-        return mFolderStyle == ColorOsFolderStyleView.STYLE_HIERARCHICAL && index == 0;
+        return mFolderStyle == ColorOsFolderStyleView.STYLE_HIERARCHICAL
+                && mPreviewColumns == 3 && mPreviewRows == 3 && index == 0;
     }
 
     private int getHighlightLeft(int index) {

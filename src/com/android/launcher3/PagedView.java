@@ -77,7 +77,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     public static final int INVALID_PAGE = -1;
     protected static final ComputePageScrollsLogic SIMPLE_SCROLL_LOGIC = (v) -> v.getVisibility() != GONE;
 
-    private static final float RETURN_TO_ORIGINAL_PAGE_THRESHOLD = 0.33f;
+    private static final float RETURN_TO_ORIGINAL_PAGE_THRESHOLD = 0.25f;
     // The page is moved more than halfway, automatically move to the next page on touch up.
     private static final float SIGNIFICANT_MOVE_THRESHOLD = 0.4f;
 
@@ -1352,7 +1352,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
                         int bounded = Utilities.boundToRange(
                                 mOplusUnboundedScroll, mMinScroll, mMaxScroll);
                         int amount = mOplusUnboundedScroll - bounded;
-                        int resistedAmount = com.android.launcher3.touch.OverScroll.dampedScroll(
+                        int resistedAmount = com.android.launcher3.touch.OverScroll.oplusDampedScroll(
                                 amount, Math.round(size));
                         mOrientationHandler.setPrimary(
                                 this, VIEW_SCROLL_TO, bounded + resistedAmount);

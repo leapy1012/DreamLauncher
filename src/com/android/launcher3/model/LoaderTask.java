@@ -766,13 +766,10 @@ public class LoaderTask implements Runnable {
                     folderInfo.title = c.getString(c.mTitleIndex);
                     folderInfo.spanX = (c.getSpanX() == 0 || !HxyLargeFolderProxy.SUPPORT_LARGE_FOLDER) ? 1 : c.getSpanX();
                     folderInfo.spanY = (c.getSpanY() == 0 || !HxyLargeFolderProxy.SUPPORT_LARGE_FOLDER) ? 1 : c.getSpanY();
-                    folderInfo.options = c.getOptions();
+                    folderInfo.options = FolderInfo.normalizeLegacyOptions(c.getOptions());
                     folderInfo.intent = c.parseIntent();
-                    if (folderInfo.intent != null) {
-                        try {
-                            folderInfo.title = mApp.getContext().getResources().getString(folderInfo.intent.getIntExtra("TAG", 0));
-                        } catch(Exception ignore) {}
-                    }
+                    // ColorOS keeps the persisted database title authoritative. Legacy MTK
+                    // resource ids in Intent extra "TAG" are unstable after resource merges.
                     // no special handling required for restored folders
                     c.markRestored();
 
@@ -1122,7 +1119,8 @@ public class LoaderTask implements Runnable {
             for (int i = 0; i < mBgDataModel.folders.size(); i++) {
                 FolderNameInfos suggestionInfos = new FolderNameInfos();
                 FolderInfo info = mBgDataModel.folders.valueAt(i);
-                if (info.getLabelState().equals(FolderInfo.LabelState.SUGGESTED)) {
+                if (info.getLabelState().equals(FolderInfo.LabelState.SUGGESTED)
+                        && TextUtils.isEmpty(info.title)) {
                     try {
                         info.title = getDefaultName(info.getIntent().getIntExtra("TAG", 0));
                     } catch (Exception e) {

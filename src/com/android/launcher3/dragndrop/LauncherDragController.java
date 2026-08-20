@@ -30,6 +30,7 @@ import android.view.View;
 import androidx.annotation.Nullable;
 
 import com.android.launcher3.AbstractFloatingView;
+import com.android.launcher3.ColorOsBatchDragManager;
 import com.android.launcher3.DragSource;
 import com.android.launcher3.DropTarget;
 import com.android.launcher3.Launcher;
@@ -160,8 +161,30 @@ public class LauncherDragController extends DragController<Launcher> {
 
     @Override
     protected void exitDrag() {
+        if (mActivity.getDragLayer().findViewById(R.id.edit_mode_container) != null) {
+            if (!mActivity.isInState(EDIT_MODE)) {
+                mActivity.getStateManager().goToState(EDIT_MODE, false);
+            }
+            return;
+        }
         if (!mActivity.isInState(EDIT_MODE)) {
             mActivity.getStateManager().goToState(NORMAL, SPRING_LOADED_EXIT_DELAY);
+        }
+    }
+
+    @Override
+    public void cancelDrag() {
+        if (mActivity.getDragLayer().findViewById(R.id.edit_mode_container) != null) {
+            ColorOsBatchDragManager.get(mActivity).onDragCancelled();
+        }
+        super.cancelDrag();
+    }
+
+    @Override
+    protected void handleMoveEvent(int x, int y) {
+        super.handleMoveEvent(x, y);
+        if (mActivity.getDragLayer().findViewById(R.id.edit_mode_container) != null) {
+            ColorOsBatchDragManager.get(mActivity).onDragMove();
         }
     }
 

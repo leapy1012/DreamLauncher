@@ -86,6 +86,28 @@ public final class ColorOsWidgetEditOverlay implements ViewTreeObserver.OnPreDra
         }
     }
 
+    private WidgetIndicatorView findIndicator(LauncherAppWidgetHostView host) {
+        for (WidgetIndicatorView indicator : mIndicators) {
+            if (indicator.mHost == host) return indicator;
+        }
+        return null;
+    }
+
+    /** Adds widget hosts rebound after edit-mode entry without restarting existing animations. */
+    private void discoverNewIndicators() {
+        for (LauncherAppWidgetHostView host
+                : LauncherAppWidgetHostView.getColorOsEditModeHosts()) {
+            if (!isEligible(host) || findIndicator(host) != null) continue;
+            WidgetIndicatorView indicator = new WidgetIndicatorView(host);
+            DragLayer.LayoutParams lp = new DragLayer.LayoutParams(1, 1);
+            lp.customPosition = true;
+            mDragLayer.addView(indicator, lp);
+            mIndicators.add(indicator);
+            updateBounds(indicator);
+            indicator.show();
+        }
+    }
+
     private boolean isEligible(LauncherAppWidgetHostView host) {
         return host.isAttachedToWindow() && host.getVisibility() == View.VISIBLE
                 && host.getWidth() > 0 && host.getHeight() > 0
@@ -95,6 +117,7 @@ public final class ColorOsWidgetEditOverlay implements ViewTreeObserver.OnPreDra
     @Override
     public boolean onPreDraw() {
         if (!mAttached) return true;
+        discoverNewIndicators();
         for (int i = mIndicators.size() - 1; i >= 0; i--) {
             WidgetIndicatorView indicator = mIndicators.get(i);
             if (!isEligible(indicator.mHost)) {

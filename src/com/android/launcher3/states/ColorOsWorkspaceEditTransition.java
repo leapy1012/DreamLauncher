@@ -6,6 +6,8 @@
 package com.android.launcher3.states;
 
 import android.graphics.Rect;
+import android.graphics.Paint;
+import android.text.TextPaint;
 import android.view.View;
 
 import com.android.launcher3.DeviceProfile;
@@ -15,9 +17,14 @@ import com.android.launcher3.Workspace;
 /** Geometry shared by the ColorOS workspace-edit state and its transition. */
 public final class ColorOsWorkspaceEditTransition {
     private static final float TOP_MARGIN_DP = 92f;
-    private static final float BOTTOM_CONTROLS_DP = 117f;
+    private static final float PAGE_PREVIEW_LIST_HEIGHT_DP = 92f;
+    private static final float PAGE_PREVIEW_BUTTON_ICON_DP = 44f;
+    private static final float PAGE_PREVIEW_BUTTON_TEXT_MARGIN_DP = 4f;
+    private static final float PAGE_PREVIEW_BUTTON_TEXT_SP = 10f;
+    private static final float PAGE_PREVIEW_BUTTON_MIN_WIDTH_DP = 80f;
+    private static final float PAGE_PREVIEW_BUTTON_MAX_WIDTH_DP = 120f;
+    private static final float PAGE_PREVIEW_BUTTON_HORIZONTAL_MARGIN_DP = 16f;
     private static final float MAX_SCALE = 0.95f;
-    private static final float MIN_SCALE = 0.85f;
 
     private ColorOsWorkspaceEditTransition() { }
 
@@ -53,7 +60,9 @@ public final class ColorOsWorkspaceEditTransition {
         float originalHeight = Math.max(1f, profile.getCellLayoutHeight());
         float targetTop = TOP_MARGIN_DP * density;
         float targetBottom = Math.min(
-                workspace.getHeight() - BOTTOM_CONTROLS_DP * density,
+                profile.heightPx - insets.bottom
+                        - PAGE_PREVIEW_LIST_HEIGHT_DP * density
+                        - getPagePreviewButtonContainerHeight(launcher),
                 profile.heightPx - insets.bottom - profile.workspacePadding.bottom);
         float targetHeight = Math.max(1f, targetBottom - targetTop);
 
@@ -64,7 +73,7 @@ public final class ColorOsWorkspaceEditTransition {
             targetBottom -= unused * 0.5f;
             scale = MAX_SCALE;
         }
-        scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
+        scale = Math.min(MAX_SCALE, scale);
 
         float denominator = Math.max(0.0001f, 1f - scale);
         float pivotDistance = (targetTop - originalTop) / denominator;
@@ -76,8 +85,39 @@ public final class ColorOsWorkspaceEditTransition {
             scale = Math.min(MAX_SCALE,
                     1f - (targetTop - originalTop) / originalHeight);
         }
-        scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
+        scale = Math.min(MAX_SCALE, scale);
         return new Geometry(scale, originalTop + pivotDistance);
+    }
+
+    /**
+     * Port of OPPO PagePreviewButtonContainer#getContainerHeight(). ToggleBarState reserves this
+     * height even on the main page so the workspace uses the same scale/pivot across all toggle
+     * bar levels.
+     */
+    private static float getPagePreviewButtonContainerHeight(Launcher launcher) {
+        float density = launcher.getResources().getDisplayMetrics().density;
+        float scaledDensity = launcher.getResources().getDisplayMetrics().scaledDensity;
+        float itemWidth = launcher.getResources().getDisplayMetrics().widthPixels / 2f
+                - PAGE_PREVIEW_BUTTON_HORIZONTAL_MARGIN_DP * density;
+        itemWidth = Math.max(PAGE_PREVIEW_BUTTON_MIN_WIDTH_DP * density,
+                Math.min(PAGE_PREVIEW_BUTTON_MAX_WIDTH_DP * density, itemWidth));
+
+        TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        paint.setTextSize(PAGE_PREVIEW_BUTTON_TEXT_SP * scaledDensity);
+        paint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        Paint.FontMetrics metrics = paint.getFontMetrics();
+        float oneLine = metrics.bottom - metrics.top;
+        float textHeight = Math.max(
+                getTextHeight(paint, "Create folder", itemWidth, oneLine, metrics),
+                getTextHeight(paint, "Uninstall", itemWidth, oneLine, metrics));
+        return textHeight + PAGE_PREVIEW_BUTTON_TEXT_MARGIN_DP * density
+                + PAGE_PREVIEW_BUTTON_ICON_DP * density;
+    }
+
+    private static float getTextHeight(TextPaint paint, String text, float width, float oneLine,
+            Paint.FontMetrics metrics) {
+        int lines = Math.min(2, 1 + (int) (paint.measureText(text) / Math.max(1f, width)));
+        return lines == 2 ? oneLine + metrics.descent - metrics.ascent : oneLine;
     }
 
     private static final class Geometry {

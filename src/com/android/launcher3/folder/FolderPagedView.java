@@ -30,6 +30,8 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.animation.TimeInterpolator;
+import android.view.animation.PathInterpolator;
 import android.view.View;
 import android.view.ViewDebug;
 
@@ -72,7 +74,9 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
 
     private static final String TAG = "FolderPagedView";
 
-    private static final int REORDER_ANIMATION_DURATION = 230;
+    private static final int REORDER_ANIMATION_DURATION = 450;
+    private static final TimeInterpolator COLOROS_GRID_CHANGE_INTERPOLATOR =
+            new PathInterpolator(0.3f, 0.0f, 0.1f, 1.0f);
     private static final int START_VIEW_REORDER_DELAY = 30;
     private static final float VIEW_REORDER_DELAY_FACTOR = 0.9f;
 
@@ -380,10 +384,7 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
     }
 
     private int getColorOsCellWidth() {
-        DeviceProfile dp = mFolder.mActivityContext.getDeviceProfile();
-        int sideInset = getResources().getDimensionPixelSize(
-                R.dimen.coloros_folder_header_margin_horizontal);
-        return Math.max(1, (dp.widthPx - (sideInset * 2)) / 3);
+        return getResources().getDimensionPixelSize(R.dimen.coloros_folder_cell_width);
     }
 
     @Override
@@ -433,6 +434,10 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
      */
     @SuppressLint("RtlHardcoded")
     public void arrangeChildren(List<View> list, boolean addFlag) {
+        if (getResources().getBoolean(R.bool.config_show_full_folder_style)) {
+            addFlag = false;
+        }
+            list.remove(mAdd);
         if (!list.contains(this.mAdd) && addFlag) {
             list.add(this.mAdd);
         }
@@ -762,6 +767,7 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
                     v.animate()
                         .translationXBy((direction > 0 ^ mIsRtl) ? -v.getWidth() : v.getWidth())
                         .setDuration(REORDER_ANIMATION_DURATION)
+                        .setInterpolator(COLOROS_GRID_CHANGE_INTERPOLATOR)
                         .setStartDelay(0)
                         .withEndAction(endAction);
                     mPendingAnimations.put(v, endAction);

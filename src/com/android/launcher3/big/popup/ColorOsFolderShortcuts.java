@@ -12,6 +12,7 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
@@ -33,7 +34,11 @@ public final class ColorOsFolderShortcuts {
             Launcher launcher, FolderInfo info, HxyLargeFolderIcon icon) {
         ArrayList<SystemShortcut<Launcher>> shortcuts = new ArrayList<>(4);
         shortcuts.add(new SwitchFolderShortcut(launcher, info, icon));
-        shortcuts.add(new Open(launcher, info, icon));
+        // Decoded FolderExpand.isEnabled(): Open folder exists only for an extended grid.
+        // A normal 1 x 1 folder therefore has exactly Enlarge, Rename and Ungroup.
+        if (HxyLargeFolderProxy.isLargeFolder(info)) {
+            shortcuts.add(new Open(launcher, info, icon));
+        }
         shortcuts.add(new Rename(launcher, info, icon));
         shortcuts.add(new Ungroup(launcher, info, icon));
         return shortcuts;
@@ -75,11 +80,11 @@ public final class ColorOsFolderShortcuts {
         @Override
         public void onClick(View view) {
             closeAndRun(() -> {
-                ItemClickHandler.onClick(mFolderIcon);
                 Folder folder = mFolderIcon.getFolder();
                 if (folder != null) {
-                    folder.postDelayed(() -> folder.mFolderName.requestFocus(), 250L);
+                    folder.setIsOpenForRename(true);
                 }
+                ItemClickHandler.onClick(mFolderIcon);
             });
         }
     }

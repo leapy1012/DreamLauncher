@@ -47,6 +47,7 @@ import androidx.annotation.LayoutRes;
 
 import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.BaseDraggingActivity;
+import com.android.launcher3.ColorOsFolderResizeFrame;
 import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.DragSource;
 import com.android.launcher3.DropTarget;
@@ -109,6 +110,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     private int mContainerWidth;
 
     private ViewGroup mWidgetContainer;
+    private ColorOsFolderResizeFrame mFolderResizeTouchDelegate;
     private ViewGroup mDeepShortcutContainer;
     private ViewGroup mSystemShortcutContainer;
 
@@ -129,6 +131,11 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
 
     public PopupContainerWithArrow(Context context) {
         this(context, null, 0);
+    }
+
+    /** Exposes the folder anchor to the ColorOS positioning implementation. */
+    protected final HxyLargeFolderIcon getFolderIcon() {
+        return mFolderIcon;
     }
 
     @Override
@@ -187,6 +194,19 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     @Override
     public boolean onControllerInterceptTouchEvent(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            AbstractFloatingView resizeView = AbstractFloatingView.getOpenView(
+                    mActivityContext, TYPE_WIDGET_RESIZE_FRAME);
+            if (resizeView instanceof ColorOsFolderResizeFrame) {
+                ColorOsFolderResizeFrame resizeFrame = (ColorOsFolderResizeFrame) resizeView;
+                if (resizeFrame.isHandleEvent(ev)
+                        && resizeFrame.onControllerInterceptTouchEvent(ev)) {
+                    // Oplus ItemResizeFrame owns this stream before workspace item dragging.
+                    mFolderResizeTouchDelegate = resizeFrame;
+                    close(false);
+                    return true;
+                }
+            }
+
             BaseDragLayer dl = getPopupContainer();
             if (!dl.isEventOverView(this, ev)) {
                 // TODO: add WW log if want to log if tap closed deep shortcut container.
@@ -198,6 +218,20 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
             }
         }
         return false;
+    }
+
+
+    @Override
+    public boolean onControllerTouchEvent(MotionEvent ev) {
+        if (mFolderResizeTouchDelegate != null) {
+            boolean handled = mFolderResizeTouchDelegate.onControllerTouchEvent(ev);
+            if (ev.getActionMasked() == MotionEvent.ACTION_UP
+                    || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                mFolderResizeTouchDelegate = null;
+            }
+            return handled;
+        }
+        return super.onControllerTouchEvent(ev);
     }
 
     @Override
@@ -237,16 +271,24 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         PopupContainerWithArrow<Launcher> container;
         PopupDataProvider popupDataProvider = launcher.getPopupDataProvider();
         int deepShortcutCount = popupDataProvider.getShortcutCountForItem(item);
-        boolean colorOsPopup = launcher.getResources().getBoolean(R.bool.config_hxy_grid);
-        List<SystemShortcut> systemShortcuts = colorOsPopup
-                ? ColorOsAppShortcuts.create(launcher, item, icon, deepShortcutCount)
-                : launcher.getSupportedShortcuts()
+        // This project ships the Oplus launcher UX for every grid/profile. The former HXY-only
+        // resource gate let some product overlays silently fall back to the AOSP popup.
+        boolean colorOsPopup = true;
+        List<SystemShortcut> systemShortcuts = launcher.getSupportedShortcuts()
                 .map(s -> s.getShortcut(launcher, item, icon))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+        if (colorOsPopup) {
+            systemShortcuts = systemShortcuts.stream()
+                    .filter(SystemShortcut::isEnabled)
+                    .filter(shortcut -> !(shortcut instanceof SystemShortcut.Widgets))
+                    .collect(Collectors.toList());
+        }
         if (ENABLE_MATERIAL_U_POPUP.get() || colorOsPopup) {
             container = (PopupContainerWithArrow) launcher.getLayoutInflater().inflate(
-                    R.layout.popup_container_material_u, launcher.getDragLayer(), false);
+                    colorOsPopup ? R.layout.oplus_popup_container
+                            : R.layout.popup_container_material_u,
+                    launcher.getDragLayer(), false);
             container.configureForLauncher(launcher, item);
             if (colorOsPopup) {
                 container.populateAndShowColorOs(icon, deepShortcutCount, systemShortcuts);
@@ -269,8 +311,10 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     }
 
     private void configureForLauncher(Launcher launcher, ItemInfo itemInfo) {
-        addOnAttachStateChangeListener(new LauncherPopupLiveUpdateHandler(
-                launcher, (PopupContainerWithArrow<Launcher>) this));
+        if (!(this instanceof OplusPopupContainerWithArrow)) {
+            addOnAttachStateChangeListener(new LauncherPopupLiveUpdateHandler(
+                    launcher, (PopupContainerWithArrow<Launcher>) this));
+        }
         if (!(itemInfo instanceof ItemInfoWithIcon itemInfoWithIcon)) {
             mPopupItemDragHandler = new LauncherPopupItemDragHandler(launcher, this);
         }
@@ -387,17 +431,45 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         loadAppShortcuts((ItemInfo) originalIcon.getTag(), /* notificationKeys= */ emptyList());
     }
 
-    /** OPPO keeps system actions as full text rows when app deep shortcuts are present. */
+    /**
+     * Populates the decoded Oplus hierarchy: one clipped COUI surface, app shortcuts, a group
+     * divider when required, then the dynamically filtered system shortcuts.
+     */
     public void populateAndShowColorOs(final BubbleTextView originalIcon,
             int deepShortcutCount, List<SystemShortcut> systemShortcuts) {
         mOriginalIcon = originalIcon;
-        mContainerWidth = getResources().getDimensionPixelSize(R.dimen.bg_popup_item_width);
-        addSystemShortcutsMaterialU(systemShortcuts,
-                R.layout.system_shortcut_rows_container_material_u,
-                R.layout.system_shortcut);
+        mContainerWidth = getResources().getDimensionPixelSize(
+                R.dimen.deep_shortcut_icon_text_width);
+
+        View surface = inflateAndAdd(R.layout.popup_shortcut_scroll_container, this);
+        ViewGroup shortcutContainer = surface.findViewById(R.id.popup_shortcut_container);
+
         if (deepShortcutCount > 0) {
-            addDeepShortcutsMaterialU(deepShortcutCount,
-                    mShortcutHeight * systemShortcuts.size());
+            mDeepShortcutContainer = inflateAndAdd(
+                    R.layout.system_shortcut_icon_text_container, shortcutContainer);
+            for (int i = 0; i < deepShortcutCount; i++) {
+                DeepShortcutView shortcut = inflateAndAdd(
+                        R.layout.oplus_deep_shortcut, mDeepShortcutContainer);
+                mDeepShortcuts.add(shortcut);
+            }
+        }
+
+        if (deepShortcutCount > 0 && !systemShortcuts.isEmpty()) {
+            inflateAndAdd(R.layout.system_app_shortcut_divide_line, shortcutContainer);
+        }
+
+        if (!systemShortcuts.isEmpty()) {
+            mSystemShortcutContainer = inflateAndAdd(
+                    R.layout.system_shortcut_icon_text_container, shortcutContainer);
+            for (int i = 0; i < systemShortcuts.size(); i++) {
+                View row = initializeSystemShortcut(R.layout.oplus_deep_shortcut,
+                        mSystemShortcutContainer, systemShortcuts.get(i), false);
+                View divider = row.findViewById(R.id.divider);
+                if (divider != null) {
+                    divider.setVisibility(i < systemShortcuts.size() - 1
+                            ? View.VISIBLE : View.INVISIBLE);
+                }
+            }
         }
         show();
         loadAppShortcuts((ItemInfo) originalIcon.getTag(), emptyList());
@@ -594,11 +666,11 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     }
 
     private void getFolderLocation(Rect outPos) {
+        Rect localBounds = new Rect();
+        this.mFolderIcon.getColorOsGroupBounds(localBounds);
         getPopupContainer().getDescendantRectRelativeToSelf(this.mFolderIcon, outPos);
-        outPos.top += this.mFolderIcon.getPaddingTop();
-        outPos.left += this.mFolderIcon.getPaddingLeft();
-        outPos.right -= this.mFolderIcon.getPaddingRight();
-        outPos.bottom = outPos.top + (this.mFolderIcon.getPreviewHeight() > 0 ? this.mFolderIcon.getPreviewHeight() : this.mFolderIcon.getHeight());
+        outPos.set(outPos.left + localBounds.left, outPos.top + localBounds.top,
+                outPos.left + localBounds.right, outPos.top + localBounds.bottom);
     }
 
     private void getOriginalLocation(Rect outPos) {
@@ -805,6 +877,8 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
             mOriginalIcon.setTextVisibility(mOriginalIcon.shouldTextBeVisible());
             mOriginalIcon.setForceHideDot(false);
         } else if (mFolderIcon != null) {
+            mFolderIcon.getFolderName().setVisibility(
+                    mFolderIcon.shouldTextBeVisible() ? View.VISIBLE : View.INVISIBLE);
             mFolderIcon.setTextVisibility(mFolderIcon.shouldTextBeVisible());
             mFolderIcon.setForceHideDot(false);
         }
@@ -933,19 +1007,36 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         container.configureForLauncher(launcher, (ItemInfo) icon.getTag());
         container.populateAndShow(ColorOsFolderShortcuts.create(
                 launcher, (com.android.launcher3.model.data.FolderInfo) icon.getTag(), icon), icon);
+        ColorOsFolderResizeFrame.showForFolder(icon);
         return container;
     }
 
     public void populateAndShow(
             List<SystemShortcut<Launcher>> systemShortcuts, HxyLargeFolderIcon view) {
         mFolderIcon = view;
+        mFolderIcon.getFolderName().setVisibility(View.INVISIBLE);
         int viewsToFlip = getChildCount();
-        mSystemShortcutContainer = this;
-        addView(new ColorOsFolderStyleView(Launcher.getLauncher(getContext()), view));
-        for (SystemShortcut<Launcher> systemShortcut : systemShortcuts) {
-            initializeSystemShortcut(R.layout.system_shortcut, this, systemShortcut, false);
+        View surface = inflateAndAdd(R.layout.popup_shortcut_scroll_container, this);
+        ViewGroup shortcutContainer = surface.findViewById(R.id.popup_shortcut_container);
+        com.android.launcher3.model.data.FolderInfo folderInfo =
+                (com.android.launcher3.model.data.FolderInfo) view.getTag();
+        if (folderInfo.hasGrid2x2()) {
+            shortcutContainer.addView(new ColorOsFolderStyleView(
+                    Launcher.getLauncher(getContext()), view));
+        }
+        mSystemShortcutContainer = inflateAndAdd(
+                R.layout.system_shortcut_icon_text_container, shortcutContainer);
+        for (int i = 0; i < systemShortcuts.size(); i++) {
+            View row = initializeSystemShortcut(R.layout.oplus_deep_shortcut,
+                    mSystemShortcutContainer, systemShortcuts.get(i), false);
+            View divider = row.findViewById(R.id.divider);
+            if (divider != null) {
+                divider.setVisibility(i < systemShortcuts.size() - 1
+                        ? View.VISIBLE : View.INVISIBLE);
+            }
         }
         reorderAndShow(viewsToFlip);
+        mFolderIcon.getFolderName().setVisibility(View.INVISIBLE);
         setAccessibilityPaneTitle(getTitleForAccessibility());
         setLayoutTransition(new LayoutTransition());
     }

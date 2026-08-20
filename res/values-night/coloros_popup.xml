@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launcher_deep_shortcut_bg_color">#FF333333</color>
+    <color name="oplus_shortcut_group_divider">#1AFFFFFF</color>
+    <color name="coloros_folder_style_icon_normal">#89FFFFFF</color>
+</resources>

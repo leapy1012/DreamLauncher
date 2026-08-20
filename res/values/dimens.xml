@@ -15,6 +15,15 @@
 -->
 
 <resources>
+    <dimen name="coloros_folder_resize_frame_stroke">4dp</dimen>
+    <dimen name="coloros_folder_resize_handle_stroke">8dp</dimen>
+    <dimen name="coloros_folder_resize_handle_radius">20dp</dimen>
+    <dimen name="coloros_folder_resize_touch_size">46dp</dimen>
+    <dimen name="coloros_folder_resize_touch_size_1x1">32dp</dimen>
+    <dimen name="coloros_folder_resize_frame_horizontal_padding">10dp</dimen>
+    <dimen name="coloros_folder_resize_frame_vertical_padding">16dp</dimen>
+    <dimen name="folder_name_width">228dp</dimen>
+
 
     <dimen name="click_shadow_elevation">4dp</dimen>
 
@@ -41,7 +50,7 @@
     <dimen name="dynamic_grid_hotseat_side_padding">0dp</dimen>
 
     <!-- Scalable Grid -->
-    <dimen name="min_qsb_margin">8dp</dimen>
+    <dimen name="min_qsb_margin">0dp</dimen>
 
     <!-- Workspace page indicator -->
     <!-- ColorOS workspace indicator host height (decoded OplusPageIndicator resource). -->
@@ -282,7 +291,7 @@
 
     <!-- Shadows and outlines -->
     <dimen name="blur_size_thin_outline">1dp</dimen>
-    <dimen name="blur_size_medium_outline">2dp</dimen>
+    <dimen name="blur_size_medium_outline">0dp</dimen>
     <dimen name="blur_size_click_shadow">4dp</dimen>
     <dimen name="click_shadow_high_shift">2dp</dimen>
 
@@ -307,7 +316,7 @@
     <dimen name="deep_shortcut_drag_handle_size">16dp</dimen>
     <dimen name="popup_padding_start">10dp</dimen>
     <dimen name="popup_padding_end">14dp</dimen>
-    <dimen name="popup_vertical_padding">4dp</dimen>
+    <dimen name="popup_vertical_padding">16dp</dimen>
     <dimen name="popup_arrow_width">12dp</dimen>
     <dimen name="popup_arrow_height">10dp</dimen>
     <dimen name="popup_arrow_vertical_offset">-1dp</dimen>

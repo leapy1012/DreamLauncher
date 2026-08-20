@@ -464,11 +464,14 @@
     <string name="coloros_folder_style_nine_grid">3 ? 3 grid folder button</string>
     <string name="coloros_folder_style_four_grid">2 ? 2 grid folder button</string>
     <string name="coloros_folder_style_hierarchical">Hierarchical grid folder button</string>
-    <string name="coloros_shortcut_share">Share</string>
-    <string name="coloros_shortcut_edit">Edit</string>
-    <string name="coloros_shortcut_app_lock">App Lock</string>
-    <string name="coloros_shortcut_more_features">More features</string>
-    <string name="coloros_edit_app_name">Edit app name</string>
     <string name="coloros_remove_widget_title">Remove widget</string>
     <string name="coloros_remove_widget_message">Removing this widget will not delete any app data.</string>
+    <string name="generate_folder">Create folder</string>
+    <string name="uninstall_action">Uninstall</string>
+    <string name="remove_action">Remove</string>
+    <string name="both_uninstall_and_remove_action">Remove</string>
+    <string name="uninstall_and_delete_panel_main_title">Uninstall apps and remove shortcuts?</string>
+    <string name="remove_selected_shortcuts_message">The selected shortcuts will be removed from the Home screen.</string>
+    <string name="uninstall_selected_apps_title">Uninstall selected apps?</string>
+    <string name="uninstall_selected_apps_message">Uninstalling these apps will also delete their data.</string>
 </resources>

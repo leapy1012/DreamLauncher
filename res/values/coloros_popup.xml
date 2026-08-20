@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Exact values from the decoded Oplus Launcher popup resources. -->
+    <dimen name="deep_shortcut_icon_text_width">232dp</dimen>
+    <dimen name="deep_shortcut_icon_text_item_width">232dp</dimen>
+    <dimen name="deep_shortcut_icon_text_item_height">48.8dp</dimen>
+    <dimen name="deep_shortcut_icon_text_item_top_or_bottom">12.5dp</dimen>
+    <dimen name="shortcut_item_text_size">16sp</dimen>
+    <dimen name="color_deep_shortcuts_text_padding_start">52dp</dimen>
+    <dimen name="color_popup_padding_end">16dp</dimen>
+    <dimen name="deep_shortcut_drag_margin_end">16dp</dimen>
+    <dimen name="deep_shortcut_group_divide_height">4dp</dimen>
+    <dimen name="shortcut_containers_top_bottom_padding">2dp</dimen>
+    <dimen name="coui_list_divider_height">0.33dp</dimen>
+    <dimen name="coui_round_corner_s">8dp</dimen>
+
+    <color name="launcher_deep_shortcut_bg_color">#FFFFFFFF</color>
+    <color name="oplus_shortcut_group_divider">#0D000000</color>
+</resources>

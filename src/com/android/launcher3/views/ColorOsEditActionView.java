@@ -2,6 +2,7 @@ package com.android.launcher3.views;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -23,6 +24,8 @@ public class ColorOsEditActionView extends AppCompatTextView {
     private static final int DARK_WALLPAPER_PLATE = 0x4DDBDBDB;
     private static final int BRIGHT_WALLPAPER_PLATE = 0x33000000;
     private static final float PRESSED_SCALE = 0.9f;
+    private static final long CLICK_DEBOUNCE_MS = 250L;
+    private static long sLastActionClickTime;
 
     private final Paint mPlatePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final int mIconSize;
@@ -47,7 +50,11 @@ public class ColorOsEditActionView extends AppCompatTextView {
         boolean brightWallpaper = Themes.getAttrBoolean(context, R.attr.isWorkspaceDarkText);
         mPlateColor = brightWallpaper ? BRIGHT_WALLPAPER_PLATE : DARK_WALLPAPER_PLATE;
         mPlateAlpha = Color.alpha(mPlateColor);
-        setTextColor(brightWallpaper ? Color.BLACK : Color.WHITE);
+        int enabledTextColor = brightWallpaper ? Color.BLACK : Color.WHITE;
+        int disabledTextColor = brightWallpaper ? 0x26000000 : 0x26FFFFFF;
+        setTextColor(new ColorStateList(
+                new int[][] {new int[] {-android.R.attr.state_enabled}, new int[] {}},
+                new int[] {disabledTextColor, enabledTextColor}));
         setTextSize(10f);
         setTypeface(getTypeface(), android.graphics.Typeface.BOLD);
         setGravity(android.view.Gravity.TOP | android.view.Gravity.CENTER_HORIZONTAL);
@@ -117,6 +124,16 @@ public class ColorOsEditActionView extends AppCompatTextView {
             invalidate();
         });
         mAlphaAnimator.start();
+    }
+
+    @Override
+    public boolean performClick() {
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now - sLastActionClickTime < CLICK_DEBOUNCE_MS) {
+            return false;
+        }
+        sLastActionClickTime = now;
+        return super.performClick();
     }
 
     @Override

@@ -43,6 +43,7 @@ import android.view.View;
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.R;
+import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.ActivityContext;
 
@@ -178,6 +179,8 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
             this.mPreviewWidth = HxyLargeFolderProxy.computePreviewWidth(invalidateDelegate, availableSpaceX, this.previewSize);
             this.mPreviewHeight = HxyLargeFolderProxy.computePreviewHeight(invalidateDelegate, availableSpaceY, this.previewSize);
             this.basePreviewOffsetX = HxyLargeFolderProxy.getPreviewOffsetX(availableSpaceX, this.mPreviewWidth);
+            this.basePreviewOffsetY = topPadding + context.getResources().getDimensionPixelSize(
+                    R.dimen.coloros_workspace_folder_preview_top);
             this.previewSize = (this.mPreviewWidth + this.mPreviewHeight) / 2;
         } else if (HxyLargeFolderProxy.SUPPORT_LARGE_FOLDER) {
             this.mPreviewWidth = this.previewSize;
@@ -200,7 +203,7 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
         invalidate();
     }
 
-    void getBounds(Rect outBounds) {
+    public void getBounds(Rect outBounds) {
         int top = basePreviewOffsetY;
         int left = basePreviewOffsetX;
         int right = left + previewSize;
@@ -506,6 +509,11 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
 
     private void drawPreviewBackground(Canvas canvas, Context context, RectF rectF) {
         int round = HxyLargeFolderProxy.getFolderRound(context);
+        View delegate = mInvalidateDelegate;
+        if (delegate != null && delegate.getTag() instanceof ItemInfo) {
+            ItemInfo info = (ItemInfo) delegate.getTag();
+            round = HxyLargeFolderProxy.getFolderRound(context, info.spanX, info.spanY);
+        }
         canvas.drawRoundRect(rectF, (float) round, (float) round, this.mPaint);
     }
 

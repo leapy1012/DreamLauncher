@@ -19,6 +19,8 @@
 -->
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:androidprv="http://schemas.android.com/apk/prv/res/android">
+    <color name="coloros_folder_style_icon_normal">#89000000</color>
+
     <!-- The color tints to apply to the text and drag view when hovering
          over the delete target or the info target -->
     <color name="delete_target_hover_tint">#FFC1C1C1</color>
@@ -58,6 +60,9 @@
 
     <color name="notification_dot_color_light">#6DD58C</color>
     <color name="notification_dot_color_dark">#C4EED0</color>
+
+    <color name="launcher_badge_background_color">@color/coui_color_primary_red</color>
+    <color name="launcher_unread_msg_num_text_color">#FFFFFFFF</color>
 
     <color name="oplus_launcher_mainmenu_default_text_color">#FFFFFFFF</color>
     <color name="workspace_text_color_light">#FFF</color>

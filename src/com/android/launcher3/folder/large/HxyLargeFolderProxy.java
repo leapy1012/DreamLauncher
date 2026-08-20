@@ -17,10 +17,6 @@ public class HxyLargeFolderProxy {
     // more than four items are present.
     private static final int MAX_PREVIEW_SLOT_COUNT = 4;
     private static final int PREVIEW_SPAN_COUNT = 2;
-    private static final float PREVIEW_WIDTH_FACTOR = 0.80f;
-    private static final float PREVIEW_HEIGHT_FACTOR = 0.87f;
-    private static final float PREVIEW_ITEM_WIDTH_FACTOR = 0.38f;
-    private static final float PREVIEW_ITEM_HEIGHT_FACTOR = 0.42f;
     public static final boolean SUPPORT_LARGE_FOLDER = HxyOption.HXY_LAUNCHER_SUPPORT_LARGE_FOLDER;
     private static int sCellHeight = 0;
     private static int sCellWidth = 0;
@@ -35,7 +31,11 @@ public class HxyLargeFolderProxy {
     private static int sFolderIconPaddingTop = 0;
     private static  int sPreviewOffsetY = 0;
     private static  int sPreviewOffsetX = 0;
+    private static int sLargeFolderHorizontalInset = 0;
+    private static int sLargeFolderTitleHeight = 0;
+    private static int sLargeFolderTitleGap = 0;
 
+    private static int sLargeFolderTopInset = 0;
     public static int getSpanCount() {
         return PREVIEW_SPAN_COUNT;
     }
@@ -108,16 +108,23 @@ public class HxyLargeFolderProxy {
         int folderIconSizePx = activity.getDeviceProfile().folderIconSizePx;
         int availableSpaceX = cellWidth * 2;
         int availableSpaceY = cellHeight * 2;
+        sLargeFolderHorizontalInset = context.getResources().getDimensionPixelSize(
+                R.dimen.coloros_large_folder_bg_horizontal_inset);
+        sLargeFolderTitleHeight = context.getResources().getDimensionPixelSize(
+                R.dimen.coloros_workspace_folder_title_height);
+        sLargeFolderTitleGap = context.getResources().getDimensionPixelSize(
+                R.dimen.coloros_large_folder_name_gap);
         int previewWidth = computePreviewWidth(availableSpaceX, folderIconSizePx, 2);
-        int previewHeight = Math.round(previewWidth * PREVIEW_HEIGHT_FACTOR);
-        int min = Math.round(Math.min(previewWidth * PREVIEW_ITEM_WIDTH_FACTOR,
-                previewHeight * PREVIEW_ITEM_HEIGHT_FACTOR));
+        sLargeFolderTopInset = context.getResources().getDimensionPixelSize(
+                R.dimen.coloros_workspace_folder_preview_top);
+        int previewHeight = Math.min(availableSpaceY - sLargeFolderTopInset
+                - sLargeFolderTitleHeight - sLargeFolderTitleGap, previewWidth);
+        sFolderIconSize = folderIconSizePx;
         sHorizontalSpace = Math.max(0,
-                (previewWidth - (min * getSpanCount())) / (getSpanCount() + 1));
+                (previewWidth - (sFolderIconSize * 2)) / 3);
         sVerticalSpace = Math.max(0,
-                (previewHeight - (min * getSpanCount())) / (getSpanCount() + 1));
-        sFolderIconSize = min;
-        initFolderIconOutSize(context, min);
+                (previewHeight - (sFolderIconSize * 2)) / 3);
+        initFolderIconOutSize(context, sFolderIconSize);
         sMaxDistanceForFolderCreation = (float) Math.max(previewWidth, previewHeight);
         sFolderPreviewHeight = previewHeight;
         sPreviewOffsetY = sVerticalSpace;
@@ -134,6 +141,19 @@ public class HxyLargeFolderProxy {
             sFolderRound = (int) context.getResources().getDimension(R.dimen.hxy_large_folder_round);
         }
         return sFolderRound;
+    }
+
+    /** Matches IconUtils.getFolderIconRadius for variable-size ColorOS folders. */
+    public static int getFolderRound(Context context, int spanX, int spanY) {
+        if (spanX > 1 && spanY > 1) {
+            return getFolderRound(context);
+        }
+        if (spanX > 1 || spanY > 1) {
+            return context.getResources().getDimensionPixelSize(
+                    R.dimen.hxy_middle_folder_round);
+        }
+        return context.getResources().getDimensionPixelSize(
+                R.dimen.coloros_folder_preview_radius);
     }
 
     public static int getFolderPreviewHeight() {
@@ -171,7 +191,7 @@ public class HxyLargeFolderProxy {
     }
 
     public static boolean isLargeFolder(int spanX, int spanY) {
-        return spanX == 2 && spanY == 2;
+        return spanX > 1 || spanY > 1;
     }
 
     public static boolean isLargeFolder(View view) {
@@ -194,25 +214,34 @@ public class HxyLargeFolderProxy {
     }
 
     private static int computePreviewWidth(int availableSpaceX, int folderIconSizePx, int scale) {
-        return scale > 1 ? Math.round(availableSpaceX * PREVIEW_WIDTH_FACTOR) : folderIconSizePx;
+        return scale > 1
+                ? Math.max(folderIconSizePx, availableSpaceX - (sLargeFolderHorizontalInset * 2))
+                : folderIconSizePx;
     }
 
     public static int computePreviewHeight(View view, int availableSpaceY, int folderIconSizePx) {
         int scale = 2;
         if (view != null && (view.getTag() instanceof ItemInfo)) {
-            scale = ((ItemInfo) view.getTag()).spanY;
+            ItemInfo info = (ItemInfo) view.getTag();
+            scale = info.spanY;
+            if (info.spanX > 1 || info.spanY > 1) {
+                int availableHeight = Math.max(folderIconSizePx, availableSpaceY - sLargeFolderTopInset
+                        - sLargeFolderTitleHeight - sLargeFolderTitleGap);
+                if (info.spanX > 1 && info.spanY > 1) {
+                    return Math.min(availableHeight, computePreviewWidth(view,
+                            sCellWidth * info.spanX, folderIconSizePx));
+                }
+                return availableHeight;
+            }
         }
         return computePreviewHeight(availableSpaceY, folderIconSizePx, scale);
     }
 
     private static int computePreviewHeight(int availableSpaceY, int folderIconSizePx, int scale) {
-        if (scale > 1 && sCellWidth > 0) {
-            int previewWidth = computePreviewWidth(sCellWidth * scale, folderIconSizePx, scale);
-            return Math.min(availableSpaceY, Math.round(previewWidth * PREVIEW_HEIGHT_FACTOR));
-        }
-        return scale > 1 ? Math.round(availableSpaceY * 0.55f) : folderIconSizePx;
-    }
+        return scale > 1 ? Math.max(folderIconSizePx, availableSpaceY
+                - sLargeFolderTitleHeight - sLargeFolderTitleGap) : folderIconSizePx;
 
+    }
     public static int getPreviewOffsetX(int availableSpaceX, int previewWidth) {
         return (availableSpaceX - previewWidth) / 2;
     }

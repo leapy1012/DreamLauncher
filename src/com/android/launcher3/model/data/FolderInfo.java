@@ -62,14 +62,56 @@ public class FolderInfo extends ItemInfo {
     /**
      * It is a work folder
      */
-    public static final int FLAG_WORK_FOLDER = 0x00000002;
+    public static final int FLAG_WORK_FOLDER = 0x00000001;
 
     /**
      * The multi-page animation has run for this folder
      */
-    public static final int FLAG_MULTI_PAGE_ANIMATION = 0x00000004;
+    public static final int FLAG_MULTI_PAGE_ANIMATION = 0x00000002;
 
-    public static final int FLAG_MANUAL_FOLDER_NAME = 0x00000008;
+    public static final int FLAG_MANUAL_FOLDER_NAME = 0x00000004;
+
+    // Exact ColorOS FolderInfo option values. Keeping these values aligned is important because
+    // persisted folders are interpreted by FlexibleFolderIcon immediately after a size change.
+    public static final int FLAG_PREVIEW_NINE_GRID = 0x00000008;
+    public static final int FLAG_PREVIEW_FOUR_GRID = 0x00000010;
+    public static final int FLAG_PREVIEW_HIGHLIGHT = 0x00000020;
+    public static final int FLAG_PREVIEW_STYLE_MASK = FLAG_PREVIEW_NINE_GRID
+            | FLAG_PREVIEW_FOUR_GRID | FLAG_PREVIEW_HIGHLIGHT;
+
+    private static final int LEGACY_FLAG_WORK_FOLDER = 0x00000002;
+    private static final int LEGACY_FLAG_MULTI_PAGE_ANIMATION = 0x00000004;
+    private static final int LEGACY_FLAG_MANUAL_FOLDER_NAME = 0x00000008;
+    private static final int LEGACY_PREVIEW_NINE_GRID = 0x00000100;
+    private static final int LEGACY_PREVIEW_FOUR_GRID = 0x00000200;
+    private static final int LEGACY_PREVIEW_HIGHLIGHT = 0x00000400;
+    private static final int LEGACY_PREVIEW_STYLE_MASK = LEGACY_PREVIEW_NINE_GRID
+            | LEGACY_PREVIEW_FOUR_GRID | LEGACY_PREVIEW_HIGHLIGHT;
+
+    /** Converts folders saved by the pre-ColorOS Hxy option schema. */
+    public static int normalizeLegacyOptions(int options) {
+        if ((options & LEGACY_PREVIEW_STYLE_MASK) == 0) {
+            return options;
+        }
+        int normalized = options & ~(LEGACY_PREVIEW_STYLE_MASK
+                | LEGACY_FLAG_WORK_FOLDER
+                | LEGACY_FLAG_MULTI_PAGE_ANIMATION
+                | LEGACY_FLAG_MANUAL_FOLDER_NAME);
+        if ((options & LEGACY_FLAG_WORK_FOLDER) != 0) {
+            normalized |= FLAG_WORK_FOLDER;
+        }
+        if ((options & LEGACY_FLAG_MULTI_PAGE_ANIMATION) != 0) {
+            normalized |= FLAG_MULTI_PAGE_ANIMATION;
+        }
+        if ((options & LEGACY_FLAG_MANUAL_FOLDER_NAME) != 0) {
+            normalized |= FLAG_MANUAL_FOLDER_NAME;
+        }
+        normalized |= (options & LEGACY_PREVIEW_HIGHLIGHT) != 0
+                ? FLAG_PREVIEW_HIGHLIGHT
+                : (options & LEGACY_PREVIEW_FOUR_GRID) != 0
+                        ? FLAG_PREVIEW_FOUR_GRID : FLAG_PREVIEW_NINE_GRID;
+        return normalized;
+    }
 
     /**
      * Different states of folder label.
@@ -197,6 +239,50 @@ public class FolderInfo extends ItemInfo {
     public boolean hasOption(int optionFlag) {
         return (options & optionFlag) != 0;
     }
+    public boolean hasExtendedGrid() {
+        return spanX > 1 || spanY > 1;
+    }
+
+    public boolean hasGrid2x2() {
+        return spanX == 2 && spanY == 2;
+    }
+
+    /** Matches ColorOS FolderInfo#getPreviewColumn(). */
+    public int getPreviewColumn() {
+        if (isCurrentDisplayFourGrid()) {
+            return 2;
+        }
+        return hasExtendedGrid() && spanX < 2 ? 1 : 3;
+    }
+
+    /** Matches ColorOS FolderInfo#getPreviewRow(). */
+    public int getPreviewRow() {
+        if (isCurrentDisplayFourGrid()) {
+            return 2;
+        }
+        return hasExtendedGrid() && spanY < 2 ? 1 : 3;
+    }
+
+    public boolean isCurrentDisplayNineGrid() {
+        return hasGrid2x2() && hasOption(FLAG_PREVIEW_NINE_GRID);
+    }
+
+    public boolean isCurrentDisplayFourGrid() {
+        return hasGrid2x2() && hasOption(FLAG_PREVIEW_FOUR_GRID);
+    }
+
+    public boolean isCurrentDisplayHighlightGrid() {
+        return hasGrid2x2() && hasOption(FLAG_PREVIEW_HIGHLIGHT);
+    }
+
+    public void setPreviewStyle(int style, ModelWriter writer) {
+        int oldOptions = options;
+        options = (options & ~FLAG_PREVIEW_STYLE_MASK) | (style & FLAG_PREVIEW_STYLE_MASK);
+        if (writer != null && oldOptions != options) {
+            writer.updateItemInDatabase(this);
+        }
+    }
+
 
     /**
      * @param option flag to set or clear

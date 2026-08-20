@@ -29,6 +29,8 @@ import static com.android.launcher3.util.window.RefreshRateTracker.getSingleFram
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
 import android.animation.AnimatorSet;
 import android.annotation.SuppressLint;
 import android.appwidget.AppWidgetHostView;
@@ -37,10 +39,12 @@ import android.graphics.Canvas;
 import android.graphics.Insets;
 import android.graphics.Path;
 import android.graphics.Rect;
+import android.text.Editable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.text.InputType;
 import android.text.Selection;
+import android.text.TextWatcher;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -84,6 +88,8 @@ import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.dragndrop.DragController;
 import com.android.launcher3.dragndrop.DragController.DragListener;
 import com.android.launcher3.dragndrop.DragOptions;
+import com.android.launcher3.anim.OSpringInterpolator;
+import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.logger.LauncherAtom.FromState;
 import com.android.launcher3.logger.LauncherAtom.ToState;
 import com.android.launcher3.logging.StatsLogManager;
@@ -108,6 +114,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -122,6 +130,7 @@ import com.android.launcher3.folder.large.HxyFolderAnimationManager;
 import java.util.function.Consumer;
 import com.android.launcher3.LauncherApplication;
 import com.android.launcher3.util.DimenUtils;
+import com.android.launcher3.util.Themes;
 import com.android.launcher3.LauncherState;
 
 /**
@@ -171,8 +180,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     private static final int FOLDER_NAME_ANIMATION_DURATION = 633;
     private static final int FOLDER_COLOR_ANIMATION_DURATION = 200;
 
-    private static final int REORDER_DELAY = 250;
-    private static final int ON_EXIT_CLOSE_DELAY = 400;
+    private static final int REORDER_DELAY = 200;
+    private static final int ON_EXIT_CLOSE_DELAY = 200;
     private static final Rect sTempRect = new Rect();
     private static final int MIN_FOLDERS_FOR_HARDWARE_OPTIMIZATION = 10;
 
@@ -237,6 +246,39 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     private boolean mSuppressFolderDeletion = false;
     private boolean mItemAddedBackToSelfViaIcon = false;
     private boolean mIsEditingName = false;
+    private boolean mIsOpenForRename = false;
+    /** Width limiter ported from OplusFolder.mTextWatcher. */
+    private final TextWatcher mColorOsNameWidthWatcher = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence text, int start, int count, int after) { }
+
+        @Override
+        public void onTextChanged(CharSequence text, int start, int before, int count) { }
+
+        @Override
+        public void afterTextChanged(Editable editable) {
+            if (!isColorOsFullFolder() || mFolderName == null) {
+                return;
+            }
+            mFolderName.removeTextChangedListener(this);
+            int maxWidth = getResources().getDimensionPixelSize(R.dimen.folder_name_width);
+            while (mFolderName.getPaint().measureText(editable.toString()) > maxWidth
+                    && editable.length() > 0) {
+                int fit = mFolderName.getPaint().breakText(
+                        editable.toString(), true, maxWidth, null);
+                int selectionEnd = Math.max(0, mFolderName.getSelectionEnd());
+                if (fit >= 0 && selectionEnd > fit) {
+                    editable.delete(fit, selectionEnd);
+                } else {
+                    int end = Math.min(editable.length(), Math.max(1, selectionEnd));
+                    int start = Character.offsetByCodePoints(editable, end, -1);
+                    editable.delete(start, end);
+                }
+            }
+            mFolderName.addTextChangedListener(this);
+        }
+    };
+
 
     @ViewDebug.ExportedProperty(category = "launcher")
     private boolean mDestroyed;
@@ -309,6 +351,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         mFolderName.setTextSize(TypedValue.COMPLEX_UNIT_PX,
                 getResources().getDimensionPixelSize(R.dimen.coloros_folder_title_text_size));
         mFolderName.setOnBackKeyListener(this);
+        mFolderName.setOnFocusChangeListener(this);
         mFolderName.setOnEditorActionListener(this);
         mFolderName.setSelectAllOnFocus(true);
         mFolderName.setInputType(mFolderName.getInputType()
@@ -333,6 +376,9 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         mContentLl = findViewById(R.id.folder_content_ll);
         ImageView imageView = (ImageView) findViewById(R.id.clear_text);
         mClearText = imageView;
+        imageView.setImageResource(Themes.getAttrBoolean(
+                getContext(), R.attr.isWorkspaceDarkText)
+                ? R.drawable.folder_name_clear_bright : R.drawable.folder_name_clear);
         imageView.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 Folder.this.mFolderName.setText("");
@@ -395,6 +441,19 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             }
         }
         mDragInProgress = true;
+        if (isColorOsFullFolder()) {
+            View contentBackground = findViewById(R.id.folder_content_background);
+            if (contentBackground != null) {
+                contentBackground.animate().cancel();
+                contentBackground.setAlpha(0.0f);
+                contentBackground.animate()
+                        .alpha(1.0f)
+                        .setStartDelay(getResources().getInteger(
+                                R.integer.config_fullFolderOpenDuration))
+                        .setDuration(200L)
+                        .start();
+            }
+        }
         mItemAddedBackToSelfViaIcon = false;
     }
 
@@ -415,8 +474,25 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         post(() -> {
             showLabelSuggestions();
             mFolderName.setHint("");
+            mFolderName.setCursorVisible(true);
+            mFolderName.selectAll();
+            if (isColorOsFullFolder()) {
+                mFolderName.setBackground(null);
+                mFolderName.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+                mHeader.setBackgroundResource(Themes.getAttrBoolean(
+                        getContext(), R.attr.isWorkspaceDarkText)
+                        ? R.drawable.folder_rename_edittext_background_bright
+                        : R.drawable.folder_rename_edittext_background);
+                mClearText.setVisibility(VISIBLE);
+                mFolderName.removeTextChangedListener(mColorOsNameWidthWatcher);
+                mFolderName.addTextChangedListener(mColorOsNameWidthWatcher);
+            }
             mIsEditingName = true;
         });
+    }
+
+    public void setIsOpenForRename(boolean openForRename) {
+        mIsOpenForRename = openForRename;
     }
 
     @Override
@@ -444,6 +520,13 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         // This ensures that focus is gained every time the field is clicked, which selects all
         // the text and brings up the soft keyboard if necessary.
         mFolderName.clearFocus();
+        mFolderName.setCursorVisible(false);
+        if (isColorOsFullFolder()) {
+            mFolderName.setBackground(null);
+                mHeader.setBackground(null);
+                mClearText.setVisibility(INVISIBLE);
+                mFolderName.removeTextChangedListener(mColorOsNameWidthWatcher);
+        }
 
         Selection.setSelection(mFolderName.getText(), 0, 0);
         mIsEditingName = false;
@@ -465,18 +548,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     @Override
     public WindowInsets onApplyWindowInsets(WindowInsets windowInsets) {
         if (Utilities.ATLEAST_R) {
-            this.setTranslationY(0);
-
-            if (windowInsets.isVisible(WindowInsets.Type.ime())) {
-                Insets keyboardInsets = windowInsets.getInsets(WindowInsets.Type.ime());
-                int folderHeightFromBottom = getHeightFromBottom();
-
-                if (keyboardInsets.bottom > folderHeightFromBottom) {
-                    // Translate this folder above the keyboard, then add the folder name's padding
-                    this.setTranslationY(folderHeightFromBottom - keyboardInsets.bottom
-                            - mFolderName.getPaddingBottom());
-                }
-            }
+            setTranslationY(0);
         }
 
         return windowInsets;
@@ -749,6 +821,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                         AccessibilityManagerCompat.sendFolderOpenedEventToTest(getContext());
 
                         mContent.setFocusOnFirstChild();
+                        if (mIsOpenForRename) {
+                            mIsOpenForRename = false;
+                            mFolderName.requestFocus();
+                            mFolderName.showKeyboard();
+                        }
                     }
                 });
             }
@@ -997,6 +1074,16 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     @Override
     public void onDragOver(DragObject d) {
+        // OplusFolder paints the current target cell while its delayed reorder is pending.
+        if (mContent != null && mContent.rankOnCurrentPage(mEmptyCellRank)
+                && mContent.getCurrentCellLayout() != null) {
+            int rankOnPage = mTargetRank % mContent.itemsPerPage();
+            int countX = mContent.getCurrentCellLayout().getCountX();
+            int cellX = rankOnPage % countX;
+            int cellY = rankOnPage / countX;
+            mContent.getCurrentCellLayout().visualizeDropLocation(
+                    cellX, cellY, 1, 1, d);
+        }
         if (mScrollPauseAlarm.alarmPending()) {
             return;
         }
@@ -1080,6 +1167,9 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     }
 
     public void onDragExit(DragObject d) {
+        if (mContent != null && mContent.getCurrentCellLayout() != null) {
+            mContent.getCurrentCellLayout().clearDragOutlines();
+        }
         // We only close the folder if this is a true drag exit, ie. not because
         // a drop has occurred above the folder.
         if (!d.dragComplete) {
@@ -1209,8 +1299,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         if (isColorOsFullFolder()) {
             lp.width = width;
             lp.height = height;
-            lp.x = 0;
-            lp.y = 0;
+            lp.x = (dragLayer.getWidth() - width) / 2;
+            lp.y = (dragLayer.getHeight() - dragLayer.getInsets().bottom) - height;
             mBackground.setBounds(0, 0, width, height);
             mFolderIconPivotX = mFolderIcon.getMeasuredWidth() / 2f;
             mFolderIconPivotY = mFolderIcon.getMeasuredHeight() / 2f;
@@ -1305,14 +1395,17 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     private int getFolderWidth() {
         if (isColorOsFullFolder()) {
-            return mActivityContext.getDeviceProfile().widthPx;
+            return getPaddingLeft() + getPaddingRight() + mContent.getDesiredWidth();
         }
         return getPaddingLeft() + getPaddingRight() + mContent.getDesiredWidth();
     }
 
     private int getFolderHeight() {
         if (isColorOsFullFolder()) {
-            return mActivityContext.getDeviceProfile().heightPx;
+            return getPaddingTop()
+                    + getResources().getDimensionPixelSize(R.dimen.coloros_folder_title_height)
+                    + getResources().getDimensionPixelSize(R.dimen.coloros_folder_content_top_gap)
+                    + getContentAreaHeight();
         }
         return getFolderHeight(getContentAreaHeight());
     }
@@ -1323,21 +1416,15 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (isColorOsFullFolder()) {
-            DeviceProfile dp = mActivityContext.getDeviceProfile();
-            int width = dp.widthPx;
-            int height = dp.heightPx;
+            int contentWidth = getContentAreaWidth();
+            int width = getPaddingLeft() + getPaddingRight() + contentWidth;
             int headerMargin = getResources().getDimensionPixelSize(
                     R.dimen.coloros_folder_header_margin_horizontal);
-            int contentMargin = getResources().getDimensionPixelSize(
-                    R.dimen.coloros_folder_content_margin_horizontal);
             int contentTopGap = getResources().getDimensionPixelSize(
                     R.dimen.coloros_folder_content_top_gap);
             int headerHeight = getResources().getDimensionPixelSize(
                     R.dimen.coloros_folder_title_height);
-            int bottomInset = dp.getInsets().bottom;
-            int contentContainerHeight = Math.max(0, height - getPaddingTop()
-                    - headerHeight - contentTopGap - bottomInset);
-            int contentWidth = Math.max(0, width - (contentMargin * 2));
+            int contentContainerHeight = getContentAreaHeight();
             int contentHeight = contentContainerHeight;
 
             int contentWidthSpec = MeasureSpec.makeMeasureSpec(
@@ -1353,7 +1440,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                     MeasureSpec.makeMeasureSpec(headerHeight, MeasureSpec.EXACTLY));
             mContentLl.measure(contentWidthSpec, MeasureSpec.makeMeasureSpec(
                     contentContainerHeight, MeasureSpec.EXACTLY));
-            setMeasuredDimension(width, height);
+            setMeasuredDimension(width, getPaddingTop() + headerHeight
+                    + contentTopGap + contentContainerHeight);
             return;
         }
 
@@ -1442,6 +1530,9 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     @Override
     public void onDrop(DragObject d, DragOptions options) {
+        if (mContent != null && mContent.getCurrentCellLayout() != null) {
+            mContent.getCurrentCellLayout().clearDragOutlines();
+        }
         // If the icon was dropped while the page was being scrolled, we need to compute
         // the target location again such that the icon is placed of the final page.
         if (!mContent.rankOnCurrentPage(mEmptyCellRank)) {
@@ -1529,6 +1620,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             }
         }
 
+        // OPPO ripples the surrounding folder cells after the dragged icon lands. Keep this after
+        // rearrangeChildren()/mInfo.add(), when the destination cell and reading order are final.
+        List<View> landedItems = getIconsInReadingOrder();
+        startColorOsFolderDropRipple(mEmptyCellRank < landedItems.size() ? landedItems.get(mEmptyCellRank) : null);
         // Clear the drag info, as it is no longer being dragged.
         mDragInProgress = false;
 
@@ -1538,9 +1633,6 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                     mLauncherDelegate.getModelWriter());
         }
 
-        if (!launcher.isInState(EDIT_MODE)) {
-            launcher.getStateManager().goToState(NORMAL, SPRING_LOADED_EXIT_DELAY);
-        }
 
         if (d.stateAnnouncer != null) {
             d.stateAnnouncer.completeAction(R.string.item_moved);
@@ -1557,6 +1649,95 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         if (v != null) {
             v.setVisibility(INVISIBLE);
         }
+    }
+
+    /** Folder portion of OPPO ItemsRippleAnimator's ItemDrag scene. */
+    private void startColorOsFolderDropRipple(View centerView) {
+        CellLayout cellLayout = mContent == null ? null : mContent.getCurrentCellLayout();
+        if (centerView == null || cellLayout == null
+                || !(centerView.getLayoutParams() instanceof CellLayoutLayoutParams)) {
+            return;
+        }
+
+        CellLayoutLayoutParams centerLp = (CellLayoutLayoutParams) centerView.getLayoutParams();
+        int centerX = centerLp.getCellX();
+        int centerY = centerLp.getCellY();
+        TreeMap<Integer, List<View>> distanceRings = new TreeMap<>();
+        for (int x = Math.max(0, centerX - 3);
+                x <= Math.min(cellLayout.getCountX() - 1, centerX + 3); x++) {
+            for (int y = Math.max(0, centerY - 3);
+                    y <= Math.min(cellLayout.getCountY() - 1, centerY + 3); y++) {
+                if (x == centerX && y == centerY) {
+                    continue;
+                }
+                View nearby = cellLayout.getChildAt(x, y);
+                if (nearby == null) {
+                    continue;
+                }
+                int dx = x - centerX;
+                int dy = y - centerY;
+                int distance = dx * dx + dy * dy;
+                distanceRings.computeIfAbsent(distance, ignored -> new ArrayList<>()).add(nearby);
+            }
+        }
+        if (distanceRings.isEmpty()) {
+            return;
+        }
+
+        final float[] scaleByRing = {1.10f, 1.06f, 1.04f, 1.02f, 1.01f};
+        final int[] centerOnScreen = new int[2];
+        centerView.getLocationOnScreen(centerOnScreen);
+        centerOnScreen[0] += centerView.getWidth() / 2;
+        centerOnScreen[1] += centerView.getHeight() / 2;
+
+        ArrayList<Animator> ripples = new ArrayList<>();
+        int ring = 0;
+        for (Map.Entry<Integer, List<View>> entry : distanceRings.entrySet()) {
+            float middleScale = scaleByRing[Math.min(scaleByRing.length - 1, ring)];
+            long startDelay = (long) ring * 30L;
+            for (View nearby : entry.getValue()) {
+                final float oldPivotX = nearby.getPivotX();
+                final float oldPivotY = nearby.getPivotY();
+                final int[] nearbyOnScreen = new int[2];
+                nearby.getLocationOnScreen(nearbyOnScreen);
+
+                ObjectAnimator scaleOut = ObjectAnimator.ofPropertyValuesHolder(nearby,
+                        PropertyValuesHolder.ofFloat(View.SCALE_X, nearby.getScaleX(), middleScale),
+                        PropertyValuesHolder.ofFloat(View.SCALE_Y, nearby.getScaleY(), middleScale));
+                scaleOut.setDuration(250L);
+                scaleOut.setStartDelay(startDelay);
+                scaleOut.setInterpolator(new OSpringInterpolator(36d, 1d, 0d, 1f));
+
+                ObjectAnimator scaleBack = ObjectAnimator.ofPropertyValuesHolder(nearby,
+                        PropertyValuesHolder.ofFloat(View.SCALE_X, middleScale, 1f),
+                        PropertyValuesHolder.ofFloat(View.SCALE_Y, middleScale, 1f));
+                scaleBack.setDuration(600L);
+                scaleBack.setInterpolator(new OSpringInterpolator(30d, 0.5d, 0d, 1f));
+
+                AnimatorSet ripple = new AnimatorSet();
+                ripple.playSequentially(scaleOut, scaleBack);
+                ripple.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationStart(Animator animation) {
+                        nearby.setPivotX(centerOnScreen[0] - nearbyOnScreen[0]);
+                        nearby.setPivotY(centerOnScreen[1] - nearbyOnScreen[1]);
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        nearby.setPivotX(oldPivotX);
+                        nearby.setPivotY(oldPivotY);
+                        nearby.setScaleX(1f);
+                        nearby.setScaleY(1f);
+                    }
+                });
+                ripples.add(ripple);
+            }
+            ring++;
+        }
+        AnimatorSet together = new AnimatorSet();
+        together.playTogether(ripples);
+        together.start();
     }
 
     public void showItem(WorkspaceItemInfo info) {

@@ -53,6 +53,31 @@
         <View android:id="@+id/effect_button" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
     </LinearLayout>
 
+    <LinearLayout android:id="@+id/coloros_selection_actions" android:layout_width="match_parent"
+        android:layout_height="156dp" android:clipChildren="false" android:clipToPadding="false"
+        android:orientation="vertical" android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+        <com.android.launcher3.views.ColorOsPagePreviewStrip
+            android:id="@+id/coloros_page_preview_strip"
+            android:layout_width="match_parent" android:layout_height="92dp"
+            android:clipToPadding="false" android:fillViewport="false"
+            android:overScrollMode="never" android:scrollbars="none" />
+        <LinearLayout android:id="@+id/coloros_selection_button_row"
+            android:layout_width="match_parent" android:layout_height="64dp"
+            android:clipChildren="false" android:gravity="top|center_horizontal"
+            android:orientation="horizontal">
+            <com.android.launcher3.views.ColorOsEditActionView
+                android:id="@+id/coloros_generate_folder" android:layout_width="120dp"
+                android:layout_height="64dp" android:drawableTop="@drawable/ic_togglebar_folder"
+                android:text="@string/generate_folder" />
+            <com.android.launcher3.views.ColorOsEditActionView
+                android:id="@+id/coloros_uninstall_selection" android:layout_width="120dp"
+                android:layout_height="64dp" android:drawableTop="@drawable/ic_togglebar_remove"
+                android:text="@string/uninstall_action" />
+        </LinearLayout>
+    </LinearLayout>
+
     <LinearLayout android:id="@+id/coloros_layout_panel" android:layout_width="match_parent"
         android:layout_height="220dp" android:background="#FFFFFFFF"
         android:orientation="vertical" android:visibility="gone" app:layout_constraintBottom_toBottomOf="parent">

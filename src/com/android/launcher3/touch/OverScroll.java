@@ -52,4 +52,20 @@ public class OverScroll {
 
         return Math.round(OVERSCROLL_DAMP_FACTOR * f * max);
     }
+
+    /**
+     * ColorOS workspace edge resistance. OPPO's launcher divides the normalized pull by eight
+     * before applying the same cubic influence curve; unlike Launcher3's stock implementation it
+     * does not multiply the result by {@link #OVERSCROLL_DAMP_FACTOR} afterwards.
+     */
+    public static int oplusDampedScroll(float amount, int max) {
+        if (Float.compare(amount, 0) == 0 || max == 0) return 0;
+
+        float ratio = (amount / max) / 8f;
+        float influenced = Math.signum(ratio) * overScrollInfluenceCurve(Math.abs(ratio));
+        if (Math.abs(influenced) >= 1f) {
+            influenced /= Math.abs(influenced);
+        }
+        return Float.isNaN(influenced) ? 0 : Math.round(influenced * max);
+    }
 }

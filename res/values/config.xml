@@ -67,8 +67,9 @@
     <integer name="config_folderDelay">30</integer>
     <!-- ColorOS-style full folder transition durations. Keep these separate from the
          material folder duration, which is still used by the standard AOSP layout. -->
-    <integer name="config_fullFolderOpenDuration">330</integer>
-    <integer name="config_fullFolderCloseDuration">280</integer>
+    <!-- Values match OplusFolderAnimationManager's full-folder resources. -->
+    <integer name="config_fullFolderOpenDuration">850</integer>
+    <integer name="config_fullFolderCloseDuration">800</integer>
 
     <!-- The distance at which the animation should take the max duration -->
     <integer name="config_dropAnimMaxDist">800</integer>

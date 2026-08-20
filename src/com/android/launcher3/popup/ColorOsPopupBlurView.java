@@ -20,6 +20,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import com.android.launcher3.Launcher;
+import com.android.launcher3.folder.large.HxyLargeFolderIcon;
 import com.android.launcher3.views.BaseDragLayer;
 
 /**
@@ -37,6 +38,7 @@ public final class ColorOsPopupBlurView extends FrameLayout {
     private Bitmap mCapturedBitmap;
     private Bitmap mPressedBitmap;
     private ImageView mPressedCopy;
+    private boolean mUseDirectPressedCopy;
 
     private ColorOsPopupBlurView(Launcher launcher, View pressedView) {
         super(launcher);
@@ -121,6 +123,18 @@ public final class ColorOsPopupBlurView extends FrameLayout {
             return;
         }
         mLauncher.getDragLayer().getDescendantRectRelativeToSelf(pressedView, mPressedBounds);
+        Rect localGroupBounds = null;
+        if (pressedView instanceof HxyLargeFolderIcon) {
+            // Decoded IGroupView behavior: retain only the original group body, never its label.
+            localGroupBounds = new Rect();
+            ((HxyLargeFolderIcon) pressedView).getColorOsGroupBounds(localGroupBounds);
+            int parentLeft = mPressedBounds.left;
+            int parentTop = mPressedBounds.top;
+            mPressedBounds.set(parentLeft + localGroupBounds.left,
+                    parentTop + localGroupBounds.top,
+                    parentLeft + localGroupBounds.right,
+                    parentTop + localGroupBounds.bottom);
+        }
         if (mPressedBounds.isEmpty()) {
             return;
         }
@@ -131,10 +145,25 @@ public final class ColorOsPopupBlurView extends FrameLayout {
         lp.leftMargin = mPressedBounds.left;
         lp.topMargin = mPressedBounds.top;
         addView(mPressedCopy, lp);
+        if (localGroupBounds != null) {
+            try {
+                mPressedBitmap = Bitmap.createBitmap(
+                        Math.max(1, localGroupBounds.width()),
+                        Math.max(1, localGroupBounds.height()),
+                        Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(mPressedBitmap);
+                canvas.translate(-localGroupBounds.left, -localGroupBounds.top);
+                pressedView.draw(canvas);
+                mPressedCopy.setImageBitmap(mPressedBitmap);
+                mUseDirectPressedCopy = true;
+            } catch (OutOfMemoryError | IllegalArgumentException ignored) {
+                mUseDirectPressedCopy = false;
+            }
+        }
     }
 
     private void populatePressedItemFromWindow(Bitmap windowBitmap) {
-        if (mPressedCopy == null || mPressedBounds.isEmpty()) {
+        if (mUseDirectPressedCopy || mPressedCopy == null || mPressedBounds.isEmpty()) {
             return;
         }
         int left = Math.max(0, mPressedBounds.left);

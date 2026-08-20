@@ -16,7 +16,7 @@ import com.android.launcher3.icons.DotRenderer;
 
 public class DotDrawUtils {
 
-    public static final int MAX_COUNT = 99;
+    public static final int MAX_COUNT = 999;
     
     public static final String TAG = "Unread DotRendererExt";
 
@@ -82,14 +82,14 @@ public class DotDrawUtils {
         return point;
     }
 
-    public static void draw(Canvas canvas, DotNumParams dotNumParams, boolean  isLargeFolder) {
+    private static void drawLegacy(Canvas canvas, DotNumParams dotNumParams, boolean isLargeFolder) {
         if (dotNumParams == null || dotNumParams.mUnreadNum <= 0) {
             Log.e(TAG, "Invalid null argument(s) passed in call to draw.");
             return;
         }
         NumberDotRenderer.DrawParams drawParams =
                 (NumberDotRenderer.DrawParams) dotNumParams.mDrawParams;
-        initPaint(drawParams.textSize);
+        initPaintLegacy(drawParams.textSize);
         String text = getUnreadNumText(dotNumParams.mUnreadNum);
         // Decoded OplusDotRenderer uses a 20dp circular minimum, 13dp bold text and 2dp
         // ellipsize padding. Derive the pixel dimensions from the supplied 13dp text resource.
@@ -117,12 +117,112 @@ public class DotDrawUtils {
         canvas.restore();
     }
 
-    public static void initPaint(float textSize) {
+    private static void initPaintLegacy(float textSize) {
         Paint paint = mPaint;
         paint.setTextSize(textSize);
         paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setAntiAlias(true);
         paint.setColor(Color.WHITE);
+    }
+
+    public static void draw(Canvas canvas, DotNumParams dotNumParams, boolean isLargeFolder) {
+        if (dotNumParams == null || dotNumParams.mUnreadNum <= 0) {
+            Log.e(TAG, "Invalid null argument(s) passed in call to draw.");
+            return;
+        }
+        NumberDotRenderer.DrawParams drawParams =
+                (NumberDotRenderer.DrawParams) dotNumParams.mDrawParams;
+        initPaint(drawParams.textSize, drawParams.badgeTextColor);
+
+        int count = dotNumParams.mUnreadNum;
+        String measuredText = String.valueOf(Math.min(count, MAX_COUNT));
+        int diameter = Math.round(drawParams.textSize * (20f / 13f));
+        int designOffset = Math.round(drawParams.textSize * (3f / 13f));
+        int ellipsize = Math.round(drawParams.textSize * (2f / 13f));
+        int textPadding = Math.max(0,
+                (diameter - Math.round(mPaint.measureText("0"))) / 2);
+        int badgeWidth = Math.max(diameter,
+                Math.round(mPaint.measureText(measuredText)) + textPadding * 2);
+
+        Rect iconBounds = drawParams.iconBounds;
+        Rect canvasBounds = canvas.getClipBounds();
+        int[] centerOffset = calculateBadgeCenterOffset(iconBounds, canvasBounds,
+                drawParams.leftAlign, count, badgeWidth, diameter, designOffset);
+        float anchorX = drawParams.leftAlign ? iconBounds.left : iconBounds.right;
+        float centerX = anchorX + centerOffset[0] + (isLargeFolder ? -6f : 0f);
+        float centerY = iconBounds.top + centerOffset[1] + (isLargeFolder ? 45f : 0f);
+
+        canvas.save();
+        canvas.translate(centerX, centerY);
+        canvas.scale(drawParams.scale, drawParams.scale);
+
+        Paint backgroundPaint = mPaintX;
+        backgroundPaint.clearShadowLayer();
+        backgroundPaint.setAntiAlias(true);
+        backgroundPaint.setStyle(Paint.Style.FILL);
+        backgroundPaint.setColor(drawParams.badgeColor);
+        float halfWidth = badgeWidth * 0.5f;
+        float halfHeight = diameter * 0.5f;
+        canvas.drawRoundRect(new RectF(-halfWidth, -halfHeight, halfWidth, halfHeight),
+                halfHeight, halfHeight, backgroundPaint);
+
+        if (count > MAX_COUNT) {
+            drawOverflowEllipsis(canvas, ellipsize, drawParams.badgeTextColor);
+        } else {
+            float baseline = -(mPaint.ascent() + mPaint.descent()) * 0.5f;
+            canvas.drawText(measuredText, 0f, baseline, mPaint);
+        }
+        canvas.restore();
+    }
+
+    private static int[] calculateBadgeCenterOffset(Rect iconBounds, Rect canvasBounds,
+            boolean leftAlign, int count, int badgeWidth, int diameter, int designOffset) {
+        int anchorX = leftAlign ? iconBounds.left : iconBounds.right;
+        int anchorY = iconBounds.top;
+        int horizontalSpace = leftAlign
+                ? anchorX - canvasBounds.left : canvasBounds.right - anchorX;
+        int verticalSpace = anchorY - canvasBounds.top;
+        int radius = diameter / 2;
+        int centerX;
+        int centerY;
+        if (horizontalSpace < radius || verticalSpace < radius) {
+            int delta = Math.max(Math.max(radius - horizontalSpace,
+                    radius - verticalSpace), designOffset);
+            int widthDelta = badgeWidth / 2 - radius;
+            centerX = leftAlign
+                    ? anchorX + delta + widthDelta : anchorX - delta - widthDelta;
+            centerY = anchorY + delta;
+        } else {
+            if (count > 9) {
+                int widthDelta = (badgeWidth - diameter) / 2;
+                anchorX = leftAlign ? anchorX + widthDelta : anchorX - widthDelta;
+            }
+            centerX = leftAlign ? anchorX + designOffset : anchorX - designOffset;
+            centerY = anchorY + designOffset;
+        }
+        return new int[] {centerX - (leftAlign ? iconBounds.left : iconBounds.right),
+                centerY - iconBounds.top};
+    }
+
+    private static void drawOverflowEllipsis(Canvas canvas, int ellipsize, int color) {
+        Paint ellipsisPaint = mPaint;
+        ellipsisPaint.setColor(color);
+        float radius = ellipsize * 0.5f;
+        canvas.save();
+        canvas.translate(-(ellipsize * 5f) * 0.5f, -ellipsize * 0.5f);
+        canvas.drawCircle(radius, radius, radius, ellipsisPaint);
+        canvas.drawCircle(5f * radius, radius, radius, ellipsisPaint);
+        canvas.drawCircle(9f * radius, radius, radius, ellipsisPaint);
+        canvas.restore();
+    }
+
+    private static void initPaint(float textSize, int textColor) {
+        Paint paint = mPaint;
+        paint.setTextSize(textSize);
+        paint.setTypeface(Typeface.create("sans-serif-regular", Typeface.NORMAL));
+        paint.setTextAlign(Paint.Align.CENTER);
+        paint.setAntiAlias(true);
+        paint.setColor(textColor);
     }
 }

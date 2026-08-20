@@ -17,9 +17,13 @@ public class NumberDotRenderer extends DotRenderer {
     public static class DrawParams extends DotRenderer.DrawParams {
         public float textSize;
         public int unreadNum;
+        public final int badgeColor;
+        public final int badgeTextColor;
 
-        public DrawParams(float f) {
+        public DrawParams(float f, Context context) {
             this.textSize = f;
+            this.badgeColor = context.getColor(R.color.launcher_badge_background_color);
+            this.badgeTextColor = context.getColor(R.color.launcher_unread_msg_num_text_color);
         }
     }
 

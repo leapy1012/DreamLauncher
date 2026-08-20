@@ -259,7 +259,8 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
         mLongPressHelper = new CheckLongPressHelper(this);
 
-        mDotParams = new NumberDotRenderer.DrawParams(getResources().getDimension(R.dimen.unread_text_number_size));
+        mDotParams = new NumberDotRenderer.DrawParams(
+                getResources().getDimension(R.dimen.unread_text_number_size), context);
         // liu-db add label double lines start
         setMaxLines(LauncherPrefs.getPrefs(context).getBoolean(LauncherPrefs.WORKSPACE_APP_NAME, true) ? 1 : 2);
         // liu-db add label double lines end
@@ -522,6 +523,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         } else {
             return super.onTouchEvent(event);
         }
+    }
+
+    protected final boolean isLayoutHorizontal() {
+        return mLayoutHorizontal;
     }
 
     /**

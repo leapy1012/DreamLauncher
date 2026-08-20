@@ -40,6 +40,7 @@ import android.widget.Toast;
 import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherSettings;
+import com.android.launcher3.OplusBubbleTextView;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.folder.Folder;
@@ -92,6 +93,10 @@ public class ItemClickHandler {
 
         Launcher launcher = Launcher.getLauncher(v.getContext());
         if (!launcher.getWorkspace().isFinishedSwitchingState()) return;
+        if (v instanceof OplusBubbleTextView
+                && ((OplusBubbleTextView) v).toggleColorOsWorkspaceSelection()) {
+            return;
+        }
         if (launcher.getStateManager().getState() == SPRING_LOADED) return;
         if (v instanceof HxyAnimBubbleTextView) {
             HxyAnimBubbleTextView icon = (HxyAnimBubbleTextView) v;

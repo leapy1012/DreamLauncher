@@ -154,8 +154,10 @@ public class BaseDepthController {
         boolean hasOpaqueBg = mLauncher.getScrimView().isFullyOpaque();
         boolean isSurfaceOpaque = !mHasContentBehindLauncher && hasOpaqueBg && !mPauseBlurs;
 
+        int colorOsBlurRadius = mLauncher.getResources().getBoolean(R.bool.config_hxy_grid)
+                ? 240 : mMaxBlurRadius;
         mCurrentBlur = !mCrossWindowBlursEnabled || hasOpaqueBg || mPauseBlurs
-                ? 0 : (int) (depth * mMaxBlurRadius);
+                ? 0 : (int) (depth * colorOsBlurRadius);
         SurfaceControl.Transaction transaction = new SurfaceControl.Transaction()
                 .setBackgroundBlurRadius(mSurface, mCurrentBlur)
                 .setOpaque(mSurface, isSurfaceOpaque);

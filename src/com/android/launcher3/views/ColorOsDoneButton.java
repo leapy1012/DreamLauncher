@@ -21,8 +21,9 @@ import com.coui.appcompat.roundRect.COUIRoundRectUtil;
 
 /** OPPO-style workspace-edit completion button, including COUI press feedback. */
 public class ColorOsDoneButton extends AppCompatButton {
-    private static final int DARK_WALLPAPER_COLOR = 0x4DFFFFFF;
-    private static final int BRIGHT_WALLPAPER_COLOR = 0x33000000;
+    private static final int NEW_BLUR_BACKGROUND_COLOR = 0x3DFFFFFF;
+    private static final int DARK_WALLPAPER_FALLBACK_COLOR = 0x66E0E0E0;
+    private static final int BRIGHT_WALLPAPER_FALLBACK_COLOR = 0x66A6A6A6;
     private static final float PRESSED_SCALE = 0.9f;
     private static final long COLOR_DURATION_MS = 200L;
 
@@ -47,7 +48,10 @@ public class ColorOsDoneButton extends AppCompatButton {
         super(context, attrs, defStyleAttr);
         mRadius = 15f * getResources().getDisplayMetrics().density;
         boolean useDarkForeground = Themes.getAttrBoolean(context, R.attr.isWorkspaceDarkText);
-        mBaseColor = useDarkForeground ? BRIGHT_WALLPAPER_COLOR : DARK_WALLPAPER_COLOR;
+        mBaseColor = com.android.systemui.shared.system.BlurUtils.supportsBlursOnWindows()
+                ? NEW_BLUR_BACKGROUND_COLOR
+                : (useDarkForeground ? BRIGHT_WALLPAPER_FALLBACK_COLOR
+                        : DARK_WALLPAPER_FALLBACK_COLOR);
         mCurrentAlpha = Color.alpha(mBaseColor);
         setTextColor(useDarkForeground ? Color.BLACK : Color.WHITE);
         setBackground(null);

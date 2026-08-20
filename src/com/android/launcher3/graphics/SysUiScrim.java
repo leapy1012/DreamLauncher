@@ -95,6 +95,7 @@ public class SysUiScrim implements View.OnAttachStateChangeListener {
     private static final int MAX_HOTSEAT_SCRIM_ALPHA = 100;
     private static final int ALPHA_MASK_HEIGHT_DP = 500;
     private static final int ALPHA_MASK_BITMAP_DP = 200;
+    private static final int COLOR_OS_ALPHA_MASK_BITMAP_DP = 330;
     private static final int ALPHA_MASK_WIDTH_DP = 2;
 
     private boolean mDrawTopScrim, mDrawBottomScrim;
@@ -107,6 +108,7 @@ public class SysUiScrim implements View.OnAttachStateChangeListener {
     private final View mRoot;
     private final BaseDraggingActivity mActivity;
     private final Drawable mTopScrim;
+    private final boolean mColorOsStyle;
 
     private float mSysUiProgress = 1;
     private boolean mHideSysUiScrim;
@@ -117,11 +119,20 @@ public class SysUiScrim implements View.OnAttachStateChangeListener {
     public SysUiScrim(View view) {
         mRoot = view;
         mActivity = BaseDraggingActivity.fromContext(view.getContext());
-        mMaskHeight = ResourceUtils.pxFromDp(ALPHA_MASK_BITMAP_DP,
+        mColorOsStyle = view.getResources().getBoolean(R.bool.config_hxy_grid);
+        mMaskHeight = ResourceUtils.pxFromDp(
+                mColorOsStyle ? COLOR_OS_ALPHA_MASK_BITMAP_DP : ALPHA_MASK_BITMAP_DP,
                 view.getResources().getDisplayMetrics());
-        mTopScrim = Themes.getAttrDrawable(view.getContext(), R.attr.workspaceStatusBarScrim);
+        // OPlusSysUiScrim deliberately has no top/status-bar drawable. Keeping the AOSP
+        // workspaceStatusBarScrim here makes the light mask fade back in during
+        // EDIT_MODE -> NORMAL, which appears as a translucent-white flash.
+        mTopScrim = mColorOsStyle
+                ? null
+                : Themes.getAttrDrawable(view.getContext(), R.attr.workspaceStatusBarScrim);
         if (mTopScrim != null) {
             mTopScrim.setDither(true);
+        }
+        if (mColorOsStyle || mTopScrim != null) {
             mBottomMask = createDitheredAlphaMask();
             mHideSysUiScrim = false;
         } else {
@@ -209,6 +220,8 @@ public class SysUiScrim implements View.OnAttachStateChangeListener {
     public void setSize(int w, int h) {
         if (mTopScrim != null) {
             mTopScrim.setBounds(0, 0, w, h);
+        }
+        if (mBottomMask != null) {
             mFinalMaskRect.set(0, h - mMaskHeight, w, h);
         }
     }
@@ -242,13 +255,17 @@ public class SysUiScrim implements View.OnAttachStateChangeListener {
         Bitmap dst = Bitmap.createBitmap(width, mMaskHeight, Bitmap.Config.ALPHA_8);
         Canvas c = new Canvas(dst);
         Paint paint = new Paint(Paint.DITHER_FLAG);
-        LinearGradient lg = new LinearGradient(0, 0, 0, gradientHeight,
-                new int[]{
+        int[] colors = mColorOsStyle
+                ? new int[]{0, setColorAlphaBound(Color.WHITE, 216), 0x66000000}
+                : new int[]{
                         0x00FFFFFF,
                         setColorAlphaBound(Color.WHITE, (int) (0xFF * 0.95)),
-                        0xFFFFFFFF},
-                new float[]{0f, 0.8f, 1f},
-                Shader.TileMode.CLAMP);
+                        0xFFFFFFFF};
+        float[] positions = mColorOsStyle
+                ? new float[]{0f, 0.55f, 1f}
+                : new float[]{0f, 0.8f, 1f};
+        LinearGradient lg = new LinearGradient(0, 0, 0, gradientHeight,
+                colors, positions, Shader.TileMode.CLAMP);
         paint.setShader(lg);
         c.drawRect(0, 0, width, gradientHeight, paint);
         return dst;

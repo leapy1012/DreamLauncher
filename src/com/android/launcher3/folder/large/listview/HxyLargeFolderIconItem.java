@@ -25,6 +25,7 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
     private boolean mCountOut;
     private final List<Drawable> mDrawableList;
     private int mIconSize;
+    private int mBoundPosition = -1;
 
     public HxyLargeFolderIconItem(Context context) {
         this(context, (AttributeSet) null);
@@ -70,6 +71,23 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         return this.mCoordinateXY[1];
     }
 
+    public int getBoundPosition() {
+        return mBoundPosition;
+    }
+
+    /** Returns the rendered drawable bounds for an item represented by this preview cell. */
+    public boolean getDrawableBoundsForDataPosition(int dataPosition, Rect outBounds) {
+        int drawableIndex = dataPosition - mBoundPosition;
+        if (!mCountOut) {
+            drawableIndex = dataPosition == mBoundPosition ? 0 : -1;
+        }
+        if (drawableIndex < 0 || drawableIndex >= mDrawableList.size()) {
+            return false;
+        }
+        outBounds.set(mDrawableList.get(drawableIndex).getBounds());
+        return !outBounds.isEmpty();
+    }
+
     public void getIconBounds(Rect outBounds) {
         outBounds.set(0, 0, getMeasuredWidth() + 0, getMeasuredHeight() + 0);
     }
@@ -83,12 +101,11 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
     }
 
     public void bindTo(WorkspaceItemInfo data, int position, boolean isCountOut, List<WorkspaceItemInfo> list) {
+        this.mBoundPosition = position;
         this.mCountOut = isCountOut;
+        setTag(isCountOut ? null : data);
         String className = HxyLargeFolderUtils.getClassName(data);
         if (isChangeData(data, isCountOut, className)) {
-            if (!isCountOut) {
-                setTag(data);
-            }
             inits(data);
             this.mDrawableList.clear();
             this.mClassName = className;
@@ -127,7 +144,6 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         } else {
             mDrawableList.get(0).setBounds(0, 0, size, size);
         }
-        bindIcon();
         invalidate();
     }
 

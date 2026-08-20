@@ -365,7 +365,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                 .setStartValue(start)
                 .setEndValue(start + delta)
                 .setStartVelocity(springVelocity)
-                .setStiffness(200f)
+                .setStiffness(600f)
                 .setDampingRatio(0.9f)
                 .setMinimumVisibleChange(1f)
                 .build(this, new FloatProperty<Workspace>("oplusWorkspaceScroll") {
@@ -1818,8 +1818,14 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                     + "View: " + child + "  tag: " + child.getTag();
             throw new IllegalStateException(msg);
         }
-        beginDragShared(child, null, source, (ItemInfo) dragObject,
-                new DragPreviewProvider(child), options);
+        DragPreviewProvider previewProvider = new DragPreviewProvider(child);
+        boolean colorOsBatchEdit = child instanceof OplusBubbleTextView
+                && mLauncher.getDragLayer().findViewById(R.id.edit_mode_container) != null;
+        if (colorOsBatchEdit) {
+            previewProvider = ColorOsBatchDragManager.get(mLauncher)
+                    .prepareBatchDrag((OplusBubbleTextView) child);
+        }
+        beginDragShared(child, null, source, (ItemInfo) dragObject, previewProvider, options);
     }
 
     /**
@@ -1830,7 +1836,13 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             ItemInfo dragObject, DragPreviewProvider previewProvider, DragOptions dragOptions) {
         boolean dockedStatus = LauncherPrefs.getPrefs(mLauncher).getBoolean(LauncherPrefs.WORKSPACE_LAYOUT_DOCK, false);
         float iconScale = 1f;
-        if (child instanceof BubbleTextView) {
+        if (child instanceof OplusBubbleTextView) {
+            // OPPO captures the in-flight 0.85x press value for the drag-view start,
+            // then restores the source view so there is no press-to-drag size jump.
+            OplusBubbleTextView icon = (OplusBubbleTextView) child;
+            iconScale = icon.getPressAnimationCurrentValue();
+            icon.resetPressAnimStateForLongClick();
+        } else if (child instanceof BubbleTextView) {
             Drawable icon = ((BubbleTextView) child).getIcon();
             if (icon instanceof FastBitmapDrawable) {
                 iconScale = ((FastBitmapDrawable) icon).getAnimatedScale();
@@ -1880,7 +1892,16 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
         if (child instanceof BubbleTextView) {
             BubbleTextView btv = (BubbleTextView) child;
-            if (!dragOptions.isAccessibleDrag) {
+            // Decoded OPPO batch edit starts the selection drag directly. AOSP's deep-shortcut
+            // popup pre-drag consumes this gesture and can end the batch before Workspace gets a
+            // drop callback, so retain it everywhere except the ColorOS workspace edit surface.
+            boolean colorOsBatchEdit = child instanceof OplusBubbleTextView
+                    && mLauncher.getDragLayer().findViewById(R.id.edit_mode_container) != null;
+            // OplusFolder starts an item drag directly. The workspace shortcut pre-drag popup
+            // must not be attached here: it leaves a pressed icon copy over the vacant cell and
+            // shows workspace-only actions while the folder is reordering.
+            boolean colorOsFolderDrag = source instanceof Folder;
+            if (!dragOptions.isAccessibleDrag && !colorOsBatchEdit && !colorOsFolderDrag) {
                 dragOptions.preDragCondition = btv.startLongPressAction();
             }
             if (btv.isDisplaySearchResult()) {
@@ -2013,7 +2034,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     boolean willCreateUserFolder(ItemInfo info, CellLayout target, int[] targetCell,
                                  float distance, boolean considerTimeout) {
-        if (distance > target.getFolderCreationRadius(targetCell)) return false;
+        if (distance > target.getMaxDistanceForFolderCreation(info, targetCell)) return false;
         View dropOverView = target.getChildAt(targetCell[0], targetCell[1]);
         return willCreateUserFolder(info, dropOverView, considerTimeout);
     }
@@ -2062,7 +2083,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     boolean willAddToExistingUserFolder(ItemInfo dragInfo, CellLayout target, int[] targetCell,
                                         float distance) {
-        if (distance > target.getFolderCreationRadius(targetCell)) return false;
+        if (distance > target.getMaxDistanceForFolderCreation(dragInfo, targetCell)) return false;
         View dropOverView = target.getChildAt(targetCell[0], targetCell[1]);
         return willAddToExistingUserFolder(dragInfo, dropOverView);
 
@@ -2088,7 +2109,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     boolean createUserFolderIfNecessary(View newView, int container, CellLayout target,
             int[] targetCell, float distance, boolean external, DragObject d) {
-        if (distance > target.getFolderCreationRadius(targetCell)) return false;
+        if (distance > target.getMaxDistanceForFolderCreation(d.dragInfo, targetCell)) return false;
         View v = target.getChildAt(targetCell[0], targetCell[1]);
 
         boolean hasntMoved = false;
@@ -2145,7 +2166,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     boolean addToExistingFolderIfNecessary(View newView, CellLayout target, int[] targetCell,
             float distance, DragObject d, boolean external) {
-        if (distance > target.getFolderCreationRadius(targetCell)) return false;
+        if (distance > target.getMaxDistanceForFolderCreation(d.dragInfo, targetCell)) return false;
 
         View dropOverView = target.getChildAt(targetCell[0], targetCell[1]);
         if (!mAddToExistingFolderOnDrop) return false;
@@ -2867,7 +2888,8 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     }
 
     private void manageFolderFeedback(float distance, DragObject dragObject) {
-        if (distance > mDragTargetLayout.getFolderCreationRadius(mTargetCell)) {
+        if (distance > mDragTargetLayout.getMaxDistanceForFolderCreation(
+                dragObject.dragInfo, mTargetCell)) {
             if ((mDragMode == DRAG_MODE_ADD_TO_FOLDER
                     || mDragMode == DRAG_MODE_CREATE_FOLDER)) {
                 setDragMode(DRAG_MODE_NONE);
@@ -3346,8 +3368,12 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
      */
     public void onDropCompleted(final View target, final DragObject d,
                                 final boolean success) {
+        boolean delegatedPreviewDrop =
+                target instanceof com.android.launcher3.views.ColorOsPagePreviewStrip
+                        && ((com.android.launcher3.views.ColorOsPagePreviewStrip) target)
+                                .didDelegateLastDrop();
         if (success) {
-            if (target != this && mDragInfo != null) {
+            if (target != this && !delegatedPreviewDrop && mDragInfo != null) {
                 removeWorkspaceItem(mDragInfo.cell);
             }
         } else if (mDragInfo != null) {
@@ -3369,6 +3395,8 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             cell.setVisibility(VISIBLE);
         }
         mDragInfo = null;
+        ColorOsBatchDragManager.get(mLauncher).onHeadDropCompleted(target, d, success);
+
     }
 
     /**

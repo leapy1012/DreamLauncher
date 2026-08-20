@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="selected_icon_weight">20dp</dimen>
+    <dimen name="select_icon_right_offset">3dp</dimen>
+    <dimen name="select_icon_top_offset">3dp</dimen>
+</resources>

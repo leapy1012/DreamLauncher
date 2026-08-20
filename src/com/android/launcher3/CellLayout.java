@@ -55,6 +55,7 @@ import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.animation.PathInterpolator;
 
 import androidx.annotation.IntDef;
 import androidx.core.graphics.ColorUtils;
@@ -197,6 +198,8 @@ public class CellLayout extends ViewGroup {
     private static final float REORDER_PREVIEW_MAGNITUDE = 0.12f;
     // Source parity with decoded OPPO CellLayout.
     private static final int REORDER_ANIMATION_DURATION = 450;
+    private static final TimeInterpolator COLOROS_GRID_CHANGE_INTERPOLATOR =
+            new PathInterpolator(0.3f, 0.0f, 0.1f, 1.0f);
     @Thunk final float mReorderPreviewAnimationMagnitude;
 
     private final ArrayList<View> mIntersectingViews = new ArrayList<>();
@@ -947,7 +950,20 @@ public class CellLayout extends ViewGroup {
         DeviceProfile grid = mActivity.getDeviceProfile();
         float iconVisibleRadius = ICON_VISIBLE_AREA_FACTOR * grid.iconSizePx / 2;
         // Halfway between reorder radius and icon.
-        return (getReorderRadius(targetCell, 1, 1) + (isLargeFolder(targetCell) ? HxyLargeFolderProxy.getMaxDistanceForFolderCreation() : iconVisibleRadius) / 2);
+        return (getReorderRadius(targetCell, 1, 1) + iconVisibleRadius) / 2;
+    }
+
+    /**
+     * Mirrors ColorOS WorkspaceInjector#getMaxDistanceForFolderCreation for folder targets.
+     * Flexible folders with extended grids use their complete group bounds and an exact-center
+     * threshold; regular icons use 45 percent of the launcher icon size.
+     */
+    public float getMaxDistanceForFolderCreation(ItemInfo dragInfo, int[] targetCell) {
+        View dropOverView = getChildAt(targetCell[0], targetCell[1]);
+        if (HxyLargeFolderProxy.isLargeFolder(dropOverView)) {
+            return 2f;
+        }
+        return mActivity.getDeviceProfile().iconSizePx * 0.45f;
     }
 
     /**
@@ -958,11 +974,7 @@ public class CellLayout extends ViewGroup {
         getWorkspaceCellVisualCenter(targetCell[0], targetCell[1], centerPoint);
 
         Rect cellBoundsWithSpacing = mTempRect;
-        if (isLargeFolder(targetCell)) {
-            cellToRect(targetCell[0], targetCell[1], 2, 2, cellBoundsWithSpacing);
-        } else {
-            cellToRect(targetCell[0], targetCell[1], spanX, spanY, cellBoundsWithSpacing);
-        }
+        cellToRect(targetCell[0], targetCell[1], spanX, spanY, cellBoundsWithSpacing);
         cellBoundsWithSpacing.inset(-mBorderSpace.x / 2, -mBorderSpace.y / 2);
 
         if (canCreateFolder(getChildAt(targetCell[0], targetCell[1])) && spanX == 1 && spanY == 1) {
@@ -1142,6 +1154,7 @@ public class CellLayout extends ViewGroup {
             }
 
             ValueAnimator va = ValueAnimator.ofFloat(0f, 1f);
+            va.setInterpolator(COLOROS_GRID_CHANGE_INTERPOLATOR);
             va.setDuration(duration);
             mReorderAnimators.put(lp, va);
 
@@ -1181,7 +1194,7 @@ public class CellLayout extends ViewGroup {
         return false;
     }
 
-    void visualizeDropLocation(int cellX, int cellY, int spanX, int spanY,
+    public void visualizeDropLocation(int cellX, int cellY, int spanX, int spanY,
             DropTarget.DragObject dragObject) {
         if (mDragCell[0] != cellX || mDragCell[1] != cellY || mDragCellSpan[0] != spanX
                 || mDragCellSpan[1] != spanY) {

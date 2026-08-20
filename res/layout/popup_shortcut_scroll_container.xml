@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/popup_container_background"
+    android:clipToOutline="true"
+    android:elevation="@dimen/deep_shortcuts_elevation">
+
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/popup_shortcut_container"
+            android:layout_width="@dimen/deep_shortcut_icon_text_width"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="@dimen/shortcut_containers_top_bottom_padding"
+            android:paddingBottom="@dimen/shortcut_containers_top_bottom_padding" />
+    </ScrollView>
+</FrameLayout>

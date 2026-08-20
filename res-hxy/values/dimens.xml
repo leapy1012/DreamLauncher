@@ -30,7 +30,9 @@
     <dimen name="hxy_large_folder_vertical_space_4x4">12dp</dimen>
     <dimen name="hxy_large_folder_vertical_space_4x5">7dp</dimen>
     <dimen name="hxy_large_folder_vertical_space_4x6">5dp</dimen>
-    <dimen name="hxy_large_folder_round">20dp</dimen>
+    <!-- Decoded ColorOS resources: big_folder_bg_radius / middle_folder_bg_radius. -->
+    <dimen name="hxy_large_folder_round">16dp</dimen>
+    <dimen name="hxy_middle_folder_round">13dp</dimen>
     <dimen name="hxy_large_folder_icon_out_space">3dp</dimen>
     <dimen name="hxy_large_folder_padding_top_4x5">7dp</dimen>
     <dimen name="hxy_large_folder_padding_top_4x4">18dp</dimen>

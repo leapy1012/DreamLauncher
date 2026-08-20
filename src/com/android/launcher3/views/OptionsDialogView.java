@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 import android.graphics.Paint;
 import com.android.launcher3.AbstractFloatingView;
+import com.android.launcher3.ColorOsBatchDragManager;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherSettings;
 import com.android.launcher3.R;
@@ -54,6 +55,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import java.util.HashMap;
 import com.coui.appcompat.couiswitch.COUISwitch;
+import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
@@ -77,6 +79,10 @@ public class OptionsDialogView extends AbstractFloatingView {
     // 主菜单视图
     private View mainMenuView;
     private View mColorOsLayoutPanel;
+    private ViewGroup mColorOsSelectionActions;
+    private ColorOsPagePreviewStrip mColorOsPagePreviewStrip;
+    private View mColorOsGenerateFolder;
+    private View mColorOsUninstallSelection;
     private View mEditModeCancel;
     private View mEditModeSecondaryTitle;
     private TextView mEditModeDone;
@@ -92,8 +98,12 @@ public class OptionsDialogView extends AbstractFloatingView {
     private int mPreviousNavigationBarColor;
     private int mPreviousNavigationBarDividerColor;
     private boolean mPreviousNavigationBarContrastEnforced;
+    private boolean mPreviousStatusBarVisible;
     private boolean mColorOsSystemBarsApplied;
+    private ColorOsEditMaterialView mColorOsMaterialScrim;
+    private View mColorOsStatusInsetScrim;
     private final int[] mTouchPanelLocation = new int[2];
+    private boolean mRoutingWorkspaceTouch;
     private final int[] mTouchRootLocation = new int[2];
     // 概览面板状态转换动画
     private OverviewPanelStateTransAnimation stateTransAnimation;
@@ -138,6 +148,10 @@ public class OptionsDialogView extends AbstractFloatingView {
         });
         mainMenuView = findViewById(R.id.overview_panel_main_menu);
         mColorOsLayoutPanel = findViewById(R.id.coloros_layout_panel);
+        mColorOsSelectionActions = findViewById(R.id.coloros_selection_actions);
+        mColorOsPagePreviewStrip = findViewById(R.id.coloros_page_preview_strip);
+        mColorOsGenerateFolder = findViewById(R.id.coloros_generate_folder);
+        mColorOsUninstallSelection = findViewById(R.id.coloros_uninstall_selection);
         effectGridGallery = findViewById(R.id.effect_gallery);
         currentState = State.MAIN_MENU;
         launcher = Launcher.getLauncher(context);
@@ -177,7 +191,22 @@ public class OptionsDialogView extends AbstractFloatingView {
                     v -> selectColorOsGrid("5_by_6"));
             findViewById(R.id.coloros_grid_5x7).setOnClickListener(
                     v -> selectColorOsGrid("5_by_7"));
-            mEditModeCancel.setOnClickListener(v -> showColorOsMainMenu());
+            ColorOsBatchDragManager batchManager = ColorOsBatchDragManager.get(launcher);
+            batchManager.setSelectionListener(this::onColorOsSelectionChanged);
+            mColorOsGenerateFolder.setOnClickListener(v -> {
+                if (batchManager.generateFolderFromSelection()) {
+                    mColorOsPagePreviewStrip.refresh();
+                }
+            });
+            mColorOsUninstallSelection.setOnClickListener(v ->
+                    showColorOsUninstallConfirmation(batchManager));
+            mEditModeCancel.setOnClickListener(v -> {
+                if (mColorOsSelectionActions.getVisibility() == View.VISIBLE) {
+                    batchManager.clearSelection();
+                } else {
+                    showColorOsMainMenu();
+                }
+            });
             mHideNamesSwitch.setOnCheckedChangeListener((button, checked) ->
                     mPendingHideIconNames = checked);
         }
@@ -255,6 +284,83 @@ public class OptionsDialogView extends AbstractFloatingView {
                 .start();
     }
 
+    private void onColorOsSelectionChanged(int count, boolean canCreateFolder,
+            boolean canRemove, int removeLabelRes) {
+        if (mColorOsSelectionActions == null || mColorOsLayoutPanel == null) return;
+        mColorOsGenerateFolder.setEnabled(canCreateFolder);
+        mColorOsGenerateFolder.setAlpha(canCreateFolder ? 1f : 0.3f);
+        mColorOsUninstallSelection.setEnabled(canRemove);
+        mColorOsUninstallSelection.setAlpha(canRemove ? 1f : 0.3f);
+        ((TextView) mColorOsUninstallSelection).setText(removeLabelRes);
+        if (count > 0) {
+            if (mColorOsSelectionActions.getVisibility() != View.VISIBLE) {
+                launcher.getWorkspace().addExtraEmptyScreens();
+            }
+            mColorOsPagePreviewStrip.refresh();
+            mEditModeCancel.setVisibility(View.VISIBLE);
+            mEditModeSecondaryTitle.setVisibility(View.VISIBLE);
+            ((TextView) mEditModeSecondaryTitle).setText(getResources().getQuantityString(
+                    R.plurals.page_preview_title_plurals, count, count));
+            mainMenuView.animate().cancel();
+            mColorOsSelectionActions.animate().cancel();
+            mainMenuView.setVisibility(View.GONE);
+            mColorOsLayoutPanel.setVisibility(View.GONE);
+            mColorOsSelectionActions.setVisibility(View.VISIBLE);
+            mColorOsSelectionActions.setAlpha(1f);
+            mColorOsSelectionActions.setTranslationY(0f);
+            PathInterpolator previewInterpolator =
+                    new PathInterpolator(0.17f, 0f, 0.33f, 1f);
+            for (int i = 0; i < mColorOsSelectionActions.getChildCount(); i++) {
+                View child = mColorOsSelectionActions.getChildAt(i);
+                child.animate().cancel();
+                child.setAlpha(0f);
+                child.setTranslationY(dp(44f));
+                child.animate().alpha(1f).translationY(0f).setDuration(367L)
+                        .setInterpolator(previewInterpolator).start();
+            }
+        } else if (mColorOsLayoutPanel.getVisibility() != View.VISIBLE) {
+            launcher.getWorkspace().removeExtraEmptyScreenDelayed(0, false, null);
+            mEditModeCancel.setVisibility(View.GONE);
+            mEditModeSecondaryTitle.setVisibility(View.GONE);
+            ((TextView) mEditModeSecondaryTitle).setText(R.string.edit_mode_layout);
+            mColorOsSelectionActions.animate().cancel();
+            mColorOsSelectionActions.setVisibility(View.GONE);
+            mainMenuView.setVisibility(View.VISIBLE);
+            mainMenuView.setAlpha(1f);
+            mainMenuView.setTranslationY(0f);
+        }
+    }
+
+    private void showColorOsUninstallConfirmation(ColorOsBatchDragManager batchManager) {
+        int uninstallCount = batchManager.getUninstallableCount();
+        int shortcutCount = batchManager.getRemovableShortcutCount();
+        int titleRes = uninstallCount > 0 && shortcutCount > 0
+                ? R.string.uninstall_and_delete_panel_main_title : 0;
+        CharSequence title = titleRes != 0 ? getContext().getString(titleRes)
+                : uninstallCount > 0
+                        ? getResources().getQuantityString(
+                                R.plurals.uninstall_panel_apps_title_plurals,
+                                uninstallCount, uninstallCount)
+                        : getResources().getQuantityString(
+                                R.plurals.delete_icon_panel_main_title_plurals,
+                                shortcutCount, shortcutCount);
+        androidx.appcompat.app.AlertDialog dialog = new COUIAlertDialogBuilder(launcher)
+                .setTitle(title)
+                .setMessage(uninstallCount > 0
+                        ? R.string.uninstall_selected_apps_message
+                        : R.string.remove_selected_shortcuts_message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(uninstallCount > 0 && shortcutCount > 0
+                                ? R.string.both_uninstall_and_remove_action
+                                : shortcutCount > 0
+                                        ? R.string.remove_action : R.string.uninstall_action,
+                        (dialogInterface, which) ->
+                                batchManager.removeOrUninstallSelectedItems())
+                .create();
+        dialog.setCanceledOnTouchOutside(true);
+        dialog.show();
+    }
+
     private void updateGridSelection() {
         ((ColorOsGridPreviewView) findViewById(R.id.coloros_grid_4x6_preview))
                 .setChecked("4_by_6".equals(mPendingGridName));
@@ -291,20 +397,7 @@ public class OptionsDialogView extends AbstractFloatingView {
     }
 
     private void configureColorOsFallbackScrim(View scrim) {
-        int color = Color.TRANSPARENT;
-        if (!com.android.systemui.shared.system.BlurUtils.supportsBlursOnWindows()) {
-            boolean bright = false;
-            android.app.WallpaperColors colors = android.app.WallpaperManager.getInstance(
-                    getContext()).getWallpaperColors(android.app.WallpaperManager.FLAG_SYSTEM);
-            if (colors != null && colors.getPrimaryColor() != null) {
-                bright = androidx.core.graphics.ColorUtils.calculateLuminance(
-                        colors.getPrimaryColor().toArgb()) > 0.5;
-            }
-            // ToggleBarState returns root alpha 26 when blur is unavailable. OPPO chooses the
-            // same black/white drawable from the current wallpaper brightness.
-            color = bright ? Color.argb(26, 255, 255, 255) : Color.argb(26, 0, 0, 0);
-        }
-        scrim.setBackgroundColor(color);
+        scrim.setBackgroundColor(Color.TRANSPARENT);
     }
 
     private int dp(float value) {
@@ -368,6 +461,8 @@ public class OptionsDialogView extends AbstractFloatingView {
         OptionsDialogView optionsDialog = new OptionsDialogView(activity, null);
         if (activity.getResources().getBoolean(R.bool.config_hxy_grid)
                 && activity instanceof Launcher) {
+            com.android.launcher3.ColorOsWorkspaceSelectionController.setEditModeActive(
+                    (Launcher) activity, true, true);
             LauncherAppWidgetHostView.applyColorOsEditModeToAll(true);
             ColorOsWorkspaceEditTransition.prepareWorkspacePivot((Launcher) activity);
             ((Launcher) activity).getStateManager().goToState(
@@ -381,6 +476,19 @@ public class OptionsDialogView extends AbstractFloatingView {
         params.width = BaseDragLayer.LayoutParams.MATCH_PARENT;
         params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
         if (activity.getResources().getBoolean(R.bool.config_hxy_grid)) {
+            ColorOsEditMaterialView materialScrim = new ColorOsEditMaterialView(activity);
+            // OPPO applies this material blend to the launcher background surface together with
+            // radius-240 compositor blur. MTK has no Oplus background-blur compositor, so retain
+            // the exact decoded material color behind Workspace content as the deterministic
+            // fallback. Keeping it below Workspace avoids tinting icons and edit controls.
+            materialScrim.setAlpha(0f);
+            DragLayer.LayoutParams scrimParams = new DragLayer.LayoutParams(
+                    BaseDragLayer.LayoutParams.MATCH_PARENT,
+                    BaseDragLayer.LayoutParams.MATCH_PARENT);
+            scrimParams.gravity = Gravity.FILL;
+            scrimParams.ignoreInsets = true;
+            dragLayer.addView(materialScrim, 0, scrimParams);
+            optionsDialog.mColorOsMaterialScrim = materialScrim;
             optionsDialog.applyColorOsSystemBars();
             params.height = BaseDragLayer.LayoutParams.MATCH_PARENT;
             params.gravity = Gravity.FILL;
@@ -401,54 +509,67 @@ public class OptionsDialogView extends AbstractFloatingView {
         scrim.setAlpha(0f);
         scrim.animate().alpha(1f).setDuration(317L)
                 .setInterpolator(new PathInterpolator(0.42f, 0f, 0.58f, 1f)).start();
+        if (mColorOsMaterialScrim != null) {
+            mColorOsMaterialScrim.animate().cancel();
+            mColorOsMaterialScrim.setAlpha(0f);
+            mColorOsMaterialScrim.animate().alpha(1f).setDuration(317L)
+                    .setInterpolator(new PathInterpolator(0.42f, 0f, 0.58f, 1f)).start();
+        }
+        if (mColorOsStatusInsetScrim != null) {
+            mColorOsStatusInsetScrim.animate().cancel();
+            mColorOsStatusInsetScrim.setAlpha(0f);
+            mColorOsStatusInsetScrim.animate().alpha(1f).setDuration(317L)
+                    .setInterpolator(new PathInterpolator(0.42f, 0f, 0.58f, 1f)).start();
+        }
         done.animate().cancel();
         done.setAlpha(0f);
         done.setTranslationY(0f);
         menu.setAlpha(1f);
         menu.setTranslationY(0f);
 
-        android.view.animation.AnimationSet itemAnimation =
-                new android.view.animation.AnimationSet(true);
-        TranslateAnimation translation = new TranslateAnimation(
-                TranslateAnimation.RELATIVE_TO_SELF, 0f,
-                TranslateAnimation.RELATIVE_TO_SELF, 0f,
-                TranslateAnimation.RELATIVE_TO_SELF, 1f,
-                TranslateAnimation.RELATIVE_TO_SELF, 0f);
-        AlphaAnimation alpha = new AlphaAnimation(0f, 1f);
-        itemAnimation.addAnimation(translation);
-        itemAnimation.addAnimation(alpha);
-        itemAnimation.setDuration(367L);
-        itemAnimation.setInterpolator(new PathInterpolator(0.17f, 0f, 0.33f, 1f));
-        LayoutAnimationController controller = new LayoutAnimationController(itemAnimation, 0.046f);
-        controller.setOrder(LayoutAnimationController.ORDER_NORMAL);
-        menu.setLayoutAnimation(controller);
-        menu.post(menu::startLayoutAnimation);
+        float itemTranslation = dp(44f);
+        PathInterpolator itemInterpolator = new PathInterpolator(0.17f, 0f, 0.33f, 1f);
+        for (int i = 0; i < menu.getChildCount(); i++) {
+            View item = menu.getChildAt(i);
+            item.setAlpha(0f);
+            item.setTranslationY(itemTranslation);
+            item.animate().alpha(1f).translationY(0f).setDuration(367L)
+                    .setStartDelay(i * 17L).setInterpolator(itemInterpolator).start();
+        }
 
         done.postDelayed(() -> {
-            COUISpringForce force = new COUISpringForce(1f).setResponse(0.3f).setBounce(0f);
-            new COUISpringAnimation(done, COUIDynamicAnimation.ALPHA, 1f)
-                    .setMinimumVisibleChange(COUIDynamicAnimation.MIN_VISIBLE_CHANGE_ALPHA)
-                    .setSpring(force)
-                    .start();
+            done.animate().alpha(1f).setDuration(417L)
+                    .setInterpolator(new PathInterpolator(0f, 0f, 0.33f, 1f)).start();
         }, 187L);
     }
 
     @Override
     protected void handleClose(boolean animate) {
         if (mIsOpen) {
+            com.android.launcher3.ColorOsBatchDragManager.get(launcher).clearSelection();
+            com.android.launcher3.ColorOsBatchDragManager.get(launcher)
+                    .setSelectionListener(null);
+
+            com.android.launcher3.ColorOsWorkspaceSelectionController.setEditModeActive(
+                    launcher, false, animate);
+
             LauncherAppWidgetHostView.applyColorOsEditModeToAll(false);
+            if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+                Launcher launcher = Launcher.getLauncher(getContext());
+                launcher.getWorkspace().mapOverItems((info, view) -> {
+                    if (view instanceof com.android.launcher3.OplusBubbleTextView) {
+                        ((com.android.launcher3.OplusBubbleTextView) view)
+                                .clearColorOsWorkspaceSelection();
+                    }
+                    return false;
+                });
+            }
             if (mWidgetEditOverlay != null) {
                 mWidgetEditOverlay.hide(animate);
                 mWidgetEditOverlay = null;
             }
             if (animate) {
-                animate().alpha(0f)
-                        .withLayer()
-                        .setStartDelay(0)
-                        .setDuration(HIDE_DURATION_MS)
-                        .setInterpolator(Interpolators.ACCEL)
-                        .withEndAction(this::onClosed)
-                        .start();
+                startColorOsExit();
             } else {
                 animate().cancel();
                 onClosed();
@@ -457,14 +578,117 @@ public class OptionsDialogView extends AbstractFloatingView {
         }
     }
 
+    private void startColorOsExit() {
+        Launcher launcher = Launcher.getLauncher(getContext());
+        launcher.getStateManager().goToState(NORMAL, true, new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                startColorOsExitAnimations();
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                // ToggleBarMainState destroys its UI from NORMAL's animation-end callback. Keep
+                // our wallpaper-backed compositor fallback alive while doing the same; it is
+                // released only after normal Workspace and system bars have each drawn a frame.
+                finishColorOsAnimatedClose();
+            }
+        });
+    }
+
+    private void startColorOsExitAnimations() {
+        View done = findViewById(R.id.edit_mode_done);
+        done.animate().cancel();
+        done.animate().alpha(0f).setDuration(200L)
+                .setInterpolator(new PathInterpolator(0.3f, 0f, 1f, 1f)).start();
+
+        ViewGroup menu = findViewById(R.id.overview_panel_main_menu);
+        float translation = dp(44f);
+        PathInterpolator exitInterpolator = new PathInterpolator(0.3f, 0f, 0.1f, 1f);
+        int count = menu.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View item = menu.getChildAt(count - 1 - i);
+            item.animate().cancel();
+            android.animation.ObjectAnimator alpha =
+                    android.animation.ObjectAnimator.ofFloat(item, View.ALPHA, 0f);
+            alpha.setDuration(280L);
+            alpha.setInterpolator(exitInterpolator);
+            android.animation.ObjectAnimator move = android.animation.ObjectAnimator.ofFloat(
+                    item, View.TRANSLATION_Y, translation);
+            move.setDuration(350L - i * 17L);
+            move.setStartDelay(i * 17L);
+            move.setInterpolator(exitInterpolator);
+            AnimatorSet itemExit = new AnimatorSet();
+            itemExit.playTogether(alpha, move);
+            itemExit.start();
+        }
+
+        View scrim = findViewById(R.id.edit_mode_scrim);
+        scrim.animate().cancel();
+        scrim.animate().alpha(0f).setDuration(317L)
+                .setInterpolator(new PathInterpolator(0.42f, 0f, 0.58f, 1f)).start();
+        if (mColorOsMaterialScrim != null) {
+            // OPPO animates ToggleBar's independent blur channel from 1 to 0 as the state returns
+            // to NORMAL. Never fade the backing surface itself: doing so exposes the transparent
+            // Launcher window before WallpaperService has committed its replacement frame.
+            mColorOsMaterialScrim.animateToNormal(320L,
+                    new PathInterpolator(0.42f, 0f, 0.58f, 1f));
+        }
+        if (mColorOsStatusInsetScrim != null) {
+            mColorOsStatusInsetScrim.animate().cancel();
+            mColorOsStatusInsetScrim.animate().alpha(0f).setDuration(317L)
+                    .setInterpolator(new PathInterpolator(0.42f, 0f, 0.58f, 1f)).start();
+        }
+    }
+
     private void onClosed() {
         restoreColorOsSystemBars();
         mActivity.getDragLayer().removeView(this);
+        if (mColorOsMaterialScrim != null) {
+            mActivity.getDragLayer().removeView(mColorOsMaterialScrim);
+            mColorOsMaterialScrim = null;
+        }
+        if (mColorOsStatusInsetScrim != null) {
+            mActivity.getDragLayer().removeView(mColorOsStatusInsetScrim);
+            mColorOsStatusInsetScrim = null;
+        }
         if (mOnDismissed != null) {
             mOnDismissed.run();
         }
-        Launcher launcher = Launcher.getLauncher(this.getContext());
-        launcher.getStateManager().goToState(NORMAL);
+    }
+
+    private void finishColorOsAnimatedClose() {
+        BaseDragLayer dragLayer = mActivity.getDragLayer();
+        ColorOsEditMaterialView material = mColorOsMaterialScrim;
+        mColorOsMaterialScrim = null;
+
+        // Equivalent to ToggleBarManager.finish(): destroy the panel only after NORMAL completes.
+        dragLayer.removeView(this);
+        if (mColorOsStatusInsetScrim != null) {
+            dragLayer.removeView(mColorOsStatusInsetScrim);
+            mColorOsStatusInsetScrim = null;
+        }
+        if (mOnDismissed != null) {
+            mOnDismissed.run();
+        }
+
+        if (material == null) {
+            restoreColorOsSystemBars();
+            return;
+        }
+
+        // The Oplus implementation synchronizes blur removal with its surface transaction. MTK
+        // lacks that compositor API, so retain the now-unblurred wallpaper bitmap for the normal
+        // Workspace draw, restore bars without their framework fade, then release it one draw
+        // later. At no point is there an uncovered transparent-window frame.
+        dragLayer.postOnAnimation(() -> {
+            restoreColorOsSystemBars();
+            dragLayer.postOnAnimation(() -> {
+                if (material.getParent() == dragLayer) {
+                    dragLayer.removeView(material);
+                }
+            });
+        });
     }
 
     private void applyColorOsSystemBars() {
@@ -478,11 +702,22 @@ public class OptionsDialogView extends AbstractFloatingView {
                 launcher.getWindow().getNavigationBarDividerColor();
         mPreviousNavigationBarContrastEnforced =
                 launcher.getWindow().isNavigationBarContrastEnforced();
+        android.view.WindowInsets rootInsets =
+                launcher.getWindow().getDecorView().getRootWindowInsets();
+        mPreviousStatusBarVisible = rootInsets == null
+                || rootInsets.isVisible(android.view.WindowInsets.Type.statusBars());
         // ToggleBar uses one edge-to-edge blurred launcher surface behind both system bars.
         launcher.getWindow().setStatusBarColor(Color.TRANSPARENT);
         launcher.getWindow().setNavigationBarColor(Color.TRANSPARENT);
         launcher.getWindow().setNavigationBarDividerColor(Color.TRANSPARENT);
         launcher.getWindow().setNavigationBarContrastEnforced(false);
+        android.view.WindowInsetsController insetsController =
+                launcher.getWindow().getDecorView().getWindowInsetsController();
+        if (insetsController != null) {
+            setSystemBarAnimationsDisabled(insetsController, true);
+            insetsController.hide(android.view.WindowInsets.Type.statusBars());
+            setSystemBarAnimationsDisabled(insetsController, false);
+        }
         launcher.getSystemUiController().updateUiState(
                 com.android.launcher3.util.SystemUiController.UI_STATE_WIDGET_BOTTOM_SHEET, 0);
         mColorOsSystemBarsApplied = true;
@@ -498,16 +733,93 @@ public class OptionsDialogView extends AbstractFloatingView {
         launcher.getWindow().setNavigationBarDividerColor(mPreviousNavigationBarDividerColor);
         launcher.getWindow().setNavigationBarContrastEnforced(
                 mPreviousNavigationBarContrastEnforced);
+        android.view.WindowInsetsController insetsController =
+                launcher.getWindow().getDecorView().getWindowInsetsController();
+        if (mPreviousStatusBarVisible && insetsController != null) {
+            setSystemBarAnimationsDisabled(insetsController, true);
+            insetsController.show(android.view.WindowInsets.Type.statusBars());
+            setSystemBarAnimationsDisabled(insetsController, false);
+        }
         launcher.getSystemUiController().updateUiState(
                 com.android.launcher3.util.SystemUiController.UI_STATE_WIDGET_BOTTOM_SHEET, 0);
         mColorOsSystemBarsApplied = false;
     }
 
 
+    private static void setSystemBarAnimationsDisabled(
+            android.view.WindowInsetsController controller, boolean disabled) {
+        try {
+            controller.getClass().getMethod("setAnimationsDisabled", boolean.class)
+                    .invoke(controller, disabled);
+        } catch (ReflectiveOperationException ignored) {
+            // Oplus/platform extension; hide() remains functional on plain Android.
+        }
+    }
+
     @Override
     protected boolean isOfType(int type) {
         return (type & TYPE_OPTIONS_POPUP_DIALOG) != 0;
     }
+    /**
+     * OPPO's ToggleBarRootView is not laid over Workspace. This compatibility view is, so map
+     * gestures above the active panel back into Workspace using its real animated transform.
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (getResources().getBoolean(R.bool.config_hxy_grid)) {
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                mRoutingWorkspaceTouch = isInWorkspaceTouchRegion(event);
+            }
+            if (mRoutingWorkspaceTouch) {
+                Launcher currentLauncher = Launcher.getLauncher(getContext());
+                currentLauncher.setColorOsWorkspaceTouchInProgress(true);
+                View dragLayer = currentLauncher.getDragLayer();
+                int[] rootLocation = new int[2];
+                int[] dragLayerLocation = new int[2];
+                getLocationOnScreen(rootLocation);
+                dragLayer.getLocationOnScreen(dragLayerLocation);
+                float[] point = new float[] {
+                        rootLocation[0] + event.getX() - dragLayerLocation[0],
+                        rootLocation[1] + event.getY() - dragLayerLocation[1]
+                };
+                if (currentLauncher.getDragController().isDragging()) {
+                    // Starting a long-press drag cancels the source child gesture. Because this
+                    // compatibility overlay owns that same stream, it receives the synthetic
+                    // zero-distance CANCEL as well. OPPO's separate ToggleBarRootView does not;
+                    // keep the stream alive so the following MOVE/UP events perform the drop.
+                    if (action == MotionEvent.ACTION_CANCEL
+                            && currentLauncher.getDragController().getDistanceDragged() == 0f) {
+                        return true;
+                    }
+                    MotionEvent dragEvent = MotionEvent.obtain(event);
+                    dragEvent.setLocation(point[0], point[1]);
+                    currentLauncher.getDragController().onControllerTouchEvent(dragEvent);
+                    dragEvent.recycle();
+                    if (action == MotionEvent.ACTION_UP
+                            || action == MotionEvent.ACTION_CANCEL) {
+                        mRoutingWorkspaceTouch = false;
+                        currentLauncher.setColorOsWorkspaceTouchInProgress(false);
+                    }
+                    return true;
+                }
+                com.android.launcher3.Utilities.mapCoordInSelfToDescendant(
+                        currentLauncher.getWorkspace(), dragLayer, point);
+                MotionEvent mapped = MotionEvent.obtain(event);
+                mapped.setLocation(point[0], point[1]);
+                currentLauncher.getWorkspace().dispatchTouchEvent(mapped);
+                mapped.recycle();
+                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    currentLauncher.setColorOsWorkspaceTouchInProgress(false);
+                    mRoutingWorkspaceTouch = false;
+                }
+                // Retain gesture ownership so all events in the sequence reach Workspace.
+                return true;
+            }
+        }
+        return super.dispatchTouchEvent(event);
+    }
+
 
     /**
      * OPPO's ToggleBarRootView occupies only the bottom panel, leaving Workspace as the native
@@ -524,15 +836,40 @@ public class OptionsDialogView extends AbstractFloatingView {
     }
 
     private boolean isInWorkspaceTouchRegion(MotionEvent event) {
-        View activePanel = mColorOsLayoutPanel != null
-                && mColorOsLayoutPanel.getVisibility() == View.VISIBLE
-                ? mColorOsLayoutPanel : mainMenuView;
+        if (isTouchInsideView(event, mEditModeDone)
+                || isTouchInsideView(event, mEditModeCancel)) {
+            return false;
+        }
+        View activePanel;
+        if (mColorOsLayoutPanel != null
+                && mColorOsLayoutPanel.getVisibility() == View.VISIBLE) {
+            activePanel = mColorOsLayoutPanel;
+        } else if (mColorOsSelectionActions != null
+                && mColorOsSelectionActions.getVisibility() == View.VISIBLE) {
+            activePanel = mColorOsSelectionActions;
+        } else {
+            activePanel = mainMenuView;
+        }
         if (activePanel == null || activePanel.getVisibility() != View.VISIBLE) {
             return false;
         }
         activePanel.getLocationOnScreen(mTouchPanelLocation);
         getLocationOnScreen(mTouchRootLocation);
         return event.getY() < mTouchPanelLocation[1] - mTouchRootLocation[1];
+    }
+
+    private boolean isTouchInsideView(MotionEvent event, View view) {
+        if (view == null || view.getVisibility() != View.VISIBLE) {
+            return false;
+        }
+        view.getLocationOnScreen(mTouchPanelLocation);
+        getLocationOnScreen(mTouchRootLocation);
+        float screenX = mTouchRootLocation[0] + event.getX();
+        float screenY = mTouchRootLocation[1] + event.getY();
+        return screenX >= mTouchPanelLocation[0]
+                && screenX < mTouchPanelLocation[0] + view.getWidth()
+                && screenY >= mTouchPanelLocation[1]
+                && screenY < mTouchPanelLocation[1] + view.getHeight();
     }
 
     @Override

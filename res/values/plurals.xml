@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="page_preview_title_plurals">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <plurals name="uninstall_panel_apps_title_plurals">
+        <item quantity="one">Uninstall the %1$d app below?</item>
+        <item quantity="other">Uninstall the %1$d apps below?</item>
+    </plurals>
+    <plurals name="delete_icon_panel_main_title_plurals">
+        <item quantity="one">Remove the %1$d shortcut below?</item>
+        <item quantity="other">Remove the %1$d shortcuts below?</item>
+    </plurals>
+</resources>

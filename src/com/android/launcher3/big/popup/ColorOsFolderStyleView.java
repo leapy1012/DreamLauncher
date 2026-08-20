@@ -14,6 +14,7 @@ import android.widget.LinearLayout;
 import androidx.core.content.ContextCompat;
 
 import com.android.launcher3.Launcher;
+import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.R;
 import com.android.launcher3.folder.large.HxyLargeFolderIcon;
 import com.android.launcher3.model.data.FolderInfo;
@@ -27,11 +28,9 @@ import com.coui.appcompat.contextutil.COUIContextUtil;
  * state.</p>
  */
 public final class ColorOsFolderStyleView extends LinearLayout {
-    public static final int STYLE_NINE_GRID = 0x100;
-    public static final int STYLE_FOUR_GRID = 0x200;
-    public static final int STYLE_HIERARCHICAL = 0x400;
-    private static final int STYLE_MASK =
-            STYLE_NINE_GRID | STYLE_FOUR_GRID | STYLE_HIERARCHICAL;
+    public static final int STYLE_NINE_GRID = FolderInfo.FLAG_PREVIEW_NINE_GRID;
+    public static final int STYLE_FOUR_GRID = FolderInfo.FLAG_PREVIEW_FOUR_GRID;
+    public static final int STYLE_HIERARCHICAL = FolderInfo.FLAG_PREVIEW_HIGHLIGHT;
 
     private final Launcher mLauncher;
     private final HxyLargeFolderIcon mFolderIcon;
@@ -79,6 +78,13 @@ public final class ColorOsFolderStyleView extends LinearLayout {
         ImageView icon = new ImageView(getContext());
         Drawable drawable = ContextCompat.getDrawable(getContext(), drawableRes);
         icon.setImageDrawable(drawable);
+        int selectedColor = COUIContextUtil.getAttrColor(getContext(),
+                com.coui.appcompat.R.attr.couiColorContainerTheme, 0xff2d7dff);
+        int normalColor = ContextCompat.getColor(getContext(),
+                R.color.coloros_folder_style_icon_normal);
+        icon.setImageTintList(new ColorStateList(
+                new int[][] {new int[] {android.R.attr.state_selected}, new int[0]},
+                new int[] {selectedColor, normalColor}));
         icon.setContentDescription(getResources().getString(descriptionRes));
         FrameLayout.LayoutParams iconLp = new FrameLayout.LayoutParams(dp(32), dp(32), Gravity.CENTER);
         item.addView(icon, iconLp);
@@ -99,37 +105,42 @@ public final class ColorOsFolderStyleView extends LinearLayout {
     }
 
     private int getSelectedIndex() {
-        if ((mInfo.options & STYLE_NINE_GRID) != 0) {
-            return 0;
-        }
-        if ((mInfo.options & STYLE_HIERARCHICAL) != 0) {
+        if (mInfo.hasOption(STYLE_HIERARCHICAL)) {
             return 2;
+        }
+        if (mInfo.hasOption(STYLE_FOUR_GRID)) {
+            return 1;
         }
         return 0;
     }
 
     private void select(int index) {
         if (index == mSelectedIndex) {
+            mItems[index].setSelected(false);
+            mIcons[index].setSelected(false);
             return;
         }
-        mSelectedIndex = index;
         int selectedFlag = index == 0 ? STYLE_NINE_GRID
                 : index == 1 ? STYLE_FOUR_GRID : STYLE_HIERARCHICAL;
-        mInfo.options = (mInfo.options & ~STYLE_MASK) | selectedFlag;
-        mLauncher.getModelWriter().updateItemInDatabase(mInfo);
+        mSelectedIndex = index;
         updateSelection();
-        mFolderIcon.setColorOsFolderStyle(selectedFlag);
+        AbstractFloatingView.closeOpenContainer(mLauncher,
+                AbstractFloatingView.TYPE_WIDGET_RESIZE_FRAME);
+        AbstractFloatingView.closeOpenContainer(mLauncher,
+                AbstractFloatingView.TYPE_ACTION_POPUP);
+        // Decoded FolderManager performs conversion only after the 200 ms popup close.
+        mFolderIcon.postDelayed(() -> {
+            if (mFolderIcon.isAttachedToWindow()) {
+                mFolderIcon.switchFolderStyle(selectedFlag);
+            }
+        }, 200L);
     }
 
     private void updateSelection() {
-        int selectedColor = COUIContextUtil.getAttrColor(getContext(),
-                com.coui.appcompat.R.attr.couiColorContainerTheme, 0xff0066ff);
-        int normalColor = 0xe6000000;
         for (int index = 0; index < mItems.length; index++) {
             boolean selected = index == mSelectedIndex;
             mItems[index].setSelected(selected);
-            mItems[index].setBackgroundColor(selected ? 0x0d000000 : Color.TRANSPARENT);
-            mIcons[index].setColorFilter(selected ? selectedColor : normalColor);
+            mIcons[index].setSelected(selected);
         }
     }
 

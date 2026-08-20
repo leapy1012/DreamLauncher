@@ -59,7 +59,9 @@ public class ItemLongClickListener {
         }
         Launcher launcher = Launcher.getLauncher(v.getContext());
         if (!canStartDrag(launcher)) return false;
-        if (!launcher.isInState(NORMAL)
+        boolean colorOsEditMode = launcher.getDragLayer().findViewById(
+                com.android.launcher3.R.id.edit_mode_container) != null;
+        if (!colorOsEditMode && !launcher.isInState(NORMAL)
                 && !launcher.isInState(OVERVIEW)
                 && !launcher.isInState(EDIT_MODE)) {
             return false;

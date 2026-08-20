@@ -46,6 +46,7 @@ import com.android.launcher3.Alarm;
 import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.CheckLongPressHelper;
+import com.android.launcher3.ColorOsBatchDragManager;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.DropTarget.DragObject;
 import com.android.launcher3.Launcher;
@@ -96,6 +97,8 @@ import com.android.launcher3.BuildConfig;
 import com.android.launcher3.LauncherPrefs;
 import com.android.launcher3.PendingAddItemInfo;
 
+import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
+
 /**
  * An icon that can appear on in the workspace representing an {@link Folder}.
  */
@@ -110,6 +113,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
     private CheckLongPressHelper mLongPressHelper;
 
     static final int DROP_IN_ANIMATION_DURATION = 400;
+    private static final int COLOROS_LARGE_FOLDER_DROP_DURATION = 600;
 
     // Flag whether the folder should open itself when an item is dragged over is enabled.
     public static final boolean SPRING_LOADING_ENABLED = true;
@@ -173,7 +177,8 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         mLongPressHelper = new CheckLongPressHelper(this);
         mPreviewLayoutRule = new ClippedFolderIconLayoutRule();
         mPreviewItemManager = new PreviewItemManager(this);
-        mDotParams = new NumberDotRenderer.DrawParams(getResources().getDimension(R.dimen.unread_text_number_size));
+        mDotParams = new NumberDotRenderer.DrawParams(
+                getResources().getDimension(R.dimen.unread_text_number_size), getContext());
     }
 
     public static <T extends Context & ActivityContext> FolderIcon inflateFolderAndIcon(int resId,
@@ -216,12 +221,12 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         icon.mFolderName.setText(TextUtils.isEmpty(folderInfo.title) ? icon.getContext().getString(R.string.folder_unnamed) : folderInfo.title);
         if (com.android.launcher3.LauncherPrefs.getPrefs(icon.getContext())
                 .getBoolean("coloros_hide_icon_names", false)) {
-            icon.mFolderName.setTextAlpha(0);
-        }
-        icon.mFolderName.setCompoundDrawablePadding(0);
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) icon.mFolderName.getLayoutParams();
         lp.topMargin = grid.iconSizePx + grid.iconDrawablePaddingPx;
 
+            icon.mFolderName.setTextAlpha(0);
+        }
+        icon.mFolderName.setCompoundDrawablePadding(0);
         icon.setTag(folderInfo);
         icon.setOnClickListener(activity.getItemOnClickListener());
         icon.mInfo = folderInfo;
@@ -304,7 +309,11 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
     }
 
     public boolean acceptDrop(ItemInfo dragInfo) {
-        return !mFolder.isDestroyed() && willAcceptItem(dragInfo);
+        if (mFolder.isDestroyed() || !willAcceptItem(dragInfo)) {
+            return false;
+        }
+        return !(mActivity instanceof Launcher)
+                || ColorOsBatchDragManager.get((Launcher) mActivity).canDropIntoFolder(this);
     }
 
     public void addItem(WorkspaceItemInfo item) {
@@ -319,8 +328,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         if (mFolder.isDestroyed() || !willAcceptItem(dragInfo)) return;
         CellLayoutLayoutParams lp = (CellLayoutLayoutParams) getLayoutParams();
         CellLayout cl = (CellLayout) getParent().getParent();
-        // todo
-        // mBackground.animateToAccept(cl, lp.getCellX(), lp.getCellY());
+        mBackground.animateToAccept(cl, lp.getCellX(), lp.getCellY());
         mOpenAlarm.setOnAlarmListener(mOnOpenListener);
         if (SPRING_LOADING_ENABLED &&
                 ((dragInfo instanceof WorkspaceItemFactory)
@@ -397,6 +405,11 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
 
             int numItemsInPreview = Math.min(MAX_NUM_ITEMS_IN_PREVIEW, index + 1);
             boolean itemAdded = false;
+            if (this instanceof HxyLargeFolderIcon && HxyLargeFolderProxy.isLargeFolder(this)
+                    && onDropToColorOsLargeFolder((HxyLargeFolderIcon) this, item, d,
+                            animateView, to, index)) {
+                return;
+            }
             if (itemReturnedOnFailedDrop || index >= MAX_NUM_ITEMS_IN_PREVIEW) {
                 List<WorkspaceItemInfo> oldPreviewItems = new ArrayList<>(mCurrentPreviewItems);
                 mInfo.add(item, index, false);
@@ -468,6 +481,46 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         } else {
             addItem(item);
         }
+    }
+
+
+    private boolean onDropToColorOsLargeFolder(HxyLargeFolderIcon largeFolder,
+            WorkspaceItemInfo item, DragObject d, DragView animateView, Rect destination,
+            int contentIndex) {
+        Rect colorOsDestination = new Rect(destination);
+        if (!largeFolder.computeColorOsDropLocation(
+                animateView, contentIndex, colorOsDestination)) {
+            return false;
+        }
+
+        largeFolder.beginColorOsDropAnimation();
+        mInfo.add(item, contentIndex, true);
+        int previewSlot = largeFolder.getColorOsDropPreviewSlot(contentIndex);
+        largeFolder.hideLargePreviewItem(previewSlot);
+        mFolder.hideItem(item);
+
+        float finalScaleX = colorOsDestination.width() / (float) animateView.getMeasuredWidth();
+        float finalScaleY = colorOsDestination.height() / (float) animateView.getMeasuredHeight();
+        Runnable onComplete = () -> {
+            largeFolder.finishColorOsDropAnimation();
+            largeFolder.showLargePreviewItem(previewSlot);
+            mFolder.showItem(item);
+        };
+
+        ((Launcher) mActivity).getDragLayer().animateView(animateView, colorOsDestination, 1f,
+                finalScaleX, finalScaleY, COLOROS_LARGE_FOLDER_DROP_DURATION,
+                new COUIMoveEaseInterpolator(), onComplete,
+                DragLayer.ANIMATION_END_DISAPPEAR, null);
+
+        FolderNameInfos nameInfos = new FolderNameInfos();
+        Executors.MODEL_EXECUTOR.post(() -> {
+            d.folderNameProvider.getSuggestedFolderName(getContext(), mInfo.contents, nameInfos);
+            postDelayed(() -> {
+                setLabelSuggestion(nameInfos, d.logInstanceId);
+                invalidate();
+            }, COLOROS_LARGE_FOLDER_DROP_DURATION);
+        });
+        return true;
     }
 
     /**
@@ -768,15 +821,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
     }
 
     public void setTextVisible(boolean visible) {
-        boolean visibleStatus = LauncherPrefs.getPrefs(getContext()).getBoolean(LauncherPrefs.WORKSPACE_DOCKED_APP, false);
-        if (visibleStatus) {
-            visible = true;
-        }
-        if (visible) {
-            mFolderName.setVisibility(VISIBLE);
-        } else {
-            mFolderName.setVisibility(INVISIBLE);
-        }
+        mFolderName.setVisibility(visible ? VISIBLE : INVISIBLE);
     }
 
     public boolean getTextVisible() {

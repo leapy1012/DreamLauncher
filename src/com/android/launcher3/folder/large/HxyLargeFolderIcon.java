@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import com.android.launcher3.CellLayout;
@@ -34,6 +35,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     private HxyLargeFolderAdapter mAdapter;
     private HxyLargeFolderListView mListView;
     private HxyLargeFolderSwitcher mSwitcher;
+    private boolean mColorOsDropAnimationRunning;
 
     public HxyLargeFolderIcon(Context context) {
         this(context, (AttributeSet) null);
@@ -67,11 +69,23 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         if (isLargeFolder()) {
+            getPreviewItemManager().recomputePreviewDrawingParams();
             updateListViewPadding();
+            updateFolderNamePosition();
             measureChildren(widthMeasureSpec, heightMeasureSpec);
         }
-        setFolderNameTop();
-        refreshListData();
+    }
+
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (!isLargeFolder() || getFolderName() == null) return;
+        Rect previewBounds = new Rect();
+        getColorOsGroupBounds(previewBounds);
+        int nameTop = getHeight() - getFolderName().getMeasuredHeight();
+        View name = getFolderName();
+        name.layout(0, nameTop, getWidth(), nameTop + name.getMeasuredHeight());
     }
 
     @Override
@@ -86,34 +100,25 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         return HxyLargeFolderProxy.isLargeFolder((View) this);
     }
 
-    private void setFolderNameTop() {
-        if (this.mActivity != null && getMeasuredHeight() >= 1) {
-            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) getFolderName().getLayoutParams();
-            if (isLargeFolder() && lp.topMargin != getLargeFolderNameTop()) {
-                lp.topMargin = getLargeFolderNameTop();
-                getFolderName().setLayoutParams(lp);
-            } else if (!isLargeFolder() && lp.topMargin != getFolderNameTop()) {
-                lp.topMargin = getFolderNameTop();
-                getFolderName().setLayoutParams(lp);
-            }
+    private void updateFolderNamePosition() {
+        if (mActivity == null || getFolderName() == null) return;
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) getFolderName().getLayoutParams();
+        int previewTop = Math.max(0, getPreviewOffsetY() - getPaddingTop());
+        int top = isLargeFolder() ? previewTop + getPreviewHeight()
+                + getResources().getDimensionPixelSize(R.dimen.coloros_large_folder_name_gap)
+                : mActivity.getDeviceProfile().iconSizePx
+                + mActivity.getDeviceProfile().iconDrawablePaddingPx;
+        if (lp.topMargin != top) {
+            lp.topMargin = top;
+            getFolderName().setLayoutParams(lp);
         }
-    }
-
-    private int getLargeFolderNameTop() {
-        return HxyLargeFolderProxy.getFolderPreviewHeight()
-                + getResources().getDimensionPixelSize(R.dimen.coloros_large_folder_name_gap);
     }
 
     private void updateListViewPadding() {
-        int paddingLeft = Math.max(0, getPreviewOffsetX()
-                + HxyLargeFolderProxy.getHorizontalSpace() - getPaddingLeft());
-        int paddingTop = Math.max(0, getPreviewOffsetY()
-                + HxyLargeFolderProxy.getVerticalSpace() - getPaddingTop());
-        if (paddingLeft != this.mListView.getPaddingLeft() || paddingTop != this.mListView.getPaddingTop()) {
-            this.mListView.setVerticalSpace(HxyLargeFolderProxy.getVerticalSpace());
-            this.mListView.setHorizontalSpace(HxyLargeFolderProxy.getHorizontalSpace());
-            this.mListView.setPadding(paddingLeft, paddingTop, paddingLeft, paddingTop);
-        }
+        mListView.setFolderConfiguration(mInfo, resolveColorOsFolderStyle(),
+                Math.max(0, getPreviewOffsetX() - getPaddingLeft()),
+                Math.max(0, getPreviewOffsetY() - getPaddingTop()),
+                getPreviewWidth(), getPreviewHeight());
     }
 
     public int getPreviewWidth() {
@@ -136,14 +141,6 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             return 0;
         }
         return HxyLargeFolderProxy.getPreviewOffsetX(getMeasuredWidth(), HxyLargeFolderProxy.computePreviewWidth((View) this, getMeasuredWidth(), this.mActivity.getDeviceProfile().folderIconSizePx));
-    }
-
-    private int getFolderNameTop() {
-        DeviceProfile grid = this.mActivity.getDeviceProfile();
-        if (!isInHotseat() || grid.isMultiWindowMode) {
-            return grid.iconSizePx + grid.iconDrawablePaddingPx;
-        }
-        return grid.iconSizePx + (grid.iconDrawablePaddingPx / 3);
     }
 
     @Override
@@ -171,10 +168,10 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private int resolveColorOsFolderStyle() {
-        if ((mInfo.options & ColorOsFolderStyleView.STYLE_FOUR_GRID) != 0) {
+        if (mInfo.hasOption(ColorOsFolderStyleView.STYLE_FOUR_GRID)) {
             return ColorOsFolderStyleView.STYLE_FOUR_GRID;
         }
-        if ((mInfo.options & ColorOsFolderStyleView.STYLE_HIERARCHICAL) != 0) {
+        if (mInfo.hasOption(ColorOsFolderStyleView.STYLE_HIERARCHICAL)) {
             return ColorOsFolderStyleView.STYLE_HIERARCHICAL;
         }
         return ColorOsFolderStyleView.STYLE_NINE_GRID;
@@ -182,11 +179,100 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     public void setColorOsFolderStyle(int style) {
         if (mListView == null || mAdapter == null) return;
-        mListView.setFolderStyle(style);
+        mListView.setFolderConfiguration(mInfo, style,
+                Math.max(0, getPreviewOffsetX() - getPaddingLeft()),
+                Math.max(0, getPreviewOffsetY() - getPaddingTop()),
+                getPreviewWidth(), getPreviewHeight());
         mAdapter.setMaxSize(mListView.getPreviewSlotCount());
         refreshListView();
         requestLayout();
         invalidate();
+    }
+
+    public void switchFolderStyle(int style) {
+        mInfo.setPreviewStyle(style, com.android.launcher3.Launcher.getLauncher(getContext())
+                .getModelWriter());
+        setColorOsFolderStyle(style);
+    }
+
+    public void getColorOsGroupBounds(Rect outBounds) {
+        getPreviewItemManager().recomputePreviewDrawingParams();
+        getFolderBackground().getBounds(outBounds);
+        if (outBounds.isEmpty()) {
+            outBounds.set(getPaddingLeft(), getPaddingTop(),
+                    getWidth() - getPaddingRight(), getPreviewHeight());
+        }
+    }
+
+    /** Radius used by both the folder surface and its ColorOS resize frame. */
+    public float getColorOsGroupRadius() {
+        ItemInfo info = getTag() instanceof ItemInfo ? (ItemInfo) getTag() : null;
+        int spanX = info == null ? 1 : info.spanX;
+        int spanY = info == null ? 1 : info.spanY;
+        return HxyLargeFolderProxy.getFolderRound(getContext(), spanX, spanY);
+    }
+
+    /**
+     * ColorOS FlexibleFolderIcon reports the complete group background as its workspace visual
+     * bounds. FolderIcon's AOSP implementation reports only the small-folder preview, which makes
+     * CellLayout measure drag distance from the wrong point after a folder is resized.
+     */
+    @Override
+    public void getWorkspaceVisualDragBounds(Rect bounds) {
+        getColorOsGroupBounds(bounds);
+    }
+
+    public void onFolderSpanChanged() {
+        setColorOsFolderStyle(resolveColorOsFolderStyle());
+        initLoadListData(isLargeFolder());
+        updateFolderNamePosition();
+        requestLayout();
+        invalidate();
+    }
+
+    /**
+     * Maps a child to the drawable actually visible in the closed flexible preview, including
+     * each drawable inside the final stacked preview cell.
+     */
+    public boolean getColorOsPreviewItemBounds(WorkspaceItemInfo item, Rect outBounds) {
+        if (mListView == null || item == null) return false;
+        int dataPosition = mInfo.contents.indexOf(item);
+        if (dataPosition < 0) return false;
+        HxyLargeFolderIconItem previewItem = findPreviewItem(mListView, dataPosition);
+        if (previewItem == null) return false;
+        Rect drawableBounds = new Rect();
+        if (!previewItem.getDrawableBoundsForDataPosition(dataPosition, drawableBounds)) {
+            return false;
+        }
+        int[] itemLocation = new int[2];
+        int[] iconLocation = new int[2];
+        previewItem.getLocationOnScreen(itemLocation);
+        getLocationOnScreen(iconLocation);
+        outBounds.set(itemLocation[0] - iconLocation[0] + drawableBounds.left,
+                itemLocation[1] - iconLocation[1] + drawableBounds.top,
+                itemLocation[0] - iconLocation[0] + drawableBounds.right,
+                itemLocation[1] - iconLocation[1] + drawableBounds.bottom);
+        return !outBounds.isEmpty();
+    }
+
+    private HxyLargeFolderIconItem findPreviewItem(View view, int dataPosition) {
+        if (view instanceof HxyLargeFolderIconItem) {
+            HxyLargeFolderIconItem item = (HxyLargeFolderIconItem) view;
+            int start = item.getBoundPosition();
+            if (start == dataPosition || (item.isCountOut()
+                    && dataPosition >= start && dataPosition < start + 4)) {
+                return item;
+            }
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int index = 0; index < group.getChildCount(); index++) {
+                HxyLargeFolderIconItem match = findPreviewItem(group.getChildAt(index),
+                        dataPosition);
+                if (match != null) return match;
+            }
+        }
+        return null;
     }
 
     private void executeLargeFolderIconLongClick(View view, WorkspaceItemInfo data) {
@@ -205,6 +291,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     @Override
     public void onItemsChanged(boolean animate) {
         super.onItemsChanged(animate);
+        if (mColorOsDropAnimationRunning) return;
         initLoadListData();
     }
 
@@ -343,7 +430,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (layout != null) {
             layout.markCellsAsOccupiedForView(this);
         }
-        setFolderNameTop();
+        updateFolderNamePosition();
         setTextVisible(true);
         requestLayout();
         this.mSwitcher.releaseAnimationParams();
@@ -355,28 +442,58 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     @Override
     public void computeLargePreviewItemLocation(DragView dragView, int index, Rect to) {
-        int[] coordinate;
-        super.computeLargePreviewItemLocation(dragView, index, to);
-        HxyLargeFolderListView hxyLargeFolderListView = this.mListView;
-        if (hxyLargeFolderListView != null && hxyLargeFolderListView.getChildCount() >= 1) {
-            if (index >= this.mAdapter.getMaxSize() || index >= this.mListView.getChildCount()) {
-                coordinate = this.mListView.getCoordinateXY(this.mAdapter.getMaxSize() - 1);
-            } else {
-                coordinate = this.mListView.getCoordinateXY(index);
-            }
-            coordinate[1] = coordinate[1] + getPaddingTop();
-            Rect pos = new Rect();
-            this.mActivity.getDragLayer().getDescendantRectRelativeToSelf(this, pos);
-            float offsetScale = (1.0f - computeLargePreviewItemScale()) / 2.0f;
-            int offsetX = Math.round(((float) dragView.getMeasuredWidth()) * offsetScale);
-            int offsetY = Math.round(((float) dragView.getMeasuredHeight()) * offsetScale);
-            to.left = (pos.left + coordinate[0]) - offsetX;
-            to.top = (pos.top + coordinate[1]) - offsetY;
-            to.right = to.left + this.mListView.getChildSize();
-            to.bottom = to.top + this.mListView.getChildSize();
+        if (!computeColorOsDropLocation(dragView, index, to)) {
+            super.computeLargePreviewItemLocation(dragView, index, to);
         }
     }
 
+    public boolean computeColorOsDropLocation(DragView dragView, int contentIndex, Rect to) {
+        if (mListView == null || mAdapter == null || mAdapter.getMaxSize() < 1
+                || dragView == null || mActivity == null) return false;
+        int maxPreviewSlots = mAdapter.getMaxSize();
+        int slot = Math.min(Math.max(0, contentIndex), maxPreviewSlots - 1);
+        int[] coordinate = mListView.getCoordinateXY(slot);
+        Rect groupBounds = new Rect();
+        float workspaceScale = mActivity.getDragLayer()
+                .getDescendantRectRelativeToSelf(this, groupBounds);
+        int renderedSize = mListView.getRenderedChildSize(slot);
+        // The final preview slot becomes OPPO's 2x2 overflow stack. Animate to the same
+        // sub-drawable rendered inside that cell, rather than into the whole stack.
+        if (mInfo.contents.size() > maxPreviewSlots && contentIndex >= maxPreviewSlots - 1) {
+            int stackIndex = Math.min(3, contentIndex - (maxPreviewSlots - 1));
+            int stackGap = HxyLargeFolderProxy.getFolderIconOutSpace(getContext());
+            int stackIconSize = Math.max(1, (renderedSize - stackGap) / 2);
+            coordinate[0] += (stackIndex % 2) * (stackIconSize + stackGap);
+            coordinate[1] += (stackIndex / 2) * (stackIconSize + stackGap);
+            renderedSize = stackIconSize;
+        }
+        int targetSize = Math.round(renderedSize * workspaceScale);
+        int desiredLeft = groupBounds.left
+                + Math.round((mListView.getLeft() + coordinate[0]) * workspaceScale);
+        int desiredTop = groupBounds.top
+                + Math.round((mListView.getTop() + coordinate[1]) * workspaceScale);
+        int centerOffsetX = Math.round((dragView.getMeasuredWidth() - targetSize) / 2f);
+        int centerOffsetY = Math.round((dragView.getMeasuredHeight() - targetSize) / 2f);
+        to.set(desiredLeft - centerOffsetX, desiredTop - centerOffsetY,
+                desiredLeft - centerOffsetX + targetSize,
+                desiredTop - centerOffsetY + targetSize);
+        return true;
+    }
+
+    public int getColorOsDropPreviewSlot(int contentIndex) {
+        return mAdapter == null || mAdapter.getMaxSize() < 1 ? 0
+                : Math.min(Math.max(0, contentIndex), mAdapter.getMaxSize() - 1);
+    }
+
+    public void beginColorOsDropAnimation() {
+        mColorOsDropAnimationRunning = true;
+    }
+
+    public void finishColorOsDropAnimation() {
+        mColorOsDropAnimationRunning = false;
+        refreshListData();
+
+    }
     @Override
     public void hideLargePreviewItem(int index) {
         super.hideLargePreviewItem(index);

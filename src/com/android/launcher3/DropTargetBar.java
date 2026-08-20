@@ -34,6 +34,7 @@ import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.dragndrop.DragController;
 import com.android.launcher3.dragndrop.DragController.DragListener;
 import com.android.launcher3.dragndrop.DragOptions;
+import com.android.launcher3.folder.Folder;
 
 /*
  * The top bar containing various drop targets: Delete/App Info/Uninstall.
@@ -322,7 +323,14 @@ public class DropTargetBar extends FrameLayout
      */
     @Override
     public void onDragStart(DropTarget.DragObject dragObject, DragOptions options) {
-        animateToVisibility(true);
+        // Decoded OplusDropTargetBar keeps the workspace removal target hidden while an item is
+        // being reordered inside an open folder. Folder exit/removal is handled by Folder's own
+        // drag-exit path, not by exposing the AOSP top target over this surface.
+        if (dragObject.dragSource instanceof Folder) {
+            animateToVisibility(false);
+        } else {
+            animateToVisibility(true);
+    }
     }
 
     /**

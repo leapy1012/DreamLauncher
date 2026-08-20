@@ -53,7 +53,7 @@
          we go into AllApps -->
         <com.android.launcher3.pageindicators.WorkspacePageIndicator
             android:id="@+id/page_indicator"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="@dimen/workspace_page_indicator_height"
             android:layout_gravity="bottom|center_horizontal"
             android:theme="@style/HomeScreenElementTheme" />

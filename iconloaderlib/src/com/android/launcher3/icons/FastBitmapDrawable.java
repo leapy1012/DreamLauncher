@@ -60,6 +60,7 @@ public class FastBitmapDrawable extends Drawable implements Drawable.Callback {
     @Nullable private ColorFilter mColorFilter;
 
     private boolean mIsPressed;
+    private boolean mPressedScaleEnabled = true;
     protected boolean mIsDisabled;
     float mDisabledAlpha = 1f;
 
@@ -242,6 +243,15 @@ public class FastBitmapDrawable extends Drawable implements Drawable.Callback {
                 mScaleAnimation = null;
             }
 
+            // ColorOS scales the complete icon host (icon, label and badge) from its
+            // OplusBubbleTextView press animator. Keeping Launcher's drawable-only 1.1x
+            // feedback enabled would counteract the decoded 0.85x ColorOS press scale.
+            if (!mPressedScaleEnabled) {
+                mScale = 1f;
+                invalidateSelf();
+                return true;
+            }
+
             if (mIsPressed) {
                 // Animate when going to pressed state
                 mScaleAnimation = ObjectAnimator.ofFloat(this, SCALE, PRESSED_SCALE);
@@ -262,6 +272,22 @@ public class FastBitmapDrawable extends Drawable implements Drawable.Callback {
             return true;
         }
         return false;
+    }
+
+    /** Enables Launcher's legacy drawable-only press zoom. */
+    public void setPressedScaleEnabled(boolean enabled) {
+        if (mPressedScaleEnabled == enabled) {
+            return;
+        }
+        mPressedScaleEnabled = enabled;
+        if (!enabled) {
+            if (mScaleAnimation != null) {
+                mScaleAnimation.cancel();
+                mScaleAnimation = null;
+            }
+            mScale = 1f;
+            invalidateSelf();
+        }
     }
 
     public void setIsDisabled(boolean isDisabled) {

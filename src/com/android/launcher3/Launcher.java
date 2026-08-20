@@ -2272,6 +2272,15 @@ public class Launcher extends StatefulActivity<LauncherState>
     public boolean isTouchInProgress() {
         return mTouchInProgress;
     }
+    /**
+     * Keeps drag lifecycle state correct when the ColorOS edit overlay forwards a gesture
+     * directly to Workspace instead of passing through Activity.dispatchTouchEvent().
+     */
+    public void setColorOsWorkspaceTouchInProgress(boolean inProgress) {
+        mTouchInProgress = inProgress;
+    }
+
+
 
     @Override
     @TargetApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
