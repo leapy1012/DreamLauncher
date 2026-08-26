@@ -919,6 +919,17 @@ public class CellLayout extends ViewGroup {
      * Returns the distance between the given coordinate and the visual center of the given cell.
      */
     public float getDistanceFromWorkspaceCellVisualCenter(float x, float y, int[] cell) {
+        View child = getChildAt(cell[0], cell[1]);
+        if (HxyLargeFolderProxy.isLargeFolder(child) && child instanceof DraggableView) {
+            ((DraggableView) child).getWorkspaceVisualDragBounds(mTempRect);
+            mTempRect.offset((int) child.getX(), (int) child.getY());
+            if (getParent() instanceof View && ((View) getParent()).getAlpha() != 1f) {
+                return Float.MAX_VALUE;
+            }
+            return (float) Math.hypot(
+                    Math.max(0f, Math.abs(x - mTempRect.centerX()) - mTempRect.width() / 2f),
+                    Math.max(0f, Math.abs(y - mTempRect.centerY()) - mTempRect.height() / 2f));
+        }
         getWorkspaceCellVisualCenter(cell[0], cell[1], mTmpPoint);
         return (float) Math.hypot(x - mTmpPoint[0], y - mTmpPoint[1]);
     }

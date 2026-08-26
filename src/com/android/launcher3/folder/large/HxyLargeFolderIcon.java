@@ -1,22 +1,34 @@
 package com.android.launcher3.folder.large;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.animation.PathInterpolator;
 import android.widget.FrameLayout;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
+import com.android.launcher3.DropTarget;
+import com.android.launcher3.Launcher;
+import com.android.launcher3.dragndrop.DragController;
+import com.android.launcher3.dragndrop.DragOptions;
 import com.android.launcher3.dragndrop.DragView;
+import com.android.launcher3.dot.FolderDotInfo;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.PreviewItemManager;
 import com.android.launcher3.folder.large.listview.BasePageLinearAdapter;
 import com.android.launcher3.folder.large.listview.HxyLargeFolderAdapter;
 import com.android.launcher3.folder.large.listview.HxyLargeFolderIconItem;
 import com.android.launcher3.folder.large.listview.HxyLargeFolderListView;
+import com.android.launcher3.folder.large.listview.HxyLargeFolderPageIndicator;
 import com.android.launcher3.folder.large.switchparams.ISwitchFolderAnimation;
 import com.android.launcher3.folder.large.switchparams.HxyLargeFolderSwitcher;
 import com.android.launcher3.model.data.ItemInfo;
@@ -28,14 +40,38 @@ import com.android.launcher3.big.popup.ColorOsFolderStyleView;
 
 import java.util.function.Predicate;
 
-public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnimation {
+public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnimation,
+        DragController.DragListener {
     public static final int LARGE_FOLDER_SPAN_X = 2;
     public static final int LARGE_FOLDER_SPAN_Y = 2;
     private static final int RECURSION_LOAD_COUNT = 3;
     private HxyLargeFolderAdapter mAdapter;
     private HxyLargeFolderListView mListView;
+    private HxyLargeFolderAdapter mNextAdapter;
+    private HxyLargeFolderListView mNextListView;
+    private HxyLargeFolderPageIndicator mPageIndicator;
     private HxyLargeFolderSwitcher mSwitcher;
     private boolean mColorOsDropAnimationRunning;
+    private int mCurrentPreviewPage;
+    private int mTargetPreviewPage = -1;
+    private float mPageDownX;
+    private float mPageDownY;
+    private boolean mPageDragging;
+    private int mDragLowerPage;
+    private int mDragUpperPage;
+    private int mOverScrollPage = -1;
+    private float mOverScrollInput;
+    private float mOverScrollAmount;
+    private ValueAnimator mPageAnimator;
+    private int mOriginalPreviewPage;
+    private int mProgrammaticSnapTarget = -1;
+    private boolean mDropAcceptedDuringDrag;
+    private boolean mDragListenerRegistered;
+    private final PathInterpolator mPageIndicatorInterpolator =
+            new PathInterpolator(0.33f, 0.0f, 0.67f, 1.0f);
+    private final PathInterpolator mProgrammaticSnapInterpolator =
+            new PathInterpolator(0.3f, 0.0f, 0.1f, 1.0f);
+    private final Runnable mHidePageIndicator = this::hidePageIndicator;
 
     public HxyLargeFolderIcon(Context context) {
         this(context, (AttributeSet) null);
@@ -50,6 +86,10 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     public void release() {
+        if (mDragListenerRegistered && mActivity instanceof Launcher) {
+            ((Launcher) mActivity).getDragController().removeDragListener(this);
+            mDragListenerRegistered = false;
+        }
         if (mSwitcher != null) {
             mSwitcher.release();
             mSwitcher = null;
@@ -58,7 +98,18 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             mAdapter.release();
             mAdapter = null;
         }
+        if (mNextAdapter != null) {
+            mNextAdapter.release();
+            mNextAdapter = null;
+        }
+        if (mPageAnimator != null) {
+            mPageAnimator.cancel();
+            mPageAnimator = null;
+        }
+        removeCallbacks(mHidePageIndicator);
         this.mListView = null;
+        this.mNextListView = null;
+        this.mPageIndicator = null;
     }
 
     private void initData() {
@@ -115,10 +166,10 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private void updateListViewPadding() {
-        mListView.setFolderConfiguration(mInfo, resolveColorOsFolderStyle(),
-                Math.max(0, getPreviewOffsetX() - getPaddingLeft()),
-                Math.max(0, getPreviewOffsetY() - getPaddingTop()),
-                getPreviewWidth(), getPreviewHeight());
+        configurePage(mListView, mAdapter, mCurrentPreviewPage);
+        if (mNextListView != null && mNextAdapter != null && mTargetPreviewPage >= 0) {
+            configurePage(mNextListView, mNextAdapter, mTargetPreviewPage);
+        }
     }
 
     public int getPreviewWidth() {
@@ -146,8 +197,16 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     @Override
     public void initLargeFolderIcon() {
         this.mListView = (HxyLargeFolderListView) findViewById(R.id.folder_icon_content);
+        this.mNextListView = findViewById(R.id.folder_icon_content_next);
+        this.mPageIndicator = findViewById(R.id.folder_icon_indicator);
         this.mAdapter = new HxyLargeFolderAdapter(getContext());
+        this.mNextAdapter = new HxyLargeFolderAdapter(getContext());
         this.mListView.setAdapter(this.mAdapter);
+        this.mNextListView.setAdapter(this.mNextAdapter);
+        if (!mDragListenerRegistered && mActivity instanceof Launcher) {
+            ((Launcher) mActivity).getDragController().addDragListener(this);
+            mDragListenerRegistered = true;
+        }
         setColorOsFolderStyle(resolveColorOsFolderStyle());
         this.mAdapter.setItemListener(new BasePageLinearAdapter.ItemClickListener<WorkspaceItemInfo>() {
             @Override
@@ -161,6 +220,9 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
                 executeLargeFolderIconLongClick(view, workspaceItemInfo);
             }
         });
+        this.mNextAdapter.setItemListener((view, item) -> onFolderItemClick(view, item));
+        this.mNextAdapter.setItemLongListener(
+                (view, item) -> executeLargeFolderIconLongClick(view, item));
         // 引起Fatal signal 11 (SIGSEGV), code 1 (SEGV_MAPERR)
         // this.mListView.setOnLongClickListener(new HxyLargeFolderIconLongClickListener(this));
         // this.mListView.setOnClickListener(new HxyLargeFolderIconClickListener(this));
@@ -179,20 +241,27 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     public void setColorOsFolderStyle(int style) {
         if (mListView == null || mAdapter == null) return;
-        mListView.setFolderConfiguration(mInfo, style,
-                Math.max(0, getPreviewOffsetX() - getPaddingLeft()),
-                Math.max(0, getPreviewOffsetY() - getPaddingTop()),
-                getPreviewWidth(), getPreviewHeight());
-        mAdapter.setMaxSize(mListView.getPreviewSlotCount());
+        mCurrentPreviewPage = Math.min(mCurrentPreviewPage,
+                Math.max(0, getPreviewPageCount() - 1));
+        configurePage(mListView, mAdapter, mCurrentPreviewPage);
+        if (mPageIndicator != null) {
+            mPageIndicator.setPageCount(getPreviewPageCount());
+            mPageIndicator.setCurrentPage(mCurrentPreviewPage);
+        }
         refreshListView();
         requestLayout();
         invalidate();
     }
 
     public void switchFolderStyle(int style) {
+        setBigFolderType(style);
+        setColorOsFolderStyle(style);
+    }
+
+    /** Mirrors ColorOS FolderManager#setBigFolderType: keep exactly one persisted type bit. */
+    private void setBigFolderType(int style) {
         mInfo.setPreviewStyle(style, com.android.launcher3.Launcher.getLauncher(getContext())
                 .getModelWriter());
-        setColorOsFolderStyle(style);
     }
 
     public void getColorOsGroupBounds(Rect outBounds) {
@@ -332,11 +401,452 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     private void refreshListView() {
         if (isLargeFolder()) {
+            mCurrentPreviewPage = Math.min(mCurrentPreviewPage,
+                    Math.max(0, getPreviewPageCount() - 1));
+            configurePage(mListView, mAdapter, mCurrentPreviewPage);
             this.mAdapter.setList(this.mInfo.contents);
+            if (mPageIndicator != null) {
+                mPageIndicator.setPageCount(getPreviewPageCount());
+                mPageIndicator.setCurrentPage(mCurrentPreviewPage);
+            }
             return;
         }
         updatePreviewItems(false);
         invalidate();
+    }
+
+    @Override
+    public void setDotInfo(FolderDotInfo dotInfo) {
+        super.setDotInfo(dotInfo);
+        // FlexibleFolderIcon reapplies preview drawing params whenever notification state
+        // changes; this also recomputes the aggregate for its overflow stack.
+        if (isLargeFolder() && mAdapter != null) {
+            mAdapter.refresh();
+        }
+        if (isLargeFolder() && mNextAdapter != null
+                && mNextListView != null && mNextListView.getVisibility() == View.VISIBLE) {
+            mNextAdapter.refresh();
+        }
+    }
+
+    private void configurePage(HxyLargeFolderListView listView,
+            HxyLargeFolderAdapter adapter, int page) {
+        if (listView == null || adapter == null || mInfo == null) return;
+        int style = resolveColorOsFolderStyle();
+        // ColorOS applies the highlight deletion only to page zero. Later pages use the
+        // ordinary nine-grid geometry (BigFolderGridOrganizer#previewItemsForPage).
+        if (style == ColorOsFolderStyleView.STYLE_HIERARCHICAL && page > 0) {
+            style = ColorOsFolderStyleView.STYLE_NINE_GRID;
+        }
+        listView.setFolderConfiguration(mInfo, style,
+                Math.max(0, getPreviewOffsetX() - getPaddingLeft()),
+                Math.max(0, getPreviewOffsetY() - getPaddingTop()),
+                getPreviewWidth(), getPreviewHeight());
+        adapter.setMaxSize(listView.getPreviewSlotCount());
+        adapter.setPageOffset(getPreviewPageOffset(page));
+    }
+
+    private int getPreviewPageStride() {
+        return Math.max(1, (mInfo.getPreviewColumn() * mInfo.getPreviewRow()) - 1);
+    }
+
+    /** Mirrors ColorOS FolderOpenAnimHelper.Companion#getExpandTargetPage. */
+    @Override
+    public int getOpenFolderPage(int maxItemsPerPage) {
+        if (!isLargeFolder() || mCurrentPreviewPage == 0 || maxItemsPerPage <= 0) {
+            return 0;
+        }
+        return ((getPreviewPageStride() * mCurrentPreviewPage) + 1) / maxItemsPerPage;
+    }
+
+    /** Mirrors ColorOS BigFolderGridOrganizer#getPreviewPageForClose. */
+    private int getPreviewPageForClose(int closePage) {
+        if (closePage == 0 || mInfo == null || mInfo.contents.isEmpty()) {
+            return 0;
+        }
+        int stride = getPreviewPageStride();
+        return Math.min((closePage * stride) + 1, mInfo.contents.size()) / stride;
+    }
+
+    @Override
+    public void onFolderClose(int currentPage) {
+        super.onFolderClose(currentPage);
+        if (!isLargeFolder()) return;
+        mCurrentPreviewPage = Math.min(getPreviewPageForClose(currentPage),
+                Math.max(0, getPreviewPageCount() - 1));
+        configurePage(mListView, mAdapter, mCurrentPreviewPage);
+        if (mPageIndicator != null) {
+            mPageIndicator.setCurrentPage(mCurrentPreviewPage);
+        }
+        refreshListView();
+    }
+
+    private int getPreviewPageOffset(int page) {
+        if (page <= 0) return 0;
+        int offset = page * getPreviewPageStride();
+        return mInfo.isCurrentDisplayHighlightGrid() ? Math.max(0, offset - 3) : offset;
+    }
+
+    /** Exact ColorOS FlexibleFolderIcon.Companion#getPreviewPageCount calculation. */
+    private int getPreviewPageCount() {
+        if (mInfo == null || mInfo.contents.isEmpty()) return 0;
+        int stride = getPreviewPageStride();
+        int size = mInfo.contents.size();
+        int pageCount = (int) Math.ceil(size / (double) stride);
+        if (mInfo.isCurrentDisplayHighlightGrid()) {
+            size -= stride - 3;
+            pageCount = mInfo.contents.size() > stride - 3
+                    ? (int) Math.ceil(size / (double) stride) + 1 : 1;
+        }
+        return pageCount <= 1 || size % stride != 1 ? pageCount : pageCount - 1;
+    }
+
+    /** Exact FlexibleFolderIcon#snapDesPageForDrag page selection. */
+    private void snapDesPageForDrag() {
+        if (!isLargeFolder() || !mInfo.hasGrid2x2()) return;
+        int size = mInfo.contents.size();
+        int stride = getPreviewPageStride();
+        int adjustedSize = size;
+        if (mInfo.isCurrentDisplayHighlightGrid() && size >= (stride + 1) - 3) {
+            adjustedSize += 3;
+        }
+        if (adjustedSize + 1 <= stride) return;
+
+        int destinationPage = mCurrentPreviewPage;
+        int pageOffset = getPreviewPageOffset(mCurrentPreviewPage);
+        int previewAndStackedCount = Math.min(
+                (stride + 4) - (mInfo.isCurrentDisplayHighlightGrid()
+                        && mCurrentPreviewPage == 0 ? 3 : 0),
+                Math.max(0, size - pageOffset));
+        if (mInfo.isCurrentDisplayHighlightGrid() && mCurrentPreviewPage == 0) {
+            previewAndStackedCount += 3;
+        }
+        if (previewAndStackedCount >= stride + 4) {
+            int remainder = adjustedSize % stride;
+            destinationPage = ((remainder == 1 || remainder == 0)
+                    ? getPreviewPageCount()
+                    : (int) Math.ceil((adjustedSize + 1) / (double) stride)) - 1;
+        }
+        snapToPreviewPage(Math.max(mCurrentPreviewPage, destinationPage), true);
+    }
+
+    /** Mirrors BigFolderTouchController#snapToPage(page, animate) for non-touch snaps. */
+    private void snapToPreviewPage(int requestedPage, boolean animate) {
+        if (mListView == null || mNextListView == null || mAdapter == null
+                || mNextAdapter == null) return;
+        int target = Math.max(0, Math.min(requestedPage,
+                Math.max(0, getPreviewPageCount() - 1)));
+        if (mPageAnimator != null) mPageAnimator.cancel();
+        if (target == mCurrentPreviewPage) {
+            mProgrammaticSnapTarget = -1;
+            return;
+        }
+
+        final int startPage = mCurrentPreviewPage;
+        final float width = Math.max(1, getPreviewWidth());
+        final float direction = getLayoutDirection() == View.LAYOUT_DIRECTION_RTL ? -1f : 1f;
+        configurePage(mListView, mAdapter, startPage);
+        mAdapter.setList(mInfo.contents);
+        configurePage(mNextListView, mNextAdapter, target);
+        mNextAdapter.setList(mInfo.contents);
+        mListView.setTranslationX(0f);
+        mNextListView.setTranslationX(direction * (target - startPage) * width);
+        mNextListView.setVisibility(View.VISIBLE);
+        mProgrammaticSnapTarget = target;
+        showPageIndicator();
+
+        mPageAnimator = ValueAnimator.ofFloat(0f, 1f);
+        mPageAnimator.setDuration(550L);
+        mPageAnimator.setInterpolator(mProgrammaticSnapInterpolator);
+        mPageAnimator.addUpdateListener(animator -> {
+            float fraction = (float) animator.getAnimatedValue();
+            mListView.setTranslationX(direction * (startPage - target) * width * fraction);
+            mNextListView.setTranslationX(direction * (target - startPage) * width
+                    * (1f - fraction));
+        });
+        mPageAnimator.addListener(new AnimatorListenerAdapter() {
+            private boolean mCancelled;
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                mCancelled = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (!mCancelled) {
+                    mCurrentPreviewPage = target;
+                    configurePage(mListView, mAdapter, target);
+                    mAdapter.setList(mInfo.contents);
+                    if (mPageIndicator != null) mPageIndicator.setCurrentPage(target);
+                }
+                mListView.setTranslationX(0f);
+                mNextListView.setTranslationX(0f);
+                mNextListView.setVisibility(View.INVISIBLE);
+                mProgrammaticSnapTarget = -1;
+                removeCallbacks(mHidePageIndicator);
+                postDelayed(mHidePageIndicator, 500L);
+            }
+        });
+        mPageAnimator.start();
+        if (!animate) mPageAnimator.end();
+    }
+
+    @Override
+    public void onDragStart(DropTarget.DragObject dragObject, DragOptions options) {
+        if (!mPageDragging && (mPageAnimator == null || !mPageAnimator.isRunning())) {
+            mOriginalPreviewPage = mCurrentPreviewPage;
+        }
+        mDropAcceptedDuringDrag = false;
+    }
+
+    @Override
+    public void onDragEnd() {
+        // FlexibleFolderIcon keeps originalPage/drop state until the next drag begins. In
+        // particular, Workspace may deliver the final onDragExit during its own drag-end cleanup.
+    }
+
+    @Override
+    public void onDragEnter(ItemInfo dragInfo) {
+        super.onDragEnter(dragInfo);
+        if (isLargeFolder() && acceptDrop(dragInfo)) {
+            snapDesPageForDrag();
+        }
+    }
+
+    @Override
+    public void onDragExit() {
+        if (isLargeFolder() && !mDropAcceptedDuringDrag) {
+            int originalPage = Math.min(mOriginalPreviewPage,
+                    Math.max(0, getPreviewPageCount() - 1));
+            snapToPreviewPage(originalPage, true);
+        }
+        super.onDragExit();
+    }
+
+    private boolean isInPreviewSwipeArea(float x, float y) {
+        Rect bounds = new Rect();
+        getColorOsGroupBounds(bounds);
+        return bounds.contains((int) x, (int) y);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        // BigFolderTouchController starts horizontal paging only for the 2x2 flexible-folder
+        // form. Rectangular extended grids retain their stacked preview behavior.
+        if (!isLargeFolder() || !mInfo.hasGrid2x2()
+                || getPreviewPageCount() <= 1 || mListView == null) {
+            return super.dispatchTouchEvent(event);
+        }
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                if (mPageAnimator != null) mPageAnimator.cancel();
+                mPageDownX = event.getX();
+                mPageDownY = event.getY();
+                mPageDragging = false;
+                mTargetPreviewPage = -1;
+                mDragLowerPage = mCurrentPreviewPage;
+                mDragUpperPage = mCurrentPreviewPage;
+                mOverScrollPage = -1;
+                mOverScrollInput = 0.0f;
+                mOverScrollAmount = 0.0f;
+                if (isInPreviewSwipeArea(mPageDownX, mPageDownY)) {
+                    // OplusWorkspace#setMBigFolderIntercept keeps MOVE events routed to the
+                    // flexible folder. AOSP Workspace has no equivalent flag, so claim this
+                    // gesture stream at its source and decide horizontal-vs-click locally.
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (!isInPreviewSwipeArea(mPageDownX, mPageDownY)) break;
+                float dx = event.getX() - mPageDownX;
+                float dy = event.getY() - mPageDownY;
+                if (!mPageDragging && Math.abs(dx) > Math.abs(dy)
+                        && Math.abs(dx) >= ViewConfiguration.get(getContext())
+                                .getScaledPagingTouchSlop()) {
+                    mPageDragging = true;
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                    MotionEvent cancel = MotionEvent.obtain(event);
+                    cancel.setAction(MotionEvent.ACTION_CANCEL);
+                    super.dispatchTouchEvent(cancel);
+                    cancel.recycle();
+                    showPageIndicator();
+                }
+                if (mPageDragging) {
+                    updatePageDrag(dx);
+                    return true;
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if (mPageDragging) {
+                    float distance = event.getX() - mPageDownX;
+                    float snapThreshold = getResources().getDisplayMetrics().density * 20.0f;
+                    finishPageDrag(mTargetPreviewPage >= 0
+                            && Math.abs(distance) > snapThreshold);
+                    getParent().requestDisallowInterceptTouchEvent(false);
+                    return true;
+                }
+                getParent().requestDisallowInterceptTouchEvent(false);
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                if (mPageDragging) {
+                    finishPageDrag(false);
+                    getParent().requestDisallowInterceptTouchEvent(false);
+                    return true;
+                }
+                getParent().requestDisallowInterceptTouchEvent(false);
+                break;
+            default:
+                break;
+        }
+        return super.dispatchTouchEvent(event);
+    }
+
+    private void updatePageDrag(float distance) {
+        boolean rtl = getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+        float width = Math.max(1, getPreviewWidth());
+        int lastPage = Math.max(0, getPreviewPageCount() - 1);
+        float pagePosition = mCurrentPreviewPage
+                + ((rtl ? distance : -distance) / width);
+        if (pagePosition < 0.0f || pagePosition > lastPage) {
+            int boundaryPage = pagePosition < 0.0f ? 0 : lastPage;
+            float directionSign = rtl ? 1.0f : -1.0f;
+            float distanceAtBoundary = ((boundaryPage - mCurrentPreviewPage) * width)
+                    / directionSign;
+            float overScrollInput = distance - distanceAtBoundary;
+            float delta = overScrollInput - mOverScrollInput;
+            // Exact ColorOS BigFolderTouchController.Companion#calcRealOverScrollDist:
+            // each input delta is reduced by both rigidity 3 and the already-consumed
+            // fraction of the preview width.
+            mOverScrollAmount += ((1.0f - (Math.abs(mOverScrollAmount) / width))
+                    * delta) / 3.0f;
+            mOverScrollInput = overScrollInput;
+            mOverScrollPage = boundaryPage;
+            mTargetPreviewPage = -1;
+            if (mDragLowerPage != boundaryPage) {
+                mDragLowerPage = boundaryPage;
+                configurePage(mListView, mAdapter, boundaryPage);
+                mAdapter.setList(mInfo.contents);
+            }
+            mDragUpperPage = boundaryPage;
+            mNextListView.setVisibility(View.INVISIBLE);
+            mListView.setTranslationX(mOverScrollAmount);
+            return;
+        }
+
+        mOverScrollPage = -1;
+        mOverScrollInput = 0.0f;
+        mOverScrollAmount = 0.0f;
+        int lowerPage = Math.max(0, Math.min(lastPage, (int) Math.floor(pagePosition)));
+        int upperPage = Math.max(0, Math.min(lastPage, (int) Math.ceil(pagePosition)));
+        if (mDragLowerPage != lowerPage) {
+            mDragLowerPage = lowerPage;
+            configurePage(mListView, mAdapter, lowerPage);
+            mAdapter.setList(mInfo.contents);
+        }
+        if (upperPage != lowerPage) {
+            if (mDragUpperPage != upperPage) {
+                mDragUpperPage = upperPage;
+                configurePage(mNextListView, mNextAdapter, upperPage);
+                mNextAdapter.setList(mInfo.contents);
+            }
+            mNextListView.setVisibility(View.VISIBLE);
+        } else {
+            mDragUpperPage = lowerPage;
+            mNextListView.setVisibility(View.INVISIBLE);
+        }
+        float layoutDirection = rtl ? -1.0f : 1.0f;
+        mListView.setTranslationX(layoutDirection * (lowerPage - pagePosition) * width);
+        if (upperPage != lowerPage) {
+            mNextListView.setTranslationX(
+                    layoutDirection * (upperPage - pagePosition) * width);
+        }
+        if (pagePosition > mCurrentPreviewPage) {
+            mTargetPreviewPage = upperPage;
+        } else if (pagePosition < mCurrentPreviewPage) {
+            mTargetPreviewPage = lowerPage;
+        } else {
+            mTargetPreviewPage = mCurrentPreviewPage;
+        }
+    }
+
+    private void finishPageDrag(boolean commit) {
+        mPageDragging = false;
+        final boolean overScroll = mOverScrollPage >= 0;
+        final int target = overScroll ? mOverScrollPage
+                : (commit && mTargetPreviewPage >= 0
+                        ? mTargetPreviewPage : mCurrentPreviewPage);
+        final float currentStart = mListView.getTranslationX();
+        final float nextStart = mNextListView.getTranslationX();
+        boolean rtl = getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+        float width = Math.max(1, getPreviewWidth());
+        float layoutDirection = rtl ? -1.0f : 1.0f;
+        final float currentEnd = overScroll ? 0.0f
+                : layoutDirection * (mDragLowerPage - target) * width;
+        final float nextEnd = overScroll ? nextStart
+                : layoutDirection * (mDragUpperPage - target) * width;
+        mPageAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
+        mPageAnimator.setDuration(overScroll ? 400L : 150L);
+        mPageAnimator.setInterpolator(overScroll
+                ? mPageIndicatorInterpolator : com.android.launcher3.anim.Interpolators.DEACCEL_2);
+        mPageAnimator.addUpdateListener(animator -> {
+            float fraction = (float) animator.getAnimatedValue();
+            mListView.setTranslationX(currentStart + ((currentEnd - currentStart) * fraction));
+            if (!overScroll && mDragUpperPage != mDragLowerPage) {
+                mNextListView.setTranslationX(nextStart + ((nextEnd - nextStart) * fraction));
+            }
+        });
+        mPageAnimator.addListener(new AnimatorListenerAdapter() {
+            private boolean mCancelled;
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                mCancelled = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (!mCancelled) {
+                    mCurrentPreviewPage = target;
+                    configurePage(mListView, mAdapter, mCurrentPreviewPage);
+                    mAdapter.setList(mInfo.contents);
+                    mPageIndicator.setCurrentPage(mCurrentPreviewPage);
+                }
+                mListView.setTranslationX(0.0f);
+                mNextListView.setTranslationX(0.0f);
+                mNextListView.setVisibility(View.INVISIBLE);
+                mTargetPreviewPage = -1;
+                mOverScrollPage = -1;
+                mOverScrollInput = 0.0f;
+                mOverScrollAmount = 0.0f;
+                removeCallbacks(mHidePageIndicator);
+                postDelayed(mHidePageIndicator, 500L);
+            }
+        });
+        mPageAnimator.start();
+    }
+
+    private void showPageIndicator() {
+        removeCallbacks(mHidePageIndicator);
+        mPageIndicator.setPageCount(getPreviewPageCount());
+        mPageIndicator.setCurrentPage(mCurrentPreviewPage);
+        mPageIndicator.setVisibility(View.VISIBLE);
+        mPageIndicator.animate().cancel();
+        mPageIndicator.animate().alpha(1.0f).setStartDelay(67L).setDuration(350L)
+                .setInterpolator(mPageIndicatorInterpolator).start();
+        getFolderName().animate().cancel();
+        getFolderName().animate().alpha(0.0f).setStartDelay(0L).setDuration(300L)
+                .setInterpolator(mPageIndicatorInterpolator).start();
+    }
+
+    private void hidePageIndicator() {
+        if (mPageDragging) return;
+        mPageIndicator.animate().cancel();
+        mPageIndicator.animate().alpha(0.0f).setStartDelay(0L).setDuration(300L)
+                .setInterpolator(mPageIndicatorInterpolator).start();
+        getFolderName().animate().cancel();
+        getFolderName().animate().alpha(1.0f).setStartDelay(67L).setDuration(350L)
+                .setInterpolator(mPageIndicatorInterpolator).start();
     }
 
     private void onFolderLongClick() {
@@ -366,6 +876,16 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         int spanX = isLargeFolder ? 1 : 2;
         if (!isLargeFolder) {
             spanY = 2;
+            // FolderManager#convertFolder preserves an existing type and otherwise chooses
+            // nine-grid (option 8) before beginning the conversion animation.
+            int type = mInfo.hasOption(ColorOsFolderStyleView.STYLE_NINE_GRID)
+                    ? ColorOsFolderStyleView.STYLE_NINE_GRID
+                    : mInfo.hasOption(ColorOsFolderStyleView.STYLE_FOUR_GRID)
+                            ? ColorOsFolderStyleView.STYLE_FOUR_GRID
+                            : mInfo.hasOption(ColorOsFolderStyleView.STYLE_HIERARCHICAL)
+                                    ? ColorOsFolderStyleView.STYLE_HIERARCHICAL
+                                    : ColorOsFolderStyleView.STYLE_NINE_GRID;
+            setBigFolderType(type);
         }
         this.mSwitcher.switchLargeFolder(this.mActivity, this, spanX, spanY);
     }
@@ -450,17 +970,35 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     public boolean computeColorOsDropLocation(DragView dragView, int contentIndex, Rect to) {
         if (mListView == null || mAdapter == null || mAdapter.getMaxSize() < 1
                 || dragView == null || mActivity == null) return false;
-        int maxPreviewSlots = mAdapter.getMaxSize();
-        int slot = Math.min(Math.max(0, contentIndex), maxPreviewSlots - 1);
-        int[] coordinate = mListView.getCoordinateXY(slot);
+        HxyLargeFolderListView destinationList = mProgrammaticSnapTarget >= 0
+                ? mNextListView : mListView;
+        HxyLargeFolderAdapter destinationAdapter = mProgrammaticSnapTarget >= 0
+                ? mNextAdapter : mAdapter;
+        int maxPreviewSlots = destinationAdapter.getMaxSize();
+        int pageOffset = destinationAdapter.getPageOffset();
+        int localIndex = contentIndex - pageOffset;
+        int postDropItemCount = mInfo.contents.size() - pageOffset + 1;
+        int firstStackedIndex = maxPreviewSlots - 1;
+        boolean hasOverflowStack = postDropItemCount > maxPreviewSlots;
+        int stackIndex = -1;
+        int slot;
+        if (localIndex < 0 || localIndex >= firstStackedIndex + 4) {
+            slot = maxPreviewSlots - 1;
+            stackIndex = 3;
+        } else if (hasOverflowStack && localIndex >= firstStackedIndex) {
+            slot = maxPreviewSlots - 1;
+            stackIndex = Math.min(3, localIndex - firstStackedIndex);
+        } else {
+            slot = Math.min(Math.max(0, localIndex), maxPreviewSlots - 1);
+        }
+        int[] coordinate = destinationList.getCoordinateXY(slot);
         Rect groupBounds = new Rect();
         float workspaceScale = mActivity.getDragLayer()
                 .getDescendantRectRelativeToSelf(this, groupBounds);
-        int renderedSize = mListView.getRenderedChildSize(slot);
+        int renderedSize = destinationList.getRenderedChildSize(slot);
         // The final preview slot becomes OPPO's 2x2 overflow stack. Animate to the same
         // sub-drawable rendered inside that cell, rather than into the whole stack.
-        if (mInfo.contents.size() > maxPreviewSlots && contentIndex >= maxPreviewSlots - 1) {
-            int stackIndex = Math.min(3, contentIndex - (maxPreviewSlots - 1));
+        if (stackIndex >= 0) {
             int stackGap = HxyLargeFolderProxy.getFolderIconOutSpace(getContext());
             int stackIconSize = Math.max(1, (renderedSize - stackGap) / 2);
             coordinate[0] += (stackIndex % 2) * (stackIconSize + stackGap);
@@ -469,9 +1007,9 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         }
         int targetSize = Math.round(renderedSize * workspaceScale);
         int desiredLeft = groupBounds.left
-                + Math.round((mListView.getLeft() + coordinate[0]) * workspaceScale);
+                + Math.round((destinationList.getLeft() + coordinate[0]) * workspaceScale);
         int desiredTop = groupBounds.top
-                + Math.round((mListView.getTop() + coordinate[1]) * workspaceScale);
+                + Math.round((destinationList.getTop() + coordinate[1]) * workspaceScale);
         int centerOffsetX = Math.round((dragView.getMeasuredWidth() - targetSize) / 2f);
         int centerOffsetY = Math.round((dragView.getMeasuredHeight() - targetSize) / 2f);
         to.set(desiredLeft - centerOffsetX, desiredTop - centerOffsetY,
@@ -486,6 +1024,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     public void beginColorOsDropAnimation() {
+        mDropAcceptedDuringDrag = true;
         mColorOsDropAnimationRunning = true;
     }
 

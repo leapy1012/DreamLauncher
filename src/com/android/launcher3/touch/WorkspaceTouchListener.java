@@ -49,9 +49,6 @@ import android.os.Vibrator;
 import android.content.Context;
 
 import static com.android.launcher3.LauncherState.SPRING_LOADED;
-import android.widget.Toast;
-import com.android.launcher3.R;
-import com.android.launcher3.LauncherPrefs;
 
 import android.content.Intent;
 import android.provider.Settings;
@@ -233,9 +230,6 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
         if (mLongPressState == STATE_REQUESTED) {
             TestLogging.recordEvent(TestProtocol.SEQUENCE_MAIN, "Workspace.longPress");
             if (canHandleLongPress()) {
-                if (!mLauncher.getSharedPrefs().getBoolean(LauncherPrefs.WORKSPACE_LAYOUT_DOCK, false)) {
-                    Toast.makeText(mLauncher, R.string.shake_device_tips,Toast.LENGTH_SHORT).show();
-                }
                 mLongPressState = STATE_PENDING_PARENT_INFORM;
                 mWorkspace.getParent().requestDisallowInterceptTouchEvent(true);
                   android.util.Log.d("hws", "maybeShowMenu.....");

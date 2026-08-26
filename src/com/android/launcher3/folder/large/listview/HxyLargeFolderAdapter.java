@@ -10,6 +10,7 @@ import java.util.List;
 
 public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemInfo> {
     private int mMaxSize = -1;
+    private int mPageOffset;
 
     public HxyLargeFolderAdapter(Context context) {
         super(context);
@@ -28,16 +29,26 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
         return this.mMaxSize;
     }
 
+    public void setPageOffset(int pageOffset) {
+        mPageOffset = Math.max(0, pageOffset);
+    }
+
+    public int getPageOffset() {
+        return mPageOffset;
+    }
+
     public void setList(List<WorkspaceItemInfo> list) {
         super.setList(list, false);
     }
 
     public int getItemCount() {
-        int i = this.mMaxSize;
-        if (i <= 0 || i >= super.getItemCount()) {
-            return super.getItemCount();
-        }
-        return this.mMaxSize;
+        int remaining = Math.max(0, super.getItemCount() - mPageOffset);
+        return mMaxSize <= 0 ? remaining : Math.min(mMaxSize, remaining);
+    }
+
+    @Override
+    public WorkspaceItemInfo getItem(int position) {
+        return super.getItem(position + mPageOffset);
     }
 
     public int getItemLayoutID() {
@@ -49,10 +60,8 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
     }
 
     public boolean isCountOut(int position) {
-        int i = this.mMaxSize;
-        // Four apps fill the four large slots. Starting with the fifth app,
-        // slot four represents a stack containing items 4..7.
-        return i > 0 && super.getItemCount() > i && position == i - 1;
+        int remaining = Math.max(0, super.getItemCount() - mPageOffset);
+        return mMaxSize > 0 && remaining > mMaxSize && position == mMaxSize - 1;
     }
 
     public static class IVM extends BasePageLinearAdapter.ItemViewModel<WorkspaceItemInfo> {
@@ -73,7 +82,9 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
 
         public void bindTo(WorkspaceItemInfo data, int position) {
             this.mPosition = position;
-            this.mIconView.bindTo(data, position, isCountOut(position), getList());
+            HxyLargeFolderAdapter adapter = (HxyLargeFolderAdapter) getAdapter();
+            this.mIconView.bindTo(data, position + adapter.getPageOffset(),
+                    isCountOut(position), getList());
         }
 
         private boolean isCountOut(int position) {

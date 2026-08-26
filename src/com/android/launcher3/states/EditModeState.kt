@@ -54,6 +54,14 @@ class EditModeState(id: Int) : LauncherState(id, StatsLogManager.LAUNCHER_STATE_
         return 0f
     }
 
+    override fun getVisibleElements(launcher: Launcher): Int {
+        // OPPO's ToggleBarState and PagePreviewState expose only their own toolbar element
+        // bits (TOGGLE_TOOLBAR_MAIN / TOGGLE_TOOLBAR_BACK_OPS). Neither state exposes AOSP's
+        // hotseat, workspace page indicator, or vertical swipe/search indicator. Those toolbar
+        // views live in our edit overlay, so no AOSP-managed launcher element is visible here.
+        return 0
+    }
+
     override fun getWorkspacePageAlphaProvider(launcher: Launcher): PageAlphaProvider {
         val visiblePages = launcher.workspace.visiblePageIndices
         return object : PageAlphaProvider(ACCEL_2) {

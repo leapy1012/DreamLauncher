@@ -329,6 +329,12 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         CellLayoutLayoutParams lp = (CellLayoutLayoutParams) getLayoutParams();
         CellLayout cl = (CellLayout) getParent().getParent();
         mBackground.animateToAccept(cl, lp.getCellX(), lp.getCellY());
+        // FlexibleFolderIcon returns here for an extended-grid folder (or an extended-grid
+        // dragged item). Unlike a 1x1 folder, a big folder must stay on its workspace preview
+        // and snap that preview instead of spring-opening after the 800 ms hover delay.
+        if (mInfo.hasExtendedGrid() || dragInfo.spanX > 1 || dragInfo.spanY > 1) {
+            return;
+        }
         mOpenAlarm.setOnAlarmListener(mOnOpenListener);
         if (SPRING_LOADING_ENABLED &&
                 ((dragInfo instanceof WorkspaceItemFactory)
@@ -495,15 +501,12 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
 
         largeFolder.beginColorOsDropAnimation();
         mInfo.add(item, contentIndex, true);
-        int previewSlot = largeFolder.getColorOsDropPreviewSlot(contentIndex);
-        largeFolder.hideLargePreviewItem(previewSlot);
         mFolder.hideItem(item);
 
         float finalScaleX = colorOsDestination.width() / (float) animateView.getMeasuredWidth();
         float finalScaleY = colorOsDestination.height() / (float) animateView.getMeasuredHeight();
         Runnable onComplete = () -> {
             largeFolder.finishColorOsDropAnimation();
-            largeFolder.showLargePreviewItem(previewSlot);
             mFolder.showItem(item);
         };
 
@@ -946,6 +949,14 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
 
     public void onFolderClose(int currentPage) {
         mPreviewItemManager.onFolderClose(currentPage);
+    }
+
+    /**
+     * Returns the page that the expanded folder should show when opened from this icon.
+     * Standard folders always open on their first page.
+     */
+    public int getOpenFolderPage(int maxItemsPerPage) {
+        return 0;
     }
 
     @Override

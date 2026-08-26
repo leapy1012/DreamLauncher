@@ -9,9 +9,12 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
+import com.android.launcher3.Launcher;
 import com.android.launcher3.icons.BitmapInfo;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.big.HxyBubbleTextView;
+import com.android.launcher3.dot.DotInfo;
+import com.android.launcher3.dot.FolderDotInfo;
 import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 import com.android.launcher3.folder.large.HxyLargeFolderUtils;
 import java.util.ArrayList;
@@ -55,6 +58,7 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         for (int i = 0; i < this.mDrawableList.size(); i++) {
             this.mDrawableList.get(i).draw(canvas);
         }
+        drawDotIfNecessary(canvas);
     }
 
     public void setCoordinateXY(int x, int y) {
@@ -119,8 +123,24 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
                 this.mDrawableList.add(getDrawable(getContext(), data, size));
             }
             bindIcon();
+            applyPreviewDotInfo(getPreviewDotInfo(position, isCountOut, list));
             invalidate();
         }
+    }
+
+    private DotInfo getPreviewDotInfo(int position, boolean isCountOut,
+            List<WorkspaceItemInfo> list) {
+        Launcher launcher = Launcher.getLauncher(getContext());
+        if (!isCountOut) {
+            return list != null && position >= 0 && position < list.size()
+                    ? launcher.getDotInfoForItem(list.get(position)) : null;
+        }
+        FolderDotInfo result = new FolderDotInfo();
+        // OPPO aggregates backward from the last item through the first stacked item.
+        for (int index = list == null ? -1 : list.size() - 1; index >= position; index--) {
+            result.addDotInfo(launcher.getDotInfoForItem(list.get(index)));
+        }
+        return result.hasDot() ? result : null;
     }
 
     private void bindIcon() {

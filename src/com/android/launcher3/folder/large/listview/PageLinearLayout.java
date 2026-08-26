@@ -250,7 +250,13 @@ public class PageLinearLayout extends ViewGroup {
     }
 
     private int getGridChildLeft(int index, int childWidth) {
-        return (this.mHorizontalSpace + childWidth) * getColumnIndex(index);
+        int column = getColumnIndex(index);
+        if (isGrid() && getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
+            // OplusClippedFolderIconLayoutRule#calculateRowAndCol delegates to
+            // CellLayoutHelper.invertCellX for every extended-grid preview item.
+            column = this.mSpanCount - column - 1;
+        }
+        return (this.mHorizontalSpace + childWidth) * column;
     }
 
     public void onChildLayout(View child, int left, int top) {

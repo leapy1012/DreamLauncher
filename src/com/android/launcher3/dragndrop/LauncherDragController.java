@@ -202,6 +202,15 @@ public class LauncherDragController extends DragController<Launcher> {
     protected void endDrag() {
         super.endDrag();
         mFlingToDeleteHelper.releaseVelocityTracker();
+        // Both accepted and cancelled edit-mode drags can leave transient AOSP drag properties
+        // on the workspace and hotseat even though the logical state never changed. In
+        // particular, the hotseat alpha may return to one and overlap ColorOS' page
+        // preview/actions. exitDrag() only handles rejected drops, so normalize at this common
+        // cleanup point and reapply the stable edit state after every edit-overlay drag.
+        if (mActivity.getDragLayer().findViewById(R.id.edit_mode_container) != null
+                && mActivity.isInState(EDIT_MODE)) {
+            mActivity.getStateManager().reapplyState(true);
+        }
     }
 
     @Override

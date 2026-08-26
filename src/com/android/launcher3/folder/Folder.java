@@ -757,7 +757,9 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
      * is played.
      */
     public void animateOpen() {
-        animateOpen(mInfo.contents, 0, true);
+        int pageNo = mFolderIcon == null ? 0
+                : mFolderIcon.getOpenFolderPage(mContent.itemsPerPage());
+        animateOpen(mInfo.contents, pageNo, true);
     }
 
     /**
@@ -907,6 +909,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         if (animate) {
             animateClosed();
         } else {
+            // Oplus' non-animated close path resets launcher-content visibility before removing
+            // the folder. This is required when the system animator scale is 0: opening has
+            // already hidden Workspace, while AbstractFloatingView suppresses the close animator.
+            HxyFolderAnimationManager.resetLauncherContentAfterClose(mLauncher);
             closeComplete(false);
             post(this::announceAccessibilityChanges);
         }

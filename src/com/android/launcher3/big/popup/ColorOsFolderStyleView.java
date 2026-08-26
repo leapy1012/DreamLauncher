@@ -116,8 +116,6 @@ public final class ColorOsFolderStyleView extends LinearLayout {
 
     private void select(int index) {
         if (index == mSelectedIndex) {
-            mItems[index].setSelected(false);
-            mIcons[index].setSelected(false);
             return;
         }
         int selectedFlag = index == 0 ? STYLE_NINE_GRID

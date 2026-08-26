@@ -136,9 +136,16 @@ public class HxyLargeFolderListView extends PageLinearLayout {
     private int getHighlightLeft(int index) {
         int step = mChildSize + mHorizontalGap;
         int column;
-        if (index == 0) column = 0;
-        else if (index <= 2) column = 2;
-        else column = index - 3;
+        boolean rtl = getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+        // Exact OplusClippedFolderIconLayoutRule highlight mapping. Its synthetic
+        // grid index is index + {0,1,3,3,3,3} in LTR and
+        // index + {1,1,3,3,3,3} in RTL, then invertCellX is applied.
+        int syntheticIndex;
+        if (index == 0) syntheticIndex = rtl ? 1 : 0;
+        else if (index == 1) syntheticIndex = 2;
+        else syntheticIndex = index + 3;
+        column = syntheticIndex % mPreviewColumns;
+        if (rtl) column = mPreviewColumns - column - 1;
         return getPaddingLeft() + (column * step);
     }
 

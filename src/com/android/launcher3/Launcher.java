@@ -646,7 +646,10 @@ public class Launcher extends StatefulActivity<LauncherState>
         mScrimView.setRenderEffect(null);
         if (mFolderScrimApplied) {
             mScrimView.setBackgroundColor(mFolderScrimPreviousColor);
-            getHxyGroupAnimTool().getWallpaperBg().setAlpha(1f);
+            // OplusDragLayer#hideGaussianBlurViewForFolder(false, ...) resets wallpaper depth
+            // to the current LauncherState. NORMAL has no folder blur, so keep this legacy
+            // blurred snapshot hidden after an immediate (animator-scale 0) close.
+            getHxyGroupAnimTool().getWallpaperBg().setAlpha(0f);
             mFolderScrimApplied = false;
         }
     }

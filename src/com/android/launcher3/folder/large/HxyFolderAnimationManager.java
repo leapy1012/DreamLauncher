@@ -92,6 +92,15 @@ public class HxyFolderAnimationManager {
         float initialAlpha;
         float finalAlpha;
         float from;
+        // FolderOpenAnimHelper#snapToTargetIfNeed runs at the start of ColorOS's
+        // children-animator construction. The earlier Folder#animateOpen selection can be
+        // displaced while pages are bound, so repeat the decoded immediate snap here.
+        if (this.mIsOpening) {
+            int targetPage = this.mFolderIcon.getOpenFolderPage(this.mContent.itemsPerPage());
+            if (targetPage != 0) {
+                this.mContent.snapToPageImmediately(targetPage);
+            }
+        }
         BaseDragLayer.LayoutParams lp = (BaseDragLayer.LayoutParams) this.mFolder.getLayoutParams();
         ClippedFolderIconLayoutRule rule = this.mFolderIcon.getLayoutRule();
         boolean isOnFirstPage = this.mFolder.mContent.getCurrentPage() == 0;
@@ -125,7 +134,6 @@ public class HxyFolderAnimationManager {
         float yDistance = folderIconPos.exactCenterY() - contentPos.exactCenterY();
         AnimatorSet a = new AnimatorSet();
         Animator t = getAnimator((View) this.mFolder, View.TRANSLATION_X, xDistance, 0.0f);
-        call.accept(t);
         play(a, t);
         play(a, getAnimator((View) this.mFolder, View.TRANSLATION_Y, yDistance, 0.0f));
         if (!this.mLauncher.isInState(LauncherState.OVERVIEW)) {
@@ -197,8 +205,21 @@ public class HxyFolderAnimationManager {
         int midDuration = this.mDuration / 2;
         play(a2, getAnimator((View) this.mFolder, View.TRANSLATION_Z, -this.mFolder.getElevation(), 0.0f), this.mIsOpening ? (long) midDuration : 0, midDuration);
         a2.addListener(new AnimatorListenerAdapter() {
-            public void onAnimationEnd(Animator animation) {
-                super.onAnimationEnd(animation);
+            private boolean mFinalStateApplied;
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                // Oplus FolderAnimUtil treats cancellation as completion and forces every
+                // launcher-content property to its terminal value. Without this, an interrupted
+                // close can leave Workspace at alpha 0 and scale 0.92 indefinitely.
+                applyFinalState();
+            }
+
+            private void applyFinalState() {
+                if (mFinalStateApplied) {
+                    return;
+                }
+                mFinalStateApplied = true;
                 HxyFolderAnimationManager.this.mFolder.setTranslationX(0.0f);
                 HxyFolderAnimationManager.this.mFolder.setTranslationY(0.0f);
                 HxyFolderAnimationManager.this.mFolder.setTranslationZ(0.0f);
@@ -226,10 +247,13 @@ public class HxyFolderAnimationManager {
                         LauncherState.OVERVIEW) ? 0.0f : launcherContentAlpha);
                 pageIndicator.setScaleX(launcherContentScale);
                 pageIndicator.setScaleY(launcherContentScale);
-                if (HxyFolderAnimationManager.this.mLauncher.isInState(LauncherState.OVERVIEW)) {
-                    HxyFolderAnimationManager.this.mLauncher.getDragLayer().findViewById(R.id.page_indicator).setAlpha(0.0f);
-                }
                 HxyFolderAnimationManager.this.initHardlayer(false);
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                applyFinalState();
             }
 
             public void onAnimationStart(Animator animation) {
@@ -254,6 +278,10 @@ public class HxyFolderAnimationManager {
                 (int) (previewItemOffsetX / scaleRelativeToDragLayer) + radiusDiff,
                 radiusDiff, xDistance, yDistance);
         addNonPreviewItemAnimators(a2, itemsInPreview);
+        // Folder open/close lifecycle callbacks belong to the complete animation. Attaching them
+        // to translationX lets closeComplete remove the Folder while sibling animations are still
+        // restoring Workspace, which is not how Oplus' combined launcher-content animator works.
+        call.accept(a2);
         return a2;
     }
 
@@ -282,6 +310,34 @@ public class HxyFolderAnimationManager {
         this.mLauncher.getDragLayer().findViewById(R.id.page_indicator).setLayerType(View.LAYER_TYPE_NONE, (Paint) null);
     }
 
+    /**
+     * Applies Oplus FolderAnimUtil's terminal launcher-content state for a closed folder.
+     *
+     * AbstractFloatingView deliberately skips close animations when system animator scale is 0.
+     * The opening path has already hidden/scaled launcher content, so the non-animated close path
+     * must apply the same terminal values that Oplus applies from its close animator listener.
+     */
+    public static void resetLauncherContentAfterClose(Launcher launcher) {
+        Workspace workspace = launcher.getWorkspace();
+        View hotseat = launcher.getHotseat();
+        View pageIndicator = launcher.getDragLayer().findViewById(R.id.page_indicator);
+        workspace.setVisibility(View.VISIBLE);
+        workspace.setAlpha(1.0f);
+        workspace.setScaleX(1.0f);
+        workspace.setScaleY(1.0f);
+        workspace.setLayerType(View.LAYER_TYPE_NONE, null);
+        hotseat.setVisibility(View.VISIBLE);
+        hotseat.setAlpha(1.0f);
+        hotseat.setScaleX(1.0f);
+        hotseat.setScaleY(1.0f);
+        hotseat.setLayerType(View.LAYER_TYPE_NONE, null);
+        pageIndicator.setVisibility(View.VISIBLE);
+        pageIndicator.setAlpha(launcher.isInState(LauncherState.OVERVIEW) ? 0.0f : 1.0f);
+        pageIndicator.setScaleX(1.0f);
+        pageIndicator.setScaleY(1.0f);
+        pageIndicator.setLayerType(View.LAYER_TYPE_NONE, null);
+    }
+
     private void addPreviewItemAnimators(AnimatorSet animatorSet, float folderScale,
             int previewItemOffsetX, int previewItemOffsetY,
             float folderTranslationX, float folderTranslationY) {
@@ -302,7 +358,9 @@ public class HxyFolderAnimationManager {
         int numItemsInPreview2 = itemsInPreview2.size();
         int numItemsInFirstPagePreview = isOnFirstPage2 ? numItemsInPreview2 : ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
         TimeInterpolator previewItemInterpolator = getPreviewItemInterpolator();
-        ShortcutAndWidgetContainer cwc = this.mContent.getPageAt(0).getShortcutsAndWidgets();
+        // OplusFolderAnimationManager resolves the container only after its target-page snap.
+        ShortcutAndWidgetContainer cwc =
+                this.mContent.getCurrentCellLayout().getShortcutsAndWidgets();
         int i = 0;
         while (i < numItemsInPreview2) {
             BubbleTextView btv = itemsInPreview2.get(i);

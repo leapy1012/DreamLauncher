@@ -17,3 +17,6 @@ gradlew*
 .DS_Store
 Filter/build
 device_audit
+
+# Local UIAutomator / screenshot regression captures (repo root)
+/cancel17_*

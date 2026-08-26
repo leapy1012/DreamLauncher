@@ -1024,6 +1024,19 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         }
     }
 
+    /** Applies notification data supplied by a preview that can represent several items. */
+    protected void applyPreviewDotInfo(DotInfo dotInfo) {
+        mDotInfo = dotInfo != null && dotInfo.getNotificationCount() > 0 ? dotInfo : null;
+        mDotRenderer = mActivity.getDeviceProfile().mDotRendererWorkSpace;
+        if (mIcon instanceof FastBitmapDrawable) {
+            mDotParams.appColor = ((FastBitmapDrawable) mIcon).getIconColor();
+        }
+        mDotParams.dotColor = Themes.getAttrColor(getContext(), R.attr.notificationDotColor);
+        cancelDotScaleAnim();
+        mDotParams.scale = mDotInfo == null ? 0f : 1f;
+        invalidate();
+    }
+
     private void applayBadgeState(ItemInfo itemInfo) {
         if (mIcon instanceof FastBitmapDrawable) {
             boolean wasDotted = mShowInstallBadge;
