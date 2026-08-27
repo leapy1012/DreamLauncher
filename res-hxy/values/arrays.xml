@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <array name="labels">
+    <string-array name="labels">
         <item>XS</item>
         <item>S</item>
         <item>M</item>
         <item>L</item>
         <item>XL</item>
-    </array>
-
+    </string-array>
 </resources>

@@ -29,5 +29,9 @@
         android:paddingEnd="5dp"
         android:singleLine="true"
         android:text=""
-        android:textColor="#fff" />
+        android:textColor="@android:color/white"
+        android:shadowColor="#80000000"
+        android:shadowDx="0"
+        android:shadowDy="1"
+        android:shadowRadius="2" />
 </RelativeLayout>

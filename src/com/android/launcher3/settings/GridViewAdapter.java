@@ -1,70 +1,73 @@
-
 package com.android.launcher3.settings;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.TextView;
-import com.android.launcher3.R;
-
-import java.util.ArrayList;
-import com.android.launcher3.settings.ThemeActivity.ThemeData;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-public class GridViewAdapter extends BaseAdapter {
-    private Context mContext;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
-    ArrayList<ThemeData> mItemList;
+import com.android.launcher3.R;
+import com.android.launcher3.settings.ThemeActivity.ThemeData;
 
-    private LayoutInflater mInflater;
+import java.util.ArrayList;
+
+public class GridViewAdapter extends RecyclerView.Adapter<GridViewAdapter.ThemeViewHolder> {
+    private final Context mContext;
+    private final ArrayList<ThemeData> mItemList;
+    private final LayoutInflater mInflater;
+    private OnThemeClickListener mClickListener;
+
+    public interface OnThemeClickListener {
+        void onThemeClick(int position);
+    }
 
     public GridViewAdapter(Context context, ArrayList<ThemeData> items) {
         mContext = context;
         mItemList = items;
-        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mInflater = LayoutInflater.from(context);
+    }
+
+    public void setOnThemeClickListener(OnThemeClickListener listener) {
+        mClickListener = listener;
     }
 
     @Override
-    public int getCount() {
-        if (mItemList != null) {
-            return mItemList.size();
-        }
-        return 0;
+    public int getItemCount() {
+        return mItemList != null ? mItemList.size() : 0;
+    }
+
+    @NonNull
+    @Override
+    public ThemeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = mInflater.inflate(R.layout.theme_item_list, parent, false);
+        return new ThemeViewHolder(view);
     }
 
     @Override
-    public Object getItem(int position) {
-        return position;
-    }
-
-    @Override
-    public long getItemId(int position) {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        View view = null;
+    public void onBindViewHolder(@NonNull ThemeViewHolder holder, int position) {
         ThemeData item = mItemList.get(position);
-        if (convertView == null) {
-            view = mInflater.inflate(R.layout.theme_item_list, parent, false);
-        } else {
-            view = convertView;
-        }
-        bindView(item, view);
-        return view;
+        holder.itemView.setSelected(item.selected);
+        holder.preview.setImageDrawable(item.preview);
+        holder.title.setText(item.themeTitle);
+        holder.itemView.setOnClickListener(v -> {
+            if (mClickListener != null) {
+                mClickListener.onThemeClick(holder.getBindingAdapterPosition());
+            }
+        });
     }
 
-    private void bindView(ThemeData item, View view) {
-         ImageView imageView =
-         (ImageView)view.findViewById(R.id.theme_preview);
-         TextView textView = (TextView) view.findViewById(R.id.theme_title);
-            imageView.setImageDrawable(item.preview);
-         textView.setText(item.themeTitle);
+    static class ThemeViewHolder extends RecyclerView.ViewHolder {
+        final ImageView preview;
+        final TextView title;
+
+        ThemeViewHolder(@NonNull View itemView) {
+            super(itemView);
+            preview = itemView.findViewById(R.id.theme_preview);
+            title = itemView.findViewById(R.id.theme_title);
+        }
     }
 }

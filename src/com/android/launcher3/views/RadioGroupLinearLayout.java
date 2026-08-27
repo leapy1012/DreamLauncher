@@ -111,7 +111,7 @@ public class RadioGroupLinearLayout extends LinearLayout {
                 itemLayout.addView(mTextView);
                 itemLayout.setLayoutParams(params);
                 final int finalIconIndex = iconIndex;
-                icon.setOnClickListener(new View.OnClickListener() {
+                View.OnClickListener clickListener = new View.OnClickListener() {
                     public void onClick(View v) {
                         if (lastCheckedIcon != icon) {
                             if (lastCheckedIcon != null) {
@@ -131,7 +131,9 @@ public class RadioGroupLinearLayout extends LinearLayout {
                             }
                         }
                     }
-                });
+                };
+                icon.setOnClickListener(clickListener);
+                itemLayout.setOnClickListener(clickListener);
                 rowLayout.addView(itemLayout);
                 if (iconIndex == i) {
                     lastCheckedIcon = icon;

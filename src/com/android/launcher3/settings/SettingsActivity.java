@@ -23,18 +23,22 @@ import static com.android.launcher3.states.RotationHelper.ALLOW_ROTATION_PREFERE
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.app.AlertDialog;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
@@ -43,6 +47,7 @@ import androidx.preference.PreferenceFragmentCompat.OnPreferenceStartScreenCallb
 import androidx.preference.PreferenceGroup.PreferencePositionCallback;
 import androidx.preference.PreferenceScreen;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.COUIRecyclerView;
 
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.InvariantDeviceProfile;
@@ -50,6 +55,7 @@ import com.android.launcher3.InvariantDeviceProfile.GridOption;
 import com.android.launcher3.LauncherFiles;
 import com.android.launcher3.LauncherPrefs;
 import com.android.launcher3.R;
+import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.model.WidgetsModel;
@@ -76,6 +82,7 @@ import static com.android.launcher3.LauncherPrefs.WORKSPACE_DOCKED_APP;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_LAYOUT_DOCK;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_ICON_SIZE;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_FILL_CELL;
+// layout lock / home layout picker (fresh)
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_DOUBLE_TAP;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_TEXT_SIZE;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_INSTALL_BEHAVIOR;
@@ -83,7 +90,6 @@ import static com.android.launcher3.LauncherPrefs.WORKSPACE_MEMORY_CLEAN;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_WALLPAPER_SET;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_MINUS;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_PLUS;
-import com.android.launcher3.settings.RoundCornerPreferenceAdapter;
 import java.util.Objects;
 import java.util.Optional;
 import android.os.Process;
@@ -94,14 +100,14 @@ import androidx.preference.PreferenceCategory;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherApplication;
 import com.android.launcher3.model.data.ItemInfo;
-import android.app.ActionBar;
-import android.widget.Toolbar;
-import android.util.TypedValue;
+import com.coui.appcompat.preference.COUIPreferenceFragment;
+import com.coui.appcompat.darkmode.COUIDarkModeUtil;
+import com.coui.appcompat.toolbar.COUIToolbar;
 
 /**
  * Settings activity for Launcher. Currently implements the following setting: Allow rotation
  */
-public class SettingsActivity extends FragmentActivity
+public class SettingsActivity extends AppCompatActivity
         implements OnPreferenceStartFragmentCallback, OnPreferenceStartScreenCallback,
         SharedPreferences.OnSharedPreferenceChangeListener{
 
@@ -131,13 +137,23 @@ public class SettingsActivity extends FragmentActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings_activity);
-        setActionBar(findViewById(R.id.action_bar));
+        SettingsBaseActivity.applySettingsWindowColors(this);
+        View contentParent = findViewById(R.id.content_parent);
+        if (contentParent != null) {
+            contentParent.setBackgroundColor(getColor(R.color.coloros_surface_page));
+            SettingsBaseActivity.bindContentParentInsets(this, contentParent);
+        }
+        SettingsBaseActivity.initDirectAppBar(this);
+        COUIToolbar toolbar = findViewById(R.id.toolbar);
+        if (toolbar != null) {
+            SettingsBaseActivity.setupCouiToolbar(this, toolbar);
+            ActionBar actionBar = getSupportActionBar();
+            if (actionBar != null) {
+                actionBar.setTitle(R.string.settings_button_text);
+            }
+        }
 
         Intent intent = getIntent();
-        if (intent.hasExtra(EXTRA_FRAGMENT) || intent.hasExtra(EXTRA_FRAGMENT_ARGS)
-                || intent.hasExtra(EXTRA_FRAGMENT_ARG_KEY)) {
-            getActionBar().setDisplayHomeAsUpEnabled(true);
-        }
 
         if (savedInstanceState == null) {
             Bundle args = intent.getBundleExtra(EXTRA_FRAGMENT_ARGS);
@@ -158,21 +174,6 @@ public class SettingsActivity extends FragmentActivity
             fm.beginTransaction().replace(R.id.content_frame, f).commit();
         }
 
-        ActionBar actionBar = getActionBar();
-        if (actionBar != null) {
-            android.util.Log.d("liu-db", "setActionBar");
-            actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeButtonEnabled(true);
-            actionBar.setDisplayShowTitleEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.drawable.hxy_ic_back);
-        }
-        Toolbar toolbar = findViewById(R.id.action_bar);
-        if (toolbar != null) {
-            android.util.Log.d("liu-db", "setToolbar");
-            TypedValue typedValue = new TypedValue();
-            getTheme().resolveAttribute(android.R.attr.colorPrimaryDark, typedValue, true);
-            toolbar.setBackgroundColor(typedValue.data);
-        }
     }
 
     /**
@@ -273,6 +274,11 @@ public class SettingsActivity extends FragmentActivity
         return super.onOptionsItemSelected(item);
     }
 
+    /** Binds the preference list to {@link com.google.android.material.appbar.COUIDividerAppBarLayout}. */
+    public void bindToolbarScrollDivider(@NonNull RecyclerView recyclerView) {
+        SettingsBaseActivity.bindCouiDividerAppBar(this, recyclerView);
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -290,7 +296,8 @@ public class SettingsActivity extends FragmentActivity
     /**
      * This fragment shows the launcher preferences.
      */
-    public static class LauncherSettingsFragment extends PreferenceFragmentCompat implements Preference.OnPreferenceClickListener {
+    public static class LauncherSettingsFragment extends COUIPreferenceFragment
+            implements Preference.OnPreferenceClickListener {
 
         private String mHighLightKey;
         private boolean mPreferenceHighlighted = false;
@@ -310,6 +317,7 @@ public class SettingsActivity extends FragmentActivity
         private Preference mIconSizePref;
         private SwitchPreference mLayoutLockPref;
         private SwitchPreference mIconAutofillPref;
+
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             final Bundle args = getArguments();
@@ -469,7 +477,7 @@ public class SettingsActivity extends FragmentActivity
                 }
             }
 
-            new AlertDialog.Builder(getContext())
+            new COUIAlertDialogBuilder(getContext())
                     .setTitle(R.string.tog_title_layout)
                     .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
                         GridOption selected = options.get(which);
@@ -527,26 +535,37 @@ public class SettingsActivity extends FragmentActivity
         }
 
         @Override
-        public void onViewCreated(View view, Bundle savedInstanceState) {
-            super.onViewCreated(view, savedInstanceState);
-            View listView = getListView();
-            final int bottomPadding = listView.getPaddingBottom();
-            listView.setOnApplyWindowInsetsListener((v, insets) -> {
-                v.setPadding(
-                        v.getPaddingLeft(),
-                        v.getPaddingTop(),
-                        v.getPaddingRight(),
-                        bottomPadding + insets.getSystemWindowInsetBottom());
-                return insets.consumeSystemWindowInsets();
-            });
-            // Overriding Text Direction in the Androidx preference library to support RTL
-            view.setTextDirection(View.TEXT_DIRECTION_LOCALE);
+        public RecyclerView onCreateRecyclerView(android.view.LayoutInflater inflater,
+                android.view.ViewGroup parent, Bundle savedInstanceState) {
+            COUIRecyclerView recyclerView = (COUIRecyclerView) inflater.inflate(
+                    com.coui.appcompat.R.layout.coui_preference_percent_recyclerview,
+                    parent, false);
+            recyclerView.setEnablePointerDownAction(false);
+            recyclerView.setOverScrollEnable(true);
+            recyclerView.setClipToPadding(false);
+            recyclerView.setNestedScrollingEnabled(true);
+            recyclerView.setLayoutManager(onCreateLayoutManager());
+            COUIDarkModeUtil.setForceDarkAllow(recyclerView, false);
+            return recyclerView;
         }
 
-        @NonNull
         @Override
-        protected RecyclerView.Adapter onCreateAdapter(@NonNull PreferenceScreen preferenceScreen) {
-            return new RoundCornerPreferenceAdapter(preferenceScreen);
+        public void onViewCreated(View view, Bundle savedInstanceState) {
+            super.onViewCreated(view, savedInstanceState);
+            if (getActivity() instanceof SettingsActivity) {
+                ((SettingsActivity) getActivity()).bindToolbarScrollDivider(getListView());
+            }
+            SettingsBaseActivity.applySettingsWindowColors(
+                    (androidx.appcompat.app.AppCompatActivity) requireActivity());
+            requireActivity().getWindow().setBackgroundDrawableResource(
+                    com.coui.appcompat.R.drawable.coui_window_background_with_card_selector);
+            RecyclerView listView = getListView();
+            if (listView != null) {
+                listView.setClipToPadding(false);
+                SettingsBaseActivity.bindListNavigationInsets(listView);
+            }
+            // Overriding Text Direction in the Androidx preference library to support RTL
+            view.setTextDirection(View.TEXT_DIRECTION_LOCALE);
         }
 
         @Override
@@ -640,7 +659,6 @@ public class SettingsActivity extends FragmentActivity
             super.onResume();
 
             updateDeveloperOption();
-            updateHomeLayoutSummary();
             updateLayoutLockDependentPreferences();
 
             if (isAdded() && !mPreferenceHighlighted) {

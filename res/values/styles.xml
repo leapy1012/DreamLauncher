@@ -204,12 +204,83 @@
     <style name="AppTheme.Dark.DarkMainColor" parent="@style/LauncherTheme.Dark.DarkMainColor" />
     <style name="AppTheme.Dark.DarkText" parent="@style/LauncherTheme.Dark.DarkText" />
 
-    <style name="HomeSettings.Theme" parent="@style/Theme.COUI.Main.Light">
-        <item name="android:navigationBarColor">?android:colorPrimaryDark</item>
-        <item name="android:windowActionBar">true</item>
-        <item name="android:windowNoTitle">true</item>
-        <item name="preferenceTheme">@style/SettingsPreferenceTheme</item>
+    <!-- Same host pattern as MtkSettings: Theme.COUI.Main.Light/Dark.
+         Main.* carries blue accents — do not override to green. -->
+    <style name="OplusSupportBaseTheme" parent="@style/Theme.COUI.Main.Light">
+        <item name="colorOnSurface">?attr/couiColorPrimaryNeutral</item>
+        <item name="android:textColorPrimary">?attr/couiColorLabelPrimary</item>
+        <item name="android:textColorSecondary">?attr/couiColorLabelSecondary</item>
     </style>
+
+    <style name="OplusSupportAppNoTitleTheme" parent="@style/OplusSupportBaseTheme">
+        <item name="android:textDirection">locale</item>
+        <item name="android:textAlignment">gravity</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="enableFollowSystemForceDarkRank">false</item>
+        <item name="android:isLightTheme">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="OplusSupportAppNoTitleTheme.PreferenceFragment"
+            parent="@style/OplusSupportAppNoTitleTheme">
+        <item name="android:windowDisablePreview">true</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay.COUITheme.FullScreen</item>
+    </style>
+
+    <style name="OplusSupportAppNoTitleTheme.PreferenceFragment.LauncherModeSetting"
+            parent="@style/OplusSupportAppNoTitleTheme.PreferenceFragment">
+        <item name="paddingSize">small</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay.COUITheme.FullScreen.BottomBar</item>
+    </style>
+
+    <style name="OplusSupportAppNoTitleTheme.PreferenceFragment.LauncherSettings"
+            parent="@style/OplusSupportAppNoTitleTheme.PreferenceFragment">
+        <item name="paddingSize">small</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay.COUITheme.FullScreen.OnlyTitleBar</item>
+        <item name="windowPreviewType">0</item>
+    </style>
+
+    <!-- Secondary-page toolbar: Widget.COUI.Toolbar + SecondTitle (not CoreToolbar / AppCompat). -->
+    <style name="HomeSettings.Toolbar" parent="@style/Widget.COUI.Toolbar">
+        <item name="android:paddingTop">@dimen/toolbar_top_padding</item>
+        <item name="android:paddingBottom">@dimen/toolbar_bottom_padding</item>
+        <item name="android:layout_height">@dimen/toolbar_min_height</item>
+        <item name="android:minHeight">@dimen/toolbar_min_height</item>
+        <item name="supportTitleTextAppearance">@style/textAppearanceSecondTitle</item>
+    </style>
+
+    <style name="HomeSettings.Theme"
+            parent="@style/OplusSupportAppNoTitleTheme.PreferenceFragment.LauncherSettings">
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@color/coloros_surface_page</item>
+        <item name="android:windowBackground">@color/coloros_surface_page</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:windowLightStatusBar">@bool/home_settings_light_status_bar</item>
+        <item name="android:windowLightNavigationBar">@bool/home_settings_light_status_bar</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:homeAsUpIndicator">@drawable/coui_back_arrow</item>
+        <item name="homeAsUpIndicator">@drawable/coui_back_arrow</item>
+        <item name="toolbarStyle">@style/HomeSettings.Toolbar</item>
+        <item name="toolbarNavigationButtonStyle">@style/Widget.COUI.Toolbar.Button.Navigation</item>
+        <item name="couiSwitchStyle">@style/COUISwitchStyle.Light</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay.COUITheme.FullScreen.OnlyTitleBar</item>
+    </style>
+
+    <!-- ColorOS aliases for COUI preference themes used by HomeSettings. -->
+    <style name="PreferenceThemeOverlay.COUITheme.FullScreen"
+            parent="@style/PreferenceThemeOverlay.COUITheme" />
+
+    <style name="PreferenceThemeOverlay.COUITheme.FullScreen.BottomBar"
+            parent="@style/PreferenceThemeOverlay.COUITheme.FullScreen" />
+
+    <style name="PreferenceThemeOverlay.COUITheme.FullScreen.OnlyTitleBar"
+            parent="@style/PreferenceThemeOverlay.COUITheme.FullScreen" />
 
     <style name="HomeSettings.PreferenceTheme" parent="@style/PreferenceThemeOverlay.v14.Material">
         <item name="preferenceFragmentCompatStyle">@style/HomeSettings.FragmentCompatStyle</item>

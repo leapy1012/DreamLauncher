@@ -1,102 +1,234 @@
 package com.android.launcher3.big;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.android.launcher3.R;
 import com.android.launcher3.customer.table.CustomTable;
-import java.util.ArrayList;
+import com.android.launcher3.customer.tools.ImageUtils;
+
 import java.util.List;
 
 public class IconSizeSettingAdapter extends RecyclerView.Adapter<IconSizeSettingAdapter.MyViewHolder> {
-    Boolean firstTag = false;
-    List<ViewGroup> list = new ArrayList();
-    private Context mContext;
-    private List<CustomTable> mDatas;
-    private ViewGroup mViewGroup;
+    private static final int[] SHAPE_MASKS = {
+            R.drawable.icon_mask_default,
+            R.drawable.icon_mask_neighbourhood,
+            R.drawable.icon_mask_droplet,
+            R.drawable.icon_mask_circle,
+    };
+    private static final Object PAYLOAD_SHAPE = new Object();
+    private static final Object PAYLOAD_PROGRESS = new Object();
+
+    private final Context mContext;
+    private final List<CustomTable> mDatas;
+    private RecyclerView mRecyclerView;
     private Float progress = Float.valueOf(-1.0f);
+    private int mShapeIndex;
     private int translationYD;
+    private int mPreviewIconSizePx;
 
     public void setProgress(Float progress2) {
         this.progress = progress2;
-        if (this.mViewGroup != null) {
-            if (this.list.isEmpty()) {
-                for (int i = 0; i < this.mViewGroup.getChildCount(); i++) {
-                    this.list.add((ViewGroup) this.mViewGroup.getChildAt(i));
-                }
+        refreshVisibleItems(PAYLOAD_PROGRESS);
+    }
+
+    public void setShapeIndex(int shapeIndex) {
+        if (shapeIndex < 0 || shapeIndex >= SHAPE_MASKS.length || shapeIndex == mShapeIndex) {
+            return;
+        }
+        mShapeIndex = shapeIndex;
+        refreshVisibleItems(PAYLOAD_SHAPE);
+    }
+
+    private void refreshVisibleItems(Object payload) {
+        if (mRecyclerView == null) {
+            return;
+        }
+        boolean reshape = payload == PAYLOAD_SHAPE;
+        for (int i = 0; i < getItemCount(); i++) {
+            RecyclerView.ViewHolder holder = mRecyclerView.findViewHolderForAdapterPosition(i);
+            if (!(holder instanceof MyViewHolder) || i >= mDatas.size()) {
+                continue;
             }
-            for (ViewGroup layout : this.list) {
-                setViewProgress(layout);
+            MyViewHolder vh = (MyViewHolder) holder;
+            if (reshape) {
+                updateIconDrawable(vh, mDatas.get(i));
+            } else {
+                applyProgress(vh);
             }
+        }
+        if (reshape) {
+            mRecyclerView.invalidate();
         }
     }
 
-    public void setViewProgress(ViewGroup layout) {
-        View icon = layout.findViewById(R.id.imageview);
-        View title = layout.findViewById(R.id.textview);
-        if (this.progress.floatValue() != -1.0f) {
-            icon.setPivotY(0.0f);
-            icon.setPivotX((float) this.translationYD);
-            icon.setScaleX((float) ((((double) this.progress.floatValue()) * 0.5d) + 1.0d));
-            icon.setScaleY((float) ((((double) this.progress.floatValue()) * 0.5d) + 1.0d));
-            title.setTranslationY(((float) this.translationYD) * this.progress.floatValue());
-            icon.setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
-            title.setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
+    private void applyProgress(MyViewHolder vh) {
+        if (this.progress.floatValue() == -1.0f) {
+            return;
         }
+        View icon = vh.icon;
+        View title = vh.title;
+        icon.setPivotY(0.0f);
+        icon.setPivotX((float) this.translationYD);
+        float scale = (float) ((((double) this.progress.floatValue()) * 0.5d) + 1.0d);
+        icon.setScaleX(scale);
+        icon.setScaleY(scale);
+        title.setTranslationY(((float) this.translationYD) * this.progress.floatValue());
+    }
+
+    private void updateIconDrawable(MyViewHolder vh, CustomTable item) {
+        vh.icon.setImageDrawable(applyShapeMask(item));
+    }
+
+    private Bitmap toSoftwareBitmap(Bitmap bitmap) {
+        if (bitmap == null) {
+            return null;
+        }
+        if (bitmap.getConfig() == Bitmap.Config.HARDWARE) {
+            return bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        }
+        if (!bitmap.isMutable() && bitmap.getConfig() != Bitmap.Config.ARGB_8888) {
+            return bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        }
+        return bitmap;
+    }
+
+    private Bitmap getSourceBitmap(CustomTable item) {
+        Bitmap source = toSoftwareBitmap(item.iconBitmap);
+        if (source != null && source.getWidth() > 1 && source.getHeight() > 1) {
+            return source;
+        }
+        Drawable drawable = item.icon;
+        if (drawable != null) {
+            return ImageUtils.drawableToBitmap(drawable);
+        }
+        return null;
+    }
+
+    private Bitmap createMaskBitmap(int size) {
+        Drawable maskDrawable = ContextCompat.getDrawable(mContext, SHAPE_MASKS[mShapeIndex]);
+        if (maskDrawable == null) {
+            return null;
+        }
+        maskDrawable = maskDrawable.mutate();
+        Bitmap mask = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(mask);
+        maskDrawable.setBounds(0, 0, size, size);
+        maskDrawable.draw(canvas);
+        return mask;
+    }
+
+    private Drawable applyShapeMask(CustomTable item) {
+        Bitmap source = getSourceBitmap(item);
+        if (source == null) {
+            return item.icon;
+        }
+        int size = Math.max(1, mPreviewIconSizePx);
+        Bitmap scaledSource = source;
+        if (source.getWidth() != size || source.getHeight() != size) {
+            scaledSource = Bitmap.createScaledBitmap(source, size, size, true);
+        }
+        scaledSource = toSoftwareBitmap(scaledSource);
+        Bitmap maskBitmap = createMaskBitmap(size);
+        if (maskBitmap == null) {
+            return new BitmapDrawable(mContext.getResources(), scaledSource);
+        }
+
+        Bitmap result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(result);
+        int layer = canvas.saveLayer(0, 0, size, size, null);
+        canvas.drawBitmap(scaledSource, 0, 0, null);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+        canvas.drawBitmap(maskBitmap, 0, 0, paint);
+        paint.setXfermode(null);
+        canvas.restoreToCount(layer);
+        BitmapDrawable drawable = new BitmapDrawable(mContext.getResources(), result);
+        drawable.setFilterBitmap(true);
+        return drawable;
     }
 
     public IconSizeSettingAdapter(Context context, List<CustomTable> list2) {
         this.mContext = context;
         this.mDatas = list2;
+        this.mPreviewIconSizePx =
+                context.getResources().getDimensionPixelSize(R.dimen.coloros_icon_preview_size);
+    }
+
+    @Override
+    public void onAttachedToRecyclerView(RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        mRecyclerView = recyclerView;
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        if (mRecyclerView == recyclerView) {
+            mRecyclerView = null;
+        }
     }
 
     public MyViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
         View view = LayoutInflater.from(this.mContext).inflate(R.layout.item_icon_size_setting, viewGroup, false);
-        this.mViewGroup = viewGroup;
-        ImageView icon = (ImageView) view.findViewById(R.id.imageview);
-        TextView title = (TextView) view.findViewById(R.id.textview);
-        view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                lambda$onCreateViewHolder$0(view);
-            }
-        });
+        ImageView icon = view.findViewById(R.id.imageview);
+        TextView title = view.findViewById(R.id.textview);
+        view.setOnClickListener(v -> { });
         RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) icon.getLayoutParams();
         RelativeLayout.LayoutParams titleParams = (RelativeLayout.LayoutParams) title.getLayoutParams();
         icon.setLayoutParams(params);
         titleParams.topMargin = params.width + 10;
         title.setLayoutParams(titleParams);
         this.translationYD = (int) (((float) params.width) * 0.5f);
+        this.mPreviewIconSizePx = params.width;
         return new MyViewHolder(view);
     }
 
-    static /* synthetic */ void lambda$onCreateViewHolder$0(View v) {
+    @Override
+    public void onBindViewHolder(MyViewHolder viewHolder, int i, List<Object> payloads) {
+        if (payloads.isEmpty()) {
+            onBindViewHolder(viewHolder, i);
+            return;
+        }
+        if (this.mDatas.isEmpty() || i >= this.mDatas.size()) {
+            return;
+        }
+        CustomTable item = this.mDatas.get(i);
+        for (Object payload : payloads) {
+            if (payload == PAYLOAD_SHAPE) {
+                updateIconDrawable(viewHolder, item);
+            } else if (payload == PAYLOAD_PROGRESS) {
+                applyProgress(viewHolder);
+            }
+        }
     }
 
     public void onBindViewHolder(MyViewHolder viewHolder, int i) {
-        if (this.mDatas.size() > 0) {
-            viewHolder.setIsRecyclable(false);
-            viewHolder.icon.setImageDrawable(this.mDatas.get(i).icon);
-            viewHolder.title.setText(this.mDatas.get(i).title);
-            if (this.firstTag.booleanValue()) {
-                viewHolder.icon.setPivotY(0.0f);
-                viewHolder.icon.setPivotX((float) this.translationYD);
-                viewHolder.icon.setScaleX((float) ((((double) this.progress.floatValue()) * 0.5d) + 1.0d));
-                viewHolder.icon.setScaleY((float) ((((double) this.progress.floatValue()) * 0.5d) + 1.0d));
-                viewHolder.title.setTranslationY(((float) this.translationYD) * this.progress.floatValue());
-                viewHolder.icon.setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
-                viewHolder.title.setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
-            }
-            if (i == this.mDatas.size() - 1) {
-                this.firstTag = false;
-            }
+        if (this.mDatas.isEmpty() || i >= this.mDatas.size()) {
+            return;
         }
+        CustomTable item = this.mDatas.get(i);
+        updateIconDrawable(viewHolder, item);
+        CharSequence title = item.title;
+        if (!title.equals(viewHolder.title.getText())) {
+            viewHolder.title.setText(title);
+        }
+        applyProgress(viewHolder);
     }
 
     public int getItemCount() {
@@ -109,8 +241,8 @@ public class IconSizeSettingAdapter extends RecyclerView.Adapter<IconSizeSetting
 
         public MyViewHolder(View itemView) {
             super(itemView);
-            this.icon = (ImageView) itemView.findViewById(R.id.imageview);
-            this.title = (TextView) itemView.findViewById(R.id.textview);
+            this.icon = itemView.findViewById(R.id.imageview);
+            this.title = itemView.findViewById(R.id.textview);
         }
     }
 }

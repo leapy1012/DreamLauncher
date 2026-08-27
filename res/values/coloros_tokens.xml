@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Framework window attributes call TypedArray.getColor() before views exist, so these
+         aliases must end in concrete color resources rather than another theme attribute. -->
+    <color name="coloros_surface_page">@color/coui_color_background_with_card_light</color>
+    <color name="coloros_surface_card">@color/coui_color_card_background_light</color>
+    <color name="coloros_surface_toolbar">@color/coui_color_background_with_card_light</color>
+    <color name="coloros_surface_pressed">@color/coui_color_card_pressed_light</color>
+    <color name="coloros_surface_subtle">@color/coui_color_container8_light</color>
+    <color name="coloros_accent">@color/coui_color_primary_blue</color>
+    <color name="coloros_divider">@color/coui_color_divider_light</color>
+    <color name="coloros_text_primary">@color/coui_color_label_primary_light</color>
+    <color name="coloros_text_secondary">@color/coui_color_label_secondary_light</color>
+    <color name="coloros_text_tertiary">@color/coui_color_label_tertiary_light</color>
+    <color name="coloros_text_on_accent">@color/coui_color_label_on_color_light</color>
+
+    <!-- Folder colors mirror ColorOS' wallpaper-facing translucent surfaces. The open folder
+         remains visually separate from the opaque settings/card surfaces above. -->
+    <color name="coloros_folder_content_surface">#66E0E0E0</color>
+    <color name="coloros_folder_preview_surface">#80FFFFFF</color>
+    <color name="coloros_folder_surface_stroke">#8CC6C6C6</color>
+    <color name="coloros_folder_title_text">#FFFFFFFF</color>
+    <color name="coloros_folder_title_hint">#B3FFFFFF</color>
+    <color name="coloros_folder_page_indicator">#FFFFFFFF</color>
+
+    <!-- Layout scale. Names describe intent so screens do not depend on arbitrary numbers. -->
+    <dimen name="coloros_space_micro">4dp</dimen>
+    <dimen name="coloros_space_small">8dp</dimen>
+    <dimen name="coloros_space_medium">12dp</dimen>
+    <dimen name="coloros_space_large">16dp</dimen>
+    <dimen name="coloros_space_xlarge">20dp</dimen>
+    <dimen name="coloros_space_xxlarge">24dp</dimen>
+    <dimen name="coloros_space_content">32dp</dimen>
+
+    <dimen name="coloros_page_horizontal_padding">@dimen/coui_preference_card_margin_horizontal</dimen>
+    <!-- Match COUI first-category top margin so scrolled pages share Home Settings gap. -->
+    <dimen name="coloros_page_top_padding">@dimen/coui_preference_category_margintop_large</dimen>
+    <dimen name="coloros_page_bottom_padding">24dp</dimen>
+    <!-- MtkSettings/OPPO sub-settings: content sits below fixed DividerAppBar. -->
+    <dimen name="preference_header_height">@dimen/toolbar_min_height</dimen>
+    <dimen name="toolbar_margin_top">@dimen/toolbar_top_padding</dimen>
+    <dimen name="coloros_card_radius">@dimen/coui_card_list_os_16_1_radius_17_dp</dimen>
+    <dimen name="coloros_card_selected_stroke">2dp</dimen>
+    <dimen name="coloros_card_content_padding">16dp</dimen>
+    <dimen name="coloros_section_label_inset">8dp</dimen>
+    <dimen name="coloros_section_gap">20dp</dimen>
+
+    <dimen name="coloros_control_height">48dp</dimen>
+    <dimen name="coloros_action_height">@dimen/coui_btn_large_height_min</dimen>
+    <dimen name="coloros_launcher_mode_card_min_height">220dp</dimen>
+    <dimen name="coloros_launcher_mode_preview_height">150dp</dimen>
+    <dimen name="coloros_launcher_mode_radio_slot_width">56dp</dimen>
+    <dimen name="coloros_preference_icon_slot_width">32dp</dimen>
+    <dimen name="coloros_icon_card_bottom_padding">14dp</dimen>
+    <dimen name="coloros_theme_preview_height">224dp</dimen>
+    <dimen name="coloros_theme_title_height">56dp</dimen>
+    <dimen name="coloros_theme_card_padding">10dp</dimen>
+    <dimen name="coloros_icon_preview_size">42.4dp</dimen>
+    <dimen name="coloros_icon_label_offset">45dp</dimen>
+    <dimen name="coloros_icon_label_gap">5dp</dimen>
+    <!-- Ensures Icon Custom can scroll / show toolbar divider on tall devices. -->
+    <dimen name="coloros_icon_custom_scroll_extra">72dp</dimen>
+    <!-- Contrasts icon silhouettes against the page/card surfaces. -->
+    <color name="coloros_icon_preview_surface">@color/coui_color_container8_light</color>
+    <color name="coloros_icon_preview_stroke">@color/coui_color_divider_light</color>
+    <dimen name="coloros_toolbar_elevation">0dp</dimen>
+
+    <!-- Full-folder geometry, based on the decoded OPPO normal-folder hierarchy. -->
+    <dimen name="coloros_folder_top_offset">115dp</dimen>
+    <dimen name="coloros_folder_title_height">62dp</dimen>
+    <dimen name="coloros_folder_title_width">228dp</dimen>
+    <dimen name="coloros_folder_title_text_size">24sp</dimen>
+    <dimen name="coloros_folder_header_margin_horizontal">10dp</dimen>
+    <dimen name="coloros_folder_content_margin_horizontal">20dp</dimen>
+    <dimen name="coloros_folder_content_top_gap">14dp</dimen>
+    <dimen name="coloros_folder_content_radius">30dp</dimen>
+    <dimen name="coloros_folder_content_stroke_width">1dp</dimen>
+    <dimen name="coloros_folder_content_padding_horizontal">8dp</dimen>
+    <dimen name="coloros_folder_content_padding_top">15dp</dimen>
+    <dimen name="coloros_folder_page_padding_horizontal">2dp</dimen>
+    <dimen name="coloros_folder_page_padding_bottom">120dp</dimen>
+    <dimen name="coloros_folder_page_spacing">10dp</dimen>
+    <dimen name="coloros_folder_page_indicator_height">28dp</dimen>
+    <dimen name="coloros_folder_page_indicator_bottom_space">80dp</dimen>
+    <dimen name="coloros_folder_cell_width">100dp</dimen>
+    <dimen name="coloros_folder_cell_height">105dp</dimen>
+    <dimen name="coloros_folder_child_icon_size">56dp</dimen>
+    <dimen name="coloros_folder_child_icon_padding_top">11dp</dimen>
+    <dimen name="coloros_folder_child_drawable_gap">6dp</dimen>
+    <dimen name="coloros_folder_child_text_size">12sp</dimen>
+    <dimen name="coloros_folder_clear_size">24dp</dimen>
+    <dimen name="coloros_folder_clear_margin_end">10dp</dimen>
+    <dimen name="coloros_folder_preview_radius">9dp</dimen>
+    <dimen name="coloros_large_folder_name_gap">3dp</dimen>
+    <dimen name="coloros_large_folder_bg_horizontal_inset">9dp</dimen>
+    <dimen name="coloros_workspace_folder_title_height">23.333dp</dimen>
+    <dimen name="coloros_workspace_folder_preview_top">7.667dp</dimen>
+
+    <!-- All Apps surface tokens measured against the ColorOS reference launcher. -->
+    <color name="coloros_all_apps_scrim">#8A000000</color>
+    <color name="coloros_all_apps_text">#FFFFFFFF</color>
+    <color name="coloros_all_apps_text_secondary">#B8FFFFFF</color>
+    <color name="coloros_all_apps_search_surface">#665A5A5A</color>
+    <color name="coloros_all_apps_segment_selected">#3DFFFFFF</color>
+    <color name="coloros_all_apps_index">#D9FFFFFF</color>
+    <color name="coloros_all_apps_index_active">#FFFFFFFF</color>
+    <color name="coloros_category_card_surface">#665A5A5A</color>
+
+    <!-- Type scale used by launcher-owned content around native COUI components. -->
+    <dimen name="coloros_text_size_caption">12sp</dimen>
+    <dimen name="coloros_text_size_theme_title">13sp</dimen>
+    <dimen name="coloros_text_size_section">14sp</dimen>
+    <dimen name="coloros_text_size_action">@dimen/coui_btn_text_size</dimen>
+
+    <!-- Motion durations are defined here for the animation stages that follow. -->
+    <integer name="coloros_motion_duration_instant">100</integer>
+    <integer name="coloros_motion_duration_short">200</integer>
+    <integer name="coloros_motion_duration_standard">300</integer>
+    <integer name="coloros_motion_duration_long">400</integer>
+</resources>

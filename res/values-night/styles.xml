@@ -18,19 +18,48 @@
 -->
 
 <resources>
-    <style name="HomeSettings.Theme" parent="@style/Theme.COUI.Main.Dark">
-        <item name="android:listPreferredItemPaddingEnd">16dp</item>
-        <item name="android:listPreferredItemPaddingStart">24dp</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="colorPrimaryDark">@*android:color/primary_dark_device_default_settings</item>
-        <item name="android:statusBarColor">?attr/colorPrimaryDark</item>
-        <item name="android:switchStyle">@style/SwitchStyle</item>
-        <item name="android:textAppearanceListItem">@style/HomeSettings.PreferenceTitle</item>
-        <item name="android:windowActionBar">true</item>
+    <!-- Real COUI dark base (MtkSettings pattern). Light Main + Force Dark does not
+         invert preference cards on D960 — use Theme.COUI.Main.Dark as-is (blue accent). -->
+    <style name="OplusSupportBaseTheme" parent="@style/Theme.COUI.Main.Dark">
+        <item name="colorOnSurface">?attr/couiColorPrimaryNeutral</item>
+        <item name="android:textColorPrimary">?attr/couiColorLabelPrimary</item>
+        <item name="android:textColorSecondary">?attr/couiColorLabelSecondary</item>
+    </style>
+
+    <style name="OplusSupportAppNoTitleTheme" parent="@style/OplusSupportBaseTheme">
+        <item name="android:textDirection">locale</item>
+        <item name="android:textAlignment">gravity</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="enableFollowSystemForceDarkRank">false</item>
+        <item name="android:isLightTheme">false</item>
+        <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
-        <item name="preferenceTheme">@style/SettingsPreferenceTheme</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="HomeSettings.Theme"
+            parent="@style/OplusSupportAppNoTitleTheme.PreferenceFragment.LauncherSettings">
+        <item name="colorPrimaryDark">@color/coloros_surface_page</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@color/coloros_surface_page</item>
+        <item name="android:windowBackground">@color/coloros_surface_page</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:windowLightStatusBar">@bool/home_settings_light_status_bar</item>
+        <item name="android:windowLightNavigationBar">@bool/home_settings_light_status_bar</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:homeAsUpIndicator">@drawable/coui_back_arrow</item>
+        <item name="homeAsUpIndicator">@drawable/coui_back_arrow</item>
+        <item name="toolbarStyle">@style/HomeSettings.Toolbar</item>
+        <item name="toolbarNavigationButtonStyle">@style/Widget.COUI.Toolbar.Button.Navigation</item>
+        <item name="couiSwitchStyle">@style/COUISwitchStyle.Dark</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay.COUITheme.FullScreen.OnlyTitleBar</item>
         <item name="android:windowAnimationStyle">@style/Animation.SharedBackground</item>
     </style>
+
     <style name="AddItemActivityTheme" parent="@android:style/Theme.Translucent.NoTitleBar">
         <item name="widgetsTheme">@style/WidgetContainerTheme.Dark</item>
         <item name="android:windowTranslucentStatus">true</item>

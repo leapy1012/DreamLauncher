@@ -55,9 +55,13 @@ import android.os.UserHandle;
 import android.graphics.drawable.BitmapDrawable;
 import com.android.launcher3.settings.SettingsBaseActivity;
 import android.widget.TextView;
-import android.app.ProgressDialog;
-import android.app.ActionBar;
-import android.app.AlertDialog;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.COUIRecyclerView;
+import androidx.recyclerview.widget.RecyclerView;
+import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
+import com.coui.appcompat.dialog.COUIRotatingDialogBuilder;
 import com.android.launcher3.util.Executors;
 
 public class ThemeActivity extends SettingsBaseActivity {
@@ -65,7 +69,7 @@ public class ThemeActivity extends SettingsBaseActivity {
     private GridViewAdapter mAdapter;
 
     private String mCurrentTheme;
-    GridView allThemeGridView;
+    private RecyclerView allThemeGridView;
     private ArrayList<ThemeData> mGridViewItems;
     private Context mContext;
     private int mChooseitemId;
@@ -81,7 +85,7 @@ public class ThemeActivity extends SettingsBaseActivity {
     private PackageManager mPackageManager;
     private  WallpaperManager mWallpaperManager;
     private static final int PROCESS_KILL_DELAY_MS = 1000;
-    ProgressDialog mProgressDialog;
+    private AlertDialog mProgressDialog;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -92,17 +96,15 @@ public class ThemeActivity extends SettingsBaseActivity {
                 .asInterface(ServiceManager.getService(Context.OVERLAY_SERVICE));
         mWallpaperManager =  (WallpaperManager) mContext.getSystemService(mContext.WALLPAPER_SERVICE);
         mPackageManager = mContext.getPackageManager();
-        allThemeGridView = (GridView) this.findViewById(R.id.all_items_grid);
-        allThemeGridView.setNumColumns(2);
+        allThemeGridView = findViewById(R.id.all_items_grid);
+        allThemeGridView.setLayoutManager(new GridLayoutManager(this, 2));
         mAdapter = initAdapter();
+        mAdapter.setOnThemeClickListener(this::onThemeItemClick);
         allThemeGridView.setAdapter(mAdapter);
-        allThemeGridView.setOnItemClickListener(new OnGridviewItemClick());
-        ActionBar actionBar = getActionBar();
+        setupCouiScrollList(allThemeGridView);
+        ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeButtonEnabled(true);
-            actionBar.setDisplayShowTitleEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.drawable.hxy_ic_back);
+            actionBar.setTitle(R.string.launcher_theme_title);
         }
     }
 
@@ -110,6 +112,54 @@ public class ThemeActivity extends SettingsBaseActivity {
     protected void onResume() {
         super.onResume();
         setTitle(R.string.launcher_theme_title);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle(R.string.launcher_theme_title);
+        }
+    }
+
+    private void onThemeItemClick(int position) {
+        COUIAlertDialogBuilder builder = new COUIAlertDialogBuilder(ThemeActivity.this);
+        builder.setTitle(getString(R.string.settings_style));
+        builder.setMessage(getString(R.string.sure_set_theme));
+        builder.setCancelable(true);
+        builder.setPositiveButton(getString(R.string.ok), (dialog, which) -> {
+            dialog.dismiss();
+            showApplyingThemeDialog();
+            String theme = mGridViewItems.get(position).key;
+            if (TextUtils.equals("default", theme)) {
+                theme = "";
+            }
+            Executors.MODEL_EXECUTOR.execute(new ApplyThemeHandler(ThemeActivity.this, theme));
+        });
+        builder.setNegativeButton(getString(R.string.cancel),
+                (dialog, which) -> dialog.dismiss());
+        AlertDialog dialog = builder.create();
+        dialog.setCanceledOnTouchOutside(true);
+        dialog.show();
+    }
+
+    private void showApplyingThemeDialog() {
+        if (mProgressDialog != null && mProgressDialog.isShowing()) {
+            return;
+        }
+        COUIRotatingDialogBuilder builder = new COUIRotatingDialogBuilder(
+                this, getString(R.string.hxy_apply_theme));
+        builder.setFileName("coui_rotating_loading.json");
+        builder.setRepeatCount(-1);
+        AlertDialog dialog = builder.show();
+        dialog.setCancelable(false);
+        dialog.setCanceledOnTouchOutside(false);
+        mProgressDialog = dialog;
+    }
+
+    private void dismissApplyingThemeDialog() {
+        runOnUiThread(() -> {
+            if (mProgressDialog != null && mProgressDialog.isShowing()) {
+                mProgressDialog.dismiss();
+            }
+            mProgressDialog = null;
+        });
     }
 
     private void initThemeData(){
@@ -126,9 +176,7 @@ public class ThemeActivity extends SettingsBaseActivity {
             try {
                 String packageName = themeStringList[i];
                 Resources resall = mPackageManager.getResourcesForApplication(packageName);
-                if(TextUtils.equals(themeStringList[i],themeName)) {
-                    mChooseitemId = i;
-                }
+                themeData.selected = TextUtils.equals(themeStringList[i], themeName);
 
                 title = resall.getString(resall.getIdentifier(THEME_TITLE, "string", packageName));
                 preview =  resall.getDrawable(resall.getIdentifier(THEME_PREVIEW , "drawable", packageName));
@@ -158,36 +206,9 @@ public class ThemeActivity extends SettingsBaseActivity {
         public Drawable preview = null;
         public String themeTitle = "";
         public String key = "";
+        public boolean selected;
     }
 
-    private class OnGridviewItemClick implements OnItemClickListener {
-        @Override
-        public void onItemClick(AdapterView<?> arg0, View view, int position,
-                long id) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(ThemeActivity.this);
-            builder.setTitle(getString(R.string.settings_style));
-            builder.setMessage(getString(R.string.sure_set_theme));
-            builder.setCancelable(false);
-            builder.setPositiveButton(getString(R.string.ok), (dialog, which) -> {
-                dialog.dismiss();
-
-                mProgressDialog = ProgressDialog.show(ThemeActivity.this,
-                    null /* title */,
-                    ThemeActivity.this.getString(R.string.hxy_apply_theme),
-                    true /* indeterminate */,
-                    true /* cancelable */);
-                String theme = ((ThemeData) mGridViewItems.get(position)).key;
-                if (TextUtils.equals("default", theme)) {
-                    theme = "";
-                }
-                Executors.MODEL_EXECUTOR.execute(new ApplyThemeHandler(ThemeActivity.this, theme));
-            });
-            builder.setNegativeButton(getString(R.string.cancel),
-                    (dialog, which) -> dialog.dismiss());
-            AlertDialog dialog = builder.create();
-            dialog.show();
-        }
-    }
     private Resources getThemeResource(String packageName){
         Resources resall = null;
         try {
@@ -346,9 +367,7 @@ public class ThemeActivity extends SettingsBaseActivity {
                 setWallpaper(currentThemeResouce, themeName);
                 Settings.Global.putString(mContext.getContentResolver() , KEY_THEME, themeName);
             }
-            if (mProgressDialog != null && mProgressDialog.isShowing()) {
-                mProgressDialog.dismiss();
-            }
+            dismissApplyingThemeDialog();
             Intent homeIntent = new Intent(Intent.ACTION_MAIN)
             .addCategory(Intent.CATEGORY_HOME)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);

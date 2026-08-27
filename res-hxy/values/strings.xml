@@ -52,6 +52,11 @@
     <string name="home_screen_layout_lock_tips">Home screen layout has been locked and cannot be edited.</string>
     <string name="launcher_locked_toast_look_setting">View settings</string>
     <string name="launcher_layout">Layout</string>
+    <string name="launcher_settings_display">Display</string>
+    <string name="launcher_settings_notifications">Notifications</string>
+    <string name="launcher_settings_side_screens">Side screens</string>
+    <string name="launcher_settings_style">Style</string>
+    <string name="launcher_settings_personalization">Personalization</string>
     <string name="launcher_locked">Lock layout</string>
     <string name="launcher_is_compact_arrangement_title">Icon autofill</string>
     <string name="tog_title_layout">Home screen layout</string>
@@ -62,7 +67,7 @@
     <string name="home_screen_app_name_length_tips">Display name of app in single line</string>
     <string name="home_screen_fill_cell">Fill cells of uninstalled apps</string>
     <string name="home_screen_double_tap_to_off">Double click to turn off the screen</string>
-    <string name="home_screen_double_tap_to_off_summary">On the lockscreen or standby interface,double-click on the blank space to turn off the screen</string>
+    <string name="home_screen_double_tap_to_off_summary">On the lockscreen or standby interface, double-click on the blank space to turn off the screen</string>
     <string name="home_screen_memory_clean">Cleanup</string>
     <string name="home_screen_wallpaper_set">Switch wallpaper</string>
     <string name="home_screen_icon_shape">Icon Shape</string>
@@ -72,9 +77,14 @@
     <string name="home_screen_icon_shape_circle">circle</string>
     <string name="icon_shape_override_progress">Icon Shape Overriding</string>
     <string name="home_screen_icon_size">Icon Size</string>
+    <string name="apply">Apply</string>
+    <string name="layout_being_applied">Applying...</string>
+    <string name="icon_size_default">Default</string>
+    <string name="icon_size_restore">Restore</string>
+    <string name="icon_size_restore_description">Restore to default</string>
     <string name="pref_minusEnabled">Enable Left Screen</string>
     <string name="pref_plusEnabled">Enable Right Screen</string>
-    <string name="hxy_apply_theme">apply theme</string>
+    <string name="hxy_apply_theme">Applying...</string>
     <string name="settings_style">Themer</string>
     <string name="sure_set_theme">Are you sure you want to set this theme?</string>
     <string name="ok">OK</string>

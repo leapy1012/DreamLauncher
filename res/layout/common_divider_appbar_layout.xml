@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors MtkSettings res_gd/layout/common_divider_appbar_layout.xml:
+     COUIDividerAppBarLayout owns divider_line and bindRecyclerView(). -->
+<com.google.android.material.appbar.COUIDividerAppBarLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/abl"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/coloros_surface_page"
+    android:elevation="0dp"
+    app:elevation="0dp">
+
+    <com.coui.appcompat.toolbar.COUIToolbar
+        android:id="@+id/toolbar"
+        style="@style/HomeSettings.Toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:minHeight="@dimen/toolbar_min_height"
+        android:paddingTop="@dimen/toolbar_margin_top"
+        app:supportTitleTextAppearance="@style/textAppearanceSecondTitle" />
+</com.google.android.material.appbar.COUIDividerAppBarLayout>

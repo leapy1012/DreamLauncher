@@ -20,7 +20,6 @@ import static com.android.launcher3.settings.SettingsActivity.EXTRA_SHOW_FRAGMEN
 import static com.android.launcher3.util.Executors.MAIN_EXECUTOR;
 import static com.android.launcher3.util.SettingsCache.NOTIFICATION_BADGING_URI;
 
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -30,11 +29,11 @@ import android.database.ContentObserver;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.AttributeSet;
-import android.view.View;
 
 import androidx.fragment.app.DialogFragment;
-import androidx.preference.Preference;
-import androidx.preference.PreferenceViewHolder;
+
+import com.coui.appcompat.preference.COUIJumpPreference;
+import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
 
 import com.android.launcher3.R;
 import com.android.launcher3.notification.NotificationListener;
@@ -44,10 +43,8 @@ import com.android.launcher3.util.SettingsCache;
  * A {@link Preference} for indicating notification dots status.
  * Also has utility methods for updating UI based on dots status changes.
  */
-public class NotificationDotsPreference extends Preference
+public class NotificationDotsPreference extends COUIJumpPreference
         implements SettingsCache.OnChangeListener {
-
-    private boolean mWidgetFrameVisible = true;
 
     /** Hidden field Settings.Secure.ENABLED_NOTIFICATION_LISTENERS */
     private static final String NOTIFICATION_ENABLED_LISTENERS = "enabled_notification_listeners";
@@ -107,23 +104,6 @@ public class NotificationDotsPreference extends Preference
 
     }
 
-    private void setWidgetFrameVisible(boolean isVisible) {
-        if (mWidgetFrameVisible != isVisible) {
-            mWidgetFrameVisible = isVisible;
-            notifyChanged();
-        }
-    }
-
-    @Override
-    public void onBindViewHolder(PreferenceViewHolder holder) {
-        super.onBindViewHolder(holder);
-
-        View widgetFrame = holder.findViewById(android.R.id.widget_frame);
-        if (widgetFrame != null) {
-            widgetFrame.setVisibility(mWidgetFrameVisible ? View.VISIBLE : View.GONE);
-        }
-    }
-
     @Override
     public void onSettingsChanged(boolean enabled) {
         int summary = enabled
@@ -157,12 +137,14 @@ public class NotificationDotsPreference extends Preference
             final Context context = getActivity();
             String msg = context.getString(R.string.msg_missing_notification_access,
                     context.getString(R.string.derived_app_name));
-            return new AlertDialog.Builder(context)
+            androidx.appcompat.app.AlertDialog dialog = new COUIAlertDialogBuilder(context)
                     .setTitle(R.string.title_missing_notification_access)
                     .setMessage(msg)
                     .setNegativeButton(android.R.string.cancel, null)
                     .setPositiveButton(R.string.title_change_settings, this)
                     .create();
+            dialog.setCanceledOnTouchOutside(true);
+            return dialog;
         }
 
         @Override

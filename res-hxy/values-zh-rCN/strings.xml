@@ -79,6 +79,11 @@
     <string name="home_screen_icon_shape_circle">圆形</string>
     <string name="icon_shape_override_progress">图标重载中</string>
     <string name="home_screen_icon_size">图标大小</string>
+    <string name="apply">应用</string>
+    <string name="layout_being_applied">正在应用...</string>
+    <string name="icon_size_default">默认</string>
+    <string name="icon_size_restore">恢复</string>
+    <string name="icon_size_restore_description">恢复默认</string>
     <string name="pref_minusEnabled">启用左一屏</string>
     <string name="pref_plusEnabled">启用右一屏</string>
     <string name="hxy_apply_theme">正在设置主题</string>
