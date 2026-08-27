@@ -12,13 +12,10 @@
     </attr>
     <attr name="span_count" format="integer">
     </attr>
-    <!-- Removed: conflicts with ConstraintLayout Grid.grid_orientation when COUI/material is linked. -->
-    <!--
     <attr name="grid_orientation">
         <enum name="horizontal" value="0" />
         <enum name="vertical" value="1" />
     </attr>
-    -->
     <attr name="orientation" format="integer">
         <enum name="grid" value="2" />
         <enum name="horizontal" value="0" />

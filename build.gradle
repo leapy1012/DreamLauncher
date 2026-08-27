@@ -187,7 +187,6 @@ dependencies {
     compileOnly files('libs/framework.jar')
     compileOnly files('libs/core-all.jar')
 
-    implementation project(':coui')
     implementation project(':iconloaderlib')
     implementation project(':viewcapturelib')
     implementation project(':animationlib')

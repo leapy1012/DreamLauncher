@@ -33,13 +33,13 @@
             android:persistent="false"
             android:title="Developer Options"
             android:fragment="com.android.launcher3.settings.DeveloperOptionsFragment" />
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:defaultValue="false"
             android:key="pref_allowRotation"
             android:persistent="true"
             android:summary="@string/allow_rotation_desc"
             android:title="@string/allow_rotation_title"/>
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:key="pref_install_behavior"
             android:title="@string/new_install_display_dot"
             android:defaultValue="false"
@@ -67,24 +67,24 @@
             android:persistent="true">
             <intent android:action="hxy.intent.action.ICON_SIZE_SETTINGS"/>
         </Preference>
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:key="pref_layout_dock"
             android:title="@string/launcher_locked"
             android:defaultValue="false"
             android:persistent="true"/>
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:key="pref_docked_app"
             android:title="@string/home_screen_docked_app"
             android:summary="@string/home_screen_docked_app_tips"
             android:defaultValue="false"
             android:persistent="true"/>
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:key="pref_app_name"
             android:title="@string/home_screen_app_name_length"
             android:summary="@string/home_screen_app_name_length_tips"
             android:defaultValue="true"
             android:persistent="true"/>
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:key="pref_fill_cell"
             android:title="@string/launcher_is_compact_arrangement_title"
             android:defaultValue="false"
@@ -101,19 +101,19 @@
                     android:value="notification_badging"/>
             </intent>
         </com.android.launcher3.settings.NotificationDotsPreference>
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:defaultValue="true"
             android:key="pref_add_icon_to_home"
             android:persistent="true"
             android:summary="@string/auto_add_shortcuts_description"
             android:title="@string/auto_add_shortcuts_label"/>
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:key="pref_minusEnabled"
             android:title="@string/pref_minusEnabled"
             android:defaultValue="@bool/config_minusEnabled"
             android:persistent="true" />
 
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:key="pref_plusEnabled"
             android:title="@string/pref_plusEnabled"
             android:defaultValue="@bool/config_plusEnabled"
@@ -131,18 +131,18 @@
             <intent android:action="hxy.intent.action.CHOOSE_THEME"/>
         </Preference>
         <!-- hxy-feature: desktop theme-->
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:key="pref_double_tap"
             android:title="@string/home_screen_double_tap_to_off"
             android:summary="@string/home_screen_double_tap_to_off_summary"
             android:defaultValue="false"
             android:persistent="true"/>
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:key="pref_memory_clean"
             android:title="@string/home_screen_memory_clean"
             android:defaultValue="true"
             android:persistent="true"/>
-        <com.coui.appcompat.preference.COUISwitchPreference
+        <SwitchPreference
             android:key="pref_wallpaper_set"
             android:title="@string/home_screen_wallpaper_set"
             android:defaultValue="true"
