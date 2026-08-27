@@ -117,4 +117,21 @@
     <integer name="coloros_motion_duration_short">200</integer>
     <integer name="coloros_motion_duration_standard">300</integer>
     <integer name="coloros_motion_duration_long">400</integer>
+
+    <!-- Workspace long-press popup (OplusPopup / COUI single card). -->
+    <color name="coloros_popup_surface">#FFFFFF</color>
+    <color name="coloros_popup_label">#E6000000</color>
+    <!-- Thick band between deep and system groups (page tone on the card). -->
+    <color name="coloros_popup_group_band">#F0F1F2</color>
+    <!-- Muted circular plate behind deep-shortcut glyphs (Oppo popup style). -->
+    <color name="coloros_popup_icon_plate">#EEF0F2</color>
+    <dimen name="coloros_popup_item_width">232dp</dimen>
+    <dimen name="coloros_popup_item_height">48dp</dimen>
+    <dimen name="coloros_popup_icon_size">24dp</dimen>
+    <dimen name="coloros_popup_icon_margin_start">16dp</dimen>
+    <dimen name="coloros_popup_text_padding_start">52dp</dimen>
+    <dimen name="coloros_popup_padding_end">16dp</dimen>
+    <dimen name="coloros_popup_text_size">16sp</dimen>
+    <dimen name="coloros_popup_group_divider_height">4dp</dimen>
+    <dimen name="coloros_popup_corner_radius">@dimen/coui_round_corner_m</dimen>
 </resources>

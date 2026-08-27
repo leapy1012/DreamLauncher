@@ -35,6 +35,7 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
+import com.android.launcher3.popup.ColorOsPopupIcons;
 import com.android.launcher3.popup.PopupContainerWithArrow;
 import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.BubbleTextHolder;
@@ -55,6 +56,9 @@ public class DeepShortcutView extends FrameLayout implements BubbleTextHolder {
 
     private WorkspaceItemInfo mInfo;
     private ShortcutInfo mDetail;
+    /** When true, popup icons use ColorOS plate/glyph treatment instead of raw adaptive bitmaps. */
+    private boolean mColorOsPopupIcons;
+    private ColorOsPopupIcons.Theme mColorOsPopupIconTheme;
 
     public DeepShortcutView(Context context) {
         this(context, null, 0);
@@ -66,6 +70,20 @@ public class DeepShortcutView extends FrameLayout implements BubbleTextHolder {
 
     public DeepShortcutView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+    }
+
+    /** Enables ColorOS popup icon rendering for this row (deep + system share 24dp optics). */
+    public void setColorOsPopupIcons(boolean enabled) {
+        mColorOsPopupIcons = enabled;
+    }
+
+    public void setColorOsPopupIconTheme(ColorOsPopupIcons.Theme theme) {
+        mColorOsPopupIconTheme = theme;
+        mColorOsPopupIcons = theme != null;
+    }
+
+    public boolean isColorOsPopupIcons() {
+        return mColorOsPopupIcons;
     }
 
     @Override
@@ -143,7 +161,19 @@ public class DeepShortcutView extends FrameLayout implements BubbleTextHolder {
         mInfo = info;
         mDetail = detail;
         mBubbleText.applyFromWorkspaceItem(info);
-        mIconView.setBackground(mBubbleText.getIcon());
+        if (mColorOsPopupIcons) {
+            ColorOsPopupIcons.Theme theme = mColorOsPopupIconTheme != null
+                    ? mColorOsPopupIconTheme
+                    : ColorOsPopupIcons.Theme.fromSurface(
+                            getContext().getColor(R.color.coloros_popup_surface));
+            // Hide BTV compound icon — otherwise the adaptive shortcut bleeds through plate AA.
+            mBubbleText.setIconVisible(false);
+            mIconView.setBackground(ColorOsPopupIcons.forDeepShortcut(getContext(), detail, theme));
+            applyColorOsPopupTypeface(mBubbleText);
+            mBubbleText.setTextColor(getContext().getColor(R.color.coloros_text_primary));
+        } else {
+            mIconView.setBackground(mBubbleText.getIcon());
+        }
 
         // Use the long label as long as it exists and fits.
         CharSequence longLabel = mDetail.getLongLabel();
@@ -152,6 +182,11 @@ public class DeepShortcutView extends FrameLayout implements BubbleTextHolder {
         boolean usingLongLabel = !TextUtils.isEmpty(longLabel)
                 && mBubbleText.getPaint().measureText(longLabel.toString()) <= availableWidth;
         mBubbleText.setText(usingLongLabel ? longLabel : mDetail.getShortLabel());
+
+        if (mColorOsPopupIcons) {
+            applyColorOsPopupTypeface(mBubbleText);
+            mBubbleText.setTextColor(getContext().getColor(R.color.coloros_text_primary));
+        }
 
         // TODO: Add the click handler to this view directly and not the child view.
         mBubbleText.setOnClickListener(container.getItemClickListener());
@@ -169,6 +204,24 @@ public class DeepShortcutView extends FrameLayout implements BubbleTextHolder {
         Launcher.getLauncher(getContext()).getModel()
                 .updateAndBindWorkspaceItem(badged, mDetail);
         return badged;
+    }
+
+    /** Oppo oplus_deep_shortcut: sans-serif-regular / weight 400. */
+    public static void applyColorOsPopupTypeface(BubbleTextView label) {
+        android.graphics.Typeface base = android.graphics.Typeface.SANS_SERIF;
+        android.graphics.Typeface tf;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            tf = android.graphics.Typeface.create(base, 400, /* italic= */ false);
+        } else {
+            tf = android.graphics.Typeface.create(base, android.graphics.Typeface.NORMAL);
+        }
+        label.setTypeface(tf);
+        label.setElegantTextHeight(false);
+        label.getPaint().setFakeBoldText(false);
+        label.getPaint().setTypeface(tf);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            label.setLetterSpacing(0f);
+        }
     }
 
     public View getIconView() {

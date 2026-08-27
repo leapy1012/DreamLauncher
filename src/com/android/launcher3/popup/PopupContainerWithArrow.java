@@ -31,9 +31,11 @@ import android.animation.AnimatorSet;
 import android.animation.LayoutTransition;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -239,10 +241,11 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         if (ENABLE_MATERIAL_U_POPUP.get()) {
+            // ColorOS single-card popup (replaces Material U multi-card). Same item set.
             container = (PopupContainerWithArrow) launcher.getLayoutInflater().inflate(
                     R.layout.popup_container_material_u, launcher.getDragLayer(), false);
             container.configureForLauncher(launcher, item);
-            container.populateAndShowRowsMaterialU(icon, deepShortcutCount, systemShortcuts);
+            container.populateAndShowColorOs(icon, deepShortcutCount, systemShortcuts);
         } else {
             container = (PopupContainerWithArrow) launcher.getLayoutInflater().inflate(
                     R.layout.popup_container, launcher.getDragLayer(), false);
@@ -375,6 +378,119 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         }
         show();
         loadAppShortcuts((ItemInfo) originalIcon.getTag(), /* notificationKeys= */ emptyList());
+    }
+
+    /**
+     * ColorOS / Oppo-style single card: deep shortcuts, thick group band, then system
+     * shortcuts. Same factories/items as Material U; layout and dividers only differ.
+     *
+     * The card is a single child of this ArrowPopup so Material U inter-child margins are not
+     * applied between shortcut groups.
+     */
+    public void populateAndShowColorOs(final BubbleTextView originalIcon,
+            int deepShortcutCount, List<SystemShortcut> systemShortcuts) {
+        mOriginalIcon = originalIcon;
+        mContainerWidth = getResources().getDimensionPixelSize(R.dimen.coloros_popup_item_width);
+        final int popupSurface = getContext().getColor(R.color.coloros_popup_surface);
+        final int popupBand = getContext().getColor(R.color.coloros_popup_group_band);
+        // Oppo oplus_deep_shortcut: coui primary neutral (~90% black), not pure #000.
+        final int popupText = getContext().getColor(R.color.coloros_text_primary);
+        final ColorOsPopupIcons.Theme iconTheme =
+                ColorOsPopupIcons.Theme.fromSurface(popupSurface);
+        mArrowColor = popupSurface;
+
+        ViewGroup card = inflateAndAdd(R.layout.coloros_popup_card, this);
+        card.setForceDarkAllowed(false);
+        GradientDrawable cardBg = new GradientDrawable();
+        cardBg.setColor(popupSurface);
+        cardBg.setCornerRadius(getResources().getDimension(R.dimen.coloros_popup_corner_radius));
+        card.setBackground(cardBg);
+        card.setClipToOutline(true);
+
+        boolean hasDeep = deepShortcutCount > 0;
+        boolean hasSystem = !systemShortcuts.isEmpty();
+        float rowHeight = getResources().getDimension(R.dimen.coloros_popup_item_height);
+
+        if (hasDeep) {
+            mDeepShortcutContainer = inflateAndAdd(R.layout.coloros_popup_shortcut_group, card);
+            float heightUsed = 0;
+            for (int i = deepShortcutCount; i > 0; i--) {
+                heightUsed += rowHeight;
+                if (heightUsed >= mActivityContext.getDeviceProfile().availableHeightPx) {
+                    break;
+                }
+                DeepShortcutView v = inflateAndAdd(
+                        R.layout.coloros_popup_shortcut, mDeepShortcutContainer);
+                v.getLayoutParams().width = mContainerWidth;
+                v.setForceDarkAllowed(false);
+                v.setBackgroundColor(Color.TRANSPARENT);
+                v.setColorOsPopupIconTheme(iconTheme);
+                applyColorOsPopupLabel(v.getBubbleText(), popupText);
+                mDeepShortcuts.add(v);
+            }
+            updateHiddenShortcuts();
+        }
+
+        if (hasDeep && hasSystem) {
+            View band = inflateAndAdd(R.layout.coloros_popup_group_divider, card);
+            band.setForceDarkAllowed(false);
+            band.setBackgroundColor(popupBand);
+        }
+
+        if (hasSystem) {
+            mSystemShortcutContainer = inflateAndAdd(R.layout.coloros_popup_shortcut_group, card);
+            mWidgetContainer = mSystemShortcutContainer;
+            for (int i = 0; i < systemShortcuts.size(); i++) {
+                SystemShortcut shortcut = systemShortcuts.get(i);
+                View row = initializeSystemShortcut(
+                        R.layout.coloros_popup_shortcut,
+                        mSystemShortcutContainer,
+                        shortcut,
+                        false);
+                row.getLayoutParams().width = mContainerWidth;
+                row.setForceDarkAllowed(false);
+                row.setBackgroundColor(Color.TRANSPARENT);
+                if (row instanceof DeepShortcutView) {
+                    DeepShortcutView dsv = (DeepShortcutView) row;
+                    dsv.setColorOsPopupIconTheme(iconTheme);
+                    applyColorOsPopupLabel(dsv.getBubbleText(), popupText);
+                    View icon = dsv.getIconView();
+                    icon.setForceDarkAllowed(false);
+                    icon.setBackground(ColorOsPopupIcons.forSystemShortcut(
+                            getContext(), shortcut.getIconResId(), iconTheme));
+                }
+            }
+        }
+
+        // Do not tag as iterate-children: Material U would inject inter-group margins and
+        // recolor the card via setChildColor. forceDarkAllowed=false keeps the fill opaque.
+        show();
+        cardBg.setColor(popupSurface);
+        card.setBackground(cardBg);
+        mArrowColor = popupSurface;
+        updateArrowColor();
+        // Re-apply system icons after assignMarginsAndBackgrounds so Material U cannot replace them.
+        if (mSystemShortcutContainer != null) {
+            for (int i = 0; i < mSystemShortcutContainer.getChildCount(); i++) {
+                View child = mSystemShortcutContainer.getChildAt(i);
+                if (!(child instanceof DeepShortcutView) || !(child.getTag() instanceof SystemShortcut)) {
+                    continue;
+                }
+                DeepShortcutView dsv = (DeepShortcutView) child;
+                SystemShortcut shortcut = (SystemShortcut) child.getTag();
+                View icon = dsv.getIconView();
+                icon.setForceDarkAllowed(false);
+                icon.setBackground(ColorOsPopupIcons.forSystemShortcut(
+                        getContext(), shortcut.getIconResId(), iconTheme));
+            }
+        }
+        loadAppShortcuts((ItemInfo) originalIcon.getTag(), /* notificationKeys= */ emptyList());
+    }
+
+    /** Oppo oplus_deep_shortcut: sans-serif-regular / weight 400, primary label color. */
+    private static void applyColorOsPopupLabel(BubbleTextView label, int color) {
+        DeepShortcutView.applyColorOsPopupTypeface(label);
+        label.setTextColor(color);
     }
 
     /**

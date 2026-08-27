@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hairline between popup rows; inset past the leading icon column (Oppo style). -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetLeft="@dimen/coloros_popup_text_padding_start"
+    android:insetRight="@dimen/coloros_popup_padding_end">
+    <shape android:shape="rectangle">
+        <size android:height="@dimen/coui_list_divider_height" />
+        <solid android:color="@color/coloros_divider" />
+    </shape>
+</inset>

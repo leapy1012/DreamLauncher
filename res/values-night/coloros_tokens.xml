@@ -22,4 +22,9 @@
 
     <color name="coloros_icon_preview_surface">@color/coui_color_container8_dark</color>
     <color name="coloros_icon_preview_stroke">@color/coui_color_divider_dark</color>
+
+    <color name="coloros_popup_surface">#333333</color>
+    <!-- Slightly lighter than the card so the band reads as a filled stripe. -->
+    <color name="coloros_popup_group_band">#404040</color>
+    <color name="coloros_popup_icon_plate">#4A4A4A</color>
 </resources>

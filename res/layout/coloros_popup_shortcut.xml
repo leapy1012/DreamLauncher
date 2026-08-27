@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shared deep + system row: 24dp icon, 16sp label, 232×48dp (Oppo oplus_deep_shortcut). -->
+<com.android.launcher3.shortcuts.DeepShortcutView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:launcher="http://schemas.android.com/apk/res-auto"
+    android:layout_width="@dimen/coloros_popup_item_width"
+    android:layout_height="wrap_content"
+    android:background="@drawable/coloros_popup_item_bg"
+    android:minHeight="@dimen/coloros_popup_item_height"
+    android:theme="@style/PopupItem">
+
+    <com.android.launcher3.shortcuts.DeepShortcutTextView
+        android:id="@+id/bubble_text"
+        android:layout_width="@dimen/coloros_popup_item_width"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:ellipsize="end"
+        android:fontFamily="sans-serif-regular"
+        android:gravity="start|center_vertical"
+        android:minHeight="@dimen/coloros_popup_item_height"
+        android:paddingStart="@dimen/coloros_popup_text_padding_start"
+        android:paddingEnd="@dimen/coloros_popup_padding_end"
+        android:singleLine="true"
+        android:textAlignment="viewStart"
+        android:textAllCaps="false"
+        android:textAppearance="@style/couiTextAppearanceBodyL"
+        android:textColor="@color/coloros_text_primary"
+        android:textDirection="locale"
+        android:textFontWeight="400"
+        android:textSize="@dimen/coloros_popup_text_size"
+        android:textStyle="normal"
+        launcher:iconDisplay="shortcut_popup"
+        launcher:iconSizeOverride="@dimen/coloros_popup_icon_size"
+        launcher:layoutHorizontal="true" />
+
+    <View
+        android:id="@+id/icon"
+        android:layout_width="@dimen/coloros_popup_icon_size"
+        android:layout_height="@dimen/coloros_popup_icon_size"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginStart="@dimen/coloros_popup_icon_margin_start"
+        android:background="@drawable/ic_deepshortcut_placeholder"
+        android:forceDarkAllowed="false" />
+</com.android.launcher3.shortcuts.DeepShortcutView>
