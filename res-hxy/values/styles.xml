@@ -45,19 +45,6 @@
         <item name="iconSizePx">@dimen/over_view_panel_edit_grid_icon_size</item>
     </style>
 
-    <!-- Glass ToggleBar over wallpaper (oppo.png): white labels, no COUI sheet. -->
-    <style name="HomeEditPanelButton" parent="PannelButton">
-        <item name="android:textColor">@color/oplus_home_edit_glass_label</item>
-        <item name="android:shadowColor">#66000000</item>
-        <item name="android:shadowDx">0</item>
-        <item name="android:shadowDy">1</item>
-        <item name="android:shadowRadius">2</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:maxLines">2</item>
-        <item name="android:ellipsize">end</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
-    </style>
-
     <style name="GridGallery">
         <item name="android:orientation">vertical</item>
         <item name="android:layout_width">match_parent</item>
