@@ -204,7 +204,7 @@
     <style name="AppTheme.Dark.DarkMainColor" parent="@style/LauncherTheme.Dark.DarkMainColor" />
     <style name="AppTheme.Dark.DarkText" parent="@style/LauncherTheme.Dark.DarkText" />
 
-    <style name="HomeSettings.Theme" parent="@android:style/Theme.DeviceDefault.Settings">
+    <style name="HomeSettings.Theme" parent="@style/Theme.COUI.Main.Light">
         <item name="android:navigationBarColor">?android:colorPrimaryDark</item>
         <item name="android:windowActionBar">true</item>
         <item name="android:windowNoTitle">true</item>
@@ -419,7 +419,7 @@
     </style>
 
     <style name="CellStyleDefault">
-        <item name="iconDrawablePadding">7dp</item>
+        <item name="iconDrawablePadding">@dimen/dynamic_grid_icon_drawable_padding</item>
     </style>
 
     <style name="AllAppsStyleDefault">

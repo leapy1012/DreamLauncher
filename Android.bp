@@ -187,6 +187,7 @@ android_library {
         "view_capture",
         "lib-gson",
         "lib-xutils",
+        "coui-appcompat",
     ],
     manifest: "AndroidManifest-common.xml",
     sdk_version: "current",
