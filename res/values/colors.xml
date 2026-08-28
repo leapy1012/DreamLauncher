@@ -175,4 +175,6 @@
     <color name="material_color_tertiary">#715573</color>
     <color name="launcher_page_indicator_select_color">#ffffff</color>
     <color name="launcher_page_indicator_unselect_color">#4dffffff</color>
+    <color name="launcher_page_indicator_bright_active_color">#000000</color>
+    <color name="launcher_page_indicator_bright_color">#4d000000</color>
 </resources>

@@ -29,10 +29,6 @@ public class HxyFolderGridOrganizer extends FolderGridOrganizer {
     }
 
     public boolean isItemInPreview(int page, int rank) {
-        if (page > 0 || this.mDisplayingUpperLeftQuadrant) {
-            int col = rank % this.mCountX;
-            int row = rank / this.mCountX;
-            return col < 3 && row < 3;
-        } else return rank < ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
+        return rank < ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
     }
 }

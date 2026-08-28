@@ -35,6 +35,7 @@ import android.view.ViewGroup;
 import com.android.launcher3.CellLayout.ContainerType;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.folder.FolderIcon;
+import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.widget.NavigableAppWidgetHostView;
@@ -165,8 +166,14 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
             int cellPaddingY;
             if (mContainerType == WORKSPACE && dp.useOppoWorkspaceMetrics()) {
                 // Oppo ShortcutAndWidgetContainer: leftover * IconUtils.getIconFactor (0.5 / 0.6).
+                // Folder preview uses folderIconSizePx; large folders override padding in onMeasure.
+                int contentHeight = cHeight;
+                if (child instanceof FolderIcon
+                        && !HxyLargeFolderProxy.isLargeFolder(child)) {
+                    contentHeight = dp.getOppoFolderWorkspaceContentHeight();
+                }
                 cellPaddingY = (int) Math.max(0,
-                        (lp.height - cHeight) * dp.getOppoIconTopFactor());
+                        (lp.height - contentHeight) * dp.getOppoIconTopFactor());
             } else if (dp.isScalableGrid && mContainerType == WORKSPACE) {
                 cellPaddingY = dp.cellYPaddingPx;
             } else {

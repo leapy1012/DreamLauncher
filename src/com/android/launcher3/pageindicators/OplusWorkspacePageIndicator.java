@@ -3,6 +3,7 @@ package com.android.launcher3.pageindicators;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -18,25 +19,31 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.Workspace;
+import com.android.launcher3.util.Themes;
 
 /**
- * Small launcher page indicator matching Oppo's workspace dot/pill layout contract.
+ * Workspace page indicator matching Oppo's dot/pill layout and ColorOS scroll morphing.
  */
 public class OplusWorkspacePageIndicator extends View implements Insettable, PageIndicator {
 
+    private static final float SHIFT_PER_ANIMATION = 0.5f;
+    private static final int DOT_GAP_FACTOR = 4;
+    private static final float DOT_ALPHA_FRACTION = 0.5f;
+
+    private static final RectF sTempRect = new RectF();
+
     private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final RectF mActiveRect = new RectF();
     private final boolean mIsRtl;
     private final float mDotRadius;
-    private final float mActiveWidth;
-    private final float mPitch;
-    private final int mSelectedColor;
-    private final int mUnselectedColor;
+    private final float mCircleGap;
     private final int mTouchSlop;
 
+    private int mSelectedColor;
+    private int mUnselectedColor;
+
     private int mNumPages;
+    private int mActivePage;
     private float mCurrentPosition;
-    private boolean mShouldAutoHide;
     private float mDownX;
     private float mDownY;
     private boolean mIsDragging;
@@ -54,15 +61,11 @@ public class OplusWorkspacePageIndicator extends View implements Insettable, Pag
         super(context, attrs, defStyleAttr);
 
         Resources res = context.getResources();
-        float dotSize = res.getDimension(R.dimen.page_indicator_dot_size);
-        mDotRadius = dotSize / 2f;
-        mActiveWidth = dotSize * 2f;
-        mPitch = dotSize + res.getDimensionPixelSize(
-                R.dimen.workspace_page_indicator_horizontal_padding) / 2f;
-        mSelectedColor = res.getColor(R.color.launcher_page_indicator_select_color, null);
-        mUnselectedColor = res.getColor(R.color.launcher_page_indicator_unselect_color, null);
+        mDotRadius = res.getDimension(R.dimen.page_indicator_dot_size_v2) / 2f;
+        mCircleGap = DOT_GAP_FACTOR * mDotRadius;
         mIsRtl = Utilities.isRtl(res);
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        updateColors(context);
 
         int horizontalPadding = res.getDimensionPixelSize(
                 R.dimen.workspace_page_indicator_horizontal_padding);
@@ -73,35 +76,54 @@ public class OplusWorkspacePageIndicator extends View implements Insettable, Pag
         setWillNotDraw(false);
     }
 
+    private void updateColors(Context context) {
+        boolean darkText = Themes.getAttrBoolean(context, R.attr.isWorkspaceDarkText);
+        Resources res = context.getResources();
+        if (darkText) {
+            mSelectedColor = res.getColor(R.color.launcher_page_indicator_bright_active_color,
+                    null);
+            mUnselectedColor = res.getColor(R.color.launcher_page_indicator_bright_color, null);
+        } else {
+            mSelectedColor = res.getColor(R.color.launcher_page_indicator_select_color, null);
+            mUnselectedColor = res.getColor(R.color.launcher_page_indicator_unselect_color, null);
+        }
+    }
+
     @Override
     public void setScroll(int currentScroll, int totalScroll) {
         if (mNumPages <= 1) {
             return;
         }
-        if (totalScroll <= 0) {
-            mCurrentPosition = 0;
-        } else {
-            float progress = Utilities.boundToRange(currentScroll / (float) totalScroll, 0f, 1f);
-            mCurrentPosition = progress * (mNumPages - 1);
-        }
+
         if (mIsRtl) {
-            mCurrentPosition = (mNumPages - 1) - mCurrentPosition;
+            currentScroll = totalScroll - currentScroll;
         }
-        if (mShouldAutoHide) {
-            setAlpha(1f);
+
+        if (totalScroll <= 0) {
+            mCurrentPosition = mActivePage;
+        } else {
+            int scrollPerPage = totalScroll / (mNumPages - 1);
+            if (scrollPerPage <= 0) {
+                mCurrentPosition = mActivePage;
+            } else {
+                mCurrentPosition = Utilities.boundToRange(
+                        currentScroll / (float) scrollPerPage, 0f, mNumPages - 1);
+            }
         }
         invalidate();
     }
 
     @Override
     public void setActiveMarker(int activePage) {
-        mCurrentPosition = Utilities.boundToRange(activePage, 0, Math.max(0, mNumPages - 1));
+        mActivePage = Utilities.boundToRange(activePage, 0, Math.max(0, mNumPages - 1));
+        mCurrentPosition = mActivePage;
         invalidate();
     }
 
     @Override
     public void setMarkersCount(int numMarkers) {
         mNumPages = Math.max(0, numMarkers);
+        mActivePage = Utilities.boundToRange(mActivePage, 0, Math.max(0, mNumPages - 1));
         mCurrentPosition = Utilities.boundToRange(mCurrentPosition, 0, Math.max(0, mNumPages - 1));
         setVisibility(mNumPages > 1 ? VISIBLE : INVISIBLE);
         requestLayout();
@@ -110,7 +132,15 @@ public class OplusWorkspacePageIndicator extends View implements Insettable, Pag
 
     @Override
     public void setShouldAutoHide(boolean shouldAutoHide) {
-        mShouldAutoHide = shouldAutoHide;
+        // Oppo parity: page dots stay visible on multi-page workspace in NORMAL state.
+    }
+
+    @Override
+    public void setPaintColor(int color) {
+        mSelectedColor = color;
+        mUnselectedColor = Color.argb((int) (255 * DOT_ALPHA_FRACTION), Color.red(color),
+                Color.green(color), Color.blue(color));
+        invalidate();
     }
 
     @Override
@@ -173,24 +203,54 @@ public class OplusWorkspacePageIndicator extends View implements Insettable, Pag
     }
 
     private int getPageForTouchX(float x) {
-        float contentWidth = mActiveWidth + ((mNumPages - 1) * mPitch);
-        float startX = (getWidth() - contentWidth) / 2f;
-        float relative = Utilities.boundToRange(x - startX, 0f, contentWidth);
-        int page = Math.round((relative - (mActiveWidth / 2f)) / mPitch);
+        float startX = getDotStartX();
+        float relative = Utilities.boundToRange(x - startX, 0f, mNumPages * mCircleGap);
+        int page = Math.round((relative - mDotRadius) / mCircleGap);
         page = Utilities.boundToRange(page, 0, mNumPages - 1);
         return mIsRtl ? (mNumPages - 1) - page : page;
     }
 
+    private float getDotStartX() {
+        return (getWidth() - (mNumPages * mCircleGap) + mDotRadius) / 2f;
+    }
+
+    private RectF getActiveRect() {
+        float startCircle = (int) mCurrentPosition;
+        float delta = mCurrentPosition - startCircle;
+        float diameter = 2 * mDotRadius;
+        float startX = getDotStartX();
+
+        sTempRect.top = (getHeight() * 0.5f) - mDotRadius;
+        sTempRect.bottom = (getHeight() * 0.5f) + mDotRadius;
+        sTempRect.left = startX + (startCircle * mCircleGap);
+        sTempRect.right = sTempRect.left + diameter;
+
+        if (delta < SHIFT_PER_ANIMATION) {
+            // Stretch toward the next page.
+            sTempRect.right += delta * mCircleGap * 2;
+        } else {
+            // Collapse from the previous page.
+            sTempRect.right += mCircleGap;
+            delta -= SHIFT_PER_ANIMATION;
+            sTempRect.left += delta * mCircleGap * 2;
+        }
+
+        if (mIsRtl) {
+            float rectWidth = sTempRect.width();
+            sTempRect.right = getWidth() - sTempRect.left;
+            sTempRect.left = sTempRect.right - rectWidth;
+        }
+        return sTempRect;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int desiredWidth = getPaddingLeft() + getPaddingRight();
-        if (mNumPages > 0) {
-            desiredWidth += Math.round(mActiveWidth + ((mNumPages - 1) * mPitch));
-        }
-        int desiredHeight = getPaddingTop() + getPaddingBottom() + Math.round(mDotRadius * 2f);
-
-        int width = resolveSize(desiredWidth, widthMeasureSpec);
-        int height = resolveSize(desiredHeight, heightMeasureSpec);
+        int contentWidth = mNumPages > 0 ? (int) ((mNumPages * 3 + 2) * mDotRadius) : 0;
+        int contentHeight = (int) (4 * mDotRadius);
+        int width = resolveSize(contentWidth + getPaddingLeft() + getPaddingRight(),
+                widthMeasureSpec);
+        int height = resolveSize(contentHeight + getPaddingTop() + getPaddingBottom(),
+                heightMeasureSpec);
         setMeasuredDimension(width, height);
     }
 
@@ -200,20 +260,17 @@ public class OplusWorkspacePageIndicator extends View implements Insettable, Pag
             return;
         }
 
-        float contentWidth = mActiveWidth + ((mNumPages - 1) * mPitch);
-        float startX = (getWidth() - contentWidth) / 2f;
-        float centerY = getHeight() / 2f;
+        float x = getDotStartX() + mDotRadius;
+        float y = getHeight() / 2f;
 
         mPaint.setColor(mUnselectedColor);
         for (int i = 0; i < mNumPages; i++) {
-            canvas.drawCircle(startX + (i * mPitch) + (mActiveWidth / 2f), centerY, mDotRadius,
-                    mPaint);
+            float drawX = mIsRtl ? getWidth() - x : x;
+            canvas.drawCircle(drawX, y, mDotRadius, mPaint);
+            x += mCircleGap;
         }
 
-        float activeCenter = startX + (mCurrentPosition * mPitch) + (mActiveWidth / 2f);
-        mActiveRect.set(activeCenter - (mActiveWidth / 2f), centerY - mDotRadius,
-                activeCenter + (mActiveWidth / 2f), centerY + mDotRadius);
         mPaint.setColor(mSelectedColor);
-        canvas.drawRoundRect(mActiveRect, mDotRadius, mDotRadius, mPaint);
+        canvas.drawRoundRect(getActiveRect(), mDotRadius, mDotRadius, mPaint);
     }
 }

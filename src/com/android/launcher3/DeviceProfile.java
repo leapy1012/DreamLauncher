@@ -1067,9 +1067,14 @@ public class DeviceProfile {
 
         updateHotseatSizes(iconSizePx);
 
-        // Folder icon
-        folderIconSizePx = IconNormalizer.getNormalizedCircleSize(iconSizePx) - 12;
-        folderIconOffsetYPx = (iconSizePx - folderIconSizePx) / 2;
+        // Folder icon plate. ColorOS matches the workspace icon size; AOSP shrinks it.
+        if (mUseOppoWorkspaceMetrics) {
+            folderIconSizePx = iconSizePx;
+            folderIconOffsetYPx = 0;
+        } else {
+            folderIconSizePx = IconNormalizer.getNormalizedCircleSize(iconSizePx) - 12;
+            folderIconOffsetYPx = (iconSizePx - folderIconSizePx) / 2;
+        }
 
         // Update widget padding:
         float minSpacing = pxFromDp(MIN_WIDGET_PADDING_DP, mMetrics);
@@ -1283,6 +1288,13 @@ public class DeviceProfile {
      */
     public int getOppoWorkspaceContentHeight() {
         return iconSizePx + iconDrawablePaddingPx + getOppoIconTextHeightPx();
+    }
+
+    /**
+     * Workspace folder preview content height (folder plate + label), not full iconSizePx.
+     */
+    public int getOppoFolderWorkspaceContentHeight() {
+        return folderIconSizePx + iconDrawablePaddingPx + getOppoIconTextHeightPx();
     }
 
     /**

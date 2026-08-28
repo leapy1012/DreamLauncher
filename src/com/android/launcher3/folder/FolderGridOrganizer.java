@@ -186,17 +186,13 @@ public class FolderGridOrganizer {
 
     /**
      * @param page The page the item is on.
-     * @param rank The rank of the item.
-     * @return True iff the icon is in the 2x2 upper left quadrant of the Folder.
+     * @param rank The rank of the item within that page.
+     * @return True iff the icon is drawn in the closed-folder preview.
      */
     public boolean isItemInPreview(int page, int rank) {
-        // First page items are laid out such that the first 4 items are always in the upper
-        // left quadrant. For all other pages, we need to check the row and col.
-        if (page > 0 || mDisplayingUpperLeftQuadrant) {
-            int col = rank % mCountX;
-            int row = rank / mCountX;
-            return col < 2 && row < 2;
-        }
+        // ColorOS default closed preview is a fixed 3×3 (up to
+        // MAX_NUM_ITEMS_IN_PREVIEW). AOSP used an upper-left 2×2 when the folder
+        // had more items than the preview; that capped large folders at 4 icons.
         return rank < MAX_NUM_ITEMS_IN_PREVIEW;
     }
 }

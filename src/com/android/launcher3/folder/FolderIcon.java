@@ -718,7 +718,14 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
                 paddingTop = (((height - cellHeightPx) * 3) / 4) + 3;
             }
         } else if (!HxyLargeFolderProxy.isLargeFolder((View) this)) {
-            paddingTop = ((height - cellHeightPx) / 2) - 3;
+            DeviceProfile grid = this.mActivity.getDeviceProfile();
+            if (grid.useOppoWorkspaceMetrics()) {
+                int folderContentHeight = grid.getOppoFolderWorkspaceContentHeight();
+                paddingTop = (int) Math.max(0,
+                        (height - folderContentHeight) * grid.getOppoIconTopFactor());
+            } else {
+                paddingTop = ((height - cellHeightPx) / 2) - 3;
+            }
         } else {
             if (HxyLargeFolderProxy.is4X6Grid(getContext())) {
                 paddingTop = ((height - cellHeightPx) / 3) + 2;
