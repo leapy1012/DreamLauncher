@@ -80,6 +80,10 @@ public class HxyLargeFolderProxy {
         return profile.numColumns == 4 && profile.numRows == 6;
     }
 
+    public static boolean is5ColGrid(Context context) {
+        return getInvariantDeviceProfile(context).numColumns == 5;
+    }
+
     private static int getDimension(Context context, int id) {
         return (int) context.getResources().getDimension(id);
     }
@@ -106,6 +110,9 @@ public class HxyLargeFolderProxy {
         if (is4X6Grid(context)) {
             sHorizontalSpace = getDimension(context, R.dimen.hxy_large_folder_horizontal_space_4x6);
             sVerticalSpace = getDimension(context, R.dimen.hxy_large_folder_vertical_space_4x6);
+        } else if (is5ColGrid(context)) {
+            sHorizontalSpace = getDimension(context, R.dimen.hxy_large_folder_horizontal_space_5col);
+            sVerticalSpace = getDimension(context, R.dimen.hxy_large_folder_vertical_space_5col);
         } else if (is4X5Grid(context)) {
             sHorizontalSpace = getDimension(context, R.dimen.hxy_large_folder_horizontal_space_4x5);
             sVerticalSpace = getDimension(context, R.dimen.hxy_large_folder_vertical_space_4x5);

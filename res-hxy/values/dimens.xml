@@ -27,14 +27,17 @@
     <dimen name="hxy_large_folder_horizontal_space_4x4">6dp</dimen>
     <dimen name="hxy_large_folder_horizontal_space_4x5">7dp</dimen>
     <dimen name="hxy_large_folder_horizontal_space_4x6">6dp</dimen>
+    <dimen name="hxy_large_folder_horizontal_space_5col">5dp</dimen>
     <dimen name="hxy_large_folder_vertical_space_4x4">12dp</dimen>
     <dimen name="hxy_large_folder_vertical_space_4x5">7dp</dimen>
     <dimen name="hxy_large_folder_vertical_space_4x6">5dp</dimen>
+    <dimen name="hxy_large_folder_vertical_space_5col">4dp</dimen>
     <dimen name="hxy_large_folder_round">20dp</dimen>
     <dimen name="hxy_large_folder_icon_out_space">3dp</dimen>
     <dimen name="hxy_large_folder_padding_top_4x5">7dp</dimen>
     <dimen name="hxy_large_folder_padding_top_4x4">18dp</dimen>
     <dimen name="hxy_large_folder_padding_top_3x3">14dp</dimen>
+    <dimen name="hxy_large_folder_padding_top_5col">4dp</dimen>
     <dimen name="density_50dp">50dp</dimen>
     <dimen name="density_48dp">48dp</dimen>
     <dimen name="density_45dp">45dp</dimen>
@@ -69,7 +72,8 @@
     <dimen name="diffCellHeightWithCellWidth5x5">43dp</dimen>
     <dimen name="diffCellHeightWithCellWidth5x6">25dp</dimen>
     <dimen name="cell_layout_padding_top_multiwindow">14dp</dimen>
-    <dimen name="dynamic_grid_icon_drawable_padding">7dp</dimen>
+    <!-- Oppo General: oplusIconDrawablePaddingDp = 4 (not AOSP 7). -->
+    <dimen name="dynamic_grid_icon_drawable_padding">4dp</dimen>
     <dimen name="workspace_padding_left">0dp</dimen>
     <dimen name="workspace_padding_top_adjustment">16dp</dimen>
     <dimen name="workspace_padding_top_adjustment_has_navigation_bar">20dp</dimen>

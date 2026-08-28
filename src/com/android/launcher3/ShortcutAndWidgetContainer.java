@@ -162,12 +162,15 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
                     mBorderSpace);
             // Center the icon/folder
             int cHeight = getCellContentHeight();
-            int cellPaddingY = dp.isScalableGrid && mContainerType == WORKSPACE
-                    ? dp.cellYPaddingPx
-                    : (int) Math.max(0, ((lp.height - cHeight) / 2f));
+            int cellPaddingY;
             if (mContainerType == WORKSPACE && dp.useOppoWorkspaceMetrics()) {
-                cellPaddingY = getResources().getDimensionPixelSize(
-                        R.dimen.oplus_workspace_icon_padding_top);
+                // Oppo ShortcutAndWidgetContainer: leftover * IconUtils.getIconFactor (0.5 / 0.6).
+                cellPaddingY = (int) Math.max(0,
+                        (lp.height - cHeight) * dp.getOppoIconTopFactor());
+            } else if (dp.isScalableGrid && mContainerType == WORKSPACE) {
+                cellPaddingY = dp.cellYPaddingPx;
+            } else {
+                cellPaddingY = (int) Math.max(0, ((lp.height - cHeight) / 2f));
             }
 
             // No need to add padding when cell layout border spacing is present.

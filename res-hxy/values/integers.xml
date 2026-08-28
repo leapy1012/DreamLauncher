@@ -4,4 +4,7 @@
     <integer name="oplusLayoutCellLayoutPaddingHor4colDp">16</integer>
     <integer name="oplusLayoutCellLayoutPaddingHor5col9RowDp">15</integer>
     <integer name="oplusLayoutCellLayoutPaddingHor5colDp">10</integer>
+    <!-- From Oppo device_profiles General display-option. -->
+    <integer name="oplusIconDrawablePaddingDp">4</integer>
+    <integer name="oplusGridCellPaddingDp">2</integer>
 </resources>

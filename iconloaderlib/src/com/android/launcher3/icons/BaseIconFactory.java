@@ -324,16 +324,15 @@ public class BaseIconFactory implements AutoCloseable {
             }
             AdaptiveIconDrawable dr = (AdaptiveIconDrawable) mWrapperIcon;
             dr.setBounds(0, 0, 1, 1);
-            boolean[] outShape = new boolean[1];
-            scale = getNormalizer().getScale(icon, outIconBounds, dr.getIconMask(), outShape);
-            if (!outShape[0]) {
-                FixedScaleDrawable fsd = ((FixedScaleDrawable) dr.getForeground());
-                fsd.setDrawable(icon);
-                fsd.setScale(scale);
-                icon = dr;
-                scale = getNormalizer().getScale(icon, outIconBounds, null, null);
-                ((ColorDrawable) dr.getBackground()).setColor(wrapperBackgroundColor);
-            }
+            // Always wrap (even when the icon already matches the mask shape) so
+            // FixedScaleDrawable can optically equalize full-bleed assets.
+            scale = getNormalizer().getScale(icon, outIconBounds, dr.getIconMask(), null);
+            FixedScaleDrawable fsd = ((FixedScaleDrawable) dr.getForeground());
+            fsd.setDrawable(icon);
+            fsd.setScale(scale);
+            icon = dr;
+            scale = getNormalizer().getScale(icon, outIconBounds, null, null);
+            ((ColorDrawable) dr.getBackground()).setColor(wrapperBackgroundColor);
         } else {
             scale = getNormalizer().getScale(icon, outIconBounds, null, null);
         }

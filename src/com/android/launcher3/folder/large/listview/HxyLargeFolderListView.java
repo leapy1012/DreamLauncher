@@ -42,6 +42,8 @@ public class HxyLargeFolderListView extends PageLinearLayout {
             top = mContext.getResources().getDimensionPixelSize(R.dimen.hxy_large_folder_padding_top_4x4);
         } else if (HxyLargeFolderProxy.isGrid(mContext, 4, 5)) {
             top = mContext.getResources().getDimensionPixelSize(R.dimen.hxy_large_folder_padding_top_4x5);
+        } else if (HxyLargeFolderProxy.is5ColGrid(mContext)) {
+            top = mContext.getResources().getDimensionPixelSize(R.dimen.hxy_large_folder_padding_top_5col);
         }
         setPadding(left, top, right, bottom);
         measureChildren3(folderIconSize, folderIconSize);

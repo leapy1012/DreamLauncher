@@ -1,20 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-     Copyright (C) 2016 The Android Open Source Project
-
-     Licensed under the Apache License, Version 2.0 (the "License");
-     you may not use this file except in compliance with the License.
-     You may obtain a copy of the License at
-
-          http://www.apache.org/licenses/LICENSE-2.0
-
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
+     ColorOS-aligned phone layouts: 4x6 / 5x6 / 5x7 (plus tablet 6x5).
+     Naming: grid-option name is {cols}_by_{rows}; defaultLayout xml uses {rows}x{cols}.
 -->
-
 <profiles xmlns:launcher="http://schemas.android.com/apk/res-auto" >
 
     <grid-option
@@ -42,144 +30,51 @@
     </grid-option>
 
     <grid-option
-        launcher:name="3_by_3"
-        launcher:numRows="3"
-        launcher:numColumns="3"
-        launcher:numFolderRows="2"
-        launcher:numFolderColumns="3"
-        launcher:numHotseatIcons="3"
-        launcher:dbFile="launcher_3_by_3.db"
-        launcher:defaultLayoutId="@xml/default_workspace_3x3"
-        launcher:deviceCategory="phone" >
-
-        <display-option
-            launcher:name="Super Short Stubby"
-            launcher:minWidthDps="255"
-            launcher:minHeightDps="300"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="13.0"
-            launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
-            launcher:canBeDefault="true" />
-
-        <display-option
-            launcher:name="Shorter Stubby"
-            launcher:minWidthDps="255"
-            launcher:minHeightDps="400"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="13.0"
-            launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
-            launcher:canBeDefault="true" />
-
-    </grid-option>
-
-    <grid-option
-        launcher:name="4_by_4"
-        launcher:numRows="4"
-        launcher:numColumns="4"
-        launcher:numFolderRows="3"
-        launcher:numFolderColumns="4"
-        launcher:numHotseatIcons="4"
-        launcher:numExtendedHotseatIcons="6"
-        launcher:dbFile="launcher_4_by_4.db"
-        launcher:inlineNavButtonsEndSpacing="@dimen/taskbar_button_margin_split"
-        launcher:defaultLayoutId="@xml/default_workspace_4x4"
-        launcher:deviceCategory="phone|multi_display" >
-
-        <display-option
-            launcher:name="Short Stubby"
-            launcher:minWidthDps="275"
-            launcher:minHeightDps="420"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="13.0"
-            launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
-            launcher:canBeDefault="true" />
-
-        <display-option
-            launcher:name="Stubby"
-            launcher:minWidthDps="255"
-            launcher:minHeightDps="450"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="13.0"
-            launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
-            launcher:canBeDefault="true" />
-
-        <display-option
-            launcher:name="Nexus S"
-            launcher:minWidthDps="296"
-            launcher:minHeightDps="491.33"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="13.0"
-            launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
-            launcher:canBeDefault="true" />
-
-        <display-option
-            launcher:name="Nexus 4"
-            launcher:minWidthDps="359"
-            launcher:minHeightDps="567"
-            launcher:iconImageSize="70"
-            launcher:iconTextSize="13.0"
-            launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
-            launcher:canBeDefault="true" />
-
-        <display-option
-            launcher:name="Nexus 5"
-            launcher:minWidthDps="335"
-            launcher:minHeightDps="567"
-            launcher:iconImageSize="70"
-            launcher:iconTextSize="13.0"
-            launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
-            launcher:canBeDefault="true" />
-
-    </grid-option>
-
-    <grid-option
-        launcher:name="4_by_5"
-        launcher:numRows="5"
-        launcher:numColumns="4"
+        launcher:name="5_by_6"
+        launcher:numRows="6"
+        launcher:numColumns="5"
         launcher:numFolderRows="4"
-        launcher:numFolderColumns="4"
-        launcher:numHotseatIcons="4"
-        launcher:numExtendedHotseatIcons="5"
-        launcher:dbFile="launcher.db"
-        launcher:inlineNavButtonsEndSpacing="@dimen/taskbar_button_margin_split"
-        launcher:defaultLayoutId="@xml/default_workspace_5x4"
+        launcher:numFolderColumns="3"
+        launcher:numHotseatIcons="5"
+        launcher:numAllAppsColumns="5"
+        launcher:dbFile="launcher_5_by_6.db"
+        launcher:defaultLayoutId="@xml/hxy_default_workspace_6x5"
         launcher:deviceCategory="phone|multi_display" >
 
+        <!-- Oppo default_icon_size_5_Col_6_Row default slot = 50dp (4x6 uses 56). -->
         <display-option
-            launcher:name="Large Phone"
-            launcher:minWidthDps="406"
-            launcher:minHeightDps="694"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="14.4"
+            launcher:name="Oppo Dense 5x6"
+            launcher:minWidthDps="360"
+            launcher:minHeightDps="640"
+            launcher:iconImageSize="50"
+            launcher:iconTextSize="12"
             launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
+            launcher:allAppsCellHeight="100"
             launcher:canBeDefault="true" />
 
-        <display-option
-            launcher:name="Large Phone Split Display"
-            launcher:minWidthDps="406"
-            launcher:minHeightDps="694"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="14.4"
-            launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
-            launcher:canBeDefault="true" />
+    </grid-option>
 
+    <grid-option
+        launcher:name="5_by_7"
+        launcher:numRows="7"
+        launcher:numColumns="5"
+        launcher:numFolderRows="4"
+        launcher:numFolderColumns="3"
+        launcher:numHotseatIcons="5"
+        launcher:numAllAppsColumns="5"
+        launcher:dbFile="launcher_5_by_7.db"
+        launcher:defaultLayoutId="@xml/hxy_default_workspace_7x5"
+        launcher:deviceCategory="phone|multi_display" >
+
+        <!-- Oppo default_icon_size_5_Col default slot = 50dp. -->
         <display-option
-            launcher:name="Shorter Stubby"
-            launcher:minWidthDps="255"
-            launcher:minHeightDps="400"
-            launcher:iconImageSize="64"
-            launcher:iconTextSize="13.0"
+            launcher:name="Oppo Dense 5x7"
+            launcher:minWidthDps="360"
+            launcher:minHeightDps="640"
+            launcher:iconImageSize="50"
+            launcher:iconTextSize="12"
             launcher:allAppsBorderSpace="16"
-            launcher:allAppsCellHeight="104"
+            launcher:allAppsCellHeight="100"
             launcher:canBeDefault="true" />
 
     </grid-option>

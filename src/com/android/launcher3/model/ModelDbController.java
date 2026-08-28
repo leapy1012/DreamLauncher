@@ -295,24 +295,8 @@ public class ModelDbController {
     public boolean migrateGridIfNeeded() {
         createDbIfNotExists();
         InvariantDeviceProfile idp = LauncherAppState.getIDP(mContext);
-        //added by zhushuangqian for hxy grid start
-        if(mContext.getResources().getBoolean(R.bool.config_hxy_grid)){
-            DeviceGridState srcDeviceState = new DeviceGridState(mContext);
-            DeviceGridState destDeviceState = new DeviceGridState(idp);
-            boolean same = TextUtils.equals(srcDeviceState.getDbFile(),destDeviceState.getDbFile());
-            Log.d("zsq","srcDeviceState = " + srcDeviceState + " ,destDeviceState = " + destDeviceState + " ,same = " + same );
-            if(!same){
-                destDeviceState.writeToPrefs(mContext);
-
-                DatabaseHelper oldHelper = mOpenHelper;
-                mOpenHelper = (mContext instanceof SandboxContext) ? oldHelper: createDatabaseHelper(false /* forMigration */);
-                if (mOpenHelper != oldHelper) {
-                    oldHelper.close();
-                }
-            }
-            return same;
-        }
-        //added by zhushuangqian for hxy grid end
+        // Always use GridSizeMigrationUtil so switching 4x6 ↔ 5x6 ↔ 5x7 reflows items
+        // instead of the old HXY path that swapped DB files and wiped the workspace.
         if (!GridSizeMigrationUtil.needsToMigrate(mContext, idp)) {
             return true;
         }

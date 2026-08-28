@@ -36,6 +36,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -479,6 +480,11 @@ public class DeviceProfile {
         iconDrawablePaddingOriginalPx = cellStyle.getDimensionPixelSize(
                 R.styleable.CellStyle_iconDrawablePadding, 0);
         cellStyle.recycle();
+        // Oppo General display-option: oplusIconDrawablePaddingDp (integers.xml).
+        if (mUseOppoWorkspaceMetrics) {
+            iconDrawablePaddingOriginalPx = pxFromDp(
+                    res.getInteger(R.integer.oplusIconDrawablePaddingDp), mMetrics);
+        }
 
         dropTargetBarSizePx = res.getDimensionPixelSize(R.dimen.dynamic_grid_drop_target_size);
         dropTargetBarTopMarginPx = res.getDimensionPixelSize(R.dimen.drop_target_top_margin);
@@ -496,7 +502,10 @@ public class DeviceProfile {
         workspaceSpringLoadedMinNextPageVisiblePx = res.getDimensionPixelSize(
                 R.dimen.dynamic_grid_spring_loaded_min_next_space_visible);
 
-        workspaceCellPaddingXPx = res.getDimensionPixelSize(R.dimen.dynamic_grid_cell_padding_x);
+        // Oppo General: oplusGridCellPaddingDp=2 (WorkspaceParam.workspaceCellPaddingXPx).
+        workspaceCellPaddingXPx = mUseOppoWorkspaceMetrics
+                ? pxFromDp(res.getInteger(R.integer.oplusGridCellPaddingDp), mMetrics)
+                : res.getDimensionPixelSize(R.dimen.dynamic_grid_cell_padding_x);
 
         hotseatQsbHeight = res.getDimensionPixelSize(R.dimen.qsb_widget_height);
         hotseatQsbShadowHeight = res.getDimensionPixelSize(R.dimen.qsb_shadow_height);
@@ -904,7 +913,11 @@ public class DeviceProfile {
      */
     private int updateAvailableDimensions(Context context) {
         float invIconSizeDp = inv.iconSize[mTypeIndex];
+        // Oppo IconParam.getIconTextSizeBaseCol: 5-col phone uses iconTextSize - 3sp.
         float invIconTextSizeSp = inv.iconTextSize[mTypeIndex];
+        if (mUseOppoWorkspaceMetrics && inv.numColumns == 5) {
+            invIconTextSizeSp -= 3f;
+        }
         int baseIconSizePx = Math.max(1, pxFromDp(invIconSizeDp, mMetrics));
         int baseIconTextSizePx = pxFromSp(invIconTextSizeSp, mMetrics);
         iconSizePx = baseIconSizePx;
@@ -1264,11 +1277,35 @@ public class DeviceProfile {
         return mUseOppoWorkspaceMetrics ? mOppoHotseatMarginBottomPx : 0;
     }
 
+    /**
+     * Oppo CellLayoutParam.getContentHeight: iconSize + drawablePadding + textHeight.
+     * Text height uses Paint descent-ascent (IconParam.calculateTextHeightIgnoreFontPadding).
+     */
+    public int getOppoWorkspaceContentHeight() {
+        return iconSizePx + iconDrawablePaddingPx + getOppoIconTextHeightPx();
+    }
+
+    /**
+     * Oppo CellLayoutParam.ICON_TOP_FACTOR_HALF / ICON_TOP_FACTOR_THREE_OVER_FIVE
+     * (and IconUtils.getIconFactor): 0.5 for 4-col, 0.6 for 5-col.
+     */
+    public float getOppoIconTopFactor() {
+        return inv.numColumns == 5 ? 0.6f : 0.5f;
+    }
+
     public int getOppoWorkspaceCellHeight(int cellWidth) {
-        int contentHeight = iconSizePx + iconDrawablePaddingPx + iconTextSizePx;
+        int contentHeight = getOppoWorkspaceContentHeight();
         int minVerticalPadding = 2 * getOppoCellPaddingTopMin();
         return Math.max(contentHeight + minVerticalPadding,
                 cellWidth + getOppoDiffCellHeightWithCellWidth());
+    }
+
+    /** Matches Oppo IconParam.calculateTextHeightIgnoreFontPadding. */
+    private int getOppoIconTextHeightPx() {
+        Paint paint = new Paint();
+        paint.setTextSize(iconTextSizePx);
+        Paint.FontMetrics fontMetrics = paint.getFontMetrics();
+        return (int) Math.ceil(fontMetrics.descent - fontMetrics.ascent);
     }
 
     private int getOppoCellPaddingTopMin() {
@@ -1293,6 +1330,10 @@ public class DeviceProfile {
         }
         if (inv.numColumns == 5 && inv.numRows == 6) {
             return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth5x6);
+        }
+        // 5x7: Oppo uses the default height delta (tighter packing than 5x6).
+        if (inv.numColumns == 5 && inv.numRows == 7) {
+            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth);
         }
         if ((inv.numColumns == 4 && inv.numRows == 7)
                 || (inv.numColumns == 5 && (inv.numRows == 8 || inv.numRows == 9))) {
@@ -1755,7 +1796,8 @@ public class DeviceProfile {
     public int getCellContentHeight(@ContainerType int containerType) {
         switch (containerType) {
             case CellLayout.WORKSPACE:
-                return cellHeightPx;
+                // Oppo DeviceProfile.getCellContentHeight(WORKSPACE) → CellLayoutParam contentHeight.
+                return mUseOppoWorkspaceMetrics ? getOppoWorkspaceContentHeight() : cellHeightPx;
             case CellLayout.FOLDER:
                 return folderCellHeightPx;
             case CellLayout.HOTSEAT:
