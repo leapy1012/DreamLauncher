@@ -35,6 +35,7 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Handler;
@@ -87,6 +88,7 @@ import com.android.launcher3.big.popup.SwitchFolderShortcut;
 import com.android.launcher3.big.popup.UngroupFolderShortcut;
 import com.android.launcher3.folder.large.HxyBigFolderPreviewSelector;
 import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 
 /**
  * A container for shortcuts to deep links and notifications associated with an app.
@@ -1036,8 +1038,8 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     }
 
     /**
-     * ColorOS big-folder popup: preview-mode strip + COUI divided action rows
-     * (matches Oppo {@code oplus_deep_shortcut_folder_drag} + system shortcuts).
+     * ColorOS folder popup: optional big-folder preview strip + flat action rows
+     * (Oppo {@code oplus_deep_shortcut_folder_drag} only when {@code hasExtendedGrids}).
      */
     public void populateAndShowColorOsForFolder(List<SystemShortcut> shortcuts,
             HxyLargeFolderIcon folderIcon) {
@@ -1045,8 +1047,6 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         mContainerWidth = getResources().getDimensionPixelSize(R.dimen.coloros_popup_item_width);
         final int popupSurface = getContext().getColor(R.color.coloros_popup_surface);
         final int popupText = getContext().getColor(R.color.coloros_text_primary);
-        final ColorOsPopupIcons.Theme iconTheme =
-                ColorOsPopupIcons.Theme.fromSurface(popupSurface);
         mArrowColor = popupSurface;
 
         ViewGroup card = inflateAndAdd(R.layout.coloros_popup_card, this);
@@ -1057,14 +1057,17 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         card.setBackground(cardBg);
         card.setClipToOutline(true);
 
-        HxyBigFolderPreviewSelector selector = inflateAndAdd(
-                R.layout.hxy_folder_preview_selector, card);
-        selector.getLayoutParams().width = mContainerWidth;
-        selector.bind(folderIcon);
+        // Preview modes only for 2×2 big folders (Oppo BigFolderConvert / hasExtendedGrids).
+        if (HxyLargeFolderProxy.isLargeFolder(folderIcon)) {
+            HxyBigFolderPreviewSelector selector = inflateAndAdd(
+                    R.layout.hxy_folder_preview_selector, card);
+            selector.getLayoutParams().width = mContainerWidth;
+            selector.bind(folderIcon);
 
-        View band = inflateAndAdd(R.layout.coloros_popup_group_divider, card);
-        band.setForceDarkAllowed(false);
-        band.setBackgroundColor(getContext().getColor(R.color.coloros_popup_group_band));
+            View band = inflateAndAdd(R.layout.coloros_popup_group_divider, card);
+            band.setForceDarkAllowed(false);
+            band.setBackgroundColor(getContext().getColor(R.color.coloros_popup_group_band));
+        }
 
         mSystemShortcutContainer = inflateAndAdd(R.layout.coloros_popup_shortcut_group, card);
         mWidgetContainer = mSystemShortcutContainer;
@@ -1079,12 +1082,9 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
             row.setBackgroundColor(Color.TRANSPARENT);
             if (row instanceof DeepShortcutView) {
                 DeepShortcutView dsv = (DeepShortcutView) row;
-                dsv.setColorOsPopupIconTheme(iconTheme);
                 applyColorOsPopupLabel(dsv.getBubbleText(), popupText);
-                View iconView = dsv.getIconView();
-                iconView.setForceDarkAllowed(false);
-                iconView.setBackground(ColorOsPopupIcons.forSystemShortcut(
-                        getContext(), shortcut.getIconResId(), iconTheme));
+                // Flat glyph like Oppo SystemShortcut.updateIcon — no circular plate.
+                applyFlatFolderPopupIcon(dsv.getIconView(), shortcut.getIconResId(), popupText);
             }
         }
 
@@ -1102,12 +1102,24 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                 }
                 DeepShortcutView dsv = (DeepShortcutView) child;
                 SystemShortcut shortcut = (SystemShortcut) child.getTag();
-                View iconView = dsv.getIconView();
-                iconView.setForceDarkAllowed(false);
-                iconView.setBackground(ColorOsPopupIcons.forSystemShortcut(
-                        getContext(), shortcut.getIconResId(), iconTheme));
+                applyFlatFolderPopupIcon(dsv.getIconView(), shortcut.getIconResId(), popupText);
             }
         }
         setAccessibilityPaneTitle(getTitleForAccessibility());
+    }
+
+    /** Oppo folder-popup icons: raw vector as background, tinted to label color. */
+    private void applyFlatFolderPopupIcon(View iconView, int iconResId, int tintColor) {
+        if (iconView == null || iconResId <= 0) {
+            return;
+        }
+        iconView.setForceDarkAllowed(false);
+        Drawable icon = getContext().getDrawable(iconResId);
+        if (icon == null) {
+            return;
+        }
+        icon = icon.mutate();
+        icon.setTint(tintColor);
+        iconView.setBackground(icon);
     }
 }
