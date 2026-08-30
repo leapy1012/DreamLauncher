@@ -81,7 +81,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.android.launcher3.big.popup.OpenFolderShortcut;
+import com.android.launcher3.big.popup.RenameFolderShortcut;
 import com.android.launcher3.big.popup.SwitchFolderShortcut;
+import com.android.launcher3.big.popup.UngroupFolderShortcut;
+import com.android.launcher3.folder.large.HxyBigFolderPreviewSelector;
 import com.android.launcher3.folder.large.HxyLargeFolderIcon;
 
 /**
@@ -1001,19 +1005,103 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         if (getOpen(launcher) != null) {
             icon.clearFocus();
         }
-        PopupContainerWithArrow container = (PopupContainerWithArrow) launcher.getLayoutInflater().inflate(R.layout.folder_popup_container, launcher.getDragLayer(), false);
-        container.configureForLauncher(launcher, (ItemInfo) icon.getTag());
-        container.populateAndShow((SystemShortcut) new SwitchFolderShortcut(launcher, (ItemInfo) icon.getTag(), icon), icon);
+        ItemInfo itemInfo = (ItemInfo) icon.getTag();
+        PopupContainerWithArrow container = (PopupContainerWithArrow) launcher.getLayoutInflater()
+                .inflate(R.layout.folder_popup_container, launcher.getDragLayer(), false);
+        container.configureForLauncher(launcher, itemInfo);
+
+        List<SystemShortcut> shortcuts = new ArrayList<>(4);
+        shortcuts.add(new SwitchFolderShortcut(launcher, itemInfo, icon));
+        shortcuts.add(new OpenFolderShortcut(launcher, itemInfo, icon));
+        shortcuts.add(new RenameFolderShortcut(launcher, itemInfo, icon));
+        shortcuts.add(new UngroupFolderShortcut(launcher, itemInfo, icon));
+        container.populateAndShowColorOsForFolder(shortcuts, icon);
         return container;
     }
 
     public void populateAndShow(SystemShortcut systemShortcut, HxyLargeFolderIcon view) {
-        mFolderIcon = view;
-        int viewsToFlip = getChildCount();
-        mSystemShortcutContainer = this;
-        initializeSystemShortcut(R.layout.system_shortcut, this, systemShortcut, false);
-        reorderAndShow(viewsToFlip);
+        List<SystemShortcut> shortcuts = new ArrayList<>(1);
+        shortcuts.add(systemShortcut);
+        populateAndShowColorOsForFolder(shortcuts, view);
+    }
+
+    public void populateAndShow(List<SystemShortcut> shortcuts, HxyLargeFolderIcon view) {
+        populateAndShowColorOsForFolder(shortcuts, view);
+    }
+
+    /**
+     * ColorOS big-folder popup: preview-mode strip + COUI divided action rows
+     * (matches Oppo {@code oplus_deep_shortcut_folder_drag} + system shortcuts).
+     */
+    public void populateAndShowColorOsForFolder(List<SystemShortcut> shortcuts,
+            HxyLargeFolderIcon folderIcon) {
+        mFolderIcon = folderIcon;
+        mContainerWidth = getResources().getDimensionPixelSize(R.dimen.coloros_popup_item_width);
+        final int popupSurface = getContext().getColor(R.color.coloros_popup_surface);
+        final int popupText = getContext().getColor(R.color.coloros_text_primary);
+        final ColorOsPopupIcons.Theme iconTheme =
+                ColorOsPopupIcons.Theme.fromSurface(popupSurface);
+        mArrowColor = popupSurface;
+
+        ViewGroup card = inflateAndAdd(R.layout.coloros_popup_card, this);
+        card.setForceDarkAllowed(false);
+        GradientDrawable cardBg = new GradientDrawable();
+        cardBg.setColor(popupSurface);
+        cardBg.setCornerRadius(getResources().getDimension(R.dimen.coloros_popup_corner_radius));
+        card.setBackground(cardBg);
+        card.setClipToOutline(true);
+
+        HxyBigFolderPreviewSelector selector = inflateAndAdd(
+                R.layout.hxy_folder_preview_selector, card);
+        selector.getLayoutParams().width = mContainerWidth;
+        selector.bind(folderIcon);
+
+        View band = inflateAndAdd(R.layout.coloros_popup_group_divider, card);
+        band.setForceDarkAllowed(false);
+        band.setBackgroundColor(getContext().getColor(R.color.coloros_popup_group_band));
+
+        mSystemShortcutContainer = inflateAndAdd(R.layout.coloros_popup_shortcut_group, card);
+        mWidgetContainer = mSystemShortcutContainer;
+        for (SystemShortcut shortcut : shortcuts) {
+            View row = initializeSystemShortcut(
+                    R.layout.coloros_popup_shortcut,
+                    mSystemShortcutContainer,
+                    shortcut,
+                    false);
+            row.getLayoutParams().width = mContainerWidth;
+            row.setForceDarkAllowed(false);
+            row.setBackgroundColor(Color.TRANSPARENT);
+            if (row instanceof DeepShortcutView) {
+                DeepShortcutView dsv = (DeepShortcutView) row;
+                dsv.setColorOsPopupIconTheme(iconTheme);
+                applyColorOsPopupLabel(dsv.getBubbleText(), popupText);
+                View iconView = dsv.getIconView();
+                iconView.setForceDarkAllowed(false);
+                iconView.setBackground(ColorOsPopupIcons.forSystemShortcut(
+                        getContext(), shortcut.getIconResId(), iconTheme));
+            }
+        }
+
+        show();
+        cardBg.setColor(popupSurface);
+        card.setBackground(cardBg);
+        mArrowColor = popupSurface;
+        updateArrowColor();
+        if (mSystemShortcutContainer != null) {
+            for (int i = 0; i < mSystemShortcutContainer.getChildCount(); i++) {
+                View child = mSystemShortcutContainer.getChildAt(i);
+                if (!(child instanceof DeepShortcutView)
+                        || !(child.getTag() instanceof SystemShortcut)) {
+                    continue;
+                }
+                DeepShortcutView dsv = (DeepShortcutView) child;
+                SystemShortcut shortcut = (SystemShortcut) child.getTag();
+                View iconView = dsv.getIconView();
+                iconView.setForceDarkAllowed(false);
+                iconView.setBackground(ColorOsPopupIcons.forSystemShortcut(
+                        getContext(), shortcut.getIconResId(), iconTheme));
+            }
+        }
         setAccessibilityPaneTitle(getTitleForAccessibility());
-        setLayoutTransition(new LayoutTransition());
     }
 }

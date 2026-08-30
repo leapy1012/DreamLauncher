@@ -165,7 +165,9 @@ public class PageLinearLayout extends ViewGroup {
     }
 
     public void onMeasureGrid(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(measureGridChildrenHeight(), MeasureSpec.EXACTLY));
+        int width = View.MeasureSpec.getSize(widthMeasureSpec);
+        int height = measureGridChildrenHeight();
+        setMeasuredDimension(width, height);
     }
 
     private int measureGridChildrenHeight() {

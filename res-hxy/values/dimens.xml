@@ -34,6 +34,9 @@
     <dimen name="hxy_large_folder_vertical_space_5col">4dp</dimen>
     <dimen name="hxy_large_folder_round">20dp</dimen>
     <dimen name="hxy_large_folder_icon_out_space">3dp</dimen>
+    <!-- Gutter between closed big-folder preview icons (ColorOS-like). -->
+    <dimen name="hxy_large_folder_preview_item_gap">6dp</dimen>
+    <dimen name="hxy_large_folder_indicator_dot_size">5dp</dimen>
     <dimen name="hxy_large_folder_padding_top_4x5">7dp</dimen>
     <dimen name="hxy_large_folder_padding_top_4x4">18dp</dimen>
     <dimen name="hxy_large_folder_padding_top_3x3">14dp</dimen>

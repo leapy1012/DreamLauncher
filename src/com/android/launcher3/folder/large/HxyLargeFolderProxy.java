@@ -7,6 +7,7 @@ import android.view.View;
 import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.HxyOption;
+import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.views.ActivityContext;
@@ -120,29 +121,41 @@ public class HxyLargeFolderProxy {
             sHorizontalSpace = getDimension(context, R.dimen.hxy_large_folder_horizontal_space_4x4);
             sVerticalSpace = getDimension(context, R.dimen.hxy_large_folder_vertical_space_4x4);
         }
+        // Even ColorOS-style grid: no extra H/V gutters; leftover becomes content inset.
         sHorizontalSpace = 0;
-        // sVerticalSpace = 0;
-        int folderIconSizePx = activity.getDeviceProfile().folderIconSizePx;
+        sVerticalSpace = 0;
+        DeviceProfile dp = activity.getDeviceProfile();
+        int folderIconSizePx = dp.folderIconSizePx;
         int availableSpaceX = cellWidth * 2;
         int availableSpaceY = cellHeight * 2;
         int previewWidth = availableSpaceX - paddingLeft - paddingRight;
         int previewHeight = computePreviewHeight(availableSpaceY, folderIconSizePx, 2);
-        int horizontalSpaces = sHorizontalSpace * (getSpanCount() + 1);
-        int verticalSpaces = sVerticalSpace * (getSpanCount() + 1);
-        int childWidth = (previewWidth - horizontalSpaces - paddingLeft - paddingRight) / getSpanCount();
-        int childHeight = (previewHeight - verticalSpaces - paddingTop - paddingBottom) / getSpanCount();
-        childWidth = (previewWidth) / getSpanCount();
-        childHeight = (previewHeight) / getSpanCount();
+        // ColorOS big-folder content inset: keep a 3×3 of icons inside the frosted plate.
+        int contentInset = Math.max(
+                getDimension(context, R.dimen.hxy_large_folder_icon_out_space),
+                Math.round(Math.min(previewWidth, previewHeight) * 0.06f));
+        int usableWidth = Math.max(colsSafe(previewWidth - (contentInset * 2)), 1);
+        int usableHeight = Math.max(colsSafe(previewHeight - (contentInset * 2)), 1);
+        int childWidth = usableWidth / getSpanCount();
+        int childHeight = usableHeight / getSpanCount();
         int min = Math.min(childWidth, childHeight);
-        sFolderIconSize = min;
-        initFolderIconOutSize(context, min);
+        sFolderIconSize = Math.max(1, min);
+        initFolderIconOutSize(context, sFolderIconSize);
         sMaxDistanceForFolderCreation = (float) Math.max(previewWidth, previewHeight);
         sFolderPreviewHeight = previewHeight;
-        sPreviewOffsetY = previewHeight -  sFolderIconSize * getSpanCount() - sVerticalSpace * (getSpanCount() - 1);
-        sPreviewOffsetX = previewWidth - sFolderIconSize* getSpanCount() - sHorizontalSpace * (getSpanCount() - 1);
-        Log.d("HxyLargeFolderProxy", "initFolderIconSize previewWidth = " + previewWidth + "; horizontalSpaces = " + horizontalSpaces + "; paddingLeft = " + paddingLeft + "; paddingRight = " + paddingRight
-        + "; previewHeight = " + previewHeight + "; verticalSpaces = " + verticalSpaces + "; paddingTop = " + paddingTop + "; paddingBottom = " + paddingBottom);
+        // Leftover inside the plate — used as list content padding to center the grid.
+        sPreviewOffsetY = Math.max(0, previewHeight - sFolderIconSize * getSpanCount());
+        sPreviewOffsetX = Math.max(0, previewWidth - sFolderIconSize * getSpanCount());
+        Log.d("HxyLargeFolderProxy", "initFolderIconSize previewWidth = " + previewWidth
+                + "; previewHeight = " + previewHeight
+                + "; folderIconSize = " + sFolderIconSize
+                + "; contentInset = " + contentInset
+                + "; paddingLeft = " + paddingLeft + "; paddingRight = " + paddingRight);
         
+    }
+
+    private static int colsSafe(int value) {
+        return Math.max(value, getSpanCount());
     }
 
     private static void initFolderIconOutSize(Context context, int iconSize) {
@@ -237,6 +250,16 @@ public class HxyLargeFolderProxy {
         return sPreviewOffsetY / 2;
     }
 
+    /** Horizontal leftover inside the plate (for centering the preview grid). */
+    public static int getContentInsetX() {
+        return sPreviewOffsetX;
+    }
+
+    /** Vertical leftover inside the plate (for centering the preview grid). */
+    public static int getContentInsetY() {
+        return sPreviewOffsetY;
+    }
+
     public static View getFloatingIconView(View originalView, String targetPackageName, UserHandle user) {
         return getFloatingIconView(originalView, targetPackageName, 0);
     }
@@ -248,10 +271,15 @@ public class HxyLargeFolderProxy {
         return originalView;
     }
 
+    /** Full icons before the overflow stack cell (3×3 − 1). */
+    public static int getMaxPreviewWithoutStacked() {
+        return MAX_3X3_SIZE - 1;
+    }
+
     public static int getSwitchLabelResId(Object tag) {
         ItemInfo info = (ItemInfo) tag;
         if (info.spanX > 1 || info.spanY > 1) {
-            return R.string.hxy_folder_switch_small;
+            return R.string.hxy_folder_shrink;
         }
         return R.string.hxy_folder_switch_large;
     }
@@ -259,7 +287,7 @@ public class HxyLargeFolderProxy {
     public static int getSwitchIconResId(Object tag) {
         ItemInfo info = (ItemInfo) tag;
         if (info.spanX > 1 || info.spanY > 1) {
-            return R.drawable.hxy_folder_switch_small;
+            return R.drawable.hxy_folder_shrink;
         }
         return R.drawable.hxy_folder_switch_large;
     }

@@ -49,6 +49,14 @@
     <string name="transition_effect_windmill">风车</string>
     <string name="hxy_folder_switch_large">显示为大文件夹</string>
     <string name="hxy_folder_switch_small">显示为小文件夹</string>
+    <string name="hxy_folder_shrink">缩小文件夹</string>
+    <string name="hxy_folder_open">打开文件夹</string>
+    <string name="hxy_folder_rename">重命名</string>
+    <string name="hxy_folder_ungroup">解散分组</string>
+    <string name="hxy_folder_ungroup_message">解散“%1$s”并将应用放到桌面？</string>
+    <string name="hxy_folder_preview_nine">九宫格预览</string>
+    <string name="hxy_folder_preview_four">四宫格预览</string>
+    <string name="hxy_folder_preview_highlight">高亮预览</string>
     <string name="str_add_to">添加</string>
     <string name="home_screen_icon_custom">图标自定义</string>
     <string name="new_install_display_dot">新安装应用显示小圆点</string>

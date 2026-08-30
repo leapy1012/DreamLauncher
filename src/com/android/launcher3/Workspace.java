@@ -261,8 +261,19 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     // Variables relating to touch disambiguation (scrolling workspace vs. scrolling a widget)
     private float mXDown;
     private float mYDown;
-    private View mFirstPagePinnedItem;
     private boolean mIsEventOverFirstPagePinnedItem;
+    /** When true, closed big-folder owns the horizontal swipe (ColorOS paging). */
+    private boolean mBigFolderIntercept;
+    /**
+     * DOWN landed on a multi-page closed big folder — keep Workspace from stealing the
+     * gesture before the folder's MOVE handler can set {@link #mBigFolderIntercept}.
+     */
+    private boolean mIsEventOverPageableBigFolder;
+    private View mFirstPagePinnedItem;
+
+    public void setBigFolderIntercept(boolean intercept) {
+        mBigFolderIntercept = intercept;
+    }
 
     final static float START_DAMPING_TOUCH_SLOP_ANGLE = (float) Math.PI / 6;
     final static float MAX_SWIPE_ANGLE = (float) Math.PI / 3;
@@ -1144,6 +1155,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         if (isTrackpadMultiFingerSwipe(ev)) {
             return false;
         }
+        if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            mBigFolderIntercept = false;
+        }
         return super.onInterceptTouchEvent(ev);
     }
 
@@ -1249,10 +1263,55 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         } else {
             mIsEventOverFirstPagePinnedItem = false;
         }
+        mIsEventOverPageableBigFolder = isOverPageableBigFolder(mXDown, mYDown);
+        if (mIsEventOverPageableBigFolder) {
+            // Claim early so the first MOVE past slop does not start Workspace paging.
+            mBigFolderIntercept = true;
+        }
+    }
+
+    /**
+     * True when (x,y) in Workspace coords hits a closed big folder that can page-swipe.
+     */
+    private boolean isOverPageableBigFolder(float workspaceX, float workspaceY) {
+        final float[] pt = new float[2];
+        for (int i = 0; i < getChildCount(); i++) {
+            View page = getChildAt(i);
+            if (!(page instanceof CellLayout) || page.getVisibility() != VISIBLE) {
+                continue;
+            }
+            CellLayout cl = (CellLayout) page;
+            pt[0] = workspaceX;
+            pt[1] = workspaceY;
+            Utilities.mapCoordInSelfToDescendant(cl, this, pt);
+            if (pt[0] < 0 || pt[1] < 0 || pt[0] > cl.getWidth() || pt[1] > cl.getHeight()) {
+                continue;
+            }
+            for (int j = 0; j < cl.getChildCount(); j++) {
+                View child = cl.getChildAt(j);
+                if (!(child instanceof HxyLargeFolderIcon)) {
+                    continue;
+                }
+                HxyLargeFolderIcon folder = (HxyLargeFolderIcon) child;
+                if (!folder.canPageSwipe()) {
+                    continue;
+                }
+                pt[0] = workspaceX;
+                pt[1] = workspaceY;
+                Utilities.mapCoordInSelfToDescendant(folder, this, pt);
+                if (folder.isInSwipeArea(pt[0], pt[1])) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
     protected void determineScrollingStart(MotionEvent ev) {
+        if (mBigFolderIntercept || mIsEventOverPageableBigFolder) {
+            return;
+        }
         if (!isFinishedSwitchingState() || mIsEventOverFirstPagePinnedItem) return;
 
         float deltaX = ev.getX() - mXDown;

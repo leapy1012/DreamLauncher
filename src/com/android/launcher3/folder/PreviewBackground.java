@@ -510,4 +510,26 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
     public int getPreviewHeight() {
         return this.mPreviewHeight;
     }
+
+    public int getBasePreviewOffsetX() {
+        return basePreviewOffsetX;
+    }
+
+    public int getBasePreviewOffsetY() {
+        return basePreviewOffsetY;
+    }
+
+    /** Round-rect clip matching the large-folder frosted plate. */
+    public Path getLargeFolderClipPath(float cornerRadius) {
+        mPath.reset();
+        mPath.addRoundRect(
+                basePreviewOffsetX,
+                basePreviewOffsetY,
+                basePreviewOffsetX + mPreviewWidth,
+                basePreviewOffsetY + mPreviewHeight,
+                cornerRadius,
+                cornerRadius,
+                Path.Direction.CW);
+        return mPath;
+    }
 }

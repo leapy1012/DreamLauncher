@@ -36,6 +36,14 @@
     <string name="transition_effect_windmill">Windmill</string>
     <string name="hxy_folder_switch_large">Show as large folder</string>
     <string name="hxy_folder_switch_small">Show as small folder</string>
+    <string name="hxy_folder_shrink">Shrink folder</string>
+    <string name="hxy_folder_open">Open folder</string>
+    <string name="hxy_folder_rename">Rename</string>
+    <string name="hxy_folder_ungroup">Ungroup</string>
+    <string name="hxy_folder_ungroup_message">Ungroup \"%1$s\" and place apps on the home screen?</string>
+    <string name="hxy_folder_preview_nine">Nine-grid preview</string>
+    <string name="hxy_folder_preview_four">Four-grid preview</string>
+    <string name="hxy_folder_preview_highlight">Highlight preview</string>
     <string name="str_add_to">Add</string>
     <string name="home_screen_icon_custom">Icon Custom</string>
     <string name="new_install_display_dot">New install display dots</string>

@@ -17,6 +17,28 @@
         app:horizontal_space="@dimen/hxy_large_folder_horizontal_space_4x6"
         app:vertical_space="@dimen/hxy_large_folder_vertical_space_4x6" />
 
+    <com.android.launcher3.folder.large.listview.HxyLargeFolderListView
+        android:id="@+id/folder_icon_content_adjacent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible"
+        app:max_row="3"
+        app:orientation="2"
+        app:span_count="3"
+        app:horizontal_space="@dimen/hxy_large_folder_horizontal_space_4x6"
+        app:vertical_space="@dimen/hxy_large_folder_vertical_space_4x6" />
+
+    <com.coui.appcompat.indicator.COUIPageIndicator2
+        android:id="@+id/folder_icon_indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:theme="@style/Theme.COUI.Main"
+        android:visibility="invisible"
+        android:alpha="0"
+        android:focusable="false"
+        style="@style/HxyLargeFolder.COUIPageIndicator" />
+
     <com.android.launcher3.big.HxyBubbleTextView
         android:id="@+id/folder_icon_name"
         style="@style/BaseIcon.Workspace"

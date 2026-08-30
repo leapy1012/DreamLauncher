@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ColorOS big-folder preview mode strip (Oppo oplus_deep_shortcut_folder_drag). -->
+<com.android.launcher3.folder.large.HxyBigFolderPreviewSelector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="@dimen/coloros_popup_item_width"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:minHeight="56dp"
+    android:orientation="horizontal"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:focusable="true">
+        <View
+            android:id="@+id/folder_preview_nine"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:background="@drawable/hxy_folder_preview_nine"
+            android:contentDescription="@string/hxy_folder_preview_nine"
+            android:forceDarkAllowed="false" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:focusable="true">
+        <View
+            android:id="@+id/folder_preview_four"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:background="@drawable/hxy_folder_preview_four"
+            android:contentDescription="@string/hxy_folder_preview_four"
+            android:forceDarkAllowed="false" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:focusable="true">
+        <View
+            android:id="@+id/folder_preview_highlight"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:background="@drawable/hxy_folder_preview_highlight"
+            android:contentDescription="@string/hxy_folder_preview_highlight"
+            android:forceDarkAllowed="false" />
+    </FrameLayout>
+</com.android.launcher3.folder.large.HxyBigFolderPreviewSelector>

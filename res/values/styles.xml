@@ -295,6 +295,17 @@
     Various foreground colors are overridden to be workspaceTextColor so that they are properly
     visible on various wallpapers.
     -->
+    <!-- COUI page indicator for closed big-folder; absolute colors so it works under
+         HomeScreenElementTheme when Theme.COUI.Main wraps the view. -->
+    <style name="HxyLargeFolder.COUIPageIndicator" parent="@style/Widget.COUI.COUIPageIndicator.Light">
+        <item name="dotClickable">false</item>
+        <item name="dotSize">@dimen/hxy_large_folder_indicator_dot_size</item>
+        <item name="dotSizeMedium">@dimen/hxy_large_folder_indicator_dot_size</item>
+        <item name="dotSizeSmall">@dimen/hxy_large_folder_indicator_dot_size</item>
+        <item name="dotColor">#66FFFFFF</item>
+        <item name="traceDotColor">#FFFFFFFF</item>
+    </style>
+
     <style name="HomeScreenElementTheme">
         <item name="android:colorEdgeEffect">?attr/workspaceTextColor</item>
         <item name="android:textColorPrimary">?attr/workspaceTextColor</item>

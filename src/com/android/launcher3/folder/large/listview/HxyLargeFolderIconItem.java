@@ -17,6 +17,12 @@ import com.android.launcher3.folder.large.HxyLargeFolderUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * One cell inside a large-folder preview grid.
+ *
+ * When {@code mCountOut} is set (Oppo overflow slot), this draws up to 4 mini-icons
+ * in a 2×2 stack with ColorOS gap math — not a full app icon.
+ */
 public class HxyLargeFolderIconItem extends HxyBubbleTextView {
     private static final int MAX_OUT_COUNT = 4;
     private static final int SPAN_COUNT = 2;
@@ -25,6 +31,10 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
     private boolean mCountOut;
     private final List<Drawable> mDrawableList;
     private int mIconSize;
+    private WorkspaceItemInfo mBoundData;
+    private int mBoundPosition = -1;
+    private List<WorkspaceItemInfo> mBoundList;
+    private int mBoundCellSize = -1;
 
     public HxyLargeFolderIconItem(Context context) {
         this(context, (AttributeSet) null);
@@ -41,19 +51,26 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         this.mDrawableList = new ArrayList<>();
         this.mCountOut = false;
         this.mIconSize = -1;
+        setWillNotDraw(false);
     }
 
     public void release() {
         this.mDrawableList.clear();
+        this.mBoundData = null;
+        this.mBoundList = null;
     }
+
     public void dispatchDraw(@NonNull Canvas canvas) {
-        super.dispatchDraw(canvas);
+        // Preview cells paint icons in onDraw only — skip TextView children/text.
     }
 
     public void onDraw(Canvas canvas) {
+        int save = canvas.save();
+        canvas.clipRect(0, 0, getWidth(), getHeight());
         for (int i = 0; i < this.mDrawableList.size(); i++) {
             this.mDrawableList.get(i).draw(canvas);
         }
+        canvas.restoreToCount(save);
     }
 
     public void setCoordinateXY(int x, int y) {
@@ -71,39 +88,70 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
     }
 
     public void getIconBounds(Rect outBounds) {
-        outBounds.set(0, 0, getMeasuredWidth() + 0, getMeasuredHeight() + 0);
+        outBounds.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
     }
 
     public boolean isCountOut() {
         return this.mCountOut;
     }
 
-    private boolean isChangeData(WorkspaceItemInfo data, boolean isCountOut, String className) {
-        return true;
+    public void bindTo(WorkspaceItemInfo data, int position, boolean isCountOut,
+            List<WorkspaceItemInfo> list) {
+        this.mBoundData = data;
+        this.mBoundPosition = position;
+        this.mBoundList = list;
+        this.mCountOut = isCountOut;
+        this.mBoundCellSize = -1;
+        applyBoundDrawables();
     }
 
-    public void bindTo(WorkspaceItemInfo data, int position, boolean isCountOut, List<WorkspaceItemInfo> list) {
-        this.mCountOut = isCountOut;
-        String className = HxyLargeFolderUtils.getClassName(data);
-        if (isChangeData(data, isCountOut, className)) {
-            if (!isCountOut) {
-                setTag(data);
-            }
-            inits(data);
-            this.mDrawableList.clear();
-            this.mClassName = className;
-            this.mIconSize = HxyLargeFolderProxy.getFolderIconSize();
-            int iconOutSize = HxyLargeFolderProxy.getFolderIconOutSize();
-            int iconOutSpace = HxyLargeFolderProxy.getFolderIconOutSpace(getContext());
-            int size = isCountOut ? iconOutSize : this.mIconSize;
-            if (isCountOut) {
-                addOutDrawables(position, list, iconOutSize, iconOutSpace);
-            } else {
-                this.mDrawableList.add(getDrawable(getContext(), data, size));
-            }
-            bindIcon();
-            invalidate();
+    /** Re-apply after measure/layout so stack math uses the real cell size. */
+    public void rebindIfNeeded() {
+        if (mBoundPosition < 0) {
+            return;
         }
+        int cellSize = resolveCellSize();
+        if (cellSize > 0 && cellSize != mBoundCellSize) {
+            applyBoundDrawables();
+        }
+    }
+
+    private int resolveCellSize() {
+        if (getMeasuredWidth() > 0 && getMeasuredHeight() > 0) {
+            return Math.min(getMeasuredWidth(), getMeasuredHeight());
+        }
+        int proxy = HxyLargeFolderProxy.getFolderIconSize();
+        if (proxy > 0) {
+            return proxy;
+        }
+        return getIconSize();
+    }
+
+    private void applyBoundDrawables() {
+        WorkspaceItemInfo data = mBoundData;
+        boolean isCountOut = mCountOut;
+        String className = HxyLargeFolderUtils.getClassName(data);
+        if (!isCountOut) {
+            setTag(data);
+        } else {
+            setTag(null);
+        }
+        // Never show app / placeholder labels inside the preview plate.
+        setText("");
+        inits(data);
+        this.mDrawableList.clear();
+        this.mClassName = className;
+        this.mIconSize = resolveCellSize();
+        this.mBoundCellSize = this.mIconSize;
+        if (isCountOut) {
+            setIcon(null);
+            addOutDrawables(mBoundPosition, mBoundList, this.mIconSize);
+        } else if (data != null) {
+            Drawable icon = getDrawable(getContext(), data, this.mIconSize);
+            this.mDrawableList.add(icon);
+            bindIcon();
+        }
+        invalidate();
     }
 
     private void bindIcon() {
@@ -117,39 +165,43 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
     }
 
     public void applyCompoundDrawables(Drawable icon) {
+        // Large-folder preview cells paint via {@link #onDraw}; skip TextView compounds.
     }
 
-    private void addOutDrawables(int position, List<WorkspaceItemInfo> list, int iconOutSize, int iconOutSpace) {
-        if (list != null && list.size() > position) {
-            int maxSize = Math.min(position + 4, list.size());
-            int i = position;
-            int index = 0;
-            while (i < maxSize) {
-                Drawable item = getDrawable(getContext(), list.get(i), iconOutSize);
-                int left = getOutLeft(index, iconOutSize, iconOutSpace);
-                int top = getOutTop(index, iconOutSize, iconOutSpace);
-                item.setBounds(left, top, left + iconOutSize, top + iconOutSize);
-                this.mDrawableList.add(item);
-                i++;
-                index++;
-            }
+    /**
+     * Oppo overflow cell: up to 4 mini-icons in a 2×2 that fills the preview cell.
+     * sub ≈ (cell − gap) / 2 so the stack footprint matches a full preview icon.
+     */
+    private void addOutDrawables(int position, List<WorkspaceItemInfo> list, int cellSize) {
+        if (list == null || list.size() <= position || cellSize <= 0) {
+            return;
+        }
+        int gap = Math.max(1, HxyLargeFolderProxy.getFolderIconOutSpace(getContext()));
+        int subIconSize = Math.max(1, (cellSize - gap) / 2);
+        while (subIconSize * 2 + gap > cellSize && subIconSize > 1) {
+            subIconSize--;
+        }
+        int used = subIconSize * 2 + gap;
+        int origin = Math.max(0, (cellSize - used) / 2);
+        int maxSize = Math.min(position + MAX_OUT_COUNT, list.size());
+        int index = 0;
+        for (int i = position; i < maxSize; i++, index++) {
+            Drawable item = getDrawable(getContext(), list.get(i), subIconSize);
+            int col = getColumnIndex(index);
+            int row = getRowIndex(index);
+            int left = origin + col * (subIconSize + gap);
+            int top = origin + row * (subIconSize + gap);
+            item.setBounds(left, top, left + subIconSize, top + subIconSize);
+            this.mDrawableList.add(item);
         }
     }
 
-    private int getOutLeft(int index, int iconOutSize, int iconOutSpace) {
-        return getColumnIndex(index) * (iconOutSize + iconOutSpace);
-    }
-
-    private int getOutTop(int index, int iconOutSize, int iconOutSpace) {
-        return getRowIndex(index) * (iconOutSize + iconOutSpace);
-    }
-
     private int getRowIndex(int index) {
-        return index / 2;
+        return index / SPAN_COUNT;
     }
 
     private int getColumnIndex(int index) {
-        return index % 2;
+        return index % SPAN_COUNT;
     }
 
     private Drawable getDrawable(Context context, WorkspaceItemInfo item, int iconSize) {
