@@ -28,6 +28,7 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.DragSource;
 import com.android.launcher3.DropTarget;
 import com.android.launcher3.anim.Interpolators;
@@ -92,6 +93,14 @@ public abstract class DragController<T extends ActivityContext>
     protected int mDistanceSinceScroll = 0;
 
     protected boolean mIsInPreDrag;
+
+    /**
+     * True while the same finger that started pre-drag (long-press) is still down.
+     * Cleared on the next {@link MotionEvent#ACTION_DOWN}. Used so popup taps don't
+     * get stolen by {@link DragDriver}, while hold-and-slide over the popup still
+     * promotes to a real drag.
+     */
+    protected boolean mPreDragOwnedByCurrentPointer;
 
     private final int DRAG_VIEW_SCALE_DURATION_MS = 500;
 	//hxy-feature: add launcher style function  202312
@@ -213,6 +222,7 @@ public abstract class DragController<T extends ActivityContext>
             mOptions.preDragCondition.onPreDragEnd(mDragObject, true /* dragStarted*/);
         }
         mIsInPreDrag = false;
+        mPreDragOwnedByCurrentPointer = false;
         if (mOptions.preDragEndScale != 0) {
             mDragObject.dragView
                     .animate()
@@ -334,6 +344,7 @@ public abstract class DragController<T extends ActivityContext>
             mOptions.preDragCondition.onPreDragEnd(mDragObject, false /* dragStarted*/);
         }
         mIsInPreDrag = false;
+        mPreDragOwnedByCurrentPointer = false;
         mOptions = null;
         for (DragListener listener : new ArrayList<>(mListeners)) {
             listener.onDragEnd();
@@ -404,15 +415,29 @@ public abstract class DragController<T extends ActivityContext>
 
         Point dragLayerPos = getClampedDragLayerPos(getX(ev), getY(ev));
         mLastTouch.set(dragLayerPos.x,  dragLayerPos.y);
-        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+        if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
             // Remember location of down touch
             mMotionDown.set(dragLayerPos.x,  dragLayerPos.y);
+            // New pointer: the long-press that owned pre-drag has ended.
+            mPreDragOwnedByCurrentPointer = false;
         }
 
         if (ATLEAST_Q) {
             mLastTouchClassification = ev.getClassification();
         }
-        return mDragDriver != null && mDragDriver.onInterceptTouchEvent(ev);
+
+        // Pre-drag keeps DragDriver alive under an open popup. Do not let it steal
+        // (or end-on-UP) fresh taps on the popup. The original long-press finger
+        // moving over the popup must still drive shouldStartDrag().
+        if (mIsInPreDrag && mDragDriver != null && !mPreDragOwnedByCurrentPointer) {
+            AbstractFloatingView top = AbstractFloatingView.getTopOpenView(mActivity);
+            if (top != null && mActivity.getDragLayer().isEventOverView(top, ev)) {
+                return false;
+            }
+        }
+
+        final boolean intercept = mDragDriver != null && mDragDriver.onInterceptTouchEvent(ev);
+        return intercept;
     }
 
     protected float getX(MotionEvent ev) {

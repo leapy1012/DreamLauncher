@@ -305,19 +305,43 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             return;
         }
         ItemInfo info = (ItemInfo) getTag();
+        // Mode change resets paging — layouts differ across pages in highlight mode.
+        mPreviewPage = 0;
+        mScrollDistance = 0f;
+        mAdjacentBoundPage = -1;
         int span = HxyBigFolderPreviewModes.getPreviewSpan(info);
-        int max = HxyBigFolderPreviewModes.getPreviewMaxSize(info);
+        int max = HxyBigFolderPreviewModes.getPreviewMaxSize(info, mPreviewPage);
         mAdapter.setFolderInfo(info);
         mAdapter.setMaxSize(max);
         mListView.setSpanCount(span);
+        mListView.setHighlightLayout(
+                HxyBigFolderPreviewModes.isHighlightPage(info, mPreviewPage));
         if (mAdjacentAdapter != null && mAdjacentListView != null) {
             mAdjacentAdapter.setFolderInfo(info);
-            mAdjacentAdapter.setMaxSize(max);
+            mAdjacentAdapter.setMaxSize(
+                    HxyBigFolderPreviewModes.getPreviewMaxSize(info, 1));
             mAdjacentListView.setSpanCount(span);
+            mAdjacentListView.setHighlightLayout(false);
         }
         refreshListView();
         updatePageIndicator();
-        mListView.requestLayout();
+        prepareForDragPreviewCapture();
+        requestLayout();
+        invalidate();
+    }
+
+    /**
+     * Force plate + cell geometry before {@link DragPreviewProvider} snapshots.
+     * Needed when the folder is {@code INVISIBLE} during the popup pre-drag.
+     */
+    public void prepareForDragPreviewCapture() {
+        if (mListView == null) {
+            return;
+        }
+        mListView.forceLayout();
+        ensureListLaidOut(mListView);
+        forceRebindListChildren(mListView);
+        invalidate();
     }
 
     private void executeLargeFolderIconLongClick(View view, WorkspaceItemInfo data) {
@@ -383,6 +407,10 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             }
             mAdapter.setFolderInfo(mInfo);
             mAdapter.setList(mInfo.contents, mPreviewPage);
+            if (mListView != null) {
+                mListView.setHighlightLayout(
+                        HxyBigFolderPreviewModes.isHighlightPage(mInfo, mPreviewPage));
+            }
             updatePageIndicator();
             if (!mScrolling) {
                 applyIdlePageLayout();
@@ -546,7 +574,13 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (action == MotionEvent.ACTION_DOWN) {
             mPagingTookOver = false;
         }
-        if (isLargeFolder() && mPagingController != null) {
+        // Pre-drag / drag already owns this icon (popup long-press). Do not let plate
+        // paging steal MOVE or call requestDisallowIntercept — that blocks DragController
+        // from promoting pre-drag into a real workspace move.
+        final boolean dragOwnsTouch = mActivity != null
+                && mActivity.getDragController() != null
+                && mActivity.getDragController().isDragging();
+        if (isLargeFolder() && mPagingController != null && !dragOwnsTouch) {
             boolean paging = mPagingController.onTouchEvent(ev);
             if (paging) {
                 if (!mPagingTookOver) {
@@ -705,6 +739,8 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             mAdjacentAdapter.setList(mInfo.contents, neighborPage);
             mAdjacentBoundPage = neighborPage;
         }
+        mAdjacentListView.setHighlightLayout(
+                HxyBigFolderPreviewModes.isHighlightPage(mInfo, neighborPage));
         mAdjacentListView.setAlpha(1f);
         // Keep INVISIBLE until caller sets VISIBLE with translation — still lays out.
         if (mAdjacentListView.getVisibility() == GONE) {
@@ -742,6 +778,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (adapter == null || list == null || mInfo == null) {
             return;
         }
+        list.setHighlightLayout(HxyBigFolderPreviewModes.isHighlightPage(mInfo, page));
         if (adapter.getPageIndex() != page) {
             adapter.setFolderInfo(mInfo);
             adapter.setList(mInfo.contents, page);
@@ -804,6 +841,10 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             mAdapter.setFolderInfo(mInfo);
             mAdapter.setList(mInfo.contents, page);
         }
+        if (mListView != null) {
+            mListView.setHighlightLayout(
+                    HxyBigFolderPreviewModes.isHighlightPage(mInfo, page));
+        }
         applyIdlePageLayout();
         // Sync layout so the first post-swipe frame isn't tiny unbound cells.
         ensureListLaidOut(mListView);
@@ -851,6 +892,19 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             View child = list.getChildAt(i);
             if (child instanceof HxyLargeFolderIconItem) {
                 ((HxyLargeFolderIconItem) child).rebindIfNeeded();
+            }
+        }
+    }
+
+    private void forceRebindListChildren(HxyLargeFolderListView list) {
+        if (list == null) {
+            return;
+        }
+        int count = list.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View child = list.getChildAt(i);
+            if (child instanceof HxyLargeFolderIconItem) {
+                ((HxyLargeFolderIconItem) child).forceRebind();
             }
         }
     }

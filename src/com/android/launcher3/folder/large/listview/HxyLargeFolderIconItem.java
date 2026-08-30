@@ -14,6 +14,7 @@ import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.big.HxyBubbleTextView;
 import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 import com.android.launcher3.folder.large.HxyLargeFolderUtils;
+import com.android.launcher3.R;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -116,6 +117,12 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         }
     }
 
+    /** Force redraw after preview-mode switch (cell size may stay equal for nine↔highlight side tiles). */
+    public void forceRebind() {
+        mBoundCellSize = -1;
+        rebindIfNeeded();
+    }
+
     private int resolveCellSize() {
         if (getMeasuredWidth() > 0 && getMeasuredHeight() > 0) {
             return Math.min(getMeasuredWidth(), getMeasuredHeight());
@@ -170,7 +177,7 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
 
     /**
      * Oppo overflow cell: up to 4 mini-icons in a 2×2 that fills the preview cell.
-     * sub ≈ (cell − gap) / 2 so the stack footprint matches a full preview icon.
+     * Unused slots get {@code hxy_bf_holder_drawable} (ColorOS empty-slot).
      */
     private void addOutDrawables(int position, List<WorkspaceItemInfo> list, int cellSize) {
         if (list == null || list.size() <= position || cellSize <= 0) {
@@ -183,17 +190,31 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         }
         int used = subIconSize * 2 + gap;
         int origin = Math.max(0, (cellSize - used) / 2);
-        int maxSize = Math.min(position + MAX_OUT_COUNT, list.size());
+        int maxApps = Math.min(position + MAX_OUT_COUNT, list.size());
         int index = 0;
-        for (int i = position; i < maxSize; i++, index++) {
+        for (int i = position; i < maxApps; i++, index++) {
             Drawable item = getDrawable(getContext(), list.get(i), subIconSize);
-            int col = getColumnIndex(index);
-            int row = getRowIndex(index);
-            int left = origin + col * (subIconSize + gap);
-            int top = origin + row * (subIconSize + gap);
-            item.setBounds(left, top, left + subIconSize, top + subIconSize);
+            placeOutDrawable(item, index, origin, subIconSize, gap);
             this.mDrawableList.add(item);
         }
+        // Pad to a full 2×2 with empty holders (Oppo StackedDrawable + bf_holder).
+        Drawable holder = getContext().getDrawable(R.drawable.hxy_bf_holder_drawable);
+        while (index < MAX_OUT_COUNT && holder != null) {
+            Drawable slot = holder.getConstantState() != null
+                    ? holder.getConstantState().newDrawable().mutate()
+                    : holder.mutate();
+            placeOutDrawable(slot, index, origin, subIconSize, gap);
+            this.mDrawableList.add(slot);
+            index++;
+        }
+    }
+
+    private void placeOutDrawable(Drawable item, int index, int origin, int subIconSize, int gap) {
+        int col = getColumnIndex(index);
+        int row = getRowIndex(index);
+        int left = origin + col * (subIconSize + gap);
+        int top = origin + row * (subIconSize + gap);
+        item.setBounds(left, top, left + subIconSize, top + subIconSize);
     }
 
     private int getRowIndex(int index) {

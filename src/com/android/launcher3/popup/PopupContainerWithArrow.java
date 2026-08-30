@@ -195,9 +195,15 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                 // TODO: add WW log if want to log if tap closed deep shortcut container.
                 close(true);
 
-                // We let touches on the original icon go through so that users can launch
-                // the app with one tap if they don't find a shortcut they want.
-                return mOriginalIcon == null || !dl.isEventOverView(mOriginalIcon, ev);
+                // Let touches on the original icon / folder go through so the user can
+                // launch or start another long-press/drag without the popup eating DOWN.
+                if (mOriginalIcon != null && dl.isEventOverView(mOriginalIcon, ev)) {
+                    return false;
+                }
+                if (mFolderIcon != null && dl.isEventOverView(mFolderIcon, ev)) {
+                    return false;
+                }
+                return true;
             }
         }
         return false;

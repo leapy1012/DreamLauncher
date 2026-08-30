@@ -4,15 +4,17 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import androidx.core.content.ContextCompat;
 
-import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
+import com.android.launcher3.dragndrop.DragView;
+import com.android.launcher3.graphics.DragPreviewProvider;
 import com.android.launcher3.model.data.FolderInfo;
-import com.android.launcher3.views.ActivityContext;
+import com.android.launcher3.views.BaseDragLayer;
 
 /**
  * Top strip of the ColorOS big-folder popup: 3×3 / 2×2 / highlight preview modes.
@@ -21,6 +23,7 @@ public class HxyBigFolderPreviewSelector extends LinearLayout {
     private final View[] mIcons = new View[3];
     private int mCurIndex = HxyBigFolderPreviewModes.INDEX_NINE;
     private HxyLargeFolderIcon mFolderIcon;
+    private Runnable mPendingPreviewRefresh;
 
     public HxyBigFolderPreviewSelector(Context context) {
         super(context);
@@ -57,6 +60,7 @@ public class HxyBigFolderPreviewSelector extends LinearLayout {
     }
 
     public void bind(HxyLargeFolderIcon folderIcon) {
+        cancelPendingPreviewRefresh();
         mFolderIcon = folderIcon;
         Object tag = folderIcon.getTag();
         mCurIndex = HxyBigFolderPreviewModes.getModeIndex(
@@ -73,12 +77,101 @@ public class HxyBigFolderPreviewSelector extends LinearLayout {
         HxyBigFolderPreviewModes.applyMode(info, index, launcher.getModelWriter());
         mCurIndex = index;
         applySelectionTints();
-        AbstractFloatingView.closeAllOpenViews((ActivityContext) launcher);
-        mFolderIcon.post(() -> {
-            mFolderIcon.applyPreviewMode();
-            mFolderIcon.requestLayout();
-            mFolderIcon.invalidate();
-        });
+        // Apply immediately — long-press keeps a frozen DragView while the real
+        // folder is INVISIBLE, so deferring until popup close looked like "no switch".
+        mFolderIcon.applyPreviewMode();
+        scheduleDragPreviewRefresh(launcher);
+    }
+
+    /**
+     * First mode tap often races DragView's pickup scale anim and the list's
+     * post-mode layout. Wait for both, then replace the floating snapshot.
+     */
+    private void scheduleDragPreviewRefresh(Launcher launcher) {
+        if (mFolderIcon == null || launcher == null) {
+            return;
+        }
+        cancelPendingPreviewRefresh();
+        final DragView<?> dragView = findDragView(launcher);
+        mPendingPreviewRefresh = () -> {
+            mPendingPreviewRefresh = null;
+            refreshDragPreviewNow(launcher);
+        };
+        Runnable afterScale = () -> {
+            if (mFolderIcon == null || mPendingPreviewRefresh == null) {
+                return;
+            }
+            // One frame later so highlight / span layout + icon rebind are settled.
+            mFolderIcon.post(mPendingPreviewRefresh);
+        };
+        if (dragView != null && !dragView.isScaleAnimationFinished()) {
+            dragView.setOnAnimationEndCallback(() -> {
+                dragView.setOnAnimationEndCallback(null);
+                afterScale.run();
+            });
+        } else {
+            afterScale.run();
+        }
+    }
+
+    private void cancelPendingPreviewRefresh() {
+        if (mPendingPreviewRefresh != null && mFolderIcon != null) {
+            mFolderIcon.removeCallbacks(mPendingPreviewRefresh);
+        }
+        mPendingPreviewRefresh = null;
+    }
+
+    private void refreshDragPreviewNow(Launcher launcher) {
+        if (mFolderIcon == null || launcher == null) {
+            return;
+        }
+        DragView<?> dragView = findDragView(launcher);
+        if (dragView == null || dragView.getContentView() == null
+                || dragView.getContentView().getParent() == null) {
+            return;
+        }
+        // Re-sync geometry immediately before snapshot — first tap after popup open
+        // otherwise often captures the pre-mode child positions.
+        mFolderIcon.prepareForDragPreviewCapture();
+        Drawable preview = new DragPreviewProvider(mFolderIcon).createDrawable();
+        if (preview != null) {
+            applyPreviewToDragView(dragView, preview);
+        }
+    }
+
+    /**
+     * {@link DragView#crossFadeContent} keeps fading the original {@code mContent}
+     * and leaves prior fade layers behind — fine for a single call, wrong for
+     * repeated preview-mode taps. Put the new bitmap on the content ImageView.
+     */
+    private static void applyPreviewToDragView(DragView<?> dragView, Drawable preview) {
+        View content = dragView.getContentView();
+        for (int i = dragView.getChildCount() - 1; i >= 0; i--) {
+            View child = dragView.getChildAt(i);
+            if (child != content) {
+                dragView.removeView(child);
+            }
+        }
+        if (content instanceof ImageView) {
+            content.setAlpha(1f);
+            ((ImageView) content).setImageDrawable(preview);
+        } else {
+            dragView.crossFadeContent(preview, 120);
+        }
+    }
+
+    private static DragView<?> findDragView(Launcher launcher) {
+        BaseDragLayer<?> layer = launcher.getDragLayer();
+        if (layer == null) {
+            return null;
+        }
+        for (int i = 0; i < layer.getChildCount(); i++) {
+            View child = layer.getChildAt(i);
+            if (child instanceof DragView) {
+                return (DragView<?>) child;
+            }
+        }
+        return null;
     }
 
     private void applySelectionTints() {

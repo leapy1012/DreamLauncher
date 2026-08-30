@@ -66,6 +66,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.Toast;
@@ -495,10 +496,26 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         }
 
         if (mDragInfo != null && mDragInfo.cell != null) {
-            CellLayout layout = (CellLayout) (mDragInfo.cell instanceof LauncherAppWidgetHostView
-                    ? dragObject.dragView.getContentViewParent().getParent()
-                    : mDragInfo.cell.getParent().getParent());
-            layout.markCellsAsUnoccupiedForView(mDragInfo.cell);
+            CellLayout layout = null;
+            if (mDragInfo.cell instanceof LauncherAppWidgetHostView) {
+                ViewGroup contentParent = dragObject.dragView.getContentViewParent();
+                if (contentParent != null && contentParent.getParent() instanceof CellLayout) {
+                    layout = (CellLayout) contentParent.getParent();
+                }
+            } else {
+                // Prefer hierarchy walk; cell can already be detached when pre-drag
+                // promotes to a real drag (popup long-press → slide).
+                layout = getParentCellLayoutForView(mDragInfo.cell);
+                if (layout == null) {
+                    ViewParent p = mDragInfo.cell.getParent();
+                    if (p instanceof View && ((View) p).getParent() instanceof CellLayout) {
+                        layout = (CellLayout) ((View) p).getParent();
+                    }
+                }
+            }
+            if (layout != null) {
+                layout.markCellsAsUnoccupiedForView(mDragInfo.cell);
+            }
         }
 
         updateChildrenLayersEnabled();
@@ -1844,6 +1861,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         View child = cellInfo.cell;
 
         mDragInfo = cellInfo;
+        // Folder plate-paging must not keep Workspace/DragLayer from driving the drag.
+        mBigFolderIntercept = false;
+        mIsEventOverPageableBigFolder = false;
         child.setVisibility(INVISIBLE);
 
         if (options.isAccessibleDrag) {

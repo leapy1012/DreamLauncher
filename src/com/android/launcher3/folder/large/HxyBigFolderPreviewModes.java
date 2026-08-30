@@ -55,19 +55,34 @@ public final class HxyBigFolderPreviewModes {
     }
 
     public static int getPreviewMaxSize(ItemInfo info) {
+        return getPreviewMaxSize(info, 0);
+    }
+
+    /**
+     * Highlight mode uses a 6-slot layout only on page 0; later pages fall back to
+     * the normal 3×3 nine-grid capacity (ColorOS forbids highlight rule off page 0).
+     */
+    public static int getPreviewMaxSize(ItemInfo info, int page) {
         int mode = getModeIndex(info);
         if (mode == INDEX_FOUR) {
             return 4;
         }
-        if (mode == INDEX_HIGHLIGHT) {
-            // Oppo highlight preview shows fewer full tiles + stack capacity.
+        if (mode == INDEX_HIGHLIGHT && page <= 0) {
             return 6;
         }
         return HxyLargeFolderProxy.getMaxSize();
     }
 
+    public static boolean isHighlightPage(ItemInfo info, int page) {
+        return getModeIndex(info) == INDEX_HIGHLIGHT && page <= 0;
+    }
+
     public static boolean isStackOverflow(ItemInfo info, int position, int contentSize) {
-        int max = getPreviewMaxSize(info);
+        return isStackOverflow(info, position, contentSize, 0);
+    }
+
+    public static boolean isStackOverflow(ItemInfo info, int position, int contentSize, int page) {
+        int max = getPreviewMaxSize(info, page);
         int withoutStacked = max - 1;
         if (position != withoutStacked) {
             return false;
@@ -75,9 +90,13 @@ public final class HxyBigFolderPreviewModes {
         return contentSize > max && (contentSize - withoutStacked) > 1;
     }
 
-    /** Full icons per page before the overflow stack cell (nine → 8, four → 3). */
+    /** Full icons per page before the overflow stack cell (nine → 8, four → 3, highlight p0 → 5). */
     public static int getMaxPreviewWithoutStacked(ItemInfo info) {
-        return Math.max(1, getPreviewMaxSize(info) - 1);
+        return getMaxPreviewWithoutStacked(info, 0);
+    }
+
+    public static int getMaxPreviewWithoutStacked(ItemInfo info, int page) {
+        return Math.max(1, getPreviewMaxSize(info, page) - 1);
     }
 
     /**
@@ -86,7 +105,7 @@ public final class HxyBigFolderPreviewModes {
      * {@code size % withoutStacked == 1}.
      */
     public static int getPreviewPageCount(ItemInfo info, int contentSize) {
-        int without = getMaxPreviewWithoutStacked(info);
+        int without = getMaxPreviewWithoutStacked(info, 0);
         if (contentSize <= 0) {
             return 1;
         }
@@ -98,6 +117,7 @@ public final class HxyBigFolderPreviewModes {
     }
 
     public static int getPageStartIndex(ItemInfo info, int page) {
-        return getMaxPreviewWithoutStacked(info) * Math.max(0, page);
+        // Page 0 highlight uses 5/page; subsequent pages also advance by that stride.
+        return getMaxPreviewWithoutStacked(info, 0) * Math.max(0, page);
     }
 }

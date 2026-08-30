@@ -92,6 +92,7 @@ public class LauncherDragController extends DragController<Launcher> {
 
         mIsInPreDrag = mOptions.preDragCondition != null
                 && !mOptions.preDragCondition.shouldStartDrag(0);
+        mPreDragOwnedByCurrentPointer = mIsInPreDrag;
 
         final Resources res = mActivity.getResources();
         final float scaleDps = mIsInPreDrag

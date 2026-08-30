@@ -7,6 +7,11 @@ import android.view.View;
 import com.android.launcher3.R;
 import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 
+/**
+ * Closed big-folder preview grid. Supports ColorOS nine / four layouts and the
+ * highlight layout (index 0 = 2×2 featured icon; indices 1–2 right column;
+ * 3–4 bottom row; 5 = overflow stack).
+ */
 public class HxyLargeFolderListView extends PageLinearLayout {
     /**
      * Fraction of the equal cell stride used by the icon itself. Leftover becomes the
@@ -14,8 +19,12 @@ public class HxyLargeFolderListView extends PageLinearLayout {
      * plate/span so a higher factor still leaves a clear gap).
      */
     private static final float PREVIEW_ICON_SCALE = 0.78f;
+    /** Highlight: logical 3×3 with 3 cells merged into the featured icon. */
+    private static final int HIGHLIGHT_SPAN = 3;
 
     private int mChildSize = 0;
+    private int mHighlightLargeSize = 0;
+    private boolean mHighlightLayout;
     private Context mContext;
 
     public HxyLargeFolderListView(Context context) {
@@ -37,9 +46,20 @@ public class HxyLargeFolderListView extends PageLinearLayout {
         return mChildSize;
     }
 
+    public void setHighlightLayout(boolean highlight) {
+        if (mHighlightLayout != highlight) {
+            mHighlightLayout = highlight;
+            requestLayout();
+        }
+    }
+
+    public boolean isHighlightLayout() {
+        return mHighlightLayout;
+    }
+
     @Override
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int span = Math.max(1, getSpanCount());
+        int span = Math.max(1, mHighlightLayout ? HIGHLIGHT_SPAN : getSpanCount());
         int availW = View.MeasureSpec.getSize(widthMeasureSpec)
                 - getPaddingLeft() - getPaddingRight();
         int availH = View.MeasureSpec.getSize(heightMeasureSpec)
@@ -67,7 +87,13 @@ public class HxyLargeFolderListView extends PageLinearLayout {
         setHorizontalSpace(gap);
         setVerticalSpace(gap);
         mChildSize = folderIconSize;
-        measureChildren3(folderIconSize, folderIconSize);
+        // Featured icon spans two cells + the gutter between them.
+        mHighlightLargeSize = folderIconSize * 2 + gap;
+        if (mHighlightLayout) {
+            measureHighlightChildren(folderIconSize, mHighlightLargeSize);
+        } else {
+            measureChildren3(folderIconSize, folderIconSize);
+        }
         // Honor EXACTLY plate size from the folder icon — PageLinearLayout.onMeasureGrid
         // otherwise shrinks height to content and breaks neighbor-page layout/capture.
         if (View.MeasureSpec.getMode(widthMeasureSpec) == View.MeasureSpec.EXACTLY
@@ -92,30 +118,38 @@ public class HxyLargeFolderListView extends PageLinearLayout {
         }
     }
 
+    private void measureHighlightChildren(int cell, int large) {
+        int size = getChildCount();
+        for (int i = 0; i < size; i++) {
+            View child = getChildAt(i);
+            if (child.getVisibility() == View.GONE) {
+                continue;
+            }
+            int dim = (i == 0) ? large : cell;
+            child.measure(
+                    View.MeasureSpec.makeMeasureSpec(dim, MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(dim, MeasureSpec.EXACTLY));
+        }
+    }
+
     @Override
     public void onLayout(boolean changed, int l, int t, int r, int b) {
         // Center the span×span grid inside the plate when leftover remains on one axis.
-        int span = Math.max(1, getSpanCount());
-        int gridW = mChildSize * span + getHorizontalSpace() * Math.max(0, span - 1);
-        int gridH = mChildSize * span + getVerticalSpace() * Math.max(0, span - 1);
+        // Do NOT call setPadding() here — it requestLayouts mid-pass and overlaps children.
+        int span = Math.max(1, mHighlightLayout ? HIGHLIGHT_SPAN : getSpanCount());
+        int gap = getHorizontalSpace();
+        int gridW = mChildSize * span + gap * Math.max(0, span - 1);
+        int gridH = mChildSize * span + gap * Math.max(0, span - 1);
         int availW = getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
         int availH = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
         int extraX = Math.max(0, (availW - gridW) / 2);
         int extraY = Math.max(0, (availH - gridH) / 2);
-        if (extraX > 0 || extraY > 0) {
-            // Temporarily shift children by adjusting padding for this layout pass only
-            // via translating layout origins — PageLinearLayout uses getPadding* in grid math.
-            int pl = getPaddingLeft();
-            int pt = getPaddingTop();
-            int pr = getPaddingRight();
-            int pb = getPaddingBottom();
-            setPadding(pl + extraX, pt + extraY, pr + extraX, pb + extraY);
-            super.onLayout(changed, l, t, r, b);
-            setPadding(pl, pt, pr, pb);
+        if (mHighlightLayout) {
+            layoutHighlightChildren(extraX, extraY);
         } else {
-            super.onLayout(changed, l, t, r, b);
+            layoutGridChildren(extraX, extraY);
         }
-        // Rebind after layout so overflow stack uses measured cell size.
+        // Rebind after layout so overflow stack / featured icon use measured cell size.
         int count = getChildCount();
         for (int i = 0; i < count; i++) {
             View child = getChildAt(i);
@@ -123,6 +157,79 @@ public class HxyLargeFolderListView extends PageLinearLayout {
                 ((HxyLargeFolderIconItem) child).rebindIfNeeded();
             }
         }
+    }
+
+    private void layoutGridChildren(int extraX, int extraY) {
+        int gapH = getHorizontalSpace();
+        int gapV = getVerticalSpace();
+        int cell = mChildSize;
+        int span = Math.max(1, getSpanCount());
+        int originX = getPaddingLeft() + extraX;
+        int originY = getPaddingTop() + extraY;
+        int count = getChildCount();
+        for (int i = 0; i < count; i++) {
+            View child = getChildAt(i);
+            if (child.getVisibility() == View.GONE) {
+                continue;
+            }
+            int row = i / span;
+            int col = i % span;
+            int left = originX + col * (cell + gapH);
+            int top = originY + row * (cell + gapV);
+            child.layout(left, top, left + cell, top + cell);
+            onChildLayout(child, left, top);
+        }
+    }
+
+    /**
+     * ColorOS highlight cell map (LTR):
+     * 0 → (0,0) large 2×2; 1 → (0,2); 2 → (1,2); 3 → (2,0); 4 → (2,1); 5 → (2,2).
+     */
+    private void layoutHighlightChildren(int extraX, int extraY) {
+        int gap = getHorizontalSpace();
+        int cell = mChildSize;
+        int large = mHighlightLargeSize > 0 ? mHighlightLargeSize : cell * 2 + gap;
+        int originX = getPaddingLeft() + extraX;
+        int originY = getPaddingTop() + extraY;
+        int count = getChildCount();
+        for (int i = 0; i < count; i++) {
+            View child = getChildAt(i);
+            if (child.getVisibility() == View.GONE) {
+                continue;
+            }
+            int row;
+            int col;
+            int w;
+            int h;
+            if (i == 0) {
+                row = 0;
+                col = 0;
+                w = large;
+                h = large;
+            } else {
+                int mapped = highlightMappedIndex(i);
+                row = mapped / HIGHLIGHT_SPAN;
+                col = mapped % HIGHLIGHT_SPAN;
+                w = cell;
+                h = cell;
+            }
+            int left = originX + col * (cell + gap);
+            int top = originY + row * (cell + gap);
+            child.layout(left, top, left + w, top + h);
+            onChildLayout(child, left, top);
+        }
+    }
+
+    /** Remap preview index → 3×3 cell index (Oppo DEL_ICON_NUM deltas). */
+    private static int highlightMappedIndex(int previewIndex) {
+        if (previewIndex <= 0) {
+            return 0;
+        }
+        if (previewIndex == 1) {
+            return 2; // (0,2)
+        }
+        // 2→5 (1,2), 3→6 (2,0), 4→7 (2,1), 5→8 (2,2)
+        return previewIndex + 3;
     }
 
     public void onChildLayout(View child, int left, int top) {
@@ -133,6 +240,17 @@ public class HxyLargeFolderListView extends PageLinearLayout {
     }
 
     public int[] getCoordinateXY(int index) {
+        if (mHighlightLayout) {
+            int gap = getHorizontalSpace();
+            int cell = mChildSize;
+            int mapped = index == 0 ? 0 : highlightMappedIndex(index);
+            int row = mapped / HIGHLIGHT_SPAN;
+            int col = mapped % HIGHLIGHT_SPAN;
+            return new int[]{
+                    getPaddingLeft() + col * (cell + gap),
+                    getPaddingTop() + row * (cell + gap)
+            };
+        }
         return new int[]{getGridLayoutLeft(index, getChildSize()), getGridLayoutTop(index, getChildSize())};
     }
 }

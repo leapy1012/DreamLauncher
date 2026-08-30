@@ -55,6 +55,10 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
 
     public void setList(List<WorkspaceItemInfo> list, int pageIndex) {
         mPageIndex = Math.max(0, pageIndex);
+        // Highlight is page-0 only; later pages use nine-grid capacity.
+        if (mFolderInfo != null) {
+            mMaxSize = HxyBigFolderPreviewModes.getPreviewMaxSize(mFolderInfo, mPageIndex);
+        }
         super.setList(list, false);
     }
 
@@ -94,6 +98,10 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
 
     public BasePageLinearAdapter.ItemViewModel<WorkspaceItemInfo> createItemViewModel(View itemView) {
         return new IVM(itemView, this.mContext);
+    }
+
+    public boolean isHighlightLayout() {
+        return HxyBigFolderPreviewModes.isHighlightPage(mFolderInfo, mPageIndex);
     }
 
     /**
