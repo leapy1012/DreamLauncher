@@ -55,10 +55,12 @@
     <dimen name="hxyos_homepage_radius_size">12dp</dimen>
     <dimen name="hotseat_text_height_margin">40dp</dimen>
 
-    <dimen name="hxy_task_menu_top_margin">35dp</dimen>
-    <dimen name="hxy_task_thumbnail_icon_size">28dp</dimen>
-    <dimen name="hxy_task_thumbnail_top_margin">80dp</dimen>
-    <dimen name="hxy_task_menu_height">30dp</dimen>
+    <dimen name="hxy_task_menu_top_margin">20dp</dimen>
+    <!-- Oppo color_task_header_view_icon_size / color_task_header_view_menu_size -->
+    <dimen name="hxy_task_thumbnail_icon_size">34dp</dimen>
+    <dimen name="hxy_task_menu_icon_size">42dp</dimen>
+    <dimen name="hxy_task_thumbnail_top_margin">72dp</dimen>
+    <dimen name="hxy_task_menu_height">42dp</dimen>
     <dimen name="split_recent_first_snapview_topmargin1">40dp</dimen>
 
     <!-- Oppo workspace baseline metrics. -->
@@ -90,4 +92,21 @@
     <dimen name="oplus_hotseat_margin_bottom_gesture">26dp</dimen>
     <dimen name="oplus_hotseat_margin_bottom_nav">44dp</dimen>
     <dimen name="oplus_workspace_icon_padding_top">9dp</dimen>
+
+    <!-- ColorOS oplus_clear_all_panel / PressFeedbackButton -->
+    <dimen name="overview_close_button_width">152dp</dimen>
+    <dimen name="overview_close_button_height">48dp</dimen>
+    <dimen name="overview_close_button_radius">21dp</dimen>
+    <dimen name="hxy_gesture_bottom_margin">6dp</dimen>
+    <dimen name="hxy_three_bottom_margin">8dp</dimen>
+    <!-- Extra lift so Clear sits like Oppo Close above the nav (~25–28dp). -->
+    <dimen name="hxy_clear_extra_lift">28dp</dimen>
+    <!-- RAM sits above Clear all; modest vs Oppo color_clear_btn_padding (3dp). -->
+    <dimen name="hxy_clear_btn_padding">8dp</dimen>
+    <!-- Oppo dock→Close reference; visible dock→RAM uses half of this. -->
+    <dimen name="hxy_dock_to_ram_gap">48dp</dimen>
+    <!-- Target card→dock gap. -->
+    <dimen name="hxy_card_to_dock_gap">24dp</dimen>
+    <!-- Base card-down shift; net = this minus hxy_clear_extra_lift (cards rise with Clear). -->
+    <dimen name="hxy_recents_card_down_shift">56dp</dimen>
 </resources>

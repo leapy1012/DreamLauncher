@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Oppo-style recents container: task carousel + dock icons + Clear All pill as siblings.
+-->
+<com.android.launcher3.RecentContainerView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:launcher="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/recent_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <com.android.quickstep.views.LauncherRecentsView
+        android:id="@+id/overview_panel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:accessibilityPaneTitle="@string/accessibility_recent_apps"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:visibility="invisible"
+        launcher:layout_ignoreInsets="true" />
+
+    <com.android.quickstep.views.OverviewDockView
+        android:id="@+id/overview_dock"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/overview_dock_area_height"
+        android:layout_gravity="center_horizontal"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:visibility="gone" />
+
+    <include
+        android:id="@+id/hxy_clear_all_panel"
+        layout="@layout/hxy_clear_all_panel" />
+
+</com.android.launcher3.RecentContainerView>

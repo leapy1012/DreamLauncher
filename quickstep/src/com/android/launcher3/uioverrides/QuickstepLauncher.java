@@ -240,17 +240,27 @@ public class QuickstepLauncher extends Launcher {
 
         mActionsView = findViewById(R.id.overview_actions_view);
         RecentsView overviewPanel = getOverviewPanel();
+        if (overviewPanel == null) {
+            return;
+        }
+        if (getResources().getBoolean(R.bool.config_clearall_center)) {
+            if (mActionsView != null) {
+                mActionsView.setVisibility(View.GONE);
+            }
+        }
         mSplitSelectStateController =
                 new SplitSelectStateController(this, mHandler, getStateManager(),
                         getDepthController(), getStatsLogManager(),
                         SystemUiProxy.INSTANCE.get(this), RecentsModel.INSTANCE.get(this));
         overviewPanel.init(mActionsView, mSplitSelectStateController);
+        if (mActionsView != null) {
+            mActionsView.updateDimension(getDeviceProfile(), overviewPanel.getLastComputedTaskSize());
+            mActionsView.updateVerticalMargin(DisplayController.getNavigationMode(this));
+        }
         mSplitWithKeyboardShortcutController = new SplitWithKeyboardShortcutController(this,
                 mSplitSelectStateController);
         mSplitToWorkspaceController = new SplitToWorkspaceController(this,
                 mSplitSelectStateController);
-        mActionsView.updateDimension(getDeviceProfile(), overviewPanel.getLastComputedTaskSize());
-        mActionsView.updateVerticalMargin(DisplayController.getNavigationMode(this));
 
         mAppTransitionManager = buildAppTransitionManager();
         mAppTransitionManager.registerRemoteAnimations();

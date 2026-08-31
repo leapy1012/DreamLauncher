@@ -69,8 +69,13 @@
             android:background="@android:color/transparent" />
 
         <include
-            android:id="@+id/overview_panel"
-            layout="@layout/overview_panel" />
+            android:id="@+id/recent_container"
+            layout="@layout/recent_container" />
+
+        <include
+            android:id="@+id/overview_actions_view"
+            layout="@layout/overview_actions_container"
+            android:visibility="gone" />
 
         <include
             android:id="@+id/apps_view"

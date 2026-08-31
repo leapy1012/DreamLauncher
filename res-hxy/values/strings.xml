@@ -14,6 +14,8 @@
     <string name="none">default</string>
     <!-- hxy-feature: desktop theme 202312 -->
     <string name="hxy_launcher_available">available</string>
+    <!-- ColorOS recents Close pill (oplus_clear_all_botton). -->
+    <string name="oplus_clear_all_botton">Close</string>
     <string name="google_folder_title">Google</string>
     <string name="shake_device_tips">SHAKE LEAPY to fill empty cells with icons</string>
     <string name="effect_button_text">Effect</string>

@@ -9,4 +9,6 @@
     <color name="prize_preference_category_title_color">#969696</color>
     <color name="hxyos_control_enable">#d6dbdf</color>
     <color name="hxyos_rv_bg_color">#ffffffff</color>
+    <!-- ColorOS overview Close pill glass fill (toggle_bar_apply_btn_enabled_color). -->
+    <color name="hxy_overview_close_pill_bg">#4dffffff</color>
 </resources>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.android.quickstep.views.HxyClearAllPanelView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/clear_all_panel"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:visibility="gone">
+
+    <TextView
+        android:id="@+id/memeryinfo_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:textColor="?attr/workspaceTextColor"
+        android:textSize="13sp"
+        android:theme="@style/ThemeControlHighlightWorkspaceColor" />
+
+    <Button
+        android:id="@+id/btn_clear"
+        style="@style/OverviewCloseButton"
+        android:layout_width="@dimen/overview_close_button_width"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/hxy_clear_btn_padding"
+        android:contentDescription="@string/recents_clear_all"
+        android:text="@string/recents_clear_all" />
+
+</com.android.quickstep.views.HxyClearAllPanelView>

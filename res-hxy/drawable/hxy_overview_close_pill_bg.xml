@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ColorOS PressFeedbackButton fill: toggle_bar_apply_btn_enabled_color (#4dffffff) -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#33ffffff">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/overview_close_button_radius" />
+            <solid android:color="@color/hxy_overview_close_pill_bg" />
+        </shape>
+    </item>
+</ripple>

@@ -71,7 +71,6 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
 	private TextView memeryinfo;
 	private static final String TAG = "OverviewActionsView";
 	///&&}}
-
     @IntDef(flag = true, value = {
             HIDDEN_NON_ZERO_ROTATION,
             HIDDEN_NO_TASKS,
@@ -163,20 +162,39 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         mMultiValueAlpha = new MultiValueAlpha(findViewById(R.id.action_buttons), NUM_ALPHAS);
         mMultiValueAlpha.setUpdateVisibility(true);
 
-        findViewById(R.id.action_screenshot).setOnClickListener(this);
+        View screenshot = findViewById(R.id.action_screenshot);
+        if (screenshot != null) {
+            screenshot.setOnClickListener(this);
+        }
         mSplitButton = findViewById(R.id.action_split);
-        mSplitButton.setOnClickListener(this);
+        if (mSplitButton != null) {
+            mSplitButton.setOnClickListener(this);
+        }
 		///Hxy:add for modify clearallbutton location at 20240102{{&&
-		memeryinfo = (TextView)findViewById(R.id.memeryinfo_textview);
 		if(mContext.getResources().getBoolean(R.bool.config_clearall_center))
 		{
-			memeryinfo.setVisibility(VISIBLE);
-			findViewById(R.id.action_screenshot).setVisibility(GONE);
+			setVisibility(GONE);
 		}else{
-			findViewById(R.id.clearall_container).setVisibility(GONE);
+			findViewById(R.id.clearall_container).setVisibility(VISIBLE);
+            View secondary = findViewById(R.id.action_buttons_secondary);
+            if (secondary != null) {
+                secondary.setVisibility(VISIBLE);
+            }
 		}
 		updateMeeryinfoDisplay();
 		///&&}}
+    }
+
+    @Nullable
+    public OverviewDockView getDockView() {
+        return null;
+    }
+
+    /** Legacy path only; dock lives in {@link com.android.launcher3.RecentContainerView}. */
+    public void syncDockFromRecents(@Nullable RecentsView<?, ?> recentsView) {
+    }
+
+    public void onRecentsPageCentered(@Nullable TaskView centered) {
     }
 	
 	///Hxy:add for modify clearallbutton location at 20240102{{&&
@@ -185,6 +203,9 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
 		return v;
 	}
 	public void updateMeeryinfoDisplay(){
+        if (mContext.getResources().getBoolean(R.bool.config_clearall_center)) {
+            return;
+        }
 		Float availMemory = SystemMemory.getAvailMemoryFloat(getContext());
 		String totalMemory = SystemMemory.getRealTotalRam(getContext());
 		DecimalFormat df1 = new DecimalFormat("#.0");
@@ -305,7 +326,10 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         if (mSplitButton == null) return;
         boolean shouldBeVisible = mSplitButtonHiddenFlags == 0;
         mSplitButton.setVisibility(shouldBeVisible ? VISIBLE : GONE);
-        findViewById(R.id.action_split_space).setVisibility(shouldBeVisible ? VISIBLE : GONE);
+        View splitSpace = findViewById(R.id.action_split_space);
+        if (splitSpace != null) {
+            splitSpace.setVisibility(shouldBeVisible ? VISIBLE : GONE);
+        }
     }
 
     /**
@@ -392,9 +416,11 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
 
         requestLayout();
 
-        mSplitButton.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                (dp.isLandscape ? R.drawable.ic_split_horizontal : R.drawable.ic_split_vertical),
-                0, 0, 0);
+        if (mSplitButton != null) {
+            mSplitButton.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                    (dp.isLandscape ? R.drawable.ic_split_horizontal : R.drawable.ic_split_vertical),
+                    0, 0, 0);
+        }
     }
 
     /**

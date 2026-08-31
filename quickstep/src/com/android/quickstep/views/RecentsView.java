@@ -114,6 +114,7 @@ import android.view.RemoteAnimationTarget;
 import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver.OnScrollChangedListener;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -130,6 +131,7 @@ import androidx.core.graphics.ColorUtils;
 
 import com.android.launcher3.BaseActivity;
 import com.android.launcher3.BaseActivity.MultiWindowModeChangedListener;
+import com.android.launcher3.RecentContainerView;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Insettable;
 import com.android.launcher3.InvariantDeviceProfile;
@@ -497,6 +499,10 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     private final ClearAllButton mClearAllButton;
 	///Hxy:add for modify clearallbutton location at 20240102{{&&
 	private View mClearAllButtonNew;
+	@Nullable
+	private OverviewDockView mOverviewDockView;
+	@Nullable
+	private HxyClearAllPanelView mClearAllPanel;
 	///&&}}
     private final Rect mClearAllButtonDeadZoneRect = new Rect();
     private final Rect mTaskViewDeadZoneRect = new Rect();
@@ -1073,9 +1079,64 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         mActionsView.updateHiddenFlags(HIDDEN_NO_TASKS, getTaskViewCount() == 0);
         mSplitSelectStateController = splitController;
 		///Hxy:add for modify clearallbutton location at 20240102{{&&
-		mClearAllButtonNew = mActionsView.getClearAllView();
-		mClearAllButtonNew.setOnClickListener(this::dismissAllTasks);
+		if (getResources().getBoolean(R.bool.config_clearall_center) && mClearAllPanel != null) {
+		    mClearAllButtonNew = mClearAllPanel.getClearButton();
+		} else {
+		    mClearAllButtonNew = mActionsView.getClearAllView();
+		}
+		if (mClearAllButtonNew != null) {
+		    mClearAllButtonNew.setOnClickListener(this::dismissAllTasks);
+		}
 		///&&}}
+        if (mOverviewDockView != null) {
+            mOverviewDockView.setRecentsView(this);
+        } else if (mActionsView.getDockView() != null) {
+            mActionsView.getDockView().setRecentsView(this);
+        }
+    }
+
+    /** Oppo-style bottom UI wired from {@link RecentContainerView}. */
+    public void setBottomUi(@Nullable OverviewDockView dock, @Nullable HxyClearAllPanelView panel) {
+        mOverviewDockView = dock;
+        mClearAllPanel = panel;
+        if (mOverviewDockView != null) {
+            mOverviewDockView.setRecentsView(this);
+        }
+        updateBottomUiInsets();
+    }
+
+    public void updateBottomUiInsets() {
+        if (!getResources().getBoolean(R.bool.config_clearall_center) || mClearAllPanel == null) {
+            return;
+        }
+        ViewParent parent = getParent();
+        if (parent instanceof RecentContainerView) {
+            ((RecentContainerView) parent).updateBottomUiInsets();
+        }
+    }
+
+    public DeviceProfile getDeviceProfile() {
+        return mActivity.getDeviceProfile();
+    }
+
+    public Rect getOverviewInsets() {
+        return mInsets;
+    }
+
+    private void syncDockFromRecents() {
+        if (getResources().getBoolean(R.bool.config_clearall_center) && mOverviewDockView != null) {
+            DeviceProfile dp = getDeviceProfile();
+            if (dp.isTablet || dp.isLandscape) {
+                mOverviewDockView.setVisibility(GONE);
+            } else {
+                // Always refresh icon data; visibility is gated separately for overview-only.
+                mOverviewDockView.syncFromRecents(this);
+            }
+            updateBottomUiOverviewVisibility();
+            updateBottomUiInsets();
+        } else if (mActionsView != null) {
+            mActionsView.syncDockFromRecents(this);
+        }
     }
 
     public SplitSelectStateController getSplitSelectController() {
@@ -1153,6 +1214,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             }
             taskView.setTaskViewId(-1);
             mActionsView.updateHiddenFlags(HIDDEN_NO_TASKS, getTaskViewCount() == 0);
+            syncDockFromRecents();
         }
     }
 
@@ -1658,6 +1720,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         setCurrentPage(frontTaskIndex);
 
         updateTaskSize();
+        updateBottomUiInsets();
     }
 
     @Override
@@ -1821,6 +1884,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         mFocusedTaskViewId = newFocusedTaskView != null && !ENABLE_GRID_ONLY_OVERVIEW.get()
                 ? newFocusedTaskView.getTaskViewId() : INVALID_TASK_ID;
         updateTaskSize();
+        updateBottomUiInsets();
         updateChildTaskOrientations();
 
         TaskView newRunningTaskView = null;
@@ -1940,6 +2004,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     protected void onTaskStackUpdated() {
         // Lazily update the empty message only when the task stack is reapplied
         updateEmptyMessage();
+        syncDockFromRecents();
     }
 
     public void resetTaskVisuals() {
@@ -2025,6 +2090,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         // Update RecentsView and TaskView's DeviceProfile dependent layout.
         updateOrientationHandler();
         mActionsView.updateDimension(dp, mLastComputedTaskSize);
+        updateBottomUiInsets();
     }
 
     private void updateOrientationHandler() {
@@ -2114,6 +2180,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 
         // Force TaskView to update size from thumbnail
         updateTaskSize();
+        updateBottomUiInsets();
     }
 
     /**
@@ -2151,10 +2218,16 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         updateGridProperties(isTaskDismissal);
     }
 
-    public void getTaskSize(Rect outRect) {
+    /** Computes task bounds without notifying bottom UI (avoids recursion with container). */
+    public void computeTaskSize(Rect outRect) {
         mSizeStrategy.calculateTaskSize(mActivity, mActivity.getDeviceProfile(), outRect,
                 mOrientationHandler);
         mLastComputedTaskSize.set(outRect);
+    }
+
+    public void getTaskSize(Rect outRect) {
+        computeTaskSize(outRect);
+        updateBottomUiInsets();
     }
 
     /**
@@ -2263,10 +2336,83 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         int scroll = mOrientationHandler.getPrimaryScroll(this);
         mClearAllButton.onRecentsViewScroll(scroll, mOverviewGridEnabled);
 
-        // Clear all button alpha was set by the previous line.
-        // 竖屏滑动的时候一直显示,横屏不显示
-        android.util.Log.d(TAG, "mClearAllButton.getScrollAlpha():" + mOrientationState.getTouchRotation());
-        mActionsView.getIndexScrollAlpha().setValue(mOrientationState.getTouchRotation() == ROTATION_0 ? 1 : 0);
+        // Oppo carousel: fade ⋮ via cosine-eased linearInterpolation (see OplusTaskViewImpl).
+        updateTaskMenuShortcutAlphas(scroll);
+        float bottomUiAlpha = mOrientationState.getTouchRotation() == ROTATION_0
+                ? mContentAlpha : 0f;
+        if (getResources().getBoolean(R.bool.config_clearall_center)) {
+            if (mClearAllPanel != null) {
+                mClearAllPanel.setAlpha(bottomUiAlpha);
+            }
+            if (mOverviewDockView != null) {
+                mOverviewDockView.setAlpha(bottomUiAlpha);
+            }
+        } else if (mActionsView != null) {
+            mActionsView.getIndexScrollAlpha().setValue(bottomUiAlpha);
+        }
+        if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
+            if (!mOverviewDockView.isDockDrivingRecents()) {
+                mOverviewDockView.onRecentsPageCentered(getTaskViewNearestToCenterOfScreen());
+            }
+            mOverviewDockView.updateCurveProperties();
+        } else if (mActionsView != null) {
+            mActionsView.onRecentsPageCentered(getTaskViewNearestToCenterOfScreen());
+        }
+    }
+
+    /**
+     * Oppo-style menu fade ({@code OplusTaskViewImpl.updateCurveInterpolation} /
+     * {@code ScrollState.updateInterpolation}).
+     * <p>
+     * {@code linearInterpolation} rises slowly (denom ≈ halfPage + halfScreen), then a cosine
+     * ease keeps near-center cards near alpha 1. The previous {@code 1 - progress * 2.5} curve
+     * zeroed the menu by ~40% of a page and hid ⋮ on the active card when slightly off-center.
+     * Nearest-to-center is forced to 1 so the focused card never loses the menu.
+     */
+    private void updateTaskMenuShortcutAlphas(int primaryScroll) {
+        int taskCount = getTaskViewCount();
+        if (taskCount == 0) {
+            return;
+        }
+        TaskView nearest = getTaskViewNearestToCenterOfScreen();
+        if (showAsGrid()) {
+            TaskView focused = getTaskViewAt(getNextPage());
+            if (focused == null) {
+                focused = nearest;
+            }
+            for (int i = 0; i < taskCount; i++) {
+                TaskView tv = requireTaskViewAt(i);
+                tv.setMenuShortcutAlpha(tv == focused ? 1f : 0f);
+            }
+            return;
+        }
+
+        float halfScreen = getMeasuredWidth() / 2f;
+        float screenCenter = primaryScroll + halfScreen;
+        float edgeScale = TaskView.getEdgeScaleDownFactor(mActivity.getDeviceProfile());
+        for (int i = 0; i < taskCount; i++) {
+            TaskView tv = requireTaskViewAt(i);
+            if (tv == nearest) {
+                // Active / nearest card always keeps a full-opacity menu (Oppo idle + settle-safe).
+                tv.setMenuShortcutAlpha(1f);
+                continue;
+            }
+            float halfPage = tv.getMeasuredWidth() / 2f;
+            if (halfPage <= 0f) {
+                tv.setMenuShortcutAlpha(0f);
+                continue;
+            }
+            // Match OplusBasePagedOrientationHandler.ScrollState.updateInterpolation.
+            float childStart = tv.getLeft() + tv.getTranslationX();
+            float denom = ((1f - edgeScale) * halfPage) + halfScreen;
+            float linear = denom <= 0f ? 1f
+                    : Math.min(1f, Math.abs(screenCenter - (childStart + halfPage)) / denom);
+            // CURVE_INTERPOLATOR: (-cos(t * PI) / 2) + 0.5
+            float curved = (float) ((-Math.cos(linear * Math.PI) / 2.0) + 0.5);
+            // getCurveAlphaForCurveInterpolation(curved, minAlpha=0) → lerp(1, 0, curved), 0.1 steps
+            float menuAlpha = Math.round((1f - curved) * 10f) / 10f;
+            tv.setMenuShortcutAlpha(menuAlpha);
+        }
     }
 
     @Override
@@ -2773,6 +2919,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         setRunningTaskHidden(runningTaskTileHidden);
         // Update task size after setting current task.
         updateTaskSize();
+        updateBottomUiInsets();
         updateChildTaskOrientations();
 
         // Reload the task list
@@ -4288,6 +4435,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         mEmptyMessagePaint.setAlpha(alphaInt);
         mEmptyIcon.setAlpha(alphaInt);
         mActionsView.getContentAlpha().setValue(mContentAlpha);
+        applyBottomUiContentAlpha(mContentAlpha);
 
         if (alpha > 0) {
             setVisibility(VISIBLE);
@@ -4317,6 +4465,47 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             if (visibility != VISIBLE) {
                 mActionsView.updateDisabledFlags(OverviewActionsView.DISABLED_SCROLLING, false);
             }
+        }
+        // Dock + Clear All are siblings — hide them whenever overview itself is not shown.
+        updateBottomUiOverviewVisibility();
+    }
+
+    /** True when Clear All / dock icons should be on screen (overview only). */
+    public boolean shouldShowBottomUi() {
+        return getVisibility() == VISIBLE && mContentAlpha > 0f && getTaskViewCount() > 0;
+    }
+
+    private void updateBottomUiOverviewVisibility() {
+        if (!getResources().getBoolean(R.bool.config_clearall_center)) {
+            return;
+        }
+        boolean show = shouldShowBottomUi();
+        if (mClearAllPanel != null) {
+            mClearAllPanel.setVisibility(show ? VISIBLE : GONE);
+            if (show) {
+                mClearAllPanel.updateMemoryInfoDisplay();
+            }
+        }
+        if (mOverviewDockView != null) {
+            DeviceProfile dp = getDeviceProfile();
+            boolean showDock = show && !dp.isTablet && !dp.isLandscape;
+            mOverviewDockView.setVisibility(showDock ? VISIBLE : GONE);
+        }
+    }
+
+    private void applyBottomUiContentAlpha(float alpha) {
+        if (!getResources().getBoolean(R.bool.config_clearall_center)) {
+            return;
+        }
+        float bottomUiAlpha = mOrientationState.getTouchRotation() == ROTATION_0 ? alpha : 0f;
+        if (mClearAllPanel != null) {
+            mClearAllPanel.setAlpha(bottomUiAlpha);
+        }
+        if (mOverviewDockView != null) {
+            mOverviewDockView.setAlpha(bottomUiAlpha);
+        }
+        if (alpha <= 0f) {
+            updateBottomUiOverviewVisibility();
         }
     }
 

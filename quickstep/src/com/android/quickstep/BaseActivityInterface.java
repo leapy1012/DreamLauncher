@@ -248,14 +248,39 @@ public abstract class BaseActivityInterface<STATE_TYPE extends BaseState<STATE_T
             Resources res = context.getResources();
             float maxScale = res.getFloat(R.dimen.overview_max_scale);
             int taskMargin = dp.overviewTaskMarginPx;
+            int claimedAbove = dp.overviewTaskThumbnailTopMarginPx;
+            int claimedBelow = dp.getOverviewActionsClaimedSpace();
+            // Oppo-style bottom chrome: pin tasks to the bottom of the free rect, and shift
+            // that rect down so cards sit closer to the dock — same height keeps scale stable.
+            // Do not use RecentsView.translationY (desyncs snapshots / ghost plates).
+            int gravity = Gravity.CENTER;
+            if (res.getBoolean(R.bool.config_clearall_center)) {
+                gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
+                // Net card drop: down-shift minus the Clear lift, so cards move up by the
+                // same amount Clear was raised (keeps vertical rhythm with Oppo).
+                int shift = res.getDimensionPixelSize(R.dimen.hxy_recents_card_down_shift)
+                        - res.getDimensionPixelSize(R.dimen.hxy_clear_extra_lift);
+                if (shift < 0) {
+                    shift = 0;
+                }
+                // Clear/RAM are siblings overlaid near the nav — do not reserve their full
+                // height in the task claim or the card-down shift gets clamped to ~0.
+                int minBelow = dp.getInsets().bottom
+                        + res.getDimensionPixelSize(R.dimen.overview_dock_area_height)
+                        + res.getDimensionPixelSize(R.dimen.hxy_card_to_dock_gap)
+                        + res.getDimensionPixelSize(R.dimen.hxy_dock_to_ram_gap) / 2;
+                shift = Math.min(shift, Math.max(0, claimedBelow - minBelow));
+                claimedAbove += shift;
+                claimedBelow -= shift;
+            }
             calculateTaskSizeInternal(
                     context,
                     dp,
-                    dp.overviewTaskThumbnailTopMarginPx,
-                    dp.getOverviewActionsClaimedSpace(),
+                    claimedAbove,
+                    claimedBelow,
                     res.getDimensionPixelSize(R.dimen.overview_minimum_next_prev_size) + taskMargin,
                     maxScale,
-                    Gravity.CENTER,
+                    gravity,
                     outRect);
         }
     }

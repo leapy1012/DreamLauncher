@@ -33,6 +33,7 @@
     <string name="none">默认</string>
     <!-- hxy-feature: desktop theme 202312-->
     <string name="hxy_launcher_available">可用</string>
+    <string name="oplus_clear_all_botton">清除</string>
     <string name="shake_device_tips">摇一摇当前页面图标自动补位</string>
     <string name="effect_button_text">滑屏效果</string>
     <string name="transition_effect_accordion">手风琴</string>

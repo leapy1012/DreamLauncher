@@ -19,18 +19,21 @@ import static com.android.launcher3.anim.Interpolators.DEACCEL_2;
 import static com.android.launcher3.logging.StatsLogManager.LAUNCHER_STATE_OVERVIEW;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.SystemProperties;
+
+import androidx.core.graphics.ColorUtils;
 
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherState;
 import com.android.launcher3.R;
 import com.android.launcher3.util.DisplayController;
-import com.android.launcher3.util.Themes;
 import com.android.quickstep.util.LayoutUtils;
 import com.android.quickstep.views.RecentsView;
 import com.android.quickstep.views.TaskView;
+import com.android.systemui.shared.system.BlurUtils;
 
 /**
  * Definition for overview state
@@ -115,9 +118,17 @@ public class OverviewState extends LauncherState {
         return false;
     }
 
+    /**
+     * ColorOS overview: surface blur + a translucent dark wash. Must stay
+     * non-opaque ({@code alpha < 255}) so {@link ScrimView#isFullyOpaque()} is
+     * false and {@link BaseDepthController} keeps applying blur. Fully
+     * transparent was too bright vs Oppo; opaque Material scrim killed blur.
+     */
     @Override
     public int getWorkspaceScrimColor(Launcher launcher) {
-        return Themes.getAttrColor(launcher, R.attr.overviewScrimColor);
+        // ~80% black with blur; stay non-opaque so blur still applies.
+        int alpha = BlurUtils.supportsBlursOnWindows() ? 0xCC : 0x40;
+        return ColorUtils.setAlphaComponent(Color.BLACK, alpha);
     }
 
     @Override

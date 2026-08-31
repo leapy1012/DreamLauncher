@@ -1126,6 +1126,11 @@ public class TaskView extends FrameLayout implements Reusable {
                 return showTaskMenu(iconView);
             });
             if (mHxyMenu != null) {
+                mHxyMenu.setAlpha(1f);
+                mHxyMenu.setEnabled(true);
+                mHxyMenu.setClickable(true);
+                mHxyMenu.setFocusable(true);
+                mHxyMenu.setVisibility(VISIBLE);
                 mHxyMenu.setOnClickListener(v -> {
                     if (confirmSecondSplitSelectApp()) {
                         return;
@@ -1284,6 +1289,22 @@ public class TaskView extends FrameLayout implements Reusable {
     public void setStableAlpha(float parentAlpha) {
         mStableAlpha = parentAlpha;
         setAlpha(mStableAlpha);
+    }
+
+    /**
+     * Oppo {@code OplusTaskHeaderView.setShortCutAlpha}: only the menu glyph fades; icon/title stay.
+     * Ignore taps when largely transparent (off-center cards).
+     */
+    public void setMenuShortcutAlpha(float alpha) {
+        if (mHxyMenu == null) {
+            return;
+        }
+        float clamped = Utilities.boundToRange(alpha, 0f, 1f);
+        mHxyMenu.setAlpha(clamped);
+        boolean interactive = clamped > 0.4f;
+        mHxyMenu.setEnabled(interactive);
+        mHxyMenu.setClickable(interactive);
+        mHxyMenu.setFocusable(interactive);
     }
 
     @Override

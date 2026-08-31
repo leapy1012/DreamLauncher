@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:androidprv="http://schemas.android.com/apk/prv/res/android" xmlns:android="http://schemas.android.com/apk/res/android" xmlns:launcher="http://schemas.android.com/apk/res-auto" android:height="30dp" android:width="30dp" android:viewportWidth="60" android:viewportHeight="60">
-    <path android:name="椭圆 6 副本 11" android:fillColor="#ffffffff" android:pathData="m30 16.01c-1.65 0 -2.99 1.34 -2.99 2.99c0 1.65 1.34 2.99 2.99 2.99c1.65 0 2.99 -1.34 2.99 -2.99c0 -1.65 -1.34 -2.99 -2.99 -2.99zm0 11.01c-1.65 0 -2.99 1.34 -2.99 2.99c0 1.65 1.34 2.99 2.99 2.99c1.65 0 2.99 -1.34 2.99 -2.99c0 -1.65 -1.34 -2.99 -2.99 -2.99zm0 10.97c-1.65 0 -2.99 1.35 -2.99 3.01c0 1.66 1.34 3.01 2.99 3.01c1.65 0 2.99 -1.35 2.99 -3.01c0 -1.66 -1.34 -3.01 -2.99 -3.01z"/>
+<!-- Oppo oplus_task_pop_menu_icon proportions in a 42dp touch target. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M12,13.75C12.967,13.75 13.75,12.967 13.75,12C13.75,11.033 12.967,10.25 12,10.25C11.033,10.25 10.25,11.033 10.25,12C10.25,12.967 11.033,13.75 12,13.75Z"/>
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M12,7.625C12.967,7.625 13.75,6.841 13.75,5.875C13.75,4.909 12.967,4.125 12,4.125C11.033,4.125 10.25,4.909 10.25,5.875C10.25,6.841 11.033,7.625 12,7.625Z"/>
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M12,19.875C12.967,19.875 13.75,19.091 13.75,18.125C13.75,17.159 12.967,16.375 12,16.375C11.033,16.375 10.25,17.159 10.25,18.125C10.25,19.091 11.033,19.875 12,19.875Z"/>
 </vector>
