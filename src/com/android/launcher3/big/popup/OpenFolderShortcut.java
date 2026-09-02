@@ -6,6 +6,7 @@ import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.popup.SystemShortcut;
 import com.android.launcher3.touch.ItemClickHandler;
@@ -18,6 +19,11 @@ public class OpenFolderShortcut extends SystemShortcut<Launcher> {
     public OpenFolderShortcut(Launcher target, ItemInfo itemInfo, View originalView) {
         super(R.drawable.hxy_folder_open, R.string.hxy_folder_open, target, itemInfo, originalView);
         this.mFolderIcon = (HxyLargeFolderIcon) originalView;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return HxyLargeFolderProxy.isLargeFolder(mItemInfo);
     }
 
     @Override

@@ -376,6 +376,9 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     private void initLoadListData(boolean isLargeFolder) {
         setListViewVisible(isLargeFolder);
+        if (!isLargeFolder) {
+            resetSmallFolderChrome();
+        }
         recursionLoadBitmapInfo(0);
     }
 
@@ -442,6 +445,12 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (mIndicator == null || mInfo == null) {
             return;
         }
+        if (!isLargeFolder()) {
+            mIndicator.setDotsCount(0);
+            mIndicator.setVisibility(INVISIBLE);
+            mIndicator.setAlpha(0f);
+            return;
+        }
         int count = getPreviewPageCount();
         if (count <= 1) {
             mIndicator.setDotsCount(0);
@@ -453,6 +462,27 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             mIndicator.setDotsCount(count);
         }
         mIndicator.setCurrentPosition(mPreviewPage);
+    }
+
+    /** Oppo only shows page dots on 2×2 big folders; restore name chrome for 1×1. */
+    private void resetSmallFolderChrome() {
+        mHandler.removeCallbacks(mRestoreChromeRunnable);
+        mIndicatorShowing = false;
+        mScrolling = false;
+        mPreviewPage = 0;
+        mScrollDistance = 0f;
+        mLastIndicatorFrac = -1f;
+        if (mIndicator != null) {
+            mIndicator.animate().cancel();
+            mIndicator.setDotsCount(0);
+            mIndicator.setVisibility(INVISIBLE);
+            mIndicator.setAlpha(0f);
+        }
+        View name = getFolderName();
+        if (name != null) {
+            name.animate().cancel();
+            name.setAlpha(1f);
+        }
     }
 
     private void onFolderLongClick() {
@@ -574,13 +604,16 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (action == MotionEvent.ACTION_DOWN) {
             mPagingTookOver = false;
         }
-        // Pre-drag / drag already owns this icon (popup long-press). Do not let plate
-        // paging steal MOVE or call requestDisallowIntercept — that blocks DragController
-        // from promoting pre-drag into a real workspace move.
+        // Pre-drag / drag already owns this icon (popup long-press). Abort plate paging
+        // so a stuck requestDisallowIntercept cannot block DragLayer from promoting
+        // pre-drag into a real workspace move (multi-page big folders).
         final boolean dragOwnsTouch = mActivity != null
                 && mActivity.getDragController() != null
                 && mActivity.getDragController().isDragging();
-        if (isLargeFolder() && mPagingController != null && !dragOwnsTouch) {
+        if (dragOwnsTouch && mPagingController != null) {
+            mPagingController.abort();
+            mPagingTookOver = false;
+        } else if (isLargeFolder() && mPagingController != null) {
             boolean paging = mPagingController.onTouchEvent(ev);
             if (paging) {
                 if (!mPagingTookOver) {
@@ -610,6 +643,14 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     public boolean canPageSwipe() {
         return isLargeFolder() && getPreviewPageCount() > 1;
+    }
+
+    /** Stop plate paging and clear disallow-intercept so DragLayer can drive the drag. */
+    public void abortPagingGesture() {
+        if (mPagingController != null) {
+            mPagingController.abort();
+        }
+        mPagingTookOver = false;
     }
 
     public boolean isInSwipeArea(float x, float y) {

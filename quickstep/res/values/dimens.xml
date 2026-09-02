@@ -20,12 +20,18 @@
     <!-- For Launchers that want to override the default dialog corner radius -->
     <dimen name="task_corner_radius_override">-1dp</dimen>
 
-    <!--  Task Menu View  -->
-    <dimen name="task_menu_corner_radius">22dp</dimen>
+    <!--  Task Menu View (ColorOS COUI popup card)  -->
+    <dimen name="task_menu_corner_radius">@dimen/coui_round_corner_m</dimen>
     <dimen name="task_menu_item_corner_radius">4dp</dimen>
     <dimen name="task_menu_spacing">2dp</dimen>
     <dimen name="task_menu_width_grid">216dp</dimen>
     <dimen name="task_menu_horizontal_padding">8dp</dimen>
+    <!-- Oppo oplus_overview_grid_menu_option_width / _max -->
+    <dimen name="task_menu_popup_min_width">152dp</dimen>
+    <dimen name="task_menu_popup_max_width">248dp</dimen>
+    <!-- Inset from task right edge + gap under ⋮ (Oppo task_menu_offset_spacing) -->
+    <dimen name="task_menu_popup_edge_inset">12dp</dimen>
+    <dimen name="task_menu_popup_offset_spacing">8dp</dimen>
     <dimen name="overview_proactive_row_height">48dp</dimen>
     <dimen name="overview_proactive_row_bottom_margin">16dp</dimen>
 

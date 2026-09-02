@@ -1864,7 +1864,17 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         // Folder plate-paging must not keep Workspace/DragLayer from driving the drag.
         mBigFolderIntercept = false;
         mIsEventOverPageableBigFolder = false;
-        child.setVisibility(INVISIBLE);
+        if (child instanceof HxyLargeFolderIcon) {
+            ((HxyLargeFolderIcon) child).abortPagingGesture();
+        }
+        // Keep resizable workspace icons visible during pre-drag so the resize frame is seen
+        // (Oppo draws the outline on the icon in place).
+        boolean keepVisibleForResize = child instanceof BubbleTextView
+                && com.android.launcher3.iconresize.IconResizeHelper.canResize(
+                        (ItemInfo) child.getTag());
+        if (!keepVisibleForResize) {
+            child.setVisibility(INVISIBLE);
+        }
 
         if (options.isAccessibleDrag) {
             mDragController.addDragListener(
@@ -1952,6 +1962,11 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             BubbleTextView btv = (BubbleTextView) child;
             if (!dragOptions.isAccessibleDrag) {
                 dragOptions.preDragCondition = btv.startLongPressAction();
+                if (com.android.launcher3.config.FeatureFlags.ENABLE_WORKSPACE_ICON_RESIZE.get()
+                        && dragOptions.preDragCondition != null) {
+                    dragOptions.preDragCondition = com.android.launcher3.iconresize.IconResizeHelper
+                            .wrapPreDragCondition(dragOptions.preDragCondition);
+                }
             }
             if (btv.isDisplaySearchResult()) {
                 dragOptions.preDragEndScale = (float) mAllAppsIconSize / btv.getIconSize();
@@ -1999,6 +2014,14 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                     scale * iconScale,
                     scale,
                     dragOptions);
+        }
+        if (child instanceof BubbleTextView btv
+                && com.android.launcher3.config.FeatureFlags.ENABLE_WORKSPACE_ICON_RESIZE.get()) {
+            CellLayout cellLayout = getParentCellLayoutForView(child);
+            if (cellLayout != null) {
+                com.android.launcher3.iconresize.IconResizeHelper.showResizeFrameOnLongPress(
+                        mLauncher, btv, cellLayout, dv);
+            }
         }
         return dv;
     }

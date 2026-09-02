@@ -1674,8 +1674,14 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     @Override
     protected void determineScrollingStart(MotionEvent ev, float touchSlopScale) {
         // Enables swiping to the left or right only if the task overlay is not modal.
+        boolean wasHandling = isHandlingTouch();
         if (!isModal()) {
             super.determineScrollingStart(ev, touchSlopScale);
+        }
+        // ColorOS DockView.onParentScrollInteractionBegin — Recents owns link-scroll.
+        if (!wasHandling && isHandlingTouch() && mOverviewDockView != null
+                && getResources().getBoolean(R.bool.config_clearall_center)) {
+            mOverviewDockView.onParentScrollInteractionBegin();
         }
     }
 
@@ -2352,9 +2358,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         }
         if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
             if (!mOverviewDockView.isDockDrivingRecents()) {
-                mOverviewDockView.onRecentsPageCentered(getTaskViewNearestToCenterOfScreen());
+                // ColorOS DockView.onRecentsScrollTo — continuous scale-linked scroll.
+                mOverviewDockView.onRecentsScrollTo(scroll);
             }
-            mOverviewDockView.updateCurveProperties();
         } else if (mActionsView != null) {
             mActionsView.onRecentsPageCentered(getTaskViewNearestToCenterOfScreen());
         }

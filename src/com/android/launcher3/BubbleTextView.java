@@ -34,7 +34,10 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -61,6 +64,14 @@ import com.android.launcher3.dot.DotInfo;
 import com.android.launcher3.dragndrop.DragOptions.PreDragCondition;
 import com.android.launcher3.dragndrop.DraggableView;
 import com.android.launcher3.folder.FolderIcon;
+import com.android.launcher3.iconresize.IconResizeFramePainter;
+import com.android.launcher3.iconresize.IconResizeHelper;
+import com.android.launcher3.iconresize.IconResizePreviewParams;
+import com.android.launcher3.iconresize.MorphIconTransitionHelper;
+import com.android.launcher3.iconresize.MorphPlateColorHelper;
+import com.android.launcher3.iconresize.MorphShapeHelper;
+import com.android.launcher3.iconresize.MorphWorkspaceIconDrawable;
+import com.android.launcher3.iconresize.ResizeFrameStrokeState;
 import com.android.launcher3.graphics.IconShape;
 import com.android.launcher3.graphics.PreloadIconDrawable;
 import com.android.launcher3.icons.DotRenderer;
@@ -163,6 +174,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     private final MultiTranslateDelegate mTranslateDelegate = new MultiTranslateDelegate(this);
     private final ActivityContext mActivity;
     private FastBitmapDrawable mIcon;
+    @Nullable
+    private ResizeFrameStrokeState mResizeStrokeState;
+    @Nullable
+    private IconResizePreviewParams mResizePreviewParams;
+    private boolean mHideLabelForResizePreview;
     private boolean mCenterVertically;
 
     protected int mDisplay;
@@ -645,8 +661,158 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
     @Override
     public void onDraw(Canvas canvas) {
+        if (mResizePreviewParams != null && mResizePreviewParams.isActive()) {
+            drawResizePreview(canvas);
+            return;
+        }
         super.onDraw(canvas);
+        if (mResizeStrokeState != null && mResizeStrokeState.isActive()) {
+            IconResizeFramePainter.drawFrame(canvas, this, mResizeStrokeState);
+        }
         drawDotIfNecessary(canvas);
+    }
+
+    private void drawResizePreview(Canvas canvas) {
+        IconResizePreviewParams params = mResizePreviewParams;
+        if (params == null) {
+            return;
+        }
+        Rect iconRect = new Rect(
+                Math.round(params.getX()),
+                Math.round(params.getY()),
+                Math.round(params.getX() + params.getSizeX()),
+                Math.round(params.getY() + params.getSizeY()));
+        if (iconRect.width() <= 0 || iconRect.height() <= 0) {
+            return;
+        }
+
+        Drawable icon = buildResizePreviewDrawable(params, iconRect);
+        if (icon != null) {
+            icon.setBounds(iconRect);
+            icon.draw(canvas);
+        }
+
+        if (mResizeStrokeState != null && mResizeStrokeState.isActive()) {
+            IconResizeFramePainter.drawFrame(canvas, this, mResizeStrokeState, iconRect);
+        }
+        drawDotIfNecessary(canvas);
+    }
+
+    @Nullable
+    private Drawable buildResizePreviewDrawable(IconResizePreviewParams params, Rect iconRect) {
+        if (mIcon == null) {
+            return null;
+        }
+        Object tag = getTag();
+        if (!(tag instanceof ItemInfo info)) {
+            return mIcon;
+        }
+        android.content.ComponentName cn = info.getTargetComponent();
+        Drawable inner = MorphIconTransitionHelper.unwrapBaseIcon(mIcon);
+        inner = MorphPlateColorHelper.loadMorphForeground(getContext(), cn, inner);
+        int spanX = params.getSpanX();
+        int spanY = params.getSpanY();
+        return new MorphWorkspaceIconDrawable(
+                getContext(),
+                inner,
+                mIconSize,
+                spanX,
+                spanY,
+                iconRect.width(),
+                iconRect.height(),
+                cn,
+                params.getRadius(),
+                MorphWorkspaceIconDrawable.ScaleMode.MORPH);
+    }
+
+    @Nullable
+    public ResizeFrameStrokeState getResizeStrokeState() {
+        return mResizeStrokeState;
+    }
+
+    @Nullable
+    public IconResizePreviewParams getResizePreviewParams() {
+        return mResizePreviewParams;
+    }
+
+    public void enterResizePreviewMode(IconResizePreviewParams initial) {
+        mResizePreviewParams = new IconResizePreviewParams(
+                initial.getRadius(), initial.getSizeX(), initial.getSizeY(),
+                initial.getX(), initial.getY());
+        mResizePreviewParams.setActive(true);
+        mResizePreviewParams.setSpanX(initial.getSpanX());
+        mResizePreviewParams.setSpanY(initial.getSpanY());
+        mHideLabelForResizePreview = true;
+        setText("");
+        applyCompoundDrawables(new ColorDrawable(Color.TRANSPARENT));
+        invalidate();
+    }
+
+    public void updateResizePreviewLayout(IconResizePreviewParams params) {
+        if (mResizePreviewParams == null) {
+            return;
+        }
+        mResizePreviewParams.setRadius(params.getRadius());
+        mResizePreviewParams.setSizeX(params.getSizeX());
+        mResizePreviewParams.setSizeY(params.getSizeY());
+        mResizePreviewParams.setX(params.getX());
+        mResizePreviewParams.setSpanX(params.getSpanX());
+        mResizePreviewParams.setSpanY(params.getSpanY());
+        invalidate();
+    }
+
+    public void exitResizePreviewMode() {
+        mResizePreviewParams = null;
+        mHideLabelForResizePreview = false;
+        Object tag = getTag();
+        if (tag instanceof WorkspaceItemInfo info) {
+            applyFromWorkspaceItem(info);
+        } else {
+            refreshWorkspaceIconDisplay();
+        }
+        invalidate();
+    }
+
+    /** Icon bounds for a span preset without mutating {@link ItemInfo}. */
+    public void getIconBoundsForSpan(int spanX, int spanY, Rect outBounds) {
+        spanX = IconResizeHelper.normalizeSpan(spanX);
+        spanY = IconResizeHelper.normalizeSpan(spanY);
+        if (spanX == IconResizeHelper.MIN_SPAN && spanY == IconResizeHelper.MIN_SPAN) {
+            getIconBounds(mIconSize, outBounds);
+            return;
+        }
+        DeviceProfile dp = mActivity.getDeviceProfile();
+        Rect morph = IconResizeHelper.getMorphIconBounds(dp, spanX, spanY);
+        if (spanX == 1 && spanY == 2) {
+            Utilities.setRectToViewCenterWhenMorph(this, mIconSize, morph.height(), outBounds);
+        } else if (spanX == 2 && spanY == 1) {
+            Utilities.setRectToViewCenterWhenMorph(this, morph.width(), mIconSize, outBounds);
+        } else if (spanX == 2 && spanY == 2) {
+            Utilities.setRectToViewCenterWhenMorph(
+                    this, morph.width(), morph.height(), outBounds);
+        } else {
+            Utilities.setRectToViewCenter(this, mIconSize, outBounds);
+        }
+        if (!mLayoutHorizontal) {
+            outBounds.offsetTo(outBounds.left, getPaddingTop());
+        } else if (mIsRtl) {
+            outBounds.offsetTo((getWidth() - mIconSize) - getPaddingRight(), outBounds.top);
+        } else {
+            outBounds.offsetTo(getPaddingLeft(), outBounds.top);
+        }
+    }
+
+    /** Oppo: frame stroke is drawn on the icon; {@link AppIconResizeFrame} draws the handle. */
+    public void setResizeFrameStrokeActive(boolean active, @Nullable Runnable overlayInvalidator) {
+        if (active) {
+            if (mResizeStrokeState == null) {
+                mResizeStrokeState = new ResizeFrameStrokeState(getContext());
+            }
+            mResizeStrokeState.activate(this, overlayInvalidator);
+        } else if (mResizeStrokeState != null) {
+            mResizeStrokeState.deactivate(this);
+        }
+        invalidate();
     }
 
     /**
@@ -702,6 +868,31 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
      * Get the icon bounds on the view depending on the layout type.
      */
     public void getIconBounds(int iconSize, Rect outBounds) {
+        Object tag = getTag();
+        if (tag instanceof ItemInfo info && IconResizeHelper.isEnabled()
+                && IconResizeHelper.canResize(info) && IconResizeHelper.hasExtendedSpan(info)) {
+            DeviceProfile dp = ActivityContext.lookupContext(getContext()).getDeviceProfile();
+            Rect morph = IconResizeHelper.getMorphIconBounds(dp, info.spanX, info.spanY);
+            int spanX = IconResizeHelper.normalizeSpan(info.spanX);
+            int spanY = IconResizeHelper.normalizeSpan(info.spanY);
+            if (spanX == 1 && spanY == 2) {
+                Utilities.setRectToViewCenterWhenMorph(this, iconSize, morph.height(), outBounds);
+            } else if (spanX == 2 && spanY == 1) {
+                Utilities.setRectToViewCenterWhenMorph(this, morph.width(), iconSize, outBounds);
+            } else if (spanX == 2 && spanY == 2) {
+                Utilities.setRectToViewCenterWhenMorph(this, morph.width(), morph.height(), outBounds);
+            } else {
+                Utilities.setRectToViewCenter(this, iconSize, outBounds);
+            }
+            if (!mLayoutHorizontal) {
+                outBounds.offsetTo(outBounds.left, getPaddingTop());
+            } else if (mIsRtl) {
+                outBounds.offsetTo((getWidth() - iconSize) - getPaddingRight(), outBounds.top);
+            } else {
+                outBounds.offsetTo(getPaddingLeft(), outBounds.top);
+            }
+            return;
+        }
         outBounds.set(0, 0, iconSize, iconSize);
         if (mLayoutHorizontal) {
             int top = (getHeight() - iconSize) / 2;
@@ -757,6 +948,14 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
             }
         }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (changed) {
+            IconResizeHelper.applyIconDrawableBounds(this);
+        }
     }
 
     @Override
@@ -1058,6 +1257,25 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         }
     }
 
+    /** Re-applies workspace morph plate wrapping after span changes. */
+    public void refreshWorkspaceIconDisplay() {
+        if (mIcon != null && mIsIconVisible) {
+            applyCompoundDrawables(mIcon);
+            invalidate();
+        }
+    }
+
+    /** Shows an in-progress morph transition drawable (resize handle drag). */
+    public void applyMorphTransitionDrawable(Drawable morph, int spanX, int spanY) {
+        if (morph == null) {
+            return;
+        }
+        Rect bounds = IconResizeHelper.getIconDrawableBounds(this, spanX, spanY);
+        morph.setBounds(0, 0, bounds.width(), bounds.height());
+        updateIcon(morph);
+        invalidate();
+    }
+
     public void setIconDrawable(Drawable icon) {
         setIcon((FastBitmapDrawable) icon);
     }
@@ -1093,7 +1311,20 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         // same as before.
         mDisableRelayout = mIcon != null;
 
-        icon.setBounds(0, 0, mIconSize, mIconSize);
+        Object tag = getTag();
+        if (tag instanceof ItemInfo info && IconResizeHelper.isEnabled()
+                && IconResizeHelper.canResize(info)) {
+            Drawable active = MorphIconTransitionHelper.getActiveDrawable(this);
+            if (active != null) {
+                icon = active;
+            } else {
+                icon = IconResizeHelper.wrapMorphDisplayDrawable(this, icon);
+            }
+            Rect bounds = IconResizeHelper.getIconDrawableBounds(this, info.spanX, info.spanY);
+            icon.setBounds(0, 0, bounds.width(), bounds.height());
+        } else {
+            icon.setBounds(0, 0, mIconSize, mIconSize);
+        }
 
         updateIcon(icon);
 
@@ -1191,11 +1422,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
     @Override
     public void getWorkspaceVisualDragBounds(Rect bounds) {
-        getIconBounds(mIconSize, bounds);
+        getIconBounds(bounds);
     }
 
     public void getSourceVisualDragBounds(Rect bounds) {
-        getIconBounds(mIconSize, bounds);
+        getIconBounds(bounds);
     }
 
     @Override

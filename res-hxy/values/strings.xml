@@ -100,4 +100,12 @@
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="workspaceTopPercentage">0.333</string>
+    <!-- Workspace icon resize (Oppo-style) -->
+    <string name="icon_resize_open">Resize icon</string>
+    <string name="icon_resize_handle">Icon resize handle</string>
+    <string name="icon_size_1x1">Icon size 1×1</string>
+    <string name="icon_size_1x2">Icon size 1×2</string>
+    <string name="icon_size_2x1">Icon size 2×1</string>
+    <string name="icon_size_2x2">Icon size 2×2</string>
+    <string name="icon_resize_no_space">Not enough space for this icon size</string>
 </resources>

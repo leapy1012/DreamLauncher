@@ -177,4 +177,9 @@
     <color name="launcher_page_indicator_unselect_color">#4dffffff</color>
     <color name="launcher_page_indicator_bright_active_color">#000000</color>
     <color name="launcher_page_indicator_bright_color">#4d000000</color>
+    <color name="icon_resize_frame_stroke">#E6FFFFFF</color>
+    <color name="item_resize_frame_dark_color">#99ffffff</color>
+    <color name="item_resize_frame_bright_color">#33000000</color>
+    <color name="item_resize_handle_dark_color">#ffffffff</color>
+    <color name="item_resize_handle_bright_color">#ff808080</color>
 </resources>

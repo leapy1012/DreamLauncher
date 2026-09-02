@@ -36,6 +36,7 @@ import com.android.launcher3.CellLayout.ContainerType;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.iconresize.IconResizeHelper;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.widget.NavigableAppWidgetHostView;
@@ -172,12 +173,27 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
                         && !HxyLargeFolderProxy.isLargeFolder(child)) {
                     contentHeight = dp.getOppoFolderWorkspaceContentHeight();
                 }
+                // Multi-span icons: top padding from a single cell row, not full span height.
+                int paddingHeight = lp.height;
+                if (child instanceof BubbleTextView btv && IconResizeHelper.isEnabled()) {
+                    Object tag = btv.getTag();
+                    if (tag instanceof ItemInfo info && IconResizeHelper.hasExtendedSpan(info)) {
+                        paddingHeight = mCellHeight;
+                    }
+                }
                 cellPaddingY = (int) Math.max(0,
-                        (lp.height - contentHeight) * dp.getOppoIconTopFactor());
+                        (paddingHeight - contentHeight) * dp.getOppoIconTopFactor());
             } else if (dp.isScalableGrid && mContainerType == WORKSPACE) {
                 cellPaddingY = dp.cellYPaddingPx;
             } else {
-                cellPaddingY = (int) Math.max(0, ((lp.height - cHeight) / 2f));
+                int paddingHeight = lp.height;
+                if (child instanceof BubbleTextView btv && IconResizeHelper.isEnabled()) {
+                    Object tag = btv.getTag();
+                    if (tag instanceof ItemInfo info && IconResizeHelper.hasExtendedSpan(info)) {
+                        paddingHeight = mCellHeight;
+                    }
+                }
+                cellPaddingY = (int) Math.max(0, ((paddingHeight - cHeight) / 2f));
             }
 
             // No need to add padding when cell layout border spacing is present.

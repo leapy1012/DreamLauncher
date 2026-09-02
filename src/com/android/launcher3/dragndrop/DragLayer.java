@@ -45,6 +45,8 @@ import android.view.animation.Interpolator;
 import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.DropTargetBar;
 import com.android.launcher3.Launcher;
+import com.android.launcher3.iconresize.AppIconResizeFrame;
+import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.R;
 import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.Utilities;
@@ -222,10 +224,26 @@ public class DragLayer extends BaseDragLayer<Launcher> implements LauncherOverla
     public boolean dispatchTouchEvent(MotionEvent ev) {
         ev.offsetLocation(getTranslationX(), 0);
         try {
+            if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                AppIconResizeFrame.tryFastClosePopupIfNeeded(
+                        ActivityContext.lookupContext(getContext()), ev);
+            }
             return super.dispatchTouchEvent(ev);
         } finally {
             ev.offsetLocation(-getTranslationX(), 0);
         }
+    }
+
+    @Override
+    protected boolean findActiveController(MotionEvent ev) {
+        AbstractFloatingView frame = AbstractFloatingView.getOpenView(
+                mActivity, AbstractFloatingView.TYPE_WIDGET_RESIZE_FRAME);
+        if (frame instanceof AppIconResizeFrame resizeFrame
+                && resizeFrame.shouldTakeResizeTouch(ev)) {
+            mActiveController = resizeFrame;
+            return true;
+        }
+        return super.findActiveController(ev);
     }
 
     public void animateViewIntoPosition(DragView dragView, final int[] pos, float alpha,

@@ -2,7 +2,10 @@
 <!-- Default workspace for 5-col x 7-row (ColorOS 5x7). -->
 <favorites>
     <!-- Hotseat: 5 slots (Oppo uses columns = hotseat capacity; fewer icons center at runtime). -->
-    <favorite container="-101" screen="0" x="0" y="0" packageName="com.google.android.dialer" className="com.google.android.dialer.extensions.GoogleDialtactsActivity"/>
+    <resolve container="-101" screen="0" x="0" y="0">
+        <favorite packageName="com.android.dialer" className="com.android.contacts.dial.DialActivity"/>
+        <favorite packageName="com.google.android.dialer" className="com.google.android.dialer.extensions.GoogleDialtactsActivity"/>
+    </resolve>
     <favorite container="-101" screen="1" x="1" y="0" uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_MESSAGING;end"/>
     <favorite container="-101" screen="2" x="2" y="0" packageName="com.android.chrome" className="com.google.android.apps.chrome.Main"/>
     <favorite container="-101" screen="3" x="3" y="0" packageName="com.mediatek.camera" className="com.mediatek.camera.CameraLauncher"/>

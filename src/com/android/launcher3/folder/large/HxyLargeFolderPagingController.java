@@ -60,6 +60,10 @@ public class HxyLargeFolderPagingController {
         mScrollStart = false;
         mTracking = false;
         setWorkspaceIntercept(false);
+        // Allow DragLayer / ancestors to intercept again (e.g. after long-press → drag).
+        if (mIcon.getParent() != null) {
+            mIcon.getParent().requestDisallowInterceptTouchEvent(false);
+        }
     }
 
     public boolean onTouchEvent(MotionEvent ev) {
@@ -102,10 +106,10 @@ public class HxyLargeFolderPagingController {
         mPrePage = mScrollStartPage;
         mScrollStartX = mIcon.getScrollDistance();
         if (mTracking) {
+            // Claim Workspace early so home pages don't steal the gesture, but do NOT
+            // requestDisallowIntercept yet — that blocks DragLayer from promoting
+            // long-press pre-drag into a real drag on multi-page folders.
             setWorkspaceIntercept(true);
-            if (mIcon.getParent() != null) {
-                mIcon.getParent().requestDisallowInterceptTouchEvent(true);
-            }
         }
         return false;
     }
@@ -140,6 +144,10 @@ public class HxyLargeFolderPagingController {
                 mScrollStartPage = mIcon.getPreviewPage();
                 mPrePage = mScrollStartPage;
                 setWorkspaceIntercept(true);
+                // Paging committed — now block ancestors from intercepting the swipe.
+                if (mIcon.getParent() != null) {
+                    mIcon.getParent().requestDisallowInterceptTouchEvent(true);
+                }
                 mIcon.cancelLongPress();
                 mIcon.onFolderScrollPageStart();
             }

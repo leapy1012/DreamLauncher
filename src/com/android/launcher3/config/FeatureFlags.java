@@ -159,6 +159,9 @@ public final class FeatureFlags {
     public static final BooleanFlag ENABLE_MATERIAL_U_POPUP = getDebugFlag(270395516,
             "ENABLE_MATERIAL_U_POPUP", ENABLED, "Switch popup UX to use material U");
 
+    /** Oppo-style workspace icon resize (1×1 / 1×2 / 2×1 / 2×2) on long-press. */
+    public static final BooleanFlag ENABLE_WORKSPACE_ICON_RESIZE = new BooleanFlag(true);
+
     // TODO(Block 9): Clean up flags
     public static final BooleanFlag ENABLE_DOWNLOAD_APP_UX_V2 = getReleaseFlag(270395134,
             "ENABLE_DOWNLOAD_APP_UX_V2", ENABLED, "Updates the download app UX"

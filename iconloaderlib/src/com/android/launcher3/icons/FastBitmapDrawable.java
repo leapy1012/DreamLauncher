@@ -144,6 +144,11 @@ public class FastBitmapDrawable extends Drawable implements Drawable.Callback {
         return ColorUtils.compositeColors(whiteScrim, mIconColor);
     }
 
+    /** Dominant color from {@link BitmapInfo}, without launcher white scrim. */
+    public int getRawIconColor() {
+        return mIconColor;
+    }
+
     /**
      * Returns if this represents a themed icon
      */

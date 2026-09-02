@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- From Oppo ic_oplus_task_shortcut_app_info; solid black so menu tint applies. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:height="25dp"
+    android:width="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="25">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M11.994,12.625m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.4"/>
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M11.994,16.268V12.125"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"/>
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M12,8.282C12.497,8.282 12.9,8.685 12.9,9.182C12.9,9.679 12.497,10.082 12,10.082C11.503,10.082 11.1,9.679 11.1,9.182C11.1,8.685 11.503,8.282 12,8.282Z"/>
+</vector>

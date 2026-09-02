@@ -55,6 +55,7 @@ import com.android.launcher3.DragSource;
 import com.android.launcher3.DropTarget;
 import com.android.launcher3.DropTarget.DragObject;
 import com.android.launcher3.Launcher;
+import com.android.launcher3.iconresize.IconResizeHelper;
 import com.android.launcher3.R;
 import com.android.launcher3.accessibility.LauncherAccessibilityDelegate;
 import com.android.launcher3.accessibility.ShortcutMenuAccessibilityDelegate;
@@ -63,6 +64,7 @@ import com.android.launcher3.dragndrop.DragController;
 import com.android.launcher3.dragndrop.DragOptions;
 import com.android.launcher3.dragndrop.DragView;
 import com.android.launcher3.dragndrop.DraggableView;
+import com.android.launcher3.iconresize.IconResizeHelper;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.ItemInfoWithIcon;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
@@ -193,15 +195,22 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     public boolean onControllerInterceptTouchEvent(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
             BaseDragLayer dl = getPopupContainer();
+            AbstractFloatingView resizeFrame = AbstractFloatingView.getOpenView(
+                    mActivityContext, AbstractFloatingView.TYPE_WIDGET_RESIZE_FRAME);
+            if (resizeFrame != null && dl.isEventOverView(resizeFrame, ev)) {
+                // Oppo: touches on the resize frame/handle are not "outside popup" dismissals.
+                return false;
+            }
             if (!dl.isEventOverView(this, ev)) {
                 // TODO: add WW log if want to log if tap closed deep shortcut container.
                 close(true);
 
-                // Let touches on the original icon / folder go through so the user can
-                // launch or start another long-press/drag without the popup eating DOWN.
+                // Oppo: tapping the icon dismisses the popup only; AppIconResizeFrame handles
+                // tap-to-launch while the resize outline stays visible.
                 if (mOriginalIcon != null && dl.isEventOverView(mOriginalIcon, ev)) {
                     return false;
                 }
+                IconResizeHelper.dismissResizeFrame(mActivityContext);
                 if (mFolderIcon != null && dl.isEventOverView(mFolderIcon, ev)) {
                     return false;
                 }
@@ -704,13 +713,10 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     }
 
     private void getOriginalLocation(Rect outPos) {
-        getPopupContainer().getDescendantRectRelativeToSelf(mOriginalIcon, outPos);
-        outPos.top += mOriginalIcon.getPaddingTop();
-        outPos.left += mOriginalIcon.getPaddingLeft();
-        outPos.right -= mOriginalIcon.getPaddingRight();
-        outPos.bottom = outPos.top + (mOriginalIcon.getIcon() != null
-                ? mOriginalIcon.getIcon().getBounds().height()
-                : mOriginalIcon.getHeight());
+        mOriginalIcon.getIconBounds(outPos);
+        Rect viewPos = new Rect();
+        getPopupContainer().getDescendantRectRelativeToSelf(mOriginalIcon, viewPos);
+        outPos.offset(viewPos.left, viewPos.top);
     }
 
     public void applyNotificationInfos(List<NotificationInfo> notificationInfos) {
@@ -1072,6 +1078,9 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         mSystemShortcutContainer = inflateAndAdd(R.layout.coloros_popup_shortcut_group, card);
         mWidgetContainer = mSystemShortcutContainer;
         for (SystemShortcut shortcut : shortcuts) {
+            if (!shortcut.isEnabled()) {
+                continue;
+            }
             View row = initializeSystemShortcut(
                     R.layout.coloros_popup_shortcut,
                     mSystemShortcutContainer,

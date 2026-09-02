@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors Oppo oplus_task_menu_option: RoundFrameLayout + COUIForegroundListView. -->
+<com.coui.appcompat.poplist.RoundFrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:forceDarkAllowed="false">
+
+    <com.coui.appcompat.list.COUIForegroundListView
+        android:id="@id/coui_popup_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:fadeScrollbars="false"
+        android:listSelector="@android:color/transparent"
+        android:overScrollMode="never"
+        android:scrollbars="none" />
+</com.coui.appcompat.poplist.RoundFrameLayout>

@@ -49,6 +49,10 @@ import java.util.Arrays;
  * reverse-bind when Recents is RTL). Curve scale/dim from {@code DockIconView}:
  * centered icon scale 1.0 / undimmed; off-center down to 0.87 / 0.2 scrim.
  * Icons are rasterized to a private bitmap so TaskView {@link IconView} cannot shrink them.
+ * <p>
+ * Bidirectional link-scroll mirrors ColorOS {@code DockView} + {@code LinkScrollState}:
+ * {@code dockScroll = dockOrigin + (recentsScroll - recentsOrigin) / mScrollScale} and the
+ * inverse when the dock drives. No smoothScroll — per-frame {@code scrollTo} like Oppo.
  */
 public class OverviewDockView extends HorizontalScrollView {
 
@@ -58,6 +62,13 @@ public class OverviewDockView extends HorizontalScrollView {
     private static final float EDGE_SCALE_DOWN_FACTOR = 0.13f;
     /** ColorOS {@code DockIconView.MAX_PAGE_SCRIM_ALPHA}. */
     private static final float MAX_PAGE_SCRIM_ALPHA = 0.2f;
+
+    /** ColorOS {@code LinkScrollState}: neither side is driving. */
+    private static final int LINK_UNLINK = -1;
+    /** ColorOS {@code LinkScrollState.RECENTS_SCROLL}: Recents drives dock. */
+    private static final int LINK_RECENTS = 0;
+    /** ColorOS {@code LinkScrollState.DOCK_SCROLL}: dock drives Recents. */
+    private static final int LINK_DOCK = 1;
 
     private final LinearLayout mContainer;
     private final int mIconSize;
@@ -72,10 +83,15 @@ public class OverviewDockView extends HorizontalScrollView {
     /** When true, Recents child index 0 is on the right — dock must reverse-bind. */
     private boolean mRecentsRtl;
     /**
-     * ColorOS link-scroll: dock is driving Recents. While true, Recents must not
+     * ColorOS {@code LinkScrollState.mState}. While {@link #LINK_DOCK}, Recents must not
      * push scroll back into the dock (avoids feedback loop).
      */
-    private boolean mDockDrivingRecents;
+    private int mLinkScrollState = LINK_UNLINK;
+    /**
+     * ColorOS {@code DockView.mScrollScale}:
+     * {@code (taskWidth + recentsPageSpacing) / (iconWidth + dockPageSpacing)}.
+     */
+    private float mScrollScale = 1f;
 
     public OverviewDockView(Context context) {
         this(context, null);
@@ -115,7 +131,7 @@ public class OverviewDockView extends HorizontalScrollView {
 
     /** True while the user is scrolling/flinging the dock (tasks follow). */
     public boolean isDockDrivingRecents() {
-        return mDockDrivingRecents;
+        return mLinkScrollState == LINK_DOCK;
     }
 
     /** Place dock row at {@code dockCenterY} (Oppo {@code DockView.setLocation}). */
@@ -123,6 +139,29 @@ public class OverviewDockView extends HorizontalScrollView {
         int rowHeight = getHeight() > 0 ? getHeight() : mIconSize;
         setTranslationX(0);
         setY(dockCenterY - rowHeight / 2f);
+        computeScrollScale(taskWidth);
+    }
+
+    /**
+     * ColorOS {@code DockView.onParentScrollInteractionBegin}: Recents touch/fling owns
+     * link-scroll; suppress dock OverScroller so it cannot fight per-frame scrollTo.
+     */
+    public void onParentScrollInteractionBegin() {
+        mLinkScrollState = LINK_RECENTS;
+    }
+
+    @Override
+    public void computeScroll() {
+        // While Recents drives, ignore HSV fling/settle — scrollX comes from onRecentsScrollTo.
+        if (mLinkScrollState == LINK_RECENTS) {
+            return;
+        }
+        super.computeScroll();
+    }
+
+    @Override
+    public void fling(int velocityX) {
+        // ColorOS dock settles via linked Recents snap, not free HSV fling.
     }
 
     /**
@@ -135,6 +174,7 @@ public class OverviewDockView extends HorizontalScrollView {
         }
         mRecentsView = recentsView;
         mRecentsRtl = recentsView.isRtl();
+        computeScrollScale(recentsView.mTaskWidth);
         int count = Math.min(recentsView.getTaskViewCount(), MAX_ICONS);
         int[] ids = new int[count];
         for (int i = 0; i < count; i++) {
@@ -147,13 +187,8 @@ public class OverviewDockView extends HorizontalScrollView {
             ids[i] = taskIds != null && taskIds.length > 0 ? taskIds[0] : -1;
         }
         if (Arrays.equals(ids, mBoundTaskIds) && mContainer.getChildCount() == count) {
-            // Still re-center: swipe can leave scroll on the wrong icon.
-            TaskView nearest = recentsView.getTaskViewNearestToCenterOfScreen();
-            if (nearest != null) {
-                onRecentsPageCentered(nearest);
-            } else {
-                updateCurveProperties();
-            }
+            // Continuous link-scroll (not snap) so swipe cannot leave dock on a stale icon.
+            onRecentsScrollTo(recentsView.mOrientationHandler.getPrimaryScroll(recentsView));
             return;
         }
         mBoundTaskIds = ids;
@@ -171,6 +206,32 @@ public class OverviewDockView extends HorizontalScrollView {
         return mRecentsRtl ? (count - 1 - taskIndex) : taskIndex;
     }
 
+    /** ColorOS {@code DockView.computeScrollScale}. */
+    private void computeScrollScale(int fallbackTaskWidth) {
+        if (mRecentsView == null) {
+            mScrollScale = 1f;
+            return;
+        }
+        int taskWidth = mRecentsView.mTaskWidth > 0 ? mRecentsView.mTaskWidth : fallbackTaskWidth;
+        float dockPage = mIconSize + mIconSpacing;
+        if (taskWidth <= 0 || dockPage <= 0f) {
+            mScrollScale = 1f;
+            return;
+        }
+        mScrollScale = (taskWidth + mRecentsView.getPageSpacing()) / dockPage;
+    }
+
+    private int dockScrollForCenteringChild(int dockIndex) {
+        if (dockIndex < 0 || dockIndex >= mContainer.getChildCount() || getWidth() == 0) {
+            return 0;
+        }
+        View child = mContainer.getChildAt(dockIndex);
+        if (child == null || child.getWidth() == 0) {
+            return 0;
+        }
+        return child.getLeft() + child.getWidth() / 2 + mContainer.getLeft() - getWidth() / 2;
+    }
+
     private void centerOnDockIndex(int dockIndex) {
         if (dockIndex < 0 || dockIndex >= mContainer.getChildCount()) {
             return;
@@ -182,17 +243,57 @@ public class OverviewDockView extends HorizontalScrollView {
             return;
         }
         mCenteredChildIndex = dockIndex;
-        int target = child.getLeft() + child.getWidth() / 2 + mContainer.getLeft() - getWidth() / 2;
-        scrollTo(Math.max(0, target), 0);
+        scrollTo(Math.max(0, dockScrollForCenteringChild(dockIndex)), 0);
         updateCurveProperties();
     }
 
     /**
-     * Keep the dock icon for the centered recents card in view while scrolling.
-     * Match by task id (not child index) so RTL reverse-bind cannot mis-center.
+     * ColorOS {@code DockView.onRecentsScrollTo}: map Recents primary scroll onto dock
+     * {@code scrollX} via {@code mScrollScale}. Called every Recents scroll frame.
+     */
+    public void onRecentsScrollTo(int recentsPrimaryScroll) {
+        if (mLinkScrollState == LINK_DOCK) {
+            return;
+        }
+        if (mRecentsView == null || mContainer.getChildCount() == 0 || getWidth() == 0) {
+            return;
+        }
+        computeScrollScale(0);
+        if (mScrollScale <= 0f) {
+            return;
+        }
+        TaskView tv0 = taskViewForDockChild(0);
+        if (tv0 == null) {
+            return;
+        }
+        int page0 = mRecentsView.indexOfChild(tv0);
+        if (page0 < 0) {
+            return;
+        }
+        // Ensure Recents owns the link while it is actively scrolling the dock.
+        if (mLinkScrollState == LINK_UNLINK) {
+            mLinkScrollState = LINK_RECENTS;
+        }
+        int recentsOrigin = mRecentsView.getScrollForPage(page0);
+        int dockOrigin = dockScrollForCenteringChild(0);
+        int maxDock = Math.max(dockOrigin, dockScrollForCenteringChild(mContainer.getChildCount() - 1));
+        int minDock = Math.min(dockOrigin, dockScrollForCenteringChild(mContainer.getChildCount() - 1));
+        int target = Math.round(dockOrigin + (recentsPrimaryScroll - recentsOrigin) / mScrollScale);
+        target = Math.max(minDock, Math.min(maxDock, target));
+        if (target != getScrollX()) {
+            scrollTo(target, 0);
+        } else {
+            updateCurveProperties();
+        }
+        mCenteredChildIndex = findNearestDockIndexToCenter();
+    }
+
+    /**
+     * Snap dock to the icon for {@code centered} (bind / rebuild only). Prefer
+     * {@link #onRecentsScrollTo} during scroll for ColorOS-smooth tracking.
      */
     public void onRecentsPageCentered(@Nullable TaskView centered) {
-        if (mDockDrivingRecents) {
+        if (mLinkScrollState == LINK_DOCK) {
             return;
         }
         if (centered == null || mContainer.getChildCount() == 0) {
@@ -222,7 +323,7 @@ public class OverviewDockView extends HorizontalScrollView {
         }
         boolean handled = super.dispatchTouchEvent(ev);
         // Always pair UP/CANCEL here: clicks are handled by child ImageViews and may
-        // never reach onTouchEvent, which would leave mDockDrivingRecents stuck true.
+        // never reach onTouchEvent, which would leave LINK_DOCK stuck.
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             endDockDrivenScroll();
         }
@@ -230,7 +331,7 @@ public class OverviewDockView extends HorizontalScrollView {
     }
 
     private void beginDockDrivenScroll() {
-        mDockDrivingRecents = true;
+        mLinkScrollState = LINK_DOCK;
         if (mRecentsView != null) {
             mRecentsView.abortScrollerAnimation();
         }
@@ -240,15 +341,40 @@ public class OverviewDockView extends HorizontalScrollView {
     }
 
     private void endDockDrivenScroll() {
-        if (!mDockDrivingRecents) {
+        if (mLinkScrollState != LINK_DOCK) {
             return;
         }
         syncRecentsToDockScroll(true /* snap */);
-        mDockDrivingRecents = false;
+        // ColorOS sets UNLINK after dock-driven page end; Recents snap then re-enters
+        // LINK_RECENTS via onRecentsScrollTo / onParentScrollInteractionBegin.
+        mLinkScrollState = LINK_UNLINK;
+    }
+
+    private int findNearestDockIndexToCenter() {
+        int count = mContainer.getChildCount();
+        if (count == 0 || getWidth() == 0) {
+            return 0;
+        }
+        float viewportCenter = getScrollX() + getWidth() / 2f;
+        int best = 0;
+        float bestDist = Float.MAX_VALUE;
+        for (int i = 0; i < count; i++) {
+            View child = mContainer.getChildAt(i);
+            if (child == null) {
+                continue;
+            }
+            float iconCenter = mContainer.getLeft() + child.getLeft() + child.getWidth() / 2f;
+            float dist = Math.abs(viewportCenter - iconCenter);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = i;
+            }
+        }
+        return best;
     }
 
     /**
-     * ColorOS dock→Recents link: map dock scroll position onto Recents pages.
+     * ColorOS dock→Recents link: {@code recentsScroll = origin + dockDelta * mScrollScale}.
      * {@code snap} settles to the nearest page; otherwise scrolls proportionally.
      */
     private void syncRecentsToDockScroll(boolean snap) {
@@ -259,48 +385,35 @@ public class OverviewDockView extends HorizontalScrollView {
         if (count == 0) {
             return;
         }
-        float pageWidth = mIconSize + mIconSpacing;
-        float viewportCenter = getScrollX() + getWidth() / 2f;
-        View first = mContainer.getChildAt(0);
-        if (first == null || first.getWidth() == 0) {
+        computeScrollScale(0);
+        if (mScrollScale <= 0f) {
             return;
         }
-        float firstCenter = mContainer.getLeft() + first.getLeft() + first.getWidth() / 2f;
-        float pos = (viewportCenter - firstCenter) / pageWidth;
-        int i0 = (int) Math.floor(pos);
-        float frac = pos - i0;
-        if (i0 < 0) {
-            i0 = 0;
-            frac = 0f;
-        }
-        if (i0 >= count - 1) {
-            i0 = count - 1;
-            frac = 0f;
-        }
-        int i1 = Math.min(i0 + 1, count - 1);
-
-        TaskView tv0 = taskViewForDockChild(i0);
-        TaskView tv1 = i1 != i0 ? taskViewForDockChild(i1) : tv0;
+        TaskView tv0 = taskViewForDockChild(0);
         if (tv0 == null) {
             return;
         }
-        int p0 = mRecentsView.indexOfChild(tv0);
-        int p1 = tv1 != null ? mRecentsView.indexOfChild(tv1) : p0;
-        if (p0 < 0) {
+        int page0 = mRecentsView.indexOfChild(tv0);
+        if (page0 < 0) {
             return;
         }
+        int dockOrigin = dockScrollForCenteringChild(0);
+        int recentsOrigin = mRecentsView.getScrollForPage(page0);
+
         if (snap) {
-            int targetPage = (frac < 0.5f || p1 < 0) ? p0 : p1;
-            mRecentsView.snapToPage(targetPage);
+            int nearestDock = findNearestDockIndexToCenter();
+            TaskView tv = taskViewForDockChild(nearestDock);
+            if (tv != null) {
+                int page = mRecentsView.indexOfChild(tv);
+                if (page >= 0) {
+                    mRecentsView.snapToPage(page);
+                }
+            }
             return;
         }
-        if (p1 < 0) {
-            p1 = p0;
-        }
-        int s0 = mRecentsView.getScrollForPage(p0);
-        int s1 = mRecentsView.getScrollForPage(p1);
-        int scroll = Math.round(s0 + (s1 - s0) * frac);
-        mRecentsView.scrollTo(scroll, mRecentsView.getScrollY());
+        int targetScroll = Math.round(
+                recentsOrigin + (getScrollX() - dockOrigin) * mScrollScale);
+        mRecentsView.scrollTo(targetScroll, mRecentsView.getScrollY());
         mRecentsView.updateCurveProperties();
     }
 
@@ -346,7 +459,7 @@ public class OverviewDockView extends HorizontalScrollView {
     protected void onScrollChanged(int l, int t, int oldl, int oldt) {
         super.onScrollChanged(l, t, oldl, oldt);
         updateCurveProperties();
-        if (mDockDrivingRecents) {
+        if (mLinkScrollState == LINK_DOCK) {
             syncRecentsToDockScroll(false /* snap */);
         }
     }

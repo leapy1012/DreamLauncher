@@ -301,6 +301,17 @@
     <!-- popup_padding_start + deep_shortcut_icon_size / 2 -->
     <dimen name="popup_arrow_horizontal_center_offset">26dp</dimen>
     <dimen name="popup_arrow_corner_radius">2dp</dimen>
+    <!-- Extra gap below morph plates so ColorOS popup matches 1×1 spacing. -->
+    <dimen name="morph_popup_icon_gap">8dp</dimen>
+    <dimen name="icon_resize_frame_stroke_width_min">2dp</dimen>
+    <dimen name="icon_resize_frame_stroke_width_max">4dp</dimen>
+    <dimen name="icon_resize_handle_stroke_width_min">6dp</dimen>
+    <dimen name="icon_resize_handle_stroke_width_max">8dp</dimen>
+    <dimen name="icon_resize_handle_radius_1xx">16dp</dimen>
+    <dimen name="icon_resize_handle_radius_2x2">18dp</dimen>
+    <dimen name="icon_resize_handle_hot_region">46dp</dimen>
+    <dimen name="icon_resize_handle_hot_region_1x1">32dp</dimen>
+    <dimen name="icon_resize_radius_baseline_icon">60dp</dimen>
     <!-- popup_padding_start + deep_shortcut_icon_size + 12dp -->
     <dimen name="deep_shortcuts_text_padding_start">54dp</dimen>
     <dimen name="system_shortcut_icon_size">20dp</dimen>

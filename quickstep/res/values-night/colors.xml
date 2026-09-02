@@ -24,6 +24,9 @@
 
     <color name="all_set_page_background">#FF000000</color>
 
+    <!-- Oppo recent_task_popup_shortcut_primary_bg_color night -->
+    <color name="task_menu_popup_bg">#FF404040</color>
+
     <!-- Turn on work apps button -->
     <color name="work_turn_on_stroke">#00ffffff</color>
     <color name="work_fab_bg_color">#00ffffff</color>

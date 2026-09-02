@@ -17,3 +17,20 @@ gradlew*
 .DS_Store
 Filter/build
 apktool_oplus_tmp
+
+# Device / agent test screenshots & captures (repo root only — not res/coui assets)
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+
+# UIAutomator / scratch dumps at repo root
+/uidump*.xml
+/_*.xml
+/_*.txt
+/ui_*.xml
+
+# Scratch dirs from device audits and apk checks
+/_apk_check/
+/_img/
+/device_audit/

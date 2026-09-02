@@ -68,6 +68,7 @@ import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderGridOrganizer;
 import com.android.launcher3.folder.FolderNameInfos;
 import com.android.launcher3.folder.FolderNameProvider;
+import com.android.launcher3.iconresize.IconResizeHelper;
 import com.android.launcher3.icons.ComponentWithLabelAndIcon;
 import com.android.launcher3.icons.ComponentWithLabelAndIcon.ComponentWithIconCachingLogic;
 import com.android.launcher3.icons.IconCache;
@@ -725,8 +726,7 @@ public class LoaderTask implements Runnable {
 
                         info.intent = intent;
                         info.rank = c.getRank();
-                        info.spanX = 1;
-                        info.spanY = 1;
+                        IconResizeHelper.sanitizeLoadedSpan(info, c.getSpanX(), c.getSpanY());
                         info.runtimeStatusFlags |= disabledState;
                         if (isSafeMode && !isSystemApp(mApp.getContext(), intent)) {
                             info.runtimeStatusFlags |= FLAG_DISABLED_SAFEMODE;

@@ -813,4 +813,18 @@ public final class Utilities {
                 .limit(3)
                 .collect(Collectors.joining("\n"));
     }
+
+    /** Oppo {@code Utilities.setRectToViewCenter}. */
+    public static void setRectToViewCenter(View view, int size, Rect out) {
+        int top = view == null ? 0 : (view.getHeight() - size) / 2;
+        int left = view != null ? (view.getWidth() - size) / 2 : 0;
+        out.set(left, top, left + size, top + size);
+    }
+
+    /** Oppo {@code Utilities.setRectToViewCenterWhenMorph}. */
+    public static void setRectToViewCenterWhenMorph(View view, int width, int height, Rect out) {
+        int top = view == null ? 0 : (view.getHeight() - height) / 2;
+        int left = view != null ? (view.getWidth() - width) / 2 : 0;
+        out.set(left, top, left + width, top + height);
+    }
 }

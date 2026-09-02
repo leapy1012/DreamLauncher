@@ -92,6 +92,11 @@ public abstract class SystemShortcut<T extends Context & ActivityContext> extend
         return mIconResId;
     }
 
+    /** Label string resource for this system shortcut row. */
+    public int getLabelResId() {
+        return mLabelResId;
+    }
+
     public void setIconAndContentDescriptionFor(ImageView view) {
         view.setImageResource(mIconResId);
         view.setContentDescription(view.getContext().getText(mLabelResId));
