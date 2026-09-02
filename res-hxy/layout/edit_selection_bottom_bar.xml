@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:forceDarkAllowed="false"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingBottom="8dp"
+    android:paddingTop="4dp">
+
+    <!-- Oppo page_preview_list_height band; strip centered H+V inside. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/edit_selection_page_preview_band_height"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <HorizontalScrollView
+            android:id="@+id/edit_selection_page_strip_scroll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:clipToPadding="false"
+            android:fillViewport="false"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/edit_selection_page_strip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+    </FrameLayout>
+
+    <!-- Oppo: two actions close together in the center (not full-width weight). -->
+    <LinearLayout
+        android:id="@+id/edit_selection_actions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:gravity="top|center_horizontal"
+        android:orientation="horizontal"
+        android:paddingTop="2dp">
+
+        <com.android.launcher3.screenedit.IconTextView
+            android:id="@+id/edit_selection_create_folder"
+            style="@style/PannelButton"
+            android:layout_width="@dimen/edit_selection_action_btn_width"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:drawableTop="@drawable/quickactionbar_folder_icon"
+            android:text="@string/edit_selection_create_folder" />
+
+        <Space
+            android:layout_width="@dimen/edit_selection_action_btn_gap"
+            android:layout_height="1dp" />
+
+        <com.android.launcher3.screenedit.IconTextView
+            android:id="@+id/edit_selection_uninstall"
+            style="@style/PannelButton"
+            android:layout_width="@dimen/edit_selection_action_btn_width"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:drawableTop="@drawable/quickactionbar_remove_icon"
+            android:text="@string/edit_selection_uninstall" />
+    </LinearLayout>
+</LinearLayout>

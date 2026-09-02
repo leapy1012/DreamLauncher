@@ -76,6 +76,7 @@ public class DoubleShadowBubbleTextView extends BubbleTextView {
         drawWithoutDot(canvas);
         canvas.restore();
 
+        drawEditSelectionCheckIfNecessary(canvas);
         drawDotIfNecessary(canvas);
         drawBadgeIfNecessary(canvas);
     }

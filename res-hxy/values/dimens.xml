@@ -20,9 +20,37 @@
     <dimen name="secondary_app_icon_size">32dp</dimen>
     <!-- hxy-feature: add launcher style function  202312 -->
     <dimen name="unread_text_number_size">10dp</dimen>
-    <dimen name="over_view_panel_edit_grid_icon_size">32dp</dimen>
-    <dimen name="icon_textview_default_icon_size">40dp</dimen>
+    <dimen name="over_view_panel_edit_grid_icon_size">44dp</dimen>
+    <dimen name="icon_textview_default_icon_size">44dp</dimen>
     <dimen name="overview_panel_main_menu_padding_top">9dp</dimen>
+    <dimen name="launcher_toggle_bar_main_ui_item_width">44dp</dimen>
+    <dimen name="togglebar_main_ui_list_item_title_margin_top">4dp</dimen>
+    <dimen name="toggle_bar_item_text_size">10sp</dimen>
+    <dimen name="edit_selection_toolbar_padding_top">4dp</dimen>
+    <dimen name="edit_selection_toolbar_edge_padding">28dp</dimen>
+    <dimen name="edit_selection_toolbar_btn_min_width">72dp</dimen>
+    <dimen name="edit_selection_toolbar_btn_width">72dp</dimen>
+    <dimen name="edit_selection_toolbar_btn_height">30dp</dimen>
+    <dimen name="edit_selection_toolbar_btn_padding_h">18dp</dimen>
+    <dimen name="edit_selection_toolbar_title_margin_h">8dp</dimen>
+    <dimen name="edit_selection_check_size">20dp</dimen>
+    <dimen name="edit_selection_check_top_offset">3dp</dimen>
+    <dimen name="edit_selection_check_right_offset">3dp</dimen>
+    <!-- Oppo page_preview_item_width/height/gap -->
+    <dimen name="edit_selection_page_preview_width">48dp</dimen>
+    <dimen name="edit_selection_page_preview_height">68dp</dimen>
+    <dimen name="edit_selection_page_preview_gap">14dp</dimen>
+    <dimen name="edit_selection_page_preview_band_height">92dp</dimen>
+    <!-- Oppo preview_item_cell_*: square chips inside page thumbs -->
+    <dimen name="edit_selection_page_preview_cell_size">6dp</dimen>
+    <dimen name="edit_selection_page_preview_cell_radius">2dp</dimen>
+    <dimen name="edit_selection_page_preview_cell_padding">6dp</dimen>
+    <dimen name="edit_selection_page_preview_widget_radius">4dp</dimen>
+    <!-- Oppo page_preview_btn_width ≈ 135dp, gap 10dp — keep actions close. -->
+    <dimen name="edit_selection_action_btn_width">120dp</dimen>
+    <dimen name="edit_selection_action_btn_gap">24dp</dimen>
+    <!-- Oppo popup_no_blur_background #73000000 → 115/255 -->
+    <item name="oplus_home_edit_wallpaper_scrim_alpha" format="float" type="dimen">0.45</item>
 
     <dimen name="hxy_large_folder_horizontal_space_4x4">6dp</dimen>
     <dimen name="hxy_large_folder_horizontal_space_4x5">7dp</dimen>

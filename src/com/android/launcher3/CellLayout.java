@@ -573,9 +573,9 @@ public class CellLayout extends ViewGroup {
     }
 
     protected void updateBgAlpha() {
-        if (!getWorkspace().mLauncher.isInState(EDIT_MODE)) {
-            mBackground.setAlpha((int) (mSpringLoadedProgress * 255));
-        }
+        // ColorOS home-edit has no frosted page cards — keep the spring-loaded
+        // CellLayout panel fully transparent in all states (edit + drag).
+        mBackground.setAlpha(0);
     }
 
     /**

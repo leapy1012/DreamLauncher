@@ -53,8 +53,18 @@ public class Scrim {
         mScrimColor = mRoot.getContext().getColor(R.color.wallpaper_popup_scrim);
     }
 
+    /** Sets the solid color used when drawing; progress still controls alpha. */
+    public void setScrimColor(int color) {
+        if (mScrimColor != color) {
+            mScrimColor = color;
+            mRoot.invalidate();
+        }
+    }
+
     public void draw(Canvas canvas) {
-        canvas.drawColor(setColorAlphaBound(mScrimColor, mScrimAlpha));
+        if (mScrimAlpha > 0) {
+            canvas.drawColor(setColorAlphaBound(mScrimColor, mScrimAlpha));
+        }
     }
 
     private void setScrimProgress(float progress) {

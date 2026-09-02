@@ -153,8 +153,9 @@ public class MultipageCellLayout extends CellLayout {
 
     @Override
     protected void updateBgAlpha() {
-        mLeftBackground.setAlpha((int) (mSpringLoadedProgress * 255));
-        mRightBackground.setAlpha((int) (mSpringLoadedProgress * 255));
+        // Match CellLayout: no frosted spring-loaded page panels.
+        mLeftBackground.setAlpha(0);
+        mRightBackground.setAlpha(0);
     }
 
     @Override

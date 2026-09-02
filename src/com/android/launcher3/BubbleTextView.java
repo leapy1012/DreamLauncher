@@ -72,6 +72,8 @@ import com.android.launcher3.iconresize.MorphPlateColorHelper;
 import com.android.launcher3.iconresize.MorphShapeHelper;
 import com.android.launcher3.iconresize.MorphWorkspaceIconDrawable;
 import com.android.launcher3.iconresize.ResizeFrameStrokeState;
+import com.android.launcher3.editselection.EditSelectionEligibility;
+import com.android.launcher3.editselection.EditSelectionManager;
 import com.android.launcher3.graphics.IconShape;
 import com.android.launcher3.graphics.PreloadIconDrawable;
 import com.android.launcher3.icons.DotRenderer;
@@ -669,7 +671,51 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         if (mResizeStrokeState != null && mResizeStrokeState.isActive()) {
             IconResizeFramePainter.drawFrame(canvas, this, mResizeStrokeState);
         }
+        drawEditSelectionCheckIfNecessary(canvas);
         drawDotIfNecessary(canvas);
+    }
+
+    protected void drawEditSelectionCheckIfNecessary(Canvas canvas) {
+        if (!(mActivity instanceof Launcher launcher)) {
+            return;
+        }
+        EditSelectionManager selection = launcher.getEditSelectionManager();
+        if (!selection.isActive()) {
+            return;
+        }
+        if (!EditSelectionEligibility.canShowCheckmark(getContext(), this)) {
+            return;
+        }
+        Object tag = getTag();
+        if (!(tag instanceof ItemInfo)) {
+            return;
+        }
+        Rect iconBounds = new Rect();
+        getIconBounds(iconBounds);
+        if (iconBounds.isEmpty()) {
+            return;
+        }
+        int size = getResources().getDimensionPixelSize(R.dimen.edit_selection_check_size);
+        int topOffset = getResources().getDimensionPixelSize(R.dimen.edit_selection_check_top_offset);
+        int rightOffset = getResources().getDimensionPixelSize(
+                R.dimen.edit_selection_check_right_offset);
+        boolean rtl = getLayoutDirection() == LAYOUT_DIRECTION_RTL;
+        int left;
+        if (rtl) {
+            left = iconBounds.left - rightOffset;
+        } else {
+            left = iconBounds.right - size + rightOffset;
+        }
+        int top = iconBounds.top - topOffset;
+        Drawable check = getContext().getDrawable(selection.isSelected(this)
+                ? R.drawable.launcher_ic_app_selected
+                : R.drawable.launcher_ic_app_unselected);
+        if (check == null) {
+            return;
+        }
+        check = check.mutate();
+        check.setBounds(left, top, left + size, top + size);
+        check.draw(canvas);
     }
 
     private void drawResizePreview(Canvas canvas) {

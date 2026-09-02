@@ -92,7 +92,18 @@ public class ItemClickHandler {
 
         Launcher launcher = Launcher.getLauncher(v.getContext());
         if (!launcher.getWorkspace().isFinishedSwitchingState()) return;
-        if (launcher.getStateManager().getState() == SPRING_LOADED) return;
+        if (launcher.getStateManager().getState() == SPRING_LOADED) {
+            // Oppo PAGE_PREVIEW: tap folder opens it so apps inside can be selected;
+            // tap an app toggles selection (does not launch).
+            if (v instanceof FolderIcon) {
+                onClickFolderIcon(v);
+                return;
+            }
+            if (launcher.getEditSelectionManager().toggle(v)) {
+                return;
+            }
+            return;
+        }
         if (v instanceof HxyAnimBubbleTextView) {
             HxyAnimBubbleTextView icon = (HxyAnimBubbleTextView) v;
             if (icon.isDrawableAniView()) {

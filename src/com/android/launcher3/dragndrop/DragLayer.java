@@ -116,6 +116,10 @@ public class DragLayer extends BaseDragLayer<Launcher> implements LauncherOverla
         mDragController = dragController;
         recreateControllers();
         mWorkspaceDragScrim = new Scrim(this);
+        // Oppo ToggleBar dims wallpaper under icons (StaticBlurView / blur blend), not
+        // the accent-tinted popup scrim. Use black; alpha comes from state progress.
+        mWorkspaceDragScrim.setScrimColor(
+                getContext().getColor(R.color.oplus_home_edit_wallpaper_scrim));
         workspace.addOverlayCallback(this);
     }
 

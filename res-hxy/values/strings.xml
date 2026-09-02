@@ -62,6 +62,12 @@
     <string name="home_screen_layout_lock_tips">Home screen layout has been locked and cannot be edited.</string>
     <string name="launcher_locked_toast_look_setting">View settings</string>
     <string name="launcher_layout">Layout</string>
+    <string name="edit_selection_cancel">Cancel</string>
+    <string name="edit_selection_done">Done</string>
+    <string name="edit_selection_create_folder">Create folder</string>
+    <string name="edit_selection_uninstall">Uninstall</string>
+    <string name="edit_selection_need_two_apps">Select at least two apps to create a folder</string>
+    <string name="edit_selection_no_space_for_folder">Not enough space to create a folder</string>
     <string name="launcher_settings_display">Display</string>
     <string name="launcher_settings_notifications">Notifications</string>
     <string name="launcher_settings_side_screens">Side screens</string>

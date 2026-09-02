@@ -18,6 +18,7 @@ package com.android.launcher3.states
 import android.content.Context
 import com.android.launcher3.Launcher
 import com.android.launcher3.LauncherState
+import com.android.launcher3.R
 import com.android.launcher3.logging.StatsLogManager
 import com.android.launcher3.views.ActivityContext
 
@@ -40,7 +41,8 @@ class EditModeState(id: Int) : LauncherState(id, StatsLogManager.LAUNCHER_STATE_
     }
 
     override fun <T> getDepthUnchecked(context: T): Float where T : Context?, T : ActivityContext? {
-        return 0.5f
+        // Oppo ToggleBar: depth=0; dimming via wallpaper blur / static scrim.
+        return 0f
     }
 
     override fun getWorkspaceScaleAndTranslation(launcher: Launcher): ScaleAndTranslation {
@@ -54,7 +56,8 @@ class EditModeState(id: Int) : LauncherState(id, StatsLogManager.LAUNCHER_STATE_
     }
 
     override fun getWorkspaceBackgroundAlpha(launcher: Launcher): Float {
-        return 0.2f
+        // Match SpringLoadedState: Oppo no-blur StaticBlurView (#73000000).
+        return launcher.resources.getFloat(R.dimen.oplus_home_edit_wallpaper_scrim_alpha)
     }
 
     override fun onLeavingState(launcher: Launcher?, toState: LauncherState?) {

@@ -655,6 +655,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         }
 
         drawDot(canvas);
+        com.android.launcher3.editselection.EditSelectionFolderBadge.drawIfNecessary(this, canvas);
     }
 
     public void drawDot(Canvas canvas) {

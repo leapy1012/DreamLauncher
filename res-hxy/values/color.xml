@@ -11,4 +11,10 @@
     <color name="hxyos_rv_bg_color">#ffffffff</color>
     <!-- ColorOS overview Close pill glass fill (toggle_bar_apply_btn_enabled_color). -->
     <color name="hxy_overview_close_pill_bg">#4dffffff</color>
+    <!--
+      Oppo ToggleBar wallpaper dim solid (no-blur fallback).
+      Source: OplusStaticBlurView + popup_no_blur_background (#73000000).
+      Alpha applied via oplus_home_edit_wallpaper_scrim_alpha.
+    -->
+    <color name="oplus_home_edit_wallpaper_scrim">#FF000000</color>
 </resources>

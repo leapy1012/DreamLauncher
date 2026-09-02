@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Oppo ToggleStateToolbar: Cancel | N selected | Done; pills inset toward center. -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/edit_selection_toolbar_edge_padding"
+        android:paddingTop="@dimen/edit_selection_toolbar_padding_top"
+        android:paddingEnd="@dimen/edit_selection_toolbar_edge_padding">
+
+        <TextView
+            android:id="@+id/edit_selection_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/edit_selection_toolbar_btn_height"
+            android:background="@drawable/edit_selection_toolbar_btn_bg"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:minWidth="@dimen/edit_selection_toolbar_btn_min_width"
+            android:paddingHorizontal="@dimen/edit_selection_toolbar_btn_padding_h"
+            android:text="@string/edit_selection_cancel"
+            android:textColor="@color/edit_selection_toolbar_btn_text"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/edit_selection_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:layout_marginStart="@dimen/edit_selection_toolbar_title_margin_h"
+            android:layout_marginEnd="@dimen/edit_selection_toolbar_title_margin_h"
+            android:textColor="@color/edit_selection_toolbar_title_text"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/edit_selection_done"
+            app:layout_constraintStart_toEndOf="@+id/edit_selection_cancel"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/edit_selection_done"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/edit_selection_toolbar_btn_height"
+            android:background="@drawable/edit_selection_toolbar_btn_bg"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:minWidth="@dimen/edit_selection_toolbar_btn_min_width"
+            android:paddingHorizontal="@dimen/edit_selection_toolbar_btn_padding_h"
+            android:text="@string/edit_selection_done"
+            android:textColor="@color/edit_selection_toolbar_btn_text"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</merge>

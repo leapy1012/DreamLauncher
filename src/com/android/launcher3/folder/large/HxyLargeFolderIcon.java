@@ -14,6 +14,7 @@ import android.widget.FrameLayout;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
+import com.android.launcher3.Launcher;
 import com.android.launcher3.dragndrop.DragView;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.PreviewItemManager;
@@ -491,6 +492,13 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     private void onFolderItemClick(View view, WorkspaceItemInfo data) {
         HxyLargeFolderIconItem itemView = (HxyLargeFolderIconItem) view;
+        // Oppo PAGE_PREVIEW: tapping a large-folder preview always opens the folder so apps
+        // inside can be selected — never toggle selection on the preview cell itself.
+        if (mActivity instanceof Launcher launcher
+                && launcher.getEditSelectionManager().isActive()) {
+            ItemClickHandler.onClick(this);
+            return;
+        }
         if (itemView.isCountOut()) {
             ItemClickHandler.onClick(this);
         } else {
@@ -583,6 +591,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (name != null && name.getVisibility() == View.VISIBLE && name.getAlpha() > 0f) {
             drawChild(canvas, name, getDrawingTime());
         }
+        com.android.launcher3.editselection.EditSelectionFolderBadge.drawIfNecessary(this, canvas);
     }
 
     private Path getCachedPlateClipPath() {

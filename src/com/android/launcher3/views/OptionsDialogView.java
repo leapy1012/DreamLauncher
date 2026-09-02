@@ -41,14 +41,18 @@ import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.widget.picker.WidgetsFullSheet;
 import com.android.launcher3.util.PackageManagerHelper;
 import static com.android.launcher3.LauncherState.NORMAL;
+import com.android.launcher3.InvariantDeviceProfile;
+import com.android.launcher3.InvariantDeviceProfile.GridOption;
 import com.android.launcher3.screenedit.ScrollEffectAdapter;
 import com.android.launcher3.screenedit.GridGallery;
 import com.android.launcher3.screenedit.OverviewPanelStateTransAnimation;
 import com.android.launcher3.screenedit.GridGalleryAdapter;
+import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import java.util.HashMap;
+import java.util.List;
 
 public class OptionsDialogView extends AbstractFloatingView {
 
@@ -92,19 +96,15 @@ public class OptionsDialogView extends AbstractFloatingView {
         super(context, attrs, defStyleAttr);
         mActivity = ActivityContext.lookupContext(context);
         inflate(context, R.layout.options_menu_layout, this);
-        findViewById(R.id.theme_button).setOnClickListener(v -> {
-            startThemePicker(v);
-            resetState();
+        findViewById(R.id.widget_button).setOnClickListener(v -> {
+            onWidgetsClicked(v);
         });
         findViewById(R.id.wallpaper_button).setOnClickListener(v -> {
             startPersonalPicker(v);
             resetState();
         });
-        findViewById(R.id.widget_button).setOnClickListener(v -> {
-            onWidgetsClicked(v);
-        });
-        findViewById(R.id.effect_button).setOnClickListener(v -> {
-            switchToEffectsState();
+        findViewById(R.id.layout_button).setOnClickListener(v -> {
+            showLayoutPicker(v);
         });
         findViewById(R.id.settings_button).setOnClickListener(v -> {
             startSettings(v);
@@ -213,12 +213,13 @@ public class OptionsDialogView extends AbstractFloatingView {
         }
     }
 
-    private void onClosed() {
+        private void onClosed() {
         mActivity.getDragLayer().removeView(this);
         if (mOnDismissed != null) {
             mOnDismissed.run();
         }
         Launcher launcher = Launcher.getLauncher(this.getContext());
+        launcher.getEditSelectionManager().exit();
         launcher.getStateManager().goToState(NORMAL);
     }
 
@@ -263,6 +264,38 @@ public class OptionsDialogView extends AbstractFloatingView {
                 .setPackage(launcher.getPackageName())
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
         return true;
+    }
+
+    /** Oppo-style Layout entry: pick workspace grid (cols × rows). */
+    private static void showLayoutPicker(View view) {
+        Launcher launcher = Launcher.getLauncher(view.getContext());
+        if (LayoutLockHelper.checkLockedAndShowMessage(launcher)) {
+            return;
+        }
+        InvariantDeviceProfile idp = InvariantDeviceProfile.INSTANCE.get(launcher);
+        List<GridOption> options = idp.parseAllGridOptions(launcher);
+        if (options.isEmpty()) {
+            return;
+        }
+
+        CharSequence[] labels = new CharSequence[options.size()];
+        int checkedItem = -1;
+        for (int i = 0; i < options.size(); i++) {
+            GridOption option = options.get(i);
+            labels[i] = option.numColumns + " x " + option.numRows;
+            if (idp.numColumns == option.numColumns && idp.numRows == option.numRows) {
+                checkedItem = i;
+            }
+        }
+
+        new COUIAlertDialogBuilder(launcher)
+                .setTitle(R.string.tog_title_layout)
+                .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
+                    GridOption selected = options.get(which);
+                    idp.setCurrentGrid(launcher, selected.name);
+                    dialog.dismiss();
+                })
+                .show();
     }
 
     public View getEffectsView() {

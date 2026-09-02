@@ -1,25 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
-    android:width="48dp"
-    android:height="48dp"
-    android:viewportWidth="48"
-    android:viewportHeight="48">
-    <path
-        android:fillAlpha="0.2"
-        android:fillColor="#ffffff"
-        android:pathData="M0,24a24,24 0,1 0,48 0a24,24 0,1 0,-48 0z"
-        android:strokeAlpha="0.4" />
-    <path
-        android:fillColor="#ffffff"
-        android:fillType="evenOdd"
-        android:pathData="M15.977,13.08L32.023,13.08C33.386,13.08 34.491,14.185 34.491,15.549L34.491,19.251C34.491,20.615 33.386,21.72 32.023,21.72L15.977,21.72C14.614,21.72 13.509,20.615 13.509,19.251L13.509,15.549C13.509,14.185 14.614,13.08 15.977,13.08" />
-    <path
-        android:fillColor="#ffffff"
-        android:fillType="evenOdd"
-        android:pathData="M15.977,25.423L19.68,25.423C21.043,25.423 22.149,26.528 22.149,27.891L22.149,31.594C22.149,32.958 21.043,34.063 19.68,34.063L15.977,34.063C14.614,34.063 13.509,32.958 13.509,31.594L13.509,27.891C13.509,26.528 14.614,25.423 15.977,25.423" />
-    <path
-        android:fillColor="#ffffff"
-        android:fillType="evenOdd"
-        android:pathData="M28.32,25.423L32.023,25.423C33.386,25.423 34.491,26.528 34.491,27.891L34.491,31.594C34.491,32.958 33.386,34.063 32.023,34.063L28.32,34.063C26.957,34.063 25.851,32.958 25.851,31.594L25.851,27.891C25.851,26.528 26.957,25.423 28.32,25.423" />
-</vector>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/launcher_toggle_bar_main_ui_item_bg" />
+        </shape>
+    </item>
+    <item>
+        <bitmap
+            android:gravity="fill"
+            android:src="@drawable/ic_togglebar_widget_item" />
+    </item>
+</layer-list>

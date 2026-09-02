@@ -31,18 +31,22 @@
     </style>
 
     <style name="PannelButton">
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">@dimen/toggle_bar_item_text_size</item>
         <item name="android:textColor">?attr/workspaceTextColor</item>
-        <item name="android:gravity">center_horizontal</item>
-        <item name="android:layout_gravity">center_vertical|clip_horizontal</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">top|center_horizontal</item>
+        <item name="android:layout_gravity">top|center_horizontal</item>
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:maxLines">1</item>
-        <item name="android:drawablePadding">8dp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:lineSpacingMultiplier">1</item>
+        <item name="android:paddingHorizontal">4dp</item>
+        <item name="android:drawablePadding">@dimen/togglebar_main_ui_list_item_title_margin_top</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:fontFamily">sans-serif-condensed</item>
-        <item name="iconSizePx">@dimen/over_view_panel_edit_grid_icon_size</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="iconSizePx">@dimen/launcher_toggle_bar_main_ui_item_width</item>
     </style>
 
     <style name="GridGallery">

@@ -22,6 +22,7 @@ import android.content.Context;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherState;
+import com.android.launcher3.R;
 import com.android.launcher3.Workspace;
 
 /**
@@ -60,9 +61,13 @@ public class SpringLoadedState extends LauncherState {
         return new ScaleAndTranslation(scale, 0, shrunkTop - actualCellTop);
     }
 
+    /**
+     * Oppo ToggleBar uses depth=0 + blur=1. Without Oplus wallpaper blur on MTK,
+     * dimming is handled by {@link #getWorkspaceBackgroundAlpha} instead.
+     */
     @Override
     protected float getDepthUnchecked(Context context) {
-        return 0.5f;
+        return 0f;
     }
 
     @Override
@@ -70,8 +75,18 @@ public class SpringLoadedState extends LauncherState {
         return new ScaleAndTranslation(1, 0, 0);
     }
 
+    /**
+     * Oppo ToggleBar darkening (decoded):
+     * <ul>
+     *   <li>Blur available → wallpaper blur progress 1.0 with blend alpha 0.3</li>
+     *   <li>Blur unavailable → {@code OplusStaticBlurView} + {@code popup_no_blur_background}
+     *       ({@code #73000000}) at alpha 1.0</li>
+     * </ul>
+     * DragLayer draws {@link com.android.launcher3.graphics.Scrim} under children, so
+     * icons stay bright while the wallpaper dims — matching Oppo z-order.
+     */
     @Override
     public float getWorkspaceBackgroundAlpha(Launcher launcher) {
-        return 0.2f;
+        return launcher.getResources().getFloat(R.dimen.oplus_home_edit_wallpaper_scrim_alpha);
     }
 }

@@ -932,6 +932,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                 }
                 mFolderIcon.requestFocus();
             }
+            // Refresh Oppo selection count badge after folder dismiss.
+            if (mActivityContext instanceof Launcher launcher
+                    && launcher.getEditSelectionManager().isActive()) {
+                mFolderIcon.invalidate();
+            }
         }
 
         if (mRearrangeOnClose) {

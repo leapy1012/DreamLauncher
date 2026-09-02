@@ -262,6 +262,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import com.android.launcher3.views.OptionsDialogView;
+import com.android.launcher3.editselection.EditSelectionManager;
 import android.view.WindowManagerGlobal;
 import android.app.ActivityTaskManager;
 import com.android.launcher3.screenshot.ImageCaptureImpl;
@@ -425,6 +426,8 @@ public class Launcher extends StatefulActivity<LauncherState>
     // If true, overlay callbacks are deferred
     private boolean mDeferOverlayCallbacks;
     private final Runnable mDeferredOverlayCallbacks = this::checkIfOverlayStillDeferred;
+
+    private EditSelectionManager mEditSelectionManager;
 
     protected long mLastTouchUpTime = -1;
     private boolean mTouchInProgress;
@@ -1308,6 +1311,10 @@ public class Launcher extends StatefulActivity<LauncherState>
 
             // Clear any rotation locks when going to normal state
             getRotationHelper().setCurrentStateRequest(REQUEST_NONE);
+
+            if (mEditSelectionManager != null) {
+                mEditSelectionManager.exit();
+            }
 
             mHotseat.setVisibility(View.VISIBLE);
             long delay = 0;
@@ -3109,7 +3116,11 @@ public class Launcher extends StatefulActivity<LauncherState>
      * Informs us that the page transition has ended, so that we can react to the newly selected
      * page if we want to.
      */
-    public void onPageEndTransition() {}
+    public void onPageEndTransition() {
+        if (mEditSelectionManager != null) {
+            mEditSelectionManager.onWorkspacePageChanged();
+        }
+    }
 
     /**
      * Add the icons for all apps.
@@ -3358,6 +3369,15 @@ public class Launcher extends StatefulActivity<LauncherState>
         // OptionsPopupView.show(this, getPopupTarget(x, y), OptionsPopupView.getOptions(this),
         //         false);
         OptionsDialogView.show(this, null);
+        getEditSelectionManager().enter();
+    }
+
+    /** Oppo-style edit-mode selection (checkmarks + Cancel/Done toolbar). */
+    public EditSelectionManager getEditSelectionManager() {
+        if (mEditSelectionManager == null) {
+            mEditSelectionManager = new EditSelectionManager(this);
+        }
+        return mEditSelectionManager;
     }
 
     /**

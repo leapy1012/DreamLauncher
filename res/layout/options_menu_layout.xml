@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout 
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -10,42 +10,34 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_gravity="center_vertical"
+        android:gravity="top"
+        android:paddingHorizontal="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
         android:orientation="horizontal">
 
-        <com.android.launcher3.screenedit.IconTextView
-            android:id="@+id/theme_button"
-            style="@style/PannelButton"
-            android:drawableTop="@drawable/quickactionbar_theme_icon"
-            android:drawableTint="?attr/workspaceTextColor"
-            android:text="@string/launcher_theme_title" />
-        
-        <com.android.launcher3.screenedit.IconTextView
-            android:id="@+id/wallpaper_button"
-            style="@style/PannelButton"
-            android:drawableTop="@drawable/quickactionbar_wallpaper_icon"
-            android:drawableTint="?attr/workspaceTextColor"
-            android:text="@string/styles_wallpaper_button_text" />
-
+        <!-- Oppo togglebar_bar_main order: Widgets, Wallpapers & style, Layout, Home screen settings -->
         <com.android.launcher3.screenedit.IconTextView
             android:id="@+id/widget_button"
             style="@style/PannelButton"
             android:drawableTop="@drawable/quickactionbar_add_widget_icon"
-            android:drawableTint="?attr/workspaceTextColor"
             android:text="@string/widget_button_text" />
 
         <com.android.launcher3.screenedit.IconTextView
-            android:id="@+id/effect_button"
+            android:id="@+id/wallpaper_button"
             style="@style/PannelButton"
-            android:drawableTop="@drawable/quickactionbar_effect_icon"
-            android:drawableTint="?attr/workspaceTextColor"
-            android:text="@string/effect_button_text" />
+            android:drawableTop="@drawable/quickactionbar_wallpaper_icon"
+            android:text="@string/styles_wallpaper_button_text" />
+
+        <com.android.launcher3.screenedit.IconTextView
+            android:id="@+id/layout_button"
+            style="@style/PannelButton"
+            android:drawableTop="@drawable/quickactionbar_layout_icon"
+            android:text="@string/launcher_layout" />
 
         <com.android.launcher3.screenedit.IconTextView
             android:id="@+id/settings_button"
             style="@style/PannelButton"
             android:drawableTop="@drawable/quickactionbar_launcher_setting_icon"
-            android:drawableTint="?attr/workspaceTextColor"
             android:text="@string/settings_button_text" />
     </LinearLayout>
 
