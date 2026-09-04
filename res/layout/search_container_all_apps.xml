@@ -13,25 +13,32 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
+<!-- ColorOS drawer: bottom floating search (alignParentBottom). -->
 <com.android.launcher3.allapps.search.AppsSearchContainerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@id/search_container_all_apps"
     android:layout_width="match_parent"
     android:layout_height="@dimen/all_apps_search_bar_field_height"
+    android:layout_alignParentBottom="true"
     android:layout_centerHorizontal="true"
-    android:layout_gravity="top|center_horizontal"
-    android:background="@drawable/bg_all_apps_searchbox"
+    android:layout_marginHorizontal="@dimen/coloros_all_apps_search_margin_horizontal"
+    android:layout_marginBottom="@dimen/coloros_all_apps_search_margin_bottom"
+    android:background="@drawable/coloros_all_apps_search_bg"
+    android:drawablePadding="@dimen/coloros_all_apps_search_icon_text_gap"
     android:focusableInTouchMode="true"
-    android:gravity="center"
-    android:hint="@string/all_apps_search_bar_hint"
+    android:gravity="start|center_vertical"
+    android:textAlignment="viewStart"
+    android:hint="@string/coloros_all_apps_search_hint"
     android:imeOptions="actionSearch|flagNoExtractUi"
     android:importantForAutofill="no"
     android:inputType="text|textNoSuggestions|textCapWords"
     android:maxLines="1"
-    android:padding="8dp"
+    android:paddingStart="@dimen/coloros_all_apps_search_padding_horizontal"
+    android:paddingEnd="@dimen/coloros_all_apps_search_padding_horizontal"
     android:saveEnabled="false"
     android:scrollHorizontally="true"
     android:singleLine="true"
-    android:textColor="?android:attr/textColorSecondary"
-    android:textColorHint="@drawable/all_apps_search_hint"
-    android:textSize="16sp" />
+    android:textColor="@color/coloros_all_apps_text"
+    android:textColorHint="@color/coloros_all_apps_text_secondary"
+    android:textSize="15sp"
+    android:translationZ="10dp" />

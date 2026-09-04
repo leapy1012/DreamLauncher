@@ -204,7 +204,10 @@ public class InvariantDeviceProfile {
     private InvariantDeviceProfile(Context context) {
         String gridName = getCurrentGridName(context);
         String newGridName = initGrid(context, gridName);
-        if (!newGridName.equals(gridName)) {
+        // Always persist when unset so factory default (config_default_grid / 4_by_6)
+        // is locked and later boots do not re-interpolate canBeDefault options.
+        String stored = LauncherPrefs.get(context).get(GRID_NAME);
+        if (stored == null || !newGridName.equals(stored)) {
             LauncherPrefs.get(context).put(GRID_NAME, newGridName);
         }
         LockedUserState.get(context).runOnUserUnlocked(() -> {

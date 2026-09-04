@@ -461,6 +461,8 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
                         iArr2[i11 + 1] = iArr3[i10 + 1];
                     }
                     i10 += 2;
+                } else {
+                    break;
                 }
             }
         }

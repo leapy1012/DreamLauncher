@@ -27,6 +27,7 @@ import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -37,6 +38,9 @@ import com.android.launcher3.Utilities;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.model.data.AppInfo;
 import com.android.launcher3.views.ActivityContext;
+
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Adapter for all the apps.
@@ -115,7 +119,18 @@ public abstract class BaseAllAppsAdapter<T extends Context & ActivityContext> ex
          * Returns true if the items represent the same object
          */
         public boolean isSameAs(AdapterItem other) {
-            return (other.viewType == viewType) && (other.getClass() == getClass());
+            if (other.viewType != viewType || other.getClass() != getClass()) {
+                return false;
+            }
+            // Icon identity by component+user so DiffUtil can emit MOVE ops on sort.
+            if (viewType == VIEW_TYPE_ICON) {
+                if (itemInfo == null || other.itemInfo == null) {
+                    return itemInfo == other.itemInfo;
+                }
+                return Objects.equals(itemInfo.componentName, other.itemInfo.componentName)
+                        && Objects.equals(itemInfo.user, other.itemInfo.user);
+            }
+            return true;
         }
 
         /**
@@ -123,6 +138,10 @@ public abstract class BaseAllAppsAdapter<T extends Context & ActivityContext> ex
          * as well. Returning true will prevent redrawing of thee item.
          */
         public boolean isContentSame(AdapterItem other) {
+            if (viewType == VIEW_TYPE_ICON) {
+                // Same AppInfo instance after reorder → animate move only, no rebind.
+                return itemInfo == other.itemInfo;
+            }
             return itemInfo == null && other.itemInfo == null;
         }
 
@@ -233,7 +252,11 @@ public abstract class BaseAllAppsAdapter<T extends Context & ActivityContext> ex
             case VIEW_TYPE_ICON: {
                 AdapterItem adapterItem = mApps.getAdapterItems().get(position);
                 BubbleTextView icon = (BubbleTextView) holder.itemView;
-                icon.reset();
+                // Oppo isNeedResetIcon: skip reset when sort icon-change anim is armed so
+                // the previous FastBitmapDrawable remains available for crossfade.
+                if (!icon.getIsNeedIconChangeAnim()) {
+                    icon.reset();
+                }
                 icon.applyFromApplicationInfo(adapterItem.itemInfo);
                 break;
             }
@@ -257,6 +280,26 @@ public abstract class BaseAllAppsAdapter<T extends Context & ActivityContext> ex
                     mAdapterProvider.onBindView(holder, position);
                 }
         }
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position,
+            @NonNull List<Object> payloads) {
+        if (holder.getItemViewType() == VIEW_TYPE_ICON
+                && holder.itemView instanceof BubbleTextView) {
+            boolean sortIconChange = false;
+            for (Object payload : payloads) {
+                if (payload instanceof Integer
+                        && (Integer) payload
+                        == AlphabeticalAppsList.VIEW_TYPE_ICON_CHANGE_APPSORT_PAYLOAD) {
+                    sortIconChange = true;
+                    break;
+                }
+            }
+            // Arm before rebind (Oppo BaseAllAppsAdapter.onBindViewHolder payloads).
+            ((BubbleTextView) holder.itemView).setIsNeedIconChangeAnim(sortIconChange);
+        }
+        onBindViewHolder(holder, position);
     }
 
     @Override

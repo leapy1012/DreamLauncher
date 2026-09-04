@@ -37,6 +37,7 @@ import android.view.MotionEvent;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAnimUtils;
 import com.android.launcher3.LauncherState;
+import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.anim.AnimatorPlaybackController;
 import com.android.launcher3.logger.LauncherAtom;
@@ -92,7 +93,7 @@ public abstract class AbstractStateChangeTouchController
                 return false;
             }
             //hxy-feature: add launcher style function  202312
-             if (android.provider.Settings.System.getInt(mLauncher.getContentResolver(), "launcher_style", 0) == 1) {
+             if (LauncherStyle.isRegular(mLauncher)) {
                  return false;
              }
             //hxy-feature: add launcher style function  202312
@@ -120,7 +121,7 @@ public abstract class AbstractStateChangeTouchController
             return false;
         }
         //hxy-feature: add launcher style function  202312
-        if (android.provider.Settings.System.getInt(mLauncher.getContentResolver(), "launcher_style", 0) == 1) {
+        if (LauncherStyle.isRegular(mLauncher)) {
             return false;
         }
         //hxy-feature: add launcher style function  202312

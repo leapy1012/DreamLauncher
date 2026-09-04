@@ -28,6 +28,7 @@ import androidx.annotation.Nullable;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherModel.CallbackTask;
 import com.android.launcher3.LauncherSettings;
+import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.logging.FileLog;
 import com.android.launcher3.model.BgDataModel.Callbacks;
 import com.android.launcher3.model.data.AppInfo;
@@ -109,7 +110,7 @@ public class AddWorkspaceItemsTask extends BaseModelUpdateTask {
                         ComponentName memory = new ComponentName(BuildConfig.APPLICATION_ID, "com.android.launcher3.big.memoryclean.MemoryCleanActivity");
                         ComponentName wallpaper = new ComponentName(BuildConfig.APPLICATION_ID, "com.android.launcher3.settings.WallpaperChangeActivity");
                         if (!memory.equals(item.getTargetComponent()) && !wallpaper.equals(item.getTargetComponent())
-                            && (android.provider.Settings.System.getInt(app.getContext().getContentResolver(), "launcher_style", 0) != 1)) {
+                            && !LauncherStyle.isRegular(app.getContext())) {
                             continue;
                         }
                     }

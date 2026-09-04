@@ -187,8 +187,9 @@ public class OverviewDockView extends HorizontalScrollView {
             ids[i] = taskIds != null && taskIds.length > 0 ? taskIds[0] : -1;
         }
         if (Arrays.equals(ids, mBoundTaskIds) && mContainer.getChildCount() == count) {
-            // Continuous link-scroll (not snap) so swipe cannot leave dock on a stale icon.
-            onRecentsScrollTo(recentsView.mOrientationHandler.getPrimaryScroll(recentsView));
+            // Task set unchanged (e.g. post-dismiss re-sync after setCurrentPage) —
+            // still re-center active highlight onto the current Recents page.
+            recenterOnCurrentRecentsPage();
             return;
         }
         mBoundTaskIds = ids;
@@ -533,8 +534,30 @@ public class OverviewDockView extends HorizontalScrollView {
             }
             applyIconVisuals(icon, 1f - EDGE_SCALE_DOWN_FACTOR, MAX_PAGE_SCRIM_ALPHA);
         }
-        TaskView nearest = recentsView.getTaskViewNearestToCenterOfScreen();
-        post(() -> onRecentsPageCentered(nearest));
+        // Resolve the focused task after layout/page settle — capturing nearest during
+        // dismiss removeViewInLayout is too early (current page not updated yet).
+        post(this::recenterOnCurrentRecentsPage);
+    }
+
+    /**
+     * Center/curve-highlight the dock icon for Recents' current page (or nearest card).
+     * Called after rebuild and after dismiss snap so active state stays in sync.
+     */
+    public void recenterOnCurrentRecentsPage() {
+        if (mRecentsView == null || mContainer.getChildCount() == 0) {
+            return;
+        }
+        TaskView focus = mRecentsView.getCurrentPageTaskView();
+        if (focus == null) {
+            focus = mRecentsView.getTaskViewNearestToCenterOfScreen();
+        }
+        if (focus != null) {
+            onRecentsPageCentered(focus);
+        }
+        // Link-scroll so scrollX + curve dim match the centered card even if page
+        // centering missed (e.g. Clear All page / missing task id).
+        mLinkScrollState = LINK_RECENTS;
+        onRecentsScrollTo(mRecentsView.mOrientationHandler.getPrimaryScroll(mRecentsView));
     }
 
     /**

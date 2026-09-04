@@ -256,8 +256,8 @@ public abstract class BaseActivityInterface<STATE_TYPE extends BaseState<STATE_T
             int gravity = Gravity.CENTER;
             if (res.getBoolean(R.bool.config_clearall_center)) {
                 gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
-                // Net card drop: down-shift minus the Clear lift, so cards move up by the
-                // same amount Clear was raised (keeps vertical rhythm with Oppo).
+                // Drop cards toward the dock; Clear All uses live bottom-space (Oppo) so it
+                // stays in the gap above the nav — including gesture mode.
                 int shift = res.getDimensionPixelSize(R.dimen.hxy_recents_card_down_shift)
                         - res.getDimensionPixelSize(R.dimen.hxy_clear_extra_lift);
                 if (shift < 0) {

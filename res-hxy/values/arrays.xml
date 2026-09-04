@@ -7,4 +7,10 @@
         <item>L</item>
         <item>XL</item>
     </string-array>
+    <!-- Oppo draw_sort_options -->
+    <string-array name="coloros_draw_sort_options">
+        <item>@string/coloros_alphabet_sort</item>
+        <item>@string/coloros_frequence_sort</item>
+        <item>@string/coloros_time_sort</item>
+    </string-array>
 </resources>

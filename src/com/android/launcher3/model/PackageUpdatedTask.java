@@ -35,6 +35,7 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherSettings;
 import com.android.launcher3.LauncherSettings.Favorites;
+import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.icons.IconCache;
 import com.android.launcher3.logging.FileLog;
@@ -382,7 +383,7 @@ public class PackageUpdatedTask extends BaseModelUpdateTask {
                 if (!launcherApps.isPackageEnabled(packages[i], mUser)) {
                     removedPackages.add(packages[i]);
 					} else if (!isAppOnHomeScreen(packages[i], mUser, dataModel)) {
-                    if (android.provider.Settings.System.getInt(context.getContentResolver(), "launcher_style", 0) == 0
+                    if (LauncherStyle.isAppDrawer(context)
                      && !SessionCommitReceiver.isEnabled(context)) {
                         if (DEBUG) {
                             Log.d(TAG, "OP_UPDATE:"
@@ -423,7 +424,7 @@ public class PackageUpdatedTask extends BaseModelUpdateTask {
             }
             bindUpdatedWidgets(dataModel);
             //hxy-feature: add launcher style function  202312
-            if(android.provider.Settings.System.getInt(context.getContentResolver(), "launcher_style", 0) == 1){
+            if (LauncherStyle.isRegular(context)) {
                 updateToWorkSpace(context, app, appsList);
             }
             /// &&}}

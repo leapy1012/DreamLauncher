@@ -379,6 +379,11 @@ public class ItemClickHandler {
         // liu-db add start
         launcher.removeAppInstallationBadge(item.getTargetComponent().getPackageName());
         // liu-db add end
+        if (item instanceof AppInfo
+                && launcher.getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            com.android.launcher3.allapps.coloros.ColorOsDrawerSort.recordAppLaunch(
+                    launcher, (AppInfo) item);
+        }
     }
 
     /**

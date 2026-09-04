@@ -134,34 +134,35 @@ public class HxyClearAllPanelView extends LinearLayout {
     }
 
     /**
-     * Clear All stays Oppo nav-anchored (stable chrome band — not tied to live taskRect).
-     * Dock follows the task cards with a fixed card→dock gap; cards are lowered separately
-     * via task-size claim shift in {@code BaseActivityInterface}.
+     * Positions Clear All using Oppo's live bottom-space math:
+     * {@code bottomSpace = heightPx - insets.bottom - taskRect.bottom}.
+     * <p>
+     * That adapts to nav mode automatically: 3-button has a large {@code insets.bottom},
+     * gesture has a thin one — but task cards claim space accordingly, so Clear stays in the
+     * gap above the nav chrome. A fixed "stable" band (overview_actions=0) ignored that and
+     * dropped Clear into the gesture handle.
      */
     public void onInsetsChanged(int heightPx, Rect insets, Rect taskRect, boolean dockHidden,
             @Nullable OverviewDockView dockView) {
-        // Stable bottom band for Clear (ignores card-down shift so Clear does not float up).
-        int stableBottomSpace = getResources().getDimensionPixelSize(R.dimen.overview_actions_top_margin)
-                + getResources().getDimensionPixelSize(R.dimen.overview_actions_height);
-        if (stableBottomSpace < 0) {
-            stableBottomSpace = 0;
+        int bottomSpace = heightPx - insets.bottom - taskRect.bottom;
+        if (bottomSpace < 0) {
+            bottomSpace = 0;
         }
         if (dockHidden) {
-            int liveBottomSpace = heightPx - insets.bottom - taskRect.bottom;
-            mBottomMargin = Math.max(0, liveBottomSpace) / 2;
+            mBottomMargin = bottomSpace / 2;
             return;
         }
 
-        int dockZone = (int) (stableBottomSpace * DOCK_SPACE_PERCENT);
+        int dockZone = (int) (bottomSpace * DOCK_SPACE_PERCENT);
         int halfDockZone = dockZone / 2;
-        mBottomMargin = ((stableBottomSpace - dockZone) + halfDockZone) / 2;
+        // Oppo: center Clear in the lower half of the gap under the dock zone.
+        mBottomMargin = ((bottomSpace - dockZone) + halfDockZone) / 2;
         if (DisplayController.getNavigationMode(getContext()) == NavigationMode.THREE_BUTTONS) {
             mBottomMargin -= getResources().getDimensionPixelSize(R.dimen.hxy_three_bottom_margin);
         } else {
+            // Gesture: slight extra air above the handle (Oppo gesture_bottom_margin).
             mBottomMargin += getResources().getDimensionPixelSize(R.dimen.hxy_gesture_bottom_margin);
         }
-        // Lift Clear/RAM to match Oppo Close (more air above the nav bar).
-        mBottomMargin += getResources().getDimensionPixelSize(R.dimen.hxy_clear_extra_lift);
         if (mBottomMargin < 0) {
             mBottomMargin = 0;
         }

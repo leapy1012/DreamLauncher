@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/coloros_category_tab_header"
+    android:layout_width="match_parent"
+    android:layout_height="52dp"
+    android:layout_alignParentTop="true"
+    android:clipToPadding="false"
+    android:clipChildren="false"
+    android:translationZ="10dp">
+
+    <com.coui.appcompat.segmentbutton.COUISegmentButtonLayout
+        android:id="@+id/coloros_segment_group"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_centerInParent="true"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        app:UnSelectedTextColor="@color/coloros_all_apps_text"
+        app:selectedTextColor="@android:color/black"
+        app:enableResponsiveWidth="true"
+        app:enableTextScale="false"
+        app:segmentButtonTextSize="14sp" />
+
+    <ImageView
+        android:id="@+id/coloros_all_apps_menu"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="@string/coloros_drawer_menu"
+        android:padding="8dp"
+        android:src="@drawable/ic_overflow_menu"
+        android:translationZ="11dp" />
+</RelativeLayout>

@@ -54,6 +54,7 @@ import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.InvariantDeviceProfile.GridOption;
 import com.android.launcher3.LauncherFiles;
 import com.android.launcher3.LauncherPrefs;
+import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.R;
 import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
 import com.android.launcher3.Utilities;
@@ -334,10 +335,10 @@ public class SettingsActivity extends AppCompatActivity
             setPreferencesFromResource(R.xml.launcher_preferences, rootKey);
 
 			//hxy-feature: add launcher style function  202312
-			int style = Settings.System.getInt(getActivity().getContentResolver(), "launcher_style", 0);
+			int style = LauncherStyle.get(getActivity());
 			mLauncherStylePref = (Preference) findPreference(LAUNCHER_STYLE_PREFERENCE_KEY);
 			if (mLauncherStylePref != null) {
-				mLauncherStylePref.setSummary(style == 0 ? 
+				mLauncherStylePref.setSummary(style == LauncherStyle.APP_DRAWER ? 
 					getString(R.string.home_screen_style_single) : getString(R.string.home_screen_style_regular));
                 mLauncherStylePref.setOnPreferenceClickListener(this);
 			}
@@ -671,9 +672,9 @@ public class SettingsActivity extends AppCompatActivity
                 }
             }
 			//hxy-feature: add launcher style function  202312
-            int style = Settings.System.getInt(getActivity().getContentResolver(), "launcher_style", 0);
+            int style = LauncherStyle.get(getActivity());
 			if (mLauncherStylePref != null) {
-				mLauncherStylePref.setSummary(style == 0 ? 
+				mLauncherStylePref.setSummary(style == LauncherStyle.APP_DRAWER ? 
 					getString(R.string.home_screen_style_single) : getString(R.string.home_screen_style_regular));
 			}
 			//hxy-feature: add launcher style function  202312

@@ -77,7 +77,8 @@ public class AllAppsGridAdapter<T extends Context & ActivityContext> extends
         super(activityContext, inflater, apps, adapterProvider);
         mGridLayoutMgr = new AppsGridLayoutManager(mActivityContext);
         mGridLayoutMgr.setSpanSizeLookup(new GridSpanSizer());
-        setAppsPerRow(activityContext.getDeviceProfile().numShownAllAppsColumns);
+        setAppsPerRow(com.android.launcher3.allapps.coloros.ColorOsDrawerColumns.resolve(
+                activityContext, activityContext.getDeviceProfile()));
     }
 
     /**

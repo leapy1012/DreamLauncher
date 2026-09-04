@@ -27,6 +27,7 @@ import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherModel;
 import com.android.launcher3.LauncherModel.CallbackTask;
 import com.android.launcher3.LauncherModel.ModelUpdateTask;
+import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.celllayout.CellPosMapper;
 import com.android.launcher3.model.BgDataModel.Callbacks;
 import com.android.launcher3.model.BgDataModel.FixedContainerItems;
@@ -84,7 +85,7 @@ public abstract class BaseModelUpdateTask implements ModelUpdateTask {
             }
             // Loader has not yet run.
 			//hxy-feature: add launcher style function  202312
-            if (android.provider.Settings.System.getInt(mApp.getContext().getContentResolver(), "launcher_style", 0) == 0) {
+            if (LauncherStyle.isAppDrawer(mApp.getContext())) {
                 return;
             }
 			//hxy-feature: add launcher style function  202312

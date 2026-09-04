@@ -417,6 +417,8 @@
         <item name="android:stateListAnimator">@animator/all_apps_fastscroll_icon_anim</item>
         <item name="android:paddingLeft">@dimen/dynamic_grid_cell_padding_x</item>
         <item name="android:paddingRight">@dimen/dynamic_grid_cell_padding_x</item>
+        <!-- Drawer sits on a dark scrim; textColorSecondary (near-black) is unreadable. -->
+        <item name="android:textColor">?attr/workspaceTextColor</item>
     </style>
 
 

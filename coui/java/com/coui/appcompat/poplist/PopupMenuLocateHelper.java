@@ -510,7 +510,12 @@ final class PopupMenuLocateHelper {
 
             private int getSubMenuAnchorTopAfterMainMenuRelocated(PopupMenuDomain popupMenuDomain) {
                 int i2 = PopupMenuLocateHelper.this.mSubmenuAnchorBounds.top;
-                return (int) (popupMenuDomain.mMainMenuRelocated.top + ((popupMenuDomain.mMainMenu.height() > 0 ? popupMenuDomain.mMainMenuRelocated.height() / popupMenuDomain.mMainMenu.height() : 1.0f) * (i2 - popupMenuDomain.mMainMenu.top)));
+                float heightRatio = popupMenuDomain.mMainMenu.height() > 0
+                        ? popupMenuDomain.mMainMenuRelocated.height()
+                            / (float) popupMenuDomain.mMainMenu.height()
+                        : 1.0f;
+                return (int) (popupMenuDomain.mMainMenuRelocated.top
+                        + (heightRatio * (i2 - popupMenuDomain.mMainMenu.top)));
             }
 
             @Override

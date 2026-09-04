@@ -872,7 +872,13 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                         closeComplete(true);
                         announceAccessibilityChanges();
                         mIsAnimatingClosed = false;
-                        mFolderIcon.setForceHideDot(false);
+                        // Stay hidden in edit-selection so notification badges do not clash
+                        // with checkmarks (Oppo SelectStateIconRenderer.hideDot).
+                        boolean keepHidden = false;
+                        if (mActivityContext instanceof Launcher launcher) {
+                            keepHidden = launcher.getEditSelectionManager().isActive();
+                        }
+                        mFolderIcon.setForceHideDot(keepHidden);
                         resetPivot();
                     }
                 });

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.coui.appcompat.touchsearchview.COUITouchSearchView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/coloros_letter_index"
+    android:layout_width="22dp"
+    android:layout_height="match_parent"
+    android:layout_alignParentEnd="true"
+    android:focusable="false"
+    android:elevation="8dp"
+    android:translationZ="12dp"
+    app:couiFirstIsCharacter="true"
+    app:couiKeyTextColor="@color/coloros_all_apps_index"
+    app:couiPopupWinFirstTextColor="@color/coloros_all_apps_index_active" />

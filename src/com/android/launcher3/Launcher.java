@@ -146,6 +146,7 @@ import com.android.launcher3.allapps.AllAppsStore;
 import com.android.launcher3.allapps.AllAppsTransitionController;
 import com.android.launcher3.allapps.BaseSearchConfig;
 import com.android.launcher3.allapps.DiscoveryBounce;
+import com.android.launcher3.allapps.LauncherAllAppsContainerView;
 import com.android.launcher3.anim.PropertyListBuilder;
 import com.android.launcher3.celllayout.CellPosMapper;
 import com.android.launcher3.celllayout.CellPosMapper.CellPos;
@@ -1163,7 +1164,7 @@ public class Launcher extends StatefulActivity<LauncherState>
         NotificationListener.addNotificationsChangedListener(mPopupDataProvider);
 
         //hxy-feature: add launcher style function  202312
-        if(android.provider.Settings.System.getInt(getContentResolver(), "launcher_style", 0) == 0) {
+        if (LauncherStyle.isAppDrawer(this)) {
             DiscoveryBounce.showForHomeIfNeeded(this);
         }
         //hxy-feature: add launcher style function  202312
@@ -1373,6 +1374,9 @@ public class Launcher extends StatefulActivity<LauncherState>
 
         if (!mDeferOverlayCallbacks) {
             mOverlayManager.onActivityPaused(this);
+        }
+        if (mAppsView instanceof LauncherAllAppsContainerView) {
+            ((LauncherAllAppsContainerView) mAppsView).onLauncherPaused();
         }
         if(mAppWidgetHolder != null) {
             mAppWidgetHolder.setActivityResumed(false);

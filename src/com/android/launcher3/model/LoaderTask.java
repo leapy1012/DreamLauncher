@@ -62,6 +62,7 @@ import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherModel;
 import com.android.launcher3.LauncherSettings.Favorites;
 import com.android.launcher3.LauncherSettings.Settings;
+import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.folder.Folder;
@@ -267,7 +268,7 @@ public class LoaderTask implements Runnable {
                 Trace.endSection();
             }
 			//hxy-feature: add launcher style function  202312
-            if (android.provider.Settings.System.getInt(mApp.getContext().getContentResolver(), "launcher_style", 0) == 1) {
+            if (LauncherStyle.isRegular(mApp.getContext())) {
                verifyApplications();
             }
 			//hxy-feature: add launcher style function  202312			

@@ -88,7 +88,8 @@ public class DeleteDropTarget extends ButtonDropTarget {
 
     @Override
     protected boolean supportsDrop(ItemInfo info) {
-        return (info.itemType != com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_APPLICATION) || (android.provider.Settings.System.getInt(getContext().getContentResolver(), "launcher_style", 0) == 0);
+        return (info.itemType != com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_APPLICATION)
+                || LauncherStyle.isAppDrawer(getContext());
     }
 
     /**

@@ -48,6 +48,7 @@ import androidx.annotation.Nullable;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.DeviceProfile.OnDeviceProfileChangeListener;
 import com.android.launcher3.Launcher;
+import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.LauncherState;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
@@ -237,8 +238,34 @@ public class AllAppsTransitionController
         getAppsViewProgressTranslationY().setValue(mProgress * mShiftRange);
         mLauncher.onAllAppsTransition(1 - progress);
 
+        // ColorOS matches Oppo: tabs + search + letter + icons live in one apps view and
+        // translate together on dismiss/open. Do not counter-translate chrome.
+        if (mAppsView != null
+                && mAppsView.getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            View search = mAppsView.getSearchView();
+            if (search != null) {
+                search.setTranslationY(0f);
+            }
+            View tab = mAppsView.findViewById(R.id.coloros_category_tab_header);
+            if (tab != null) {
+                tab.setTranslationY(0f);
+            }
+            View letter = mAppsView.findViewById(R.id.coloros_letter_index);
+            if (letter != null) {
+                letter.setTranslationY(0f);
+            }
+            if (progress == 0f) {
+                mAppsView.layoutColorOsAppsBelowTabs();
+            }
+        }
+
         boolean hasScrim = progress < NAV_BAR_COLOR_FORCE_UPDATE_THRESHOLD
                 && mLauncher.getAppsView().getNavBarScrimHeight() > 0;
+        // ColorOS drawer: no opaque nav scrim strip under search (matches Oppo).
+        if (mAppsView != null
+                && mAppsView.getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            hasScrim = false;
+        }
         mLauncher.getSystemUiController().updateUiState(
                 UI_STATE_ALL_APPS, hasScrim ? mNavScrimFlag : 0);
     }
@@ -334,7 +361,7 @@ public class AllAppsTransitionController
     public void setStateWithAnimation(LauncherState toState,
             StateAnimationConfig config, PendingAnimation builder) {
 		//hxy-feature: add launcher style function  202312	
-		if (android.provider.Settings.System.getInt(mLauncher.getContentResolver(), "launcher_style", 0) == 1) {
+		if (LauncherStyle.isRegular(mLauncher)) {
 			return;
 		}
 		//hxy-feature: add launcher style function  202312				
@@ -423,6 +450,11 @@ public class AllAppsTransitionController
 
         boolean shouldProtectHeader = !config.hasAnimationFlag(StateAnimationConfig.SKIP_SCRIM)
                 && (ALL_APPS == state || mLauncher.getStateManager().getState() == ALL_APPS);
+        // ColorOS does not use AOSP floating-header protection (gray top mask on dismiss).
+        if (mAppsView != null
+                && mAppsView.getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            shouldProtectHeader = false;
+        }
         mScrimView.setDrawingController(shouldProtectHeader ? mAppsView : null);
     }
 

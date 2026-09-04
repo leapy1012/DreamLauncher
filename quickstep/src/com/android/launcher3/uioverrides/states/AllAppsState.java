@@ -105,8 +105,12 @@ public class AllAppsState extends LauncherState {
 
     @Override
     public int getWorkspaceScrimColor(Launcher launcher) {
-        return launcher.getDeviceProfile().isTablet
-                ? launcher.getResources().getColor(R.color.widgets_picker_scrim)
-                : Themes.getAttrColor(launcher, R.attr.allAppsScrimColor);
+        if (launcher.getDeviceProfile().isTablet) {
+            return launcher.getResources().getColor(R.color.widgets_picker_scrim);
+        }
+        if (launcher.getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            return launcher.getResources().getColor(R.color.coloros_all_apps_scrim);
+        }
+        return Themes.getAttrColor(launcher, R.attr.allAppsScrimColor);
     }
 }

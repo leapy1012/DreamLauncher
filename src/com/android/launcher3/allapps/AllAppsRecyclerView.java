@@ -175,6 +175,17 @@ public class AllAppsRecyclerView extends FastScrollRecyclerView {
         return section.sectionName;
     }
 
+    /**
+     * Scrolls to a letter-index section (Oppo letter rail / fast scroller).
+     */
+    public void scrollToFastScrollSection(AlphabeticalAppsList.FastScrollSectionInfo section) {
+        if (section == null) {
+            return;
+        }
+        stopScroll();
+        mFastScrollHelper.smoothScrollToSection(section);
+    }
+
     @Override
     public void onFastScrollCompleted() {
         super.onFastScrollCompleted();

@@ -371,6 +371,8 @@ public final class EditSelectionManager {
         if (workspace == null) {
             return;
         }
+        Folder openFolder = Folder.getOpen(mLauncher);
+        FolderIcon openFolderIcon = openFolder != null ? openFolder.getFolderIcon() : null;
         int count = workspace.getChildCount();
         for (int i = 0; i < count; i++) {
             if (!(workspace.getChildAt(i) instanceof CellLayout cell)) {
@@ -387,19 +389,49 @@ public final class EditSelectionManager {
             int childCount = container.getChildCount();
             for (int j = 0; j < childCount; j++) {
                 View child = container.getChildAt(j);
-                if (child instanceof BubbleTextView || child instanceof FolderIcon) {
-                    child.invalidate();
-                }
+                applySelectionDotVisibility(child, openFolderIcon);
             }
         }
         // Also refresh icons inside an open folder (Oppo: select apps in folder).
-        Folder openFolder = Folder.getOpen(mLauncher);
         if (openFolder != null) {
             for (View icon : openFolder.getIconsInReadingOrder()) {
-                if (icon != null) {
-                    icon.invalidate();
-                }
+                applySelectionDotVisibility(icon, null);
             }
+        }
+        // Hotseat may still be visible depending on edit chrome; hide badges there too.
+        applyContainerDotVisibility(mLauncher.getHotseat(), openFolderIcon);
+    }
+
+    private void applyContainerDotVisibility(@Nullable CellLayout cell,
+            @Nullable FolderIcon openFolderIcon) {
+        if (cell == null) {
+            return;
+        }
+        ShortcutAndWidgetContainer container = cell.getShortcutsAndWidgets();
+        if (container == null) {
+            return;
+        }
+        for (int j = 0; j < container.getChildCount(); j++) {
+            applySelectionDotVisibility(container.getChildAt(j), openFolderIcon);
+        }
+    }
+
+    /**
+     * Oppo select-mode: hide notification badges so they do not clash with checkmarks.
+     * Keep hiding on an open folder's plate (AOSP already forces hide while open).
+     */
+    private void applySelectionDotVisibility(@Nullable View child,
+            @Nullable FolderIcon openFolderIcon) {
+        if (child == null) {
+            return;
+        }
+        boolean hideDot = mActive || child == openFolderIcon;
+        if (child instanceof BubbleTextView btv) {
+            btv.setForceHideDot(hideDot);
+            btv.invalidate();
+        } else if (child instanceof FolderIcon folderIcon) {
+            folderIcon.setForceHideDot(hideDot);
+            folderIcon.invalidate();
         }
     }
 }

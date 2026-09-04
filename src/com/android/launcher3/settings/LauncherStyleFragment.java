@@ -36,6 +36,7 @@ import androidx.recyclerview.widget.COUIRecyclerView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.launcher3.R;
+import com.android.launcher3.LauncherStyle;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.preference.COUIPreferenceFragment;
 
@@ -60,9 +61,9 @@ public class LauncherStyleFragment extends COUIPreferenceFragment
 		mNomal = (RadioButtonPreference)findPreference(KEY_STYLE_NOMAL);
 		mDrawer.setOnClickListener(this);
 		mNomal.setOnClickListener(this);
-		int mode = Settings.System.getInt(getContext().getContentResolver(), "launcher_style", 0);
-		mDrawer.setChecked(mode == 0 ? true : false);
-		mNomal.setChecked(mode == 1 ? true : false);
+		int mode = LauncherStyle.get(getContext());
+		mDrawer.setChecked(mode == LauncherStyle.APP_DRAWER);
+		mNomal.setChecked(mode == LauncherStyle.REGULAR);
         mCurrentMode = mode;
         CharSequence title = getString(R.string.launcher_style_title);
         requireActivity().setTitle(title);
@@ -125,16 +126,14 @@ public class LauncherStyleFragment extends COUIPreferenceFragment
 			return;
 		}
 		if (mDrawer == preference) {
-			Settings.System.putInt(getContext().getContentResolver(), "launcher_style", 0);
-			Settings.System.putInt(getContext().getContentResolver(), "launcher_style_change", 1);
-			mCurrentMode = 0;
+			LauncherStyle.set(getContext(), LauncherStyle.APP_DRAWER);
+			mCurrentMode = LauncherStyle.APP_DRAWER;
 		} else if (mNomal == preference) {
-			Settings.System.putInt(getContext().getContentResolver(), "launcher_style", 1);
-			Settings.System.putInt(getContext().getContentResolver(), "launcher_style_change", 1);
-			mCurrentMode = 1;
+			LauncherStyle.set(getContext(), LauncherStyle.REGULAR);
+			mCurrentMode = LauncherStyle.REGULAR;
 		}
-		mDrawer.setChecked(mCurrentMode == 0 ? true : false);
-		mNomal.setChecked(mCurrentMode == 1 ? true : false);
+		mDrawer.setChecked(mCurrentMode == LauncherStyle.APP_DRAWER);
+		mNomal.setChecked(mCurrentMode == LauncherStyle.REGULAR);
 		getActivity().onBackPressed();
 	}
 

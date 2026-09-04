@@ -62,6 +62,7 @@ import com.android.launcher3.LauncherFiles;
 import com.android.launcher3.LauncherPrefs;
 import com.android.launcher3.LauncherSettings;
 import com.android.launcher3.LauncherSettings.Favorites;
+import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.pm.UserCache;
 import com.android.launcher3.provider.LauncherDbUtils;
@@ -394,9 +395,9 @@ public class ModelDbController {
                     if (partner != null) {
                         /// Description: 增加桌面风格选项
                         int workspaceResId;
-                        if(android.provider.Settings.System.getInt(mContext.getContentResolver(), "launcher_style", 0) == 0){
+                        if (LauncherStyle.isAppDrawer(mContext)) {
                             workspaceResId = partner.getXmlResId(RES_PARTNER_DEFAULT_LAYOUT);
-                        }else{
+                        } else {
                             workspaceResId = partner.getXmlResId(RES_PARTNER_DEFAULT_LAYOUT_ALL);
                         }
                         //}}

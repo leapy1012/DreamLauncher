@@ -114,4 +114,18 @@
     <string name="icon_size_2x1">Icon size 2×1</string>
     <string name="icon_size_2x2">Icon size 2×2</string>
     <string name="icon_resize_no_space">Not enough space for this icon size</string>
+    <!-- ColorOS All Apps drawer -->
+    <string name="coloros_floating_tab_all">All</string>
+    <string name="coloros_floating_tab_category">Categories</string>
+    <string name="coloros_all_apps_search_hint">Search for an app</string>
+    <string name="coloros_drawer_menu">More options</string>
+    <string name="coloros_drawer_columns_four">4 columns</string>
+    <string name="coloros_drawer_columns_five">5 columns</string>
+    <!-- Oppo drawer overflow: Select / Sort / Settings -->
+    <string name="coloros_drawer_app_sort_select">Select</string>
+    <string name="coloros_drawer_app_sort_sort">Sort</string>
+    <string name="coloros_drawer_category_settings">Settings</string>
+    <string name="coloros_alphabet_sort">By name</string>
+    <string name="coloros_frequence_sort">By usage</string>
+    <string name="coloros_time_sort">By install time</string>
 </resources>

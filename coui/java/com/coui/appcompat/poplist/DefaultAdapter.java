@@ -268,6 +268,9 @@ public class DefaultAdapter extends BaseAdapter {
             viewHolder = (ViewHolder) view.getTag();
         }
         view.setAccessibilityDelegate(getAccessibilityDelegate(i2));
+        // Submenu transition dims rows via View alpha; normalize on every bind so
+        // a recycled row cannot stay at the faded "disabled" look.
+        view.setAlpha(1.0f);
         configItemVerticalPadding(view, iRealPositionToDataIndex);
         PopupListItem popupListItem = this.mMenuItemList.get(iRealPositionToDataIndex);
         setIcon(viewHolder.mIcon, popupListItem);

@@ -27,10 +27,15 @@
         android:layout_gravity="center_horizontal"
         android:clipChildren="false"
         android:clipToPadding="false"
-        android:visibility="gone" />
+        android:visibility="gone"
+        launcher:layout_ignoreInsets="true" />
 
     <include
         android:id="@+id/hxy_clear_all_panel"
-        layout="@layout/hxy_clear_all_panel" />
+        layout="@layout/hxy_clear_all_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        launcher:layout_ignoreInsets="true" />
 
 </com.android.launcher3.RecentContainerView>

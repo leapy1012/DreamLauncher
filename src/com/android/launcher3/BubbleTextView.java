@@ -59,6 +59,7 @@ import androidx.annotation.UiThread;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.launcher3.accessibility.BaseAccessibilityDelegate;
+import com.android.launcher3.allapps.coloros.ColorOsIconChangeAnimManager;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.dot.DotInfo;
 import com.android.launcher3.dragndrop.DragOptions.PreDragCondition;
@@ -176,6 +177,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     private final MultiTranslateDelegate mTranslateDelegate = new MultiTranslateDelegate(this);
     private final ActivityContext mActivity;
     private FastBitmapDrawable mIcon;
+    /** Oppo drawer sort: crossfade old→new icon via {@link ColorOsIconChangeAnimManager}. */
+    private boolean mIsNeedIconChangeAnim;
+    private boolean mIsNeedTextChangeAnim;
+    private ColorOsIconChangeAnimManager mIconChangeAnimManager;
     @Nullable
     private ResizeFrameStrokeState mResizeStrokeState;
     @Nullable
@@ -253,6 +258,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
             setTextSize(TypedValue.COMPLEX_UNIT_PX, grid.allAppsIconTextSizePx);
             setCompoundDrawablePadding(grid.allAppsIconDrawablePaddingPx);
             defaultIconSize = grid.allAppsIconSizePx;
+            if (getResources().getBoolean(R.bool.config_coloros_drawer)) {
+                // ColorOS drawer is always on a dark scrim; keep labels readable.
+                setTextColor(getContext().getColor(R.color.coloros_all_apps_text));
+            }
         } else if (mDisplay == DISPLAY_FOLDER) {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, grid.folderChildTextSizePx);
             setCompoundDrawablePadding(grid.folderChildDrawablePaddingPx);
@@ -307,6 +316,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
      * Resets the view so it can be recycled.
      */
     public void reset() {
+        if (mIconChangeAnimManager != null) {
+            mIconChangeAnimManager.onDestroy();
+        }
+        mIsNeedIconChangeAnim = false;
+        mIsNeedTextChangeAnim = false;
         mDotInfo = null;
         mDotParams.dotColor = Color.TRANSPARENT;
         mDotParams.appColor = Color.TRANSPARENT;
@@ -324,6 +338,45 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
             mIconLoadRequest.cancel();
             mIconLoadRequest = null;
         }
+    }
+
+    public void setIsNeedIconChangeAnim(boolean need) {
+        mIsNeedIconChangeAnim = need;
+    }
+
+    public boolean getIsNeedIconChangeAnim() {
+        return mIsNeedIconChangeAnim;
+    }
+
+    public void setIsNeedTextChangeAnim(boolean need) {
+        mIsNeedTextChangeAnim = need;
+    }
+
+    public boolean getIsNeedTextChangeAnim() {
+        return mIsNeedTextChangeAnim;
+    }
+
+    public boolean isAllAppsDisplay() {
+        return mDisplay == DISPLAY_ALL_APPS;
+    }
+
+    private ColorOsIconChangeAnimManager getIconChangeAnimManager() {
+        if (mIconChangeAnimManager == null) {
+            mIconChangeAnimManager = new ColorOsIconChangeAnimManager(this);
+        }
+        return mIconChangeAnimManager;
+    }
+
+    /**
+     * Updates the compound drawable without changing {@link #mIcon}. Used while a
+     * LayerDrawable crossfade is running (Oppo {@code setIcon(LayerDrawable)} path).
+     */
+    public void applyIconVisual(Drawable icon) {
+        if (icon == null) {
+            return;
+        }
+        icon.setBounds(0, 0, mIconSize, mIconSize);
+        updateIcon(icon);
     }
 
     private void cancelDotScaleAnim() {
@@ -483,7 +536,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
             mLastOriginalText = label;
             mLastModifiedText = mLastOriginalText;
             mBreakPointsIntArray = StringMatcherUtility.getListOfBreakpoints(label, MATCHER);
-            setText(label);
+            if (mIsNeedTextChangeAnim && !TextUtils.isEmpty(getText())) {
+                getIconChangeAnimManager().changeTextWithFade(label);
+            } else {
+                setText(label);
+            }
         }
         if (info.contentDescription != null) {
             setContentDescription(info.isDisabled()
@@ -1379,6 +1436,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
                 && mIcon instanceof PlaceHolderIconDrawable
                 && iconUpdateAnimationEnabled()) {
             ((PlaceHolderIconDrawable) mIcon).animateIconUpdate(icon);
+        }
+
+        if (mIsNeedIconChangeAnim
+                && getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            getIconChangeAnimManager().startIconChangeAnimIfNeeded(icon);
         }
 
         mDisableRelayout = false;

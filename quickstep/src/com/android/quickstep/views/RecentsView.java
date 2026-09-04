@@ -4148,6 +4148,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                         // Update various scroll-dependent UI.
                         dispatchScrollChanged();
                         updateActionsViewFocusedScroll();
+                        // Dock rebuilt in onViewRemoved before setCurrentPage — re-sync so the
+                        // centered/active icon matches the page we just snapped to.
+                        syncDockFromRecents();
                         if (isClearAllHidden() && !mActivity.getDeviceProfile().isTablet) {
                             mActionsView.updateDisabledFlags(OverviewActionsView.DISABLED_SCROLLING,
                                     false);

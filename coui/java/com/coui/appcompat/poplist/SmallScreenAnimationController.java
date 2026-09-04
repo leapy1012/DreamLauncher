@@ -87,8 +87,11 @@ class SmallScreenAnimationController extends BasePopupMenuAnimationController {
     }
 
     private void configMainMenuAnimationPropertiesForSubMenuEnter() {
-        this.mMainMenuAlphaPercent = 0.3f;
-        float fWidth = this.mDomain.mMainMenuRelocated.width() / this.mDomain.mMainMenu.width();
+        this.mMainMenuAlphaPercent = DEFAULT_MAIN_MENU_ALPHA_PERCENT;
+        // Must be float division — int/int truncates to 0 when relocated is only
+        // slightly smaller than main (16dp shrink), which collapses the panel.
+        float fWidth = this.mDomain.mMainMenuRelocated.width()
+                / (float) this.mDomain.mMainMenu.width();
         this.mMainMenuScalePercentX = fWidth;
         this.mMainMenuScalePercentY = fWidth;
         PopupMenuDomain popupMenuDomain = this.mDomain;
@@ -426,6 +429,7 @@ class SmallScreenAnimationController extends BasePopupMenuAnimationController {
             Log.w(TAG, "No main menu root view! Set a main menu view before starting animation!");
             return;
         }
+        resetMainMenuContentVisualState();
         this.mRootView.setTranslationY(0.0f);
         this.mRootView.setPivotX(this.mDomain.getMainMenuEnterPivotX());
         this.mRootView.setPivotY(this.mDomain.getMainMenuEnterPivotY());
@@ -524,6 +528,32 @@ class SmallScreenAnimationController extends BasePopupMenuAnimationController {
         this.mSubMenuAnimation.skipToEnd();
     }
 
+    /**
+     * Submenu enter dims the main ListView to {@link #DEFAULT_MAIN_MENU_ALPHA_PERCENT}.
+     * Dismissing while the submenu is open can skip the exit tween; always restore
+     * so the next show does not look disabled.
+     */
+    private void resetMainMenuContentVisualState() {
+        this.mSubMenuTransitionProgress = 0.0f;
+        View view = this.mMainMenuRoot;
+        if (view instanceof ViewGroup) {
+            View child = ((ViewGroup) view).getChildAt(0);
+            if (child != null) {
+                child.setAlpha(1.0f);
+            }
+            view.setScaleX(1.0f);
+            view.setScaleY(1.0f);
+            view.setTranslationY(0.0f);
+            view.setAlpha(1.0f);
+        }
+        if (this.mRootView != null) {
+            this.mRootView.setAlpha(1.0f);
+            this.mRootView.setScaleX(1.0f);
+            this.mRootView.setScaleY(1.0f);
+        }
+        this.mRootViewAlpha = 1.0f;
+    }
+
     @Override
     public void stopAllAnimation() {
         cleanupPendingMainMenuCallbacks();
@@ -560,5 +590,8 @@ class SmallScreenAnimationController extends BasePopupMenuAnimationController {
             cOUISpringAnimation3.cancel();
             setSubMenuTransitionProgress(0.0f);
         }
+        // Always clear submenu-dimmed ListView alpha even if the spring was null
+        // or setSubMenuTransitionProgress could not run (detached child).
+        resetMainMenuContentVisualState();
     }
 }

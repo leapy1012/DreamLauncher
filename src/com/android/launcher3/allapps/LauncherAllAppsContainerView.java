@@ -16,17 +16,49 @@
 package com.android.launcher3.allapps;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.WindowInsets;
 
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherState;
+import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
+import com.android.launcher3.allapps.coloros.ColorOsDrawerChrome;
+import com.android.launcher3.statemanager.StateManager.StateListener;
 
 /**
  * AllAppsContainerView with launcher specific callbacks
  */
 public class LauncherAllAppsContainerView extends ActivityAllAppsContainerView<Launcher> {
+
+    private static final String TAG = "LauncherAllApps";
+
+    private ColorOsDrawerChrome mColorOsChrome;
+    private boolean mColorOsChromeAttached;
+    private final StateListener<LauncherState> mColorOsStateListener =
+            new StateListener<LauncherState>() {
+                @Override
+                public void onStateTransitionStart(LauncherState toState) {
+                    if (toState == LauncherState.ALL_APPS) {
+                        ensureColorOsChromeAttached();
+                    } else {
+                        // Oppo dismisses COUIPopupListWindow when leaving All Apps
+                        // (Home / Overview); otherwise the popup window stays floating.
+                        dismissColorOsPopup();
+                    }
+                }
+
+                @Override
+                public void onStateTransitionComplete(LauncherState finalState) {
+                    if (finalState == LauncherState.ALL_APPS) {
+                        ensureColorOsChromeAttached();
+                    } else {
+                        dismissColorOsPopup();
+                    }
+                }
+            };
 
     public LauncherAllAppsContainerView(Context context) {
         this(context, null);
@@ -41,7 +73,79 @@ public class LauncherAllAppsContainerView extends ActivityAllAppsContainerView<L
     }
 
     @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (ColorOsDrawerChrome.isEnabled(getContext())) {
+            mActivityContext.getStateManager().addStateListener(mColorOsStateListener);
+            if (isInAllApps()) {
+                ensureColorOsChromeAttached();
+            }
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (ColorOsDrawerChrome.isEnabled(getContext())) {
+            mActivityContext.getStateManager().removeStateListener(mColorOsStateListener);
+        }
+        super.onDetachedFromWindow();
+    }
+
+    private void ensureColorOsChromeAttached() {
+        if (mColorOsChromeAttached || !ColorOsDrawerChrome.isEnabled(getContext())) {
+            return;
+        }
+        mColorOsChromeAttached = true;
+        try {
+            mColorOsChrome = new ColorOsDrawerChrome(this);
+            mColorOsChrome.attach();
+            mColorOsChrome.setInsets(mActivityContext.getDeviceProfile().getInsets());
+        } catch (Throwable t) {
+            Log.e(TAG, "ColorOS drawer chrome failed", t);
+            mColorOsChrome = null;
+            mColorOsChromeAttached = false;
+        }
+    }
+
+    private void dismissColorOsPopup() {
+        if (mColorOsChrome != null) {
+            mColorOsChrome.dismissPopupWindow();
+        }
+    }
+
+    /** Called from {@link Launcher#onPause} — screen off / leave task. */
+    public void onLauncherPaused() {
+        dismissColorOsPopup();
+    }
+
+    @Override
+    public void reset(boolean animate, boolean exitSearch) {
+        dismissColorOsPopup();
+        super.reset(animate, exitSearch);
+    }
+
+    @Override
+    protected void onColorOsDrawerHeaderReady() {
+        ensureColorOsChromeAttached();
+        if (mColorOsChrome != null) {
+            mColorOsChrome.reapplyContentLayout();
+        }
+    }
+
+    @Override
+    public void setInsets(Rect insets) {
+        super.setInsets(insets);
+        if (mColorOsChrome != null) {
+            mColorOsChrome.setInsets(insets);
+        }
+    }
+
+    @Override
     protected int computeNavBarScrimHeight(WindowInsets insets) {
+        // ColorOS drawer draws search above the nav; skip the solid scrim band.
+        if (getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            return 0;
+        }
         if (Utilities.ATLEAST_Q) {
             return insets.getTappableElementInsets().bottom;
         } else {

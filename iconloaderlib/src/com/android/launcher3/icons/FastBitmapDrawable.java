@@ -78,7 +78,8 @@ public class FastBitmapDrawable extends Drawable implements Drawable.Callback {
         }
     };
     private ObjectAnimator mScaleAnimation;
-    private float mScale = 1;
+    /** Drawn via {@link #draw}; animated by ColorOS icon-change springs (Oppo parity). */
+    public float mScale = 1;
     private int mAlpha = 255;
 
     private Drawable mBadge;

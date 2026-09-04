@@ -56,10 +56,26 @@ public class SystemWindowManagerProxy extends WindowManagerProxy {
     @Override
     public ArrayMap<CachedDisplayInfo, WindowBounds[]> estimateInternalDisplayBounds(
             Context displayInfoContext) {
-        ArrayMap<CachedDisplayInfo, WindowBounds[]> result = new ArrayMap<>();
         WindowManager windowManager = displayInfoContext.getSystemService(WindowManager.class);
-        Set<WindowMetrics> possibleMaximumWindowMetrics =
-                windowManager.getPossibleMaximumWindowMetrics(DEFAULT_DISPLAY);
+        Set<WindowMetrics> possibleMaximumWindowMetrics = null;
+        try {
+            // Prefer reflection: some OEM frameworks (ColorOS) omit this API even when
+            // the compile SDK declares it, which would throw NoSuchMethodError on invoke.
+            java.lang.reflect.Method method = WindowManager.class.getMethod(
+                    "getPossibleMaximumWindowMetrics", int.class);
+            @SuppressWarnings("unchecked")
+            Set<WindowMetrics> metrics = (Set<WindowMetrics>) method.invoke(
+                    windowManager, DEFAULT_DISPLAY);
+            possibleMaximumWindowMetrics = metrics;
+        } catch (ReflectiveOperationException | ClassCastException | LinkageError e) {
+            FileLog.d("SystemWindowManagerProxy",
+                    "getPossibleMaximumWindowMetrics unavailable; falling back");
+            return super.estimateInternalDisplayBounds(displayInfoContext);
+        }
+        if (possibleMaximumWindowMetrics == null || possibleMaximumWindowMetrics.isEmpty()) {
+            return super.estimateInternalDisplayBounds(displayInfoContext);
+        }
+        ArrayMap<CachedDisplayInfo, WindowBounds[]> result = new ArrayMap<>();
         FileLog.d("b/283944974", "possibleMaximumWindowMetrics: " + possibleMaximumWindowMetrics);
         for (WindowMetrics windowMetrics : possibleMaximumWindowMetrics) {
             CachedDisplayInfo info = getDisplayInfo(windowMetrics, Surface.ROTATION_0);

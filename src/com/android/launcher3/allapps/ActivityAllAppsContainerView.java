@@ -632,6 +632,10 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
             alignParentTop(getSearchRecyclerView(), /* tabs= */ false);
             layoutAboveSearchContainer(rvContainer);
             layoutAboveSearchContainer(getSearchRecyclerView());
+            if (getResources().getBoolean(R.bool.config_coloros_drawer)) {
+                // alignParentTop is wrong for ColorOS; pin under tab chrome when present.
+                layoutColorOsAppsBelowTabs();
+            }
         } else {
             layoutBelowSearchContainer(rvContainer, showTabs);
             layoutBelowSearchContainer(getSearchRecyclerView(), /* tabs= */ false);
@@ -641,7 +645,10 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     }
 
     void setupHeader() {
-        mHeader.setVisibility(View.VISIBLE);
+        boolean colorOsDrawer = getResources().getBoolean(R.bool.config_coloros_drawer);
+        // Always wire FloatingHeaderRow parents (PredictionRowView etc.) even when ColorOS
+        // hides the AOSP header chrome — otherwise bindPredictedApps NPEs on mParent.
+        mHeader.setVisibility(colorOsDrawer ? View.GONE : View.VISIBLE);
         boolean tabsHidden = !mUsingTabs;
         mHeader.setup(
                 mAH.get(AdapterHolder.MAIN).mRecyclerView,
@@ -649,6 +656,15 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
                 (SearchRecyclerView) mAH.get(SEARCH).mRecyclerView,
                 getCurrentPage(),
                 tabsHidden);
+
+        if (colorOsDrawer) {
+            // ColorOS chrome owns list geometry (BELOW tabs / ABOVE search).
+            // setup() still wires PredictionRow parents; clear AOSP clipBounds it applied.
+            mHeader.clearRecyclerClipBounds();
+            removeCustomRules(mHeader);
+            onColorOsDrawerHeaderReady();
+            return;
+        }
 
         int padding = mHeader.getMaxTranslation();
         mAH.forEach(adapterHolder -> {
@@ -667,6 +683,155 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         } else {
             layoutBelowSearchContainer(mHeader, false /* includeTabsMargin */);
         }
+    }
+
+    /** Hook for ColorOS drawer to re-pin the apps list under the tab chrome. */
+    protected void onColorOsDrawerHeaderReady() {}
+
+    /**
+     * ColorOS drawer: symmetric horizontal padding so the icon grid is centered;
+     * letter rail overlays the trailing edge (Oppo) instead of eating a large end pad.
+     */
+    public void applyColorOsListPadding(int top, int bottom) {
+        int hPad = getResources().getDimensionPixelSize(R.dimen.coloros_all_apps_grid_horizontal_padding);
+        mAH.forEach(adapterHolder -> {
+            adapterHolder.mPadding.top = top;
+            adapterHolder.mPadding.bottom = bottom;
+            adapterHolder.mPadding.left = hPad;
+            // Equal trailing pad: A–Z overlays the edge (Oppo), keeping the grid centered.
+            adapterHolder.mPadding.right = hPad;
+            adapterHolder.applyPadding();
+            if (adapterHolder.mRecyclerView != null) {
+                adapterHolder.mRecyclerView.scrollToTop();
+            }
+        });
+    }
+
+    /**
+     * Pin the apps / search RVs between the ColorOS tab header and the bottom search bar.
+     * Uses RelativeLayout.BELOW so the grid cannot draw under the tabs.
+     */
+    public void layoutColorOsAppsBelowTabs() {
+        View tab = findViewById(R.id.coloros_category_tab_header);
+        if (tab == null) {
+            return;
+        }
+        int contentGap = getResources().getDimensionPixelSize(
+                R.dimen.coloros_all_apps_content_below_tabs);
+        // Extra clearance so the first icon row is not clipped by the segment/menu.
+        int topGap = contentGap + Math.round(8 * getResources().getDisplayMetrics().density);
+        layoutColorOsContent(getAppsRecyclerViewContainer(), topGap);
+        layoutColorOsContent(getSearchRecyclerView(), topGap);
+        View appsList = findViewById(R.id.apps_list_view);
+        if (appsList != null && appsList != getAppsRecyclerViewContainer()) {
+            layoutColorOsContent(appsList, topGap);
+        }
+        layoutColorOsLetterRail(topGap);
+        // After search/list measure, re-center the short A–Z band.
+        post(() -> layoutColorOsLetterRail(topGap));
+        if (tab.getTranslationY() != 0f) {
+            tab.setTranslationY(0f);
+        }
+        View search = getSearchView();
+        if (search != null && search.getTranslationY() != 0f) {
+            search.setTranslationY(0f);
+        }
+        tab.bringToFront();
+    }
+
+    /**
+     * Oppo A–Z is a centered vertical band (~55–70% of list height), not full tabs→search.
+     * Touch isolation still uses {@code requestDisallowInterceptTouchEvent} on the rail.
+     */
+    private void layoutColorOsLetterRail(int topGap) {
+        View letter = findViewById(R.id.coloros_letter_index);
+        if (letter == null || !(letter.getLayoutParams() instanceof RelativeLayout.LayoutParams)) {
+            return;
+        }
+        RelativeLayout.LayoutParams lp = (LayoutParams) letter.getLayoutParams();
+        lp.addRule(RelativeLayout.ALIGN_PARENT_END);
+        lp.addRule(RelativeLayout.BELOW, R.id.coloros_category_tab_header);
+        lp.removeRule(RelativeLayout.ALIGN_PARENT_TOP);
+        lp.removeRule(RelativeLayout.CENTER_VERTICAL);
+        lp.removeRule(RelativeLayout.ABOVE);
+        lp.width = getResources().getDimensionPixelSize(R.dimen.coloros_all_apps_index_width);
+
+        int listBottomGap = getResources().getDimensionPixelSize(
+                R.dimen.coloros_all_apps_list_bottom_gap);
+        int searchH = 0;
+        View search = findViewById(R.id.search_container_all_apps);
+        if (search != null) {
+            searchH = search.getHeight() > 0 ? search.getHeight() : search.getMeasuredHeight();
+        }
+        int listH = getHeight() - tabBottomForColorOs() - topGap - searchH - listBottomGap;
+        if (listH <= 0) {
+            listH = getHeight() / 2;
+        }
+        int percent = getResources().getInteger(R.integer.coloros_all_apps_index_height_percent);
+        percent = Math.max(40, Math.min(75, percent));
+        int railH = Math.round(listH * (percent / 100f));
+        int inset = Math.max(0, (listH - railH) / 2);
+        lp.height = railH;
+        lp.topMargin = topGap + inset;
+        lp.bottomMargin = 0;
+        letter.setLayoutParams(lp);
+        // Do not force VISIBLE — ColorOsDrawerChrome owns visibility (hidden when
+        // sort ≠ by name or on Categories).
+        letter.setTranslationY(0f);
+        if (letter.getVisibility() == VISIBLE) {
+            letter.bringToFront();
+        }
+    }
+
+    private int tabBottomForColorOs() {
+        View tab = findViewById(R.id.coloros_category_tab_header);
+        if (tab == null) {
+            return 0;
+        }
+        return tab.getBottom() > 0 ? tab.getBottom() : tab.getTop() + tab.getMeasuredHeight();
+    }
+
+    private int dpColorOs(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
+
+    private void layoutColorOsContent(View v, int topMarginPx) {
+        if (v == null || !(v.getLayoutParams() instanceof RelativeLayout.LayoutParams)) {
+            return;
+        }
+        RelativeLayout.LayoutParams lp = (LayoutParams) v.getLayoutParams();
+        lp.removeRule(RelativeLayout.ALIGN_PARENT_TOP);
+        lp.removeRule(RelativeLayout.ALIGN_TOP);
+        lp.addRule(RelativeLayout.BELOW, R.id.coloros_category_tab_header);
+        lp.addRule(RelativeLayout.ABOVE, R.id.search_container_all_apps);
+        lp.topMargin = topMarginPx;
+        v.setLayoutParams(lp);
+        if (v instanceof AllAppsRecyclerView) {
+            ((AllAppsRecyclerView) v).setClipToPadding(true);
+            // Do not scrollToTop here. This runs on every ColorOS chrome re-layout
+            // (cluster dismiss, insets, header ready) and was wiping letter-index jumps,
+            // always forcing the rail follow highlight back to the first section (B).
+        }
+    }
+
+    private void alignParentTop(View v, boolean includeTabsMargin) {
+        if (getResources().getBoolean(R.bool.config_coloros_drawer)
+                && findViewById(R.id.coloros_category_tab_header) != null) {
+            // ColorOS chrome owns vertical placement; do not zero topMargin.
+            layoutColorOsAppsBelowTabs();
+            return;
+        }
+        if (!(v.getLayoutParams() instanceof RelativeLayout.LayoutParams)) {
+            return;
+        }
+
+        RelativeLayout.LayoutParams layoutParams = (LayoutParams) v.getLayoutParams();
+        layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        layoutParams.topMargin =
+                includeTabsMargin
+                        ? getContext().getResources().getDimensionPixelSize(
+                        R.dimen.all_apps_header_pill_height)
+                        : 0;
     }
 
     protected void updateHeaderScroll(int scrolledOffset) {
@@ -715,9 +880,15 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
      * @return true if the search bar is at the bottom of the container (as opposed to the top).
      **/
     private boolean isSearchBarOnBottom() {
-        return FeatureFlags.ENABLE_FLOATING_SEARCH_BAR.get()
-                && ((RelativeLayout.LayoutParams) mSearchContainer.getLayoutParams()).getRule(
-                ALIGN_PARENT_BOTTOM) == RelativeLayout.TRUE;
+        if (!(mSearchContainer.getLayoutParams() instanceof RelativeLayout.LayoutParams)) {
+            return false;
+        }
+        boolean alignBottom = ((RelativeLayout.LayoutParams) mSearchContainer.getLayoutParams())
+                .getRule(ALIGN_PARENT_BOTTOM) == RelativeLayout.TRUE;
+        if (getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            return alignBottom;
+        }
+        return FeatureFlags.ENABLE_FLOATING_SEARCH_BAR.get() && alignBottom;
     }
 
     private void layoutBelowSearchContainer(View v, boolean includeTabsMargin) {
@@ -744,20 +915,6 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
 
         RelativeLayout.LayoutParams layoutParams = (LayoutParams) v.getLayoutParams();
         layoutParams.addRule(RelativeLayout.ABOVE, R.id.search_container_all_apps);
-    }
-
-    private void alignParentTop(View v, boolean includeTabsMargin) {
-        if (!(v.getLayoutParams() instanceof RelativeLayout.LayoutParams)) {
-            return;
-        }
-
-        RelativeLayout.LayoutParams layoutParams = (LayoutParams) v.getLayoutParams();
-        layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        layoutParams.topMargin =
-                includeTabsMargin
-                        ? getContext().getResources().getDimensionPixelSize(
-                        R.dimen.all_apps_header_pill_height)
-                        : 0;
     }
 
     private void removeCustomRules(View v) {
@@ -872,7 +1029,9 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     @Override
     public void onDeviceProfileChanged(DeviceProfile dp) {
         for (AdapterHolder holder : mAH) {
-            holder.mAdapter.setAppsPerRow(dp.numShownAllAppsColumns);
+            holder.mAdapter.setAppsPerRow(
+                    com.android.launcher3.allapps.coloros.ColorOsDrawerColumns.resolve(
+                            getContext(), dp));
             if (holder.mRecyclerView != null) {
                 // Remove all views and clear the pool, while keeping the data same. After this
                 // call, all the viewHolders will be recreated.
@@ -1066,8 +1225,11 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         } else {
             int topPadding = grid.allAppsTopPadding;
             if (isSearchBarOnBottom() && !grid.isTablet) {
-                topPadding += getResources().getDimensionPixelSize(
-                        R.dimen.all_apps_additional_top_padding_floating_search);
+                // ColorOS: tabs own the status-bar inset; avoid stacking extra container padding.
+                if (!getResources().getBoolean(R.bool.config_coloros_drawer)) {
+                    topPadding += getResources().getDimensionPixelSize(
+                            R.dimen.all_apps_additional_top_padding_floating_search);
+                }
             }
             setPadding(grid.allAppsLeftRightMargin, topPadding, grid.allAppsLeftRightMargin, 0);
         }
@@ -1122,7 +1284,15 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     }
 
     private void applyAdapterSideAndBottomPaddings(DeviceProfile grid) {
-        int bottomPadding = Math.max(mInsets.bottom, mNavBarScrimHeight);
+        // With bottom search the RV is already ABOVE the search bar; do not also reserve
+        // nav-bar height inside the list (that kills a full row vs ColorOS).
+        int bottomPadding;
+        if (isSearchBarOnBottom()) {
+            bottomPadding = getResources().getDimensionPixelSize(
+                    R.dimen.coloros_all_apps_list_bottom_gap);
+        } else {
+            bottomPadding = Math.max(mInsets.bottom, mNavBarScrimHeight);
+        }
         mAH.forEach(adapterHolder -> {
             adapterHolder.mPadding.bottom = bottomPadding;
             adapterHolder.mPadding.left =
@@ -1230,6 +1400,12 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
 
     @Override
     public void drawOnScrimWithScale(Canvas canvas, float scale) {
+        // ColorOS: drawer chrome (tabs/search/icons) translates as one unit with apps_view.
+        // AOSP header-protection paints a fixed gray band on ScrimView above that content —
+        // visible as a mask in the top gap during dismiss. Skip it.
+        if (getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            return;
+        }
         final View panel = mBottomSheetBackground;
         final boolean hasBottomSheet = panel.getVisibility() == VISIBLE;
         final float translationY = ((View) panel.getParent()).getTranslationY();
@@ -1388,7 +1564,8 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
             mRecyclerView.setLayoutManager(mLayoutManager);
             mRecyclerView.setAdapter(mAdapter);
             mRecyclerView.setHasFixedSize(true);
-            // No animations will occur when changes occur to the items in this RecyclerView.
+            // No item-move animations. ColorOS sort uses in-place rebind + blink
+            // (Oppo CategoryPageItemAnimator.animateChange is a no-op for drawer icons).
             mRecyclerView.setItemAnimator(null);
             onInitializeRecyclerView(mRecyclerView);
             FocusedItemDecorator focusedItemDecorator = new FocusedItemDecorator(mRecyclerView);

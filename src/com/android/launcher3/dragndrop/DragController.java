@@ -31,6 +31,7 @@ import androidx.annotation.Nullable;
 import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.DragSource;
 import com.android.launcher3.DropTarget;
+import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.logging.InstanceId;
 import com.android.launcher3.model.data.ItemInfo;
@@ -130,7 +131,7 @@ public abstract class DragController<T extends ActivityContext>
     public DragController(T activity) {
         mActivity = activity;
 		//hxy-feature: add launcher style function  202312
-        isHomeScreen = android.provider.Settings.System.getInt(((Activity) mActivity).getContentResolver(), "launcher_style", 0) == 1;
+        isHomeScreen = LauncherStyle.isRegular((Activity) mActivity);
 		//hxy-feature: add launcher style function  202312
     }
 
@@ -574,7 +575,7 @@ public abstract class DragController<T extends ActivityContext>
                 }
                 accepted = true;
 				//hxy-feature: add launcher style function  202312
-                isHomeScreen = android.provider.Settings.System.getInt(((Activity) mActivity).getContentResolver(), "launcher_style", 0) == 1;
+                isHomeScreen = LauncherStyle.isRegular((Activity) mActivity);
                 if (isHomeScreen
 						&& dropTarget instanceof DeleteDropTarget &&
                         isNeedCancelDrag(mDragObject.dragInfo)) {

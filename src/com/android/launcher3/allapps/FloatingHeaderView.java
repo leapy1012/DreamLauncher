@@ -310,6 +310,13 @@ public class FloatingHeaderView extends LinearLayout implements
     }
 
     protected void applyVerticalMove() {
+        // ColorOS drawer hides this header and owns list insets via tab/search chrome.
+        // Do not apply AOSP floating-header clipBounds — it cuts the first icon row.
+        if (getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            clearRecyclerClipBounds();
+            return;
+        }
+
         int uncappedTranslationY = mTranslationY;
         mTranslationY = Math.max(mTranslationY, -mMaxTranslation);
 
@@ -343,6 +350,20 @@ public class FloatingHeaderView extends LinearLayout implements
         }
         if (mSearchRV != null) {
             mSearchRV.setClipBounds(mRVClip);
+        }
+    }
+
+    /** Clears clip rects previously applied to All Apps RVs (ColorOS path). */
+    public void clearRecyclerClipBounds() {
+        setClipBounds(null);
+        if (mMainRV != null) {
+            mMainRV.setClipBounds(null);
+        }
+        if (mWorkRV != null) {
+            mWorkRV.setClipBounds(null);
+        }
+        if (mSearchRV != null) {
+            mSearchRV.setClipBounds(null);
         }
     }
 

@@ -20,13 +20,16 @@ import android.content.Context;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 
+import com.android.launcher3.R;
 import com.android.launcher3.allapps.BaseAllAppsAdapter.AdapterItem;
+import com.android.launcher3.allapps.coloros.ColorOsDrawerSort;
 import com.android.launcher3.model.data.AppInfo;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.util.LabelComparator;
 import com.android.launcher3.views.ActivityContext;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -45,7 +48,16 @@ public class AlphabeticalAppsList<T extends Context & ActivityContext> implement
 
     public static final String TAG = "AlphabeticalAppsList";
 
+    /** Oppo {@code VIEW_TYPE_ICON_CHANGE_APPSORT_PAYLOAD} — in-place icon blink on sort. */
+    public static final int VIEW_TYPE_ICON_CHANGE_APPSORT_PAYLOAD = 2;
+
     private final WorkProfileManager mWorkProviderManager;
+
+    /**
+     * When true, DiffUtil treats every icon as the same item so cells stay put and
+     * only contents refresh (Oppo drawer sort blink). Set around {@link #onDrawerSortRuleChanged()}.
+     */
+    private boolean mIsChangeAppSortRule;
 
     /**
      * Info about a fast scroller section, depending if sections are merged, the fast scroller
@@ -82,7 +94,7 @@ public class AlphabeticalAppsList<T extends Context & ActivityContext> implement
     private final ArrayList<AdapterItem> mSearchResults = new ArrayList<>();
     private BaseAllAppsAdapter<T> mAdapter;
     private AppInfoComparator mAppNameComparator;
-    private final int mNumAppsPerRowAllApps;
+    private int mNumAppsPerRowAllApps;
     private int mNumAppRowsInAdapter;
     private Predicate<ItemInfo> mItemFilter;
 
@@ -92,9 +104,18 @@ public class AlphabeticalAppsList<T extends Context & ActivityContext> implement
         mActivityContext = ActivityContext.lookupContext(context);
         mAppNameComparator = new AppInfoComparator(context);
         mWorkProviderManager = workProfileManager;
-        mNumAppsPerRowAllApps = mActivityContext.getDeviceProfile().inv.numAllAppsColumns;
+        mNumAppsPerRowAllApps = com.android.launcher3.allapps.coloros.ColorOsDrawerColumns
+                .resolve(context, mActivityContext.getDeviceProfile());
         if (mAllAppsStore != null) {
             mAllAppsStore.addUpdateListener(this);
+        }
+    }
+
+    /** Used when ColorOS drawer column pref changes (4 ↔ 5). */
+    public void setNumAppsPerRowAllApps(int numAppsPerRow) {
+        if (numAppsPerRow > 0 && mNumAppsPerRowAllApps != numAppsPerRow) {
+            mNumAppsPerRowAllApps = numAppsPerRow;
+            onAppsUpdated();
         }
     }
 
@@ -197,7 +218,14 @@ public class AlphabeticalAppsList<T extends Context & ActivityContext> implement
         if (!hasSearchResults() && mItemFilter != null) {
             appSteam = appSteam.filter(mItemFilter);
         }
-        appSteam = appSteam.sorted(mAppNameComparator);
+        Comparator<AppInfo> comparator = mAppNameComparator;
+        if (mActivityContext.getResources().getBoolean(R.bool.config_coloros_drawer)) {
+            comparator = ColorOsDrawerSort.comparatorFor(
+                    mActivityContext,
+                    ColorOsDrawerSort.getSortRule(mActivityContext),
+                    mAppNameComparator);
+        }
+        appSteam = appSteam.sorted(comparator);
 
         // As a special case for some languages (currently only Simplified Chinese), we may need to
         // coalesce sections
@@ -219,6 +247,18 @@ public class AlphabeticalAppsList<T extends Context & ActivityContext> implement
         // Recompose the set of adapter items from the current set of apps
         if (mSearchResults.isEmpty()) {
             updateAdapterItems();
+        }
+    }
+
+    /**
+     * Oppo {@code drawAppSortUpdate}: reorder with in-place DiffUtil + blink payload.
+     */
+    public void onDrawerSortRuleChanged() {
+        mIsChangeAppSortRule = true;
+        try {
+            onAppsUpdated();
+        } finally {
+            mIsChangeAppSortRule = false;
         }
     }
 
@@ -287,7 +327,10 @@ public class AlphabeticalAppsList<T extends Context & ActivityContext> implement
         }
 
         if (mAdapter != null) {
-            DiffUtil.calculateDiff(new MyDiffCallback(oldItems, mAdapterItems), false)
+            // Oppo sort: positional DiffUtil (no moves). Otherwise keep AOSP detectMoves=false.
+            DiffUtil.calculateDiff(
+                    new MyDiffCallback(oldItems, mAdapterItems, mIsChangeAppSortRule),
+                    false)
                     .dispatchUpdatesTo(mAdapter);
         }
     }
@@ -296,10 +339,13 @@ public class AlphabeticalAppsList<T extends Context & ActivityContext> implement
 
         private final List<AdapterItem> mOldList;
         private final List<AdapterItem> mNewList;
+        private final boolean mIsChangeAppSortRule;
 
-        MyDiffCallback(List<AdapterItem> oldList, List<AdapterItem> newList) {
+        MyDiffCallback(List<AdapterItem> oldList, List<AdapterItem> newList,
+                boolean isChangeAppSortRule) {
             mOldList = oldList;
             mNewList = newList;
+            mIsChangeAppSortRule = isChangeAppSortRule;
         }
 
         @Override
@@ -314,12 +360,46 @@ public class AlphabeticalAppsList<T extends Context & ActivityContext> implement
 
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            return mOldList.get(oldItemPosition).isSameAs(mNewList.get(newItemPosition));
+            AdapterItem oldItem = mOldList.get(oldItemPosition);
+            AdapterItem newItem = mNewList.get(newItemPosition);
+            // Oppo sort: every icon is "the same item" so ViewHolders stay in grid cells.
+            if (mIsChangeAppSortRule
+                    && oldItem.viewType == BaseAllAppsAdapter.VIEW_TYPE_ICON
+                    && newItem.viewType == BaseAllAppsAdapter.VIEW_TYPE_ICON) {
+                return true;
+            }
+            return oldItem.isSameAs(newItem);
         }
 
         @Override
         public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            return mOldList.get(oldItemPosition).isContentSame(mNewList.get(newItemPosition));
+            AdapterItem oldItem = mOldList.get(oldItemPosition);
+            AdapterItem newItem = mNewList.get(newItemPosition);
+            if (mIsChangeAppSortRule
+                    && oldItem.viewType == BaseAllAppsAdapter.VIEW_TYPE_ICON
+                    && newItem.viewType == BaseAllAppsAdapter.VIEW_TYPE_ICON) {
+                return isSameAppComponent(oldItem, newItem);
+            }
+            return oldItem.isContentSame(newItem);
+        }
+
+        @Nullable
+        @Override
+        public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+            AdapterItem oldItem = mOldList.get(oldItemPosition);
+            if (mIsChangeAppSortRule
+                    && oldItem.viewType == BaseAllAppsAdapter.VIEW_TYPE_ICON) {
+                return VIEW_TYPE_ICON_CHANGE_APPSORT_PAYLOAD;
+            }
+            return null;
+        }
+
+        private static boolean isSameAppComponent(AdapterItem a, AdapterItem b) {
+            if (a.itemInfo == null || b.itemInfo == null) {
+                return a.itemInfo == b.itemInfo;
+            }
+            return Objects.equals(a.itemInfo.componentName, b.itemInfo.componentName)
+                    && Objects.equals(a.itemInfo.user, b.itemInfo.user);
         }
     }
 

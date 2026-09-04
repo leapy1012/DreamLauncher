@@ -24,13 +24,22 @@ apktool_oplus_tmp
 /*.jpeg
 /*.webp
 
-# UIAutomator / scratch dumps at repo root
-/uidump*.xml
-/_*.xml
+# UIAutomator / hierarchy / scratch dumps at repo root (keep manifests + lint baselines)
+/*.xml
+!/AndroidManifest.xml
+!/AndroidManifest-common.xml
+!/lint-baseline.xml
+!/lint-baseline-*.xml
 /_*.txt
-/ui_*.xml
+/*.log
 
 # Scratch dirs from device audits and apk checks
 /_apk_check/
 /_img/
 /device_audit/
+
+# Local reference APK dumps (keep tools/*.py and checkstyle)
+/tools/*.apk
+/tools/*.zip
+/tools/*_apk/
+/tools/oplus_apk/
