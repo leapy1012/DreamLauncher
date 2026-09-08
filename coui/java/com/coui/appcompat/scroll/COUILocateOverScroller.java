@@ -14,9 +14,9 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
     private static final float ONE = 1.0f;
     private static final Interpolator SCROLL = new Interpolator() {
         @Override
-        public float getInterpolation(float f2) {
-            float f10 = f2 - 1.0f;
-            return (f10 * f10 * f10 * f10 * f10) + 1.0f;
+        public float getInterpolation(float input) {
+            float fraction = input - 1.0f;
+            return (fraction * fraction * fraction * fraction * fraction) + 1.0f;
         }
     };
     private static final int SCROLL_DEFAULT_DURATION = 250;
@@ -70,57 +70,57 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
         private boolean mFinished = true;
 
         static {
-            float f2;
-            float f10;
-            float f11;
-            float f12;
-            float f13;
-            float f14;
-            float f15;
-            float f16;
-            float f17;
-            float f18;
-            float f19 = 0.0f;
-            float f20 = 0.0f;
-            for (int i2 = 0; i2 < 100; i2++) {
-                float f21 = i2 / 100.0f;
-                float f22 = 1.0f;
+            float fraction;
+            float ratio;
+            float scale;
+            float x;
+            float y;
+            float progress;
+            float alpha;
+            float distance;
+            float velocityF;
+            float factor;
+            float input = 0.0f;
+            float tensionF = 0.0f;
+            for (int i = 0; i < 100; i++) {
+                float frictionF = i / 100.0f;
+                float deltaF = 1.0f;
                 while (true) {
-                    f2 = 2.0f;
-                    f10 = ((f22 - f19) / 2.0f) + f19;
-                    f11 = THREE;
-                    f12 = 1.0f - f10;
-                    f13 = f10 * THREE * f12;
-                    f14 = f10 * f10 * f10;
-                    float f23 = (((f12 * P1) + (f10 * P2)) * f13) + f14;
-                    if (Math.abs(f23 - f21) < MIN_ALPHA) {
+                    fraction = 2.0f;
+                    ratio = ((deltaF - input) / 2.0f) + input;
+                    scale = THREE;
+                    x = 1.0f - ratio;
+                    y = ratio * THREE * x;
+                    progress = ratio * ratio * ratio;
+                    float offsetF = (((x * P1) + (ratio * P2)) * y) + progress;
+                    if (Math.abs(offsetF - frictionF) < MIN_ALPHA) {
                         break;
-                    } else if (f23 > f21) {
-                        f22 = f10;
+                    } else if (offsetF > frictionF) {
+                        deltaF = ratio;
                     } else {
-                        f19 = f10;
+                        input = ratio;
                     }
                 }
-                SPLINE_POSITION[i2] = (f13 * ((f12 * 0.5f) + f10)) + f14;
-                float f24 = 1.0f;
+                SPLINE_POSITION[i] = (y * ((x * 0.5f) + ratio)) + progress;
+                float startF = 1.0f;
                 while (true) {
-                    f15 = ((f24 - f20) / f2) + f20;
-                    f16 = 1.0f - f15;
-                    f17 = f15 * f11 * f16;
-                    f18 = f15 * f15 * f15;
-                    float f25 = (((f16 * 0.5f) + f15) * f17) + f18;
-                    if (Math.abs(f25 - f21) < MIN_ALPHA) {
+                    alpha = ((startF - tensionF) / fraction) + tensionF;
+                    distance = 1.0f - alpha;
+                    velocityF = alpha * scale * distance;
+                    factor = alpha * alpha * alpha;
+                    float endF = (((distance * 0.5f) + alpha) * velocityF) + factor;
+                    if (Math.abs(endF - frictionF) < MIN_ALPHA) {
                         break;
                     }
-                    if (f25 > f21) {
-                        f24 = f15;
+                    if (endF > frictionF) {
+                        startF = alpha;
                     } else {
-                        f20 = f15;
+                        tensionF = alpha;
                     }
-                    f2 = 2.0f;
-                    f11 = THREE;
+                    fraction = 2.0f;
+                    scale = THREE;
                 }
-                SPLINE_TIME[i2] = (f17 * ((f16 * P1) + (f15 * P2))) + f18;
+                SPLINE_TIME[i] = (velocityF * ((distance * P1) + (alpha * P2))) + factor;
             }
             SPLINE_POSITION[100] = 1.0f;
             SPLINE_TIME[100] = 1.0f;
@@ -130,115 +130,115 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
             this.mPhysicalCoeff = context.getResources().getDisplayMetrics().density * 160.0f * 386.0878f * TUNING;
         }
 
-        private void adjustDuration(int i2, int i6, int i10) {
-            float fAbs = Math.abs((i10 - i2) / (i6 - i2));
-            int i11 = (int) (fAbs * 100.0f);
-            if (i11 >= 100 || i11 < 0) {
+        private void adjustDuration(int index, int count, int value) {
+            float fAbs = Math.abs((value - index) / (count - index));
+            int end = (int) (fAbs * 100.0f);
+            if (end >= 100 || end < 0) {
                 return;
             }
-            float f2 = i11 / 100.0f;
-            int i12 = i11 + 1;
+            float fraction = end / 100.0f;
+            int min = end + 1;
             float[] fArr = SPLINE_TIME;
-            float f10 = fArr[i11];
-            this.mDuration = (int) (this.mDuration * (f10 + (((fAbs - f2) / ((i12 / 100.0f) - f2)) * (fArr[i12] - f10))));
+            float ratio = fArr[end];
+            this.mDuration = (int) (this.mDuration * (ratio + (((fAbs - fraction) / ((min / 100.0f) - fraction)) * (fArr[min] - ratio))));
         }
 
-        private void fitOnBounceCurve(int i2, int i6, int i10) {
-            float f2 = this.mDeceleration;
-            float f10 = (-i10) / f2;
-            float f11 = i10;
-            float fSqrt = (float) Math.sqrt((((double) ((((f11 * f11) / 2.0f) / Math.abs(f2)) + Math.abs(i6 - i2))) * 2.0d) / ((double) Math.abs(this.mDeceleration)));
-            this.mStartTime -= (long) ((int) ((fSqrt - f10) * COUILocateOverScroller.THOUSAND));
-            this.mCurrentPosition = i6;
-            this.mStart = i6;
+        private void fitOnBounceCurve(int index, int currentPosition, int count) {
+            float fraction = this.mDeceleration;
+            float ratio = (-count) / fraction;
+            float scale = count;
+            float fSqrt = (float) Math.sqrt((((double) ((((scale * scale) / 2.0f) / Math.abs(fraction)) + Math.abs(currentPosition - index))) * 2.0d) / ((double) Math.abs(this.mDeceleration)));
+            this.mStartTime -= (long) ((int) ((fSqrt - ratio) * COUILocateOverScroller.THOUSAND));
+            this.mCurrentPosition = currentPosition;
+            this.mStart = currentPosition;
             this.mVelocity = (int) ((-this.mDeceleration) * fSqrt);
         }
 
-        private static float getDeceleration(int i2) {
-            if (i2 > 0) {
-                return -2000.0f;
+        private static float getDeceleration(int index) {
+            if (index > 0) {
+                return -GRAVITY;
             }
             return GRAVITY;
         }
 
-        private double getSplineDeceleration(int i2) {
-            return Math.log((Math.abs(i2) * INFLEXION) / (this.mFlingFriction * this.mPhysicalCoeff));
+        private double getSplineDeceleration(int index) {
+            return Math.log((Math.abs(index) * INFLEXION) / (this.mFlingFriction * this.mPhysicalCoeff));
         }
 
-        private double getSplineFlingDistance(int i2) {
-            double splineDeceleration = getSplineDeceleration(i2);
-            float f2 = DECELERATION_RATE;
-            return ((double) (this.mFlingFriction * this.mPhysicalCoeff)) * Math.exp((((double) f2) / (((double) f2) - 1.0d)) * splineDeceleration);
+        private double getSplineFlingDistance(int index) {
+            double splineDeceleration = getSplineDeceleration(index);
+            float fraction = DECELERATION_RATE;
+            return ((double) (this.mFlingFriction * this.mPhysicalCoeff)) * Math.exp((((double) fraction) / (((double) fraction) - 1.0d)) * splineDeceleration);
         }
 
-        private int getSplineFlingDuration(int i2) {
-            return (int) (Math.exp(getSplineDeceleration(i2) / ((double) (DECELERATION_RATE - 1.0f))) * 1000.0d);
+        private int getSplineFlingDuration(int index) {
+            return (int) (Math.exp(getSplineDeceleration(index) / ((double) (DECELERATION_RATE - 1.0f))) * THOUSAND);
         }
 
         private void onEdgeReached() {
-            int i2 = this.mVelocity;
-            float f2 = i2 * i2;
-            float fAbs = f2 / (Math.abs(this.mDeceleration) * 2.0f);
+            int index = this.mVelocity;
+            float fraction = index * index;
+            float fAbs = fraction / (Math.abs(this.mDeceleration) * 2.0f);
             float fSignum = Math.signum(this.mVelocity);
-            int i6 = this.mOver;
-            if (fAbs > i6) {
-                this.mDeceleration = ((-fSignum) * f2) / (i6 * 2.0f);
-                fAbs = i6;
+            int count = this.mOver;
+            if (fAbs > count) {
+                this.mDeceleration = ((-fSignum) * fraction) / (count * 2.0f);
+                fAbs = count;
             }
             this.mOver = (int) fAbs;
             this.mState = 2;
-            int i10 = this.mStart;
-            int i11 = this.mVelocity;
-            if (i11 <= 0) {
+            int finalPos = this.mStart;
+            int value = this.mVelocity;
+            if (value <= 0) {
                 fAbs = -fAbs;
             }
-            this.mFinal = i10 + ((int) fAbs);
-            this.mDuration = -((int) ((i11 * COUILocateOverScroller.THOUSAND) / this.mDeceleration));
+            this.mFinal = finalPos + ((int) fAbs);
+            this.mDuration = -((int) ((value * COUILocateOverScroller.THOUSAND) / this.mDeceleration));
         }
 
-        private void startAfterEdge(int i2, int i6, int i10, int i11) {
-            if (i2 > i6 && i2 < i10) {
+        private void startAfterEdge(int index, int count, int value, int offset) {
+            if (index > count && index < value) {
                 Log.e(COUILocateOverScroller.TAG, "startAfterEdge called from a valid position");
                 this.mFinished = true;
                 return;
             }
-            boolean z6 = i2 > i10;
-            int i12 = z6 ? i10 : i6;
-            if ((i2 - i12) * i11 >= 0) {
-                startBounceAfterEdge(i2, i12, i11);
-            } else if (getSplineFlingDistance(i11) > Math.abs(i2 - i12)) {
-                fling(i2, i11, z6 ? i6 : i2, z6 ? i2 : i10, this.mOver);
+            boolean enabled = index > value;
+            int min = enabled ? value : count;
+            if ((index - min) * offset >= 0) {
+                startBounceAfterEdge(index, min, offset);
+            } else if (getSplineFlingDistance(offset) > Math.abs(index - min)) {
+                fling(index, offset, enabled ? count : index, enabled ? index : value, this.mOver);
             } else {
-                startSpringback(i2, i12, i11);
+                startSpringback(index, min, offset);
             }
         }
 
-        private void startBounceAfterEdge(int i2, int i6, int i10) {
-            this.mDeceleration = getDeceleration(i10 == 0 ? i2 - i6 : i10);
-            fitOnBounceCurve(i2, i6, i10);
+        private void startBounceAfterEdge(int index, int count, int value) {
+            this.mDeceleration = getDeceleration(value == 0 ? index - count : value);
+            fitOnBounceCurve(index, count, value);
             onEdgeReached();
         }
 
-        private void startSpringback(int i2, int i6, int i10) {
+        private void startSpringback(int currentPosition, int finalPos, int index) {
             this.mFinished = false;
             this.mState = 1;
-            this.mCurrentPosition = i2;
-            this.mStart = i2;
-            this.mFinal = i6;
-            int i11 = i2 - i6;
-            this.mDeceleration = getDeceleration(i11);
-            this.mVelocity = -i11;
-            this.mOver = Math.abs(i11);
-            this.mDuration = (int) (Math.sqrt((i11 * (-2.0f)) / this.mDeceleration) * 1000.0d);
+            this.mCurrentPosition = currentPosition;
+            this.mStart = currentPosition;
+            this.mFinal = finalPos;
+            int count = currentPosition - finalPos;
+            this.mDeceleration = getDeceleration(count);
+            this.mVelocity = -count;
+            this.mOver = Math.abs(count);
+            this.mDuration = (int) (Math.sqrt((count * (-2.0f)) / this.mDeceleration) * THOUSAND);
         }
 
         public boolean continueWhenFinished() {
-            int i2 = this.mState;
-            if (i2 != 0) {
-                if (i2 == 1) {
+            int index = this.mState;
+            if (index != 0) {
+                if (index == 1) {
                     return false;
                 }
-                if (i2 == 2) {
+                if (index == 2) {
                     this.mStartTime += (long) this.mDuration;
                     startSpringback(this.mFinal, this.mStart, 0);
                 }
@@ -246,12 +246,12 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
                 if (this.mDuration >= this.mSplineDuration) {
                     return false;
                 }
-                int i6 = this.mFinal;
-                this.mCurrentPosition = i6;
-                this.mStart = i6;
-                int i10 = (int) this.mCurrVelocity;
-                this.mVelocity = i10;
-                this.mDeceleration = getDeceleration(i10);
+                int currentPosition = this.mFinal;
+                this.mCurrentPosition = currentPosition;
+                this.mStart = currentPosition;
+                int velocity = (int) this.mCurrVelocity;
+                this.mVelocity = velocity;
+                this.mDeceleration = getDeceleration(velocity);
                 this.mStartTime += (long) this.mDuration;
                 onEdgeReached();
             }
@@ -264,152 +264,152 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
             this.mFinished = true;
         }
 
-        public void fling(int i2, int i6, int i10, int i11, int i12) {
+        public void fling(int currentPosition, int velocity, int min, int max, int over) {
             double splineFlingDistance;
-            this.mOver = i12;
+            this.mOver = over;
             this.mFinished = false;
-            float f2 = i6;
-            this.mCurrVelocity = f2;
-            this.mVelocity = i6;
+            float currVelocity = velocity;
+            this.mCurrVelocity = currVelocity;
+            this.mVelocity = velocity;
             this.mDuration = 0;
             this.mSplineDuration = 0;
             this.mStartTime = AnimationUtils.currentAnimationTimeMillis();
-            this.mCurrentPosition = i2;
-            this.mStart = i2;
-            if (i2 > i11 || i2 < i10) {
-                startAfterEdge(i2, i10, i11, i6);
+            this.mCurrentPosition = currentPosition;
+            this.mStart = currentPosition;
+            if (currentPosition > max || currentPosition < min) {
+                startAfterEdge(currentPosition, min, max, velocity);
                 return;
             }
-            float f10 = this.mVelocityRatio;
-            if (f10 != 1.0f) {
-                i6 = (int) (f2 * f10);
-                float f11 = i6;
-                this.mCurrVelocity = f11;
-                this.mVelocity = Math.round(f11 * f10);
+            float fraction = this.mVelocityRatio;
+            if (fraction != 1.0f) {
+                velocity = (int) (currVelocity * fraction);
+                float currVelocity2 = velocity;
+                this.mCurrVelocity = currVelocity2;
+                this.mVelocity = Math.round(currVelocity2 * fraction);
             }
             this.mState = 0;
-            if (i6 != 0) {
-                int iRound = Math.round(getSplineFlingDuration(i6) * this.mDurationRatio);
+            if (velocity != 0) {
+                int iRound = Math.round(getSplineFlingDuration(velocity) * this.mDurationRatio);
                 this.mDuration = iRound;
                 this.mSplineDuration = iRound;
-                splineFlingDistance = getSplineFlingDistance(i6);
+                splineFlingDistance = getSplineFlingDistance(velocity);
             } else {
                 splineFlingDistance = 0.0d;
             }
-            int iSignum = (int) (splineFlingDistance * ((double) Math.signum(i6)));
+            int iSignum = (int) (splineFlingDistance * ((double) Math.signum(velocity)));
             this.mSplineDistance = iSignum;
-            int i13 = i2 + iSignum;
-            this.mFinal = i13;
-            if (i13 < i10) {
-                adjustDuration(this.mStart, i13, i10);
-                this.mFinal = i10;
+            int finalPos5 = currentPosition + iSignum;
+            this.mFinal = finalPos5;
+            if (finalPos5 < min) {
+                adjustDuration(this.mStart, finalPos5, min);
+                this.mFinal = min;
             }
-            int i14 = this.mFinal;
-            if (i14 > i11) {
-                adjustDuration(this.mStart, i14, i11);
-                this.mFinal = i11;
+            int index = this.mFinal;
+            if (index > max) {
+                adjustDuration(this.mStart, index, max);
+                this.mFinal = max;
             }
         }
 
-        public void notifyEdgeReached(int i2, int i6, int i10) {
+        public void notifyEdgeReached(int index, int count, int over) {
             if (this.mState == 0) {
-                this.mOver = i10;
+                this.mOver = over;
                 this.mStartTime = AnimationUtils.currentAnimationTimeMillis();
-                startAfterEdge(i2, i6, i6, (int) this.mCurrVelocity);
+                startAfterEdge(index, count, count, (int) this.mCurrVelocity);
             }
         }
 
-        public void setFinalPosition(int i2) {
-            this.mFinal = i2;
-            this.mSplineDistance = i2 - this.mStart;
+        public void setFinalPosition(int finalPos) {
+            this.mFinal = finalPos;
+            this.mSplineDistance = finalPos - this.mStart;
             this.mFinished = false;
         }
 
-        public void setFriction(float f2) {
-            this.mFlingFriction = f2;
+        public void setFriction(float friction) {
+            this.mFlingFriction = friction;
         }
 
-        public boolean springback(int i2, int i6, int i10) {
+        public boolean springback(int currentPosition, int index, int count) {
             this.mFinished = true;
-            this.mCurrentPosition = i2;
-            this.mStart = i2;
-            this.mFinal = i2;
+            this.mCurrentPosition = currentPosition;
+            this.mStart = currentPosition;
+            this.mFinal = currentPosition;
             this.mVelocity = 0;
             this.mStartTime = AnimationUtils.currentAnimationTimeMillis();
             this.mDuration = 0;
-            if (i2 < i6) {
-                startSpringback(i2, i6, 0);
-            } else if (i2 > i10) {
-                startSpringback(i2, i10, 0);
+            if (currentPosition < index) {
+                startSpringback(currentPosition, index, 0);
+            } else if (currentPosition > count) {
+                startSpringback(currentPosition, count, 0);
             }
             return !this.mFinished;
         }
 
-        public void startScroll(int i2, int i6, int i10) {
+        public void startScroll(int currentPosition, int index, int duration) {
             this.mFinished = false;
-            this.mCurrentPosition = i2;
-            this.mStart = i2;
-            this.mFinal = i2 + i6;
+            this.mCurrentPosition = currentPosition;
+            this.mStart = currentPosition;
+            this.mFinal = currentPosition + index;
             this.mStartTime = AnimationUtils.currentAnimationTimeMillis();
-            this.mDuration = i10;
+            this.mDuration = duration;
             this.mDeceleration = 0.0f;
             this.mVelocity = 0;
         }
 
         public boolean update() {
-            float f2;
-            float f10;
-            double d2;
+            float fraction;
+            float ratio;
+            double positionD;
             long jCurrentAnimationTimeMillis = AnimationUtils.currentAnimationTimeMillis() - this.mStartTime;
             if (jCurrentAnimationTimeMillis == 0) {
                 return this.mDuration > 0;
             }
-            int i2 = this.mDuration;
-            if (jCurrentAnimationTimeMillis > i2) {
+            int index = this.mDuration;
+            if (jCurrentAnimationTimeMillis > index) {
                 return false;
             }
-            int i6 = this.mState;
-            if (i6 == 0) {
-                int i10 = this.mSplineDuration;
-                float f11 = jCurrentAnimationTimeMillis / i10;
-                int i11 = (int) (f11 * 100.0f);
-                if (i11 >= 100 || i11 < 0) {
-                    f2 = 1.0f;
-                    f10 = 0.0f;
+            int count = this.mState;
+            if (count == 0) {
+                int value = this.mSplineDuration;
+                float scale = jCurrentAnimationTimeMillis / value;
+                int offset = (int) (scale * 100.0f);
+                if (offset >= 100 || offset < 0) {
+                    fraction = 1.0f;
+                    ratio = 0.0f;
                 } else {
-                    float f12 = i11 / 100.0f;
-                    int i12 = i11 + 1;
+                    float x = offset / 100.0f;
+                    int delta = offset + 1;
                     float[] fArr = SPLINE_POSITION;
-                    float f13 = fArr[i11];
-                    f10 = (fArr[i12] - f13) / ((i12 / 100.0f) - f12);
-                    f2 = f13 + ((f11 - f12) * f10);
+                    float y = fArr[offset];
+                    ratio = (fArr[delta] - y) / ((delta / 100.0f) - x);
+                    fraction = y + ((scale - x) * ratio);
                 }
-                int i13 = this.mSplineDistance;
-                this.mCurrVelocity = ((f10 * i13) / i10) * COUILocateOverScroller.THOUSAND;
-                d2 = f2 * i13;
-            } else if (i6 == 1) {
-                float f14 = jCurrentAnimationTimeMillis / i2;
-                float f15 = f14 * f14;
+                int start = this.mSplineDistance;
+                this.mCurrVelocity = ((ratio * start) / value) * COUILocateOverScroller.THOUSAND;
+                positionD = fraction * start;
+            } else if (count == 1) {
+                float progress = jCurrentAnimationTimeMillis / index;
+                float alpha = progress * progress;
                 float fSignum = Math.signum(this.mVelocity);
-                int i14 = this.mOver;
-                double d7 = i14 * fSignum * ((THREE * f15) - ((2.0f * f14) * f15));
-                this.mCurrVelocity = fSignum * i14 * SIX * ((-f14) + f15);
-                d2 = d7;
-            } else if (i6 != 2) {
-                d2 = 0.0d;
+                int end = this.mOver;
+                double tension = end * fSignum * ((THREE * alpha) - ((2.0f * progress) * alpha));
+                this.mCurrVelocity = fSignum * end * SIX * ((-progress) + alpha);
+                positionD = tension;
+            } else if (count != 2) {
+                positionD = 0.0d;
             } else {
-                float f16 = jCurrentAnimationTimeMillis / COUILocateOverScroller.THOUSAND;
-                int i15 = this.mVelocity;
-                float f17 = this.mDeceleration;
-                this.mCurrVelocity = i15 + (f17 * f16);
-                d2 = (i15 * f16) + (((f17 * f16) * f16) / 2.0f);
+                float distance = jCurrentAnimationTimeMillis / COUILocateOverScroller.THOUSAND;
+                int currVelocity = this.mVelocity;
+                float velocityF = this.mDeceleration;
+                this.mCurrVelocity = currVelocity + (velocityF * distance);
+                positionD = (currVelocity * distance) + (((velocityF * distance) * distance) / 2.0f);
             }
-            this.mCurrentPosition = this.mStart + ((int) Math.round(d2));
+            this.mCurrentPosition = this.mStart + ((int) Math.round(positionD));
             return true;
         }
 
-        public void updateScroll(float f2) {
-            this.mCurrentPosition = this.mStart + Math.round(f2 * (this.mFinal - this.mStart));
+        public void updateScroll(float fraction) {
+            this.mCurrentPosition = this.mStart + Math.round(fraction * (this.mFinal - this.mStart));
         }
     }
 
@@ -429,18 +429,18 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
         if (isCOUIFinished()) {
             return false;
         }
-        int i2 = this.mMode;
-        if (i2 == 0) {
+        int index = this.mMode;
+        if (index == 0) {
             long jCurrentAnimationTimeMillis = AnimationUtils.currentAnimationTimeMillis() - this.mScrollerX.mStartTime;
-            int i6 = this.mScrollerX.mDuration;
-            if (jCurrentAnimationTimeMillis < i6) {
-                float interpolation = this.mInterpolator.getInterpolation(jCurrentAnimationTimeMillis / i6);
+            int count = this.mScrollerX.mDuration;
+            if (jCurrentAnimationTimeMillis < count) {
+                float interpolation = this.mInterpolator.getInterpolation(jCurrentAnimationTimeMillis / count);
                 this.mScrollerX.updateScroll(interpolation);
                 this.mScrollerY.updateScroll(interpolation);
             } else {
                 abortAnimation();
             }
-        } else if (i2 == 1) {
+        } else if (index == 1) {
             if (!this.mScrollerX.mFinished && !this.mScrollerX.update() && !this.mScrollerX.continueWhenFinished()) {
                 this.mScrollerX.finish();
             }
@@ -451,13 +451,13 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
         return true;
     }
 
-    public void enableFrameRate(boolean z6) {
-        this.mFrameRateHelper.enableFrameRate(z6);
+    public void enableFrameRate(boolean enabled) {
+        this.mFrameRateHelper.enableFrameRate(enabled);
     }
 
     @Override
-    public void fling(int i2, int i6, int i10, int i11, int i12, int i13, int i14, int i15) {
-        fling(i2, i6, i10, i11, i12, i13, i14, i15, 0, 0);
+    public void fling(int index, int count, int value, int offset, int delta, int start, int end, int min) {
+        fling(index, count, value, offset, delta, start, end, min, 0, 0);
     }
 
     @Override
@@ -501,62 +501,62 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
     }
 
     @Override
-    public boolean isScrollingInDirection(float f2, float f10) {
-        return !isFinished() && Math.signum(f2) == Math.signum((float) (this.mScrollerX.mFinal - this.mScrollerX.mStart)) && Math.signum(f10) == Math.signum((float) (this.mScrollerY.mFinal - this.mScrollerY.mStart));
+    public boolean isScrollingInDirection(float fraction, float ratio) {
+        return !isFinished() && Math.signum(fraction) == Math.signum((float) (this.mScrollerX.mFinal - this.mScrollerX.mStart)) && Math.signum(ratio) == Math.signum((float) (this.mScrollerY.mFinal - this.mScrollerY.mStart));
     }
 
     @Override
-    public void notifyHorizontalEdgeReached(int i2, int i6, int i10) {
-        this.mScrollerX.notifyEdgeReached(i2, i6, i10);
-        springBack(i2, 0, 0, 0, 0, 0);
+    public void notifyHorizontalEdgeReached(int index, int count, int value) {
+        this.mScrollerX.notifyEdgeReached(index, count, value);
+        springBack(index, 0, 0, 0, 0, 0);
     }
 
     @Override
-    public void notifyVerticalEdgeReached(int i2, int i6, int i10) {
-        this.mScrollerY.notifyEdgeReached(i2, i6, i10);
-        springBack(0, i2, 0, 0, 0, 0);
+    public void notifyVerticalEdgeReached(int index, int count, int value) {
+        this.mScrollerY.notifyEdgeReached(index, count, value);
+        springBack(0, index, 0, 0, 0, 0);
     }
 
     @Override
-    public void setCOUIFriction(float f2) {
+    public void setCOUIFriction(float fraction) {
     }
 
     @Override
-    public void setCurrVelocityX(float f2) {
-        this.mScrollerX.mCurrVelocity = f2;
+    public void setCurrVelocityX(float currVelocity) {
+        this.mScrollerX.mCurrVelocity = currVelocity;
     }
 
     @Override
-    public void setCurrVelocityY(float f2) {
-        this.mScrollerY.mCurrVelocity = f2;
+    public void setCurrVelocityY(float currVelocity) {
+        this.mScrollerY.mCurrVelocity = currVelocity;
     }
 
     @Override
-    public void setDurationRatio(float f2) {
-        this.mScrollerX.mDurationRatio = f2;
-        this.mScrollerY.mDurationRatio = f2;
+    public void setDurationRatio(float durationRatio) {
+        this.mScrollerX.mDurationRatio = durationRatio;
+        this.mScrollerY.mDurationRatio = durationRatio;
     }
 
     @Override
-    public void setFinalX(int i2) {
-        if (i2 == -1) {
+    public void setFinalX(int index) {
+        if (index == -1) {
             return;
         }
-        this.mScrollerX.setFinalPosition(i2);
+        this.mScrollerX.setFinalPosition(index);
     }
 
     @Override
-    public void setFinalY(int i2) {
-        if (i2 == -1) {
+    public void setFinalY(int index) {
+        if (index == -1) {
             return;
         }
-        this.mScrollerY.setFinalPosition(i2);
+        this.mScrollerY.setFinalPosition(index);
     }
 
     @Override
-    public void setFlingFriction(float f2) {
-        this.mScrollerX.setFriction(f2);
-        this.mScrollerY.setFriction(f2);
+    public void setFlingFriction(float fraction) {
+        this.mScrollerX.setFriction(fraction);
+        this.mScrollerY.setFriction(fraction);
     }
 
     @Override
@@ -569,23 +569,23 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
     }
 
     @Override
-    public void setIsScrollView(boolean z6) {
+    public void setIsScrollView(boolean enabled) {
     }
 
     @Override
-    public void setVelocityXRatio(float f2) {
-        this.mScrollerX.mVelocityRatio = f2;
+    public void setVelocityXRatio(float velocityRatio) {
+        this.mScrollerX.mVelocityRatio = velocityRatio;
     }
 
     @Override
-    public void setVelocityYRatio(float f2) {
-        this.mScrollerY.mVelocityRatio = f2;
+    public void setVelocityYRatio(float velocityRatio) {
+        this.mScrollerY.mVelocityRatio = velocityRatio;
     }
 
     @Override
-    public boolean springBack(int i2, int i6, int i10, int i11, int i12, int i13) {
-        boolean zSpringback = this.mScrollerX.springback(i2, i10, i11);
-        boolean zSpringback2 = this.mScrollerY.springback(i6, i12, i13);
+    public boolean springBack(int index, int count, int value, int offset, int delta, int start) {
+        boolean zSpringback = this.mScrollerX.springback(index, value, offset);
+        boolean zSpringback2 = this.mScrollerY.springback(count, delta, start);
         if (zSpringback || zSpringback2) {
             this.mMode = 1;
         }
@@ -593,8 +593,8 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
     }
 
     @Override
-    public void startScroll(int i2, int i6, int i10, int i11) {
-        startScroll(i2, i6, i10, i11, SCROLL_DEFAULT_DURATION);
+    public void startScroll(int index, int count, int value, int offset) {
+        startScroll(index, count, value, offset, SCROLL_DEFAULT_DURATION);
     }
 
     public COUILocateOverScroller(Context context, Interpolator interpolator) {
@@ -610,27 +610,27 @@ public class COUILocateOverScroller extends OverScroller implements COUIIOverScr
     }
 
     @Override
-    public void fling(int i2, int i6, int i10, int i11, int i12, int i13, int i14, int i15, int i16, int i17) {
-        if (i6 > i15 || i6 < i14) {
-            springBack(i2, i6, i12, i13, i14, i15);
+    public void fling(int index, int count, int value, int offset, int delta, int start, int end, int min, int max, int size) {
+        if (count > min || count < end) {
+            springBack(index, count, delta, start, end, min);
         } else {
-            fling(i2, i6, i10, i11);
+            fling(index, count, value, offset);
         }
     }
 
     @Override
-    public void startScroll(int i2, int i6, int i10, int i11, int i12) {
+    public void startScroll(int index, int count, int value, int offset, int delta) {
         this.mMode = 0;
-        this.mScrollerX.startScroll(i2, i10, i12);
-        this.mScrollerY.startScroll(i6, i11, i12);
+        this.mScrollerX.startScroll(index, value, delta);
+        this.mScrollerY.startScroll(count, offset, delta);
         this.mFrameRateHelper.setFrameRate(true);
     }
 
     @Override
-    public void fling(int i2, int i6, int i10, int i11) {
+    public void fling(int index, int count, int value, int offset) {
         this.mMode = 1;
-        this.mScrollerX.fling(i2, i10, Integer.MIN_VALUE, Integer.MAX_VALUE, 0);
-        this.mScrollerY.fling(i6, i11, Integer.MIN_VALUE, Integer.MAX_VALUE, 0);
+        this.mScrollerX.fling(index, value, Integer.MIN_VALUE, Integer.MAX_VALUE, 0);
+        this.mScrollerY.fling(count, offset, Integer.MIN_VALUE, Integer.MAX_VALUE, 0);
         this.mFrameRateHelper.setFrameRate(true);
     }
 }

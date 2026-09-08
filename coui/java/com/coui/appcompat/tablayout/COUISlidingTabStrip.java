@@ -9,11 +9,13 @@ import android.graphics.Paint;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
 import androidx.core.view.ViewCompat;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIEaseInterpolator;
 import com.coui.appcompat.grid.COUIResponsiveUtils;
 import com.coui.appcompat.uiutil.UIUtil;
-import com.coui.appcompat.R;
 
 
 public class COUISlidingTabStrip extends LinearLayout {
@@ -69,12 +71,12 @@ public class COUISlidingTabStrip extends LinearLayout {
         return ViewCompat.getLayoutDirection(this) == 1;
     }
 
-    private void measureChildWithRedDot(COUITabView cOUITabView, int i2, int i6) {
+    private void measureChildWithRedDot(COUITabView cOUITabView, int index, int index_2) {
         if (cOUITabView.getTextView() != null) {
             cOUITabView.getTextView().getLayoutParams().width = -2;
         }
         if (cOUITabView.getTextView() == null || cOUITabView.getHintRedDot() == null || cOUITabView.getHintRedDot().getVisibility() == 8) {
-            cOUITabView.measure(i2, i6);
+            cOUITabView.measure(index, index_2);
             return;
         }
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) cOUITabView.getHintRedDot().getLayoutParams();
@@ -82,7 +84,7 @@ public class COUISlidingTabStrip extends LinearLayout {
         if (cOUITabView.getHintRedDot().getPointMode() == 0) {
             layoutParams.leftMargin = 0;
             layoutParams.rightMargin = 0;
-            cOUITabView.measure(i2, i6);
+            cOUITabView.measure(index, index_2);
             return;
         }
         if (isLayoutRTL()) {
@@ -95,92 +97,92 @@ public class COUISlidingTabStrip extends LinearLayout {
         } else {
             layoutParams.topMargin = this.mCOUITabLayout.mDotVerticalOffsetFromOnlyRed;
         }
-        cOUITabView.measure(View.MeasureSpec.makeMeasureSpec(0, 0), i6);
+        cOUITabView.measure(View.MeasureSpec.makeMeasureSpec(0, 0), index_2);
         if (cOUITabView.getMeasuredWidth() > this.mCOUITabLayout.mRequestedTabMaxWidth) {
             cOUITabView.getTextView().getLayoutParams().width = ((this.mCOUITabLayout.mRequestedTabMaxWidth - cOUITabView.getHintRedDot().getMeasuredWidth()) - layoutParams.getMarginStart()) + layoutParams.getMarginEnd();
-            cOUITabView.measure(i2, i6);
+            cOUITabView.measure(index, index_2);
         }
     }
 
-    private void measureShortChild(int i2, int i6, int i10, int i11) {
+    private void measureShortChild(int index, int index_2, int index_3, int index_4) {
         int childCount = getChildCount();
-        int i12 = ((i2 - i6) - (i10 * childCount)) / 2;
-        int i13 = i10 / 2;
-        setLayoutPadding(i12, i12);
-        for (int i14 = 0; i14 < childCount; i14++) {
-            View childAt = getChildAt(i14);
-            setMargin(childAt, i13, i13, childAt.getMeasuredWidth());
+        int index_6 = ((index - index_2) - (index_3 * childCount)) / 2;
+        int index_7 = index_3 / 2;
+        setLayoutPadding(index_6, index_6);
+        for (int index_5 = 0; index_5 < childCount; index_5++) {
+            View childAt = getChildAt(index_5);
+            setMargin(childAt, index_7, index_7, childAt.getMeasuredWidth());
         }
     }
 
-    private void measureSmallChild(int i2, int i6, int i10) {
+    private void measureSmallChild(int index, int index_2, int index_3) {
         int iMax;
-        int i11;
+        int index_7;
         int childCount = getChildCount();
-        int i12 = this.mContentMinWidth;
-        if (i2 >= i12) {
-            iMax = Math.max((i12 - i6) / (childCount + 1), i10);
-            i11 = ((i2 - this.mContentMinWidth) + iMax) / 2;
+        int index_5 = this.mContentMinWidth;
+        if (index >= index_5) {
+            iMax = Math.max((index_5 - index_2) / (childCount + 1), index_3);
+            index_7 = ((index - this.mContentMinWidth) + iMax) / 2;
         } else {
-            iMax = Math.max((i2 - i6) / (childCount + 1), i10);
-            i11 = iMax / 2;
+            iMax = Math.max((index - index_2) / (childCount + 1), index_3);
+            index_7 = iMax / 2;
         }
-        int i13 = iMax / 2;
-        setLayoutPadding(i11, i11);
-        for (int i14 = 0; i14 < childCount; i14++) {
-            View childAt = getChildAt(i14);
-            setMargin(childAt, i13, i13, childAt.getMeasuredWidth());
+        int index_6 = iMax / 2;
+        setLayoutPadding(index_7, index_7);
+        for (int index_4 = 0; index_4 < childCount; index_4++) {
+            View childAt = getChildAt(index_4);
+            setMargin(childAt, index_6, index_6, childAt.getMeasuredWidth());
         }
     }
 
-    private int parseMinDivider(int i2) {
-        if (i2 != -1) {
-            return i2;
+    private int parseMinDivider(int index) {
+        if (index != -1) {
+            return index;
         }
         int measuredWidth = ((COUITabLayout) getParent()).getMeasuredWidth();
         int measuredHeight = ((COUITabLayout) getParent()).getMeasuredHeight();
         return (COUIResponsiveUtils.isMediumScreen(getContext(), measuredWidth, measuredHeight) || COUIResponsiveUtils.isLargeScreen(getContext(), measuredWidth, measuredHeight)) ? this.mTabMediumSpacing : this.mTabSmallSpacing;
     }
 
-    private int parseMinMargin(int i2) {
-        if (i2 != -1) {
-            return i2;
+    private int parseMinMargin(int index) {
+        if (index != -1) {
+            return index;
         }
         int measuredWidth = ((COUITabLayout) getParent()).getMeasuredWidth();
         return COUIResponsiveUtils.isLargeScreen(getContext(), measuredWidth, UIUtil.getScreenHeightMetrics(getContext())) ? this.mHorizontalLargeMargin : COUIResponsiveUtils.isMediumScreen(getContext(), measuredWidth, UIUtil.getScreenHeightMetrics(getContext())) ? this.mHorizontalMediumMargin : this.mHorizontalSmallMargin;
     }
 
-    private void setLayoutPadding(int i2, int i6) {
+    private void setLayoutPadding(int index, int index_2) {
         if (getParent() == null || !(getParent() instanceof COUITabLayout)) {
             return;
         }
-        ((COUITabLayout) getParent()).setPaddingLeftAndRight(i2, i6);
+        ((COUITabLayout) getParent()).setPaddingLeftAndRight(index, index_2);
     }
 
-    private void setMargin(View view, int i2, int i6, int i10) {
+    private void setMargin(View view, int index, int index_2, int index_3) {
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) view.getLayoutParams();
-        layoutParams.width = i10 + i6 + i2;
-        view.setPaddingRelative(i2, view.getPaddingTop(), i6, view.getPaddingBottom());
+        layoutParams.width = index_3 + index_2 + index;
+        view.setPaddingRelative(index, view.getPaddingTop(), index_2, view.getPaddingBottom());
         view.measure(View.MeasureSpec.makeMeasureSpec(layoutParams.width, 1073741824), View.MeasureSpec.makeMeasureSpec(view.getMeasuredHeight(), 1073741824));
     }
 
-    public void animateIndicatorToPosition(final int i2, int i6) {
-        boolean z6;
+    public void animateIndicatorToPosition(final int index, int index_2) {
+        boolean flag;
         COUISlidingTabStrip cOUISlidingTabStrip;
-        final int i10;
-        int i11;
+        final int index_11;
+        int index_12;
         ValueAnimator valueAnimator = this.mIndicatorAnimator;
         if (valueAnimator == null || !valueAnimator.isRunning()) {
-            z6 = false;
-        } else if (i2 != this.mLastPosition) {
+            flag = false;
+        } else if (index != this.mLastPosition) {
             this.mIndicatorAnimator.end();
-            z6 = false;
+            flag = false;
         } else {
             this.mIndicatorAnimator.cancel();
-            z6 = true;
+            flag = true;
         }
-        boolean z10 = ViewCompat.getLayoutDirection(this) == 1;
-        View childAt = getChildAt(i2);
+        boolean layoutDirection = ViewCompat.getLayoutDirection(this) == 1;
+        View childAt = getChildAt(index);
         if (childAt == null) {
             updateIndicatorPosition();
             return;
@@ -191,33 +193,33 @@ public class COUISlidingTabStrip extends LinearLayout {
             cOUISlidingTabStrip = this;
             final int indicatorLeft = cOUISlidingTabStrip.getIndicatorLeft(cOUITabView.getLeft() + cOUITabView.mCustomView.getLeft());
             final int indicatorRight = cOUISlidingTabStrip.getIndicatorRight(cOUITabView.getLeft() + cOUITabView.mCustomView.getRight());
-            if (Math.abs(i2 - cOUISlidingTabStrip.mSelectedPosition) <= 1) {
-                i10 = cOUISlidingTabStrip.mIndicatorLeft;
-                i11 = cOUISlidingTabStrip.mIndicatorRight;
+            if (Math.abs(index - cOUISlidingTabStrip.mSelectedPosition) <= 1) {
+                index_11 = cOUISlidingTabStrip.mIndicatorLeft;
+                index_12 = cOUISlidingTabStrip.mIndicatorRight;
             } else {
                 int iDpToPx = cOUISlidingTabStrip.dpToPx(24);
-                i10 = (i2 >= cOUISlidingTabStrip.mSelectedPosition ? !z10 : z10) ? indicatorLeft - iDpToPx : iDpToPx + indicatorRight;
-                i11 = i10;
+                index_11 = (index >= cOUISlidingTabStrip.mSelectedPosition ? !layoutDirection : layoutDirection) ? indicatorLeft - iDpToPx : iDpToPx + indicatorRight;
+                index_12 = index_11;
             }
-            if (i10 != indicatorLeft || i11 != indicatorRight) {
-                ValueAnimator valueAnimator2 = new ValueAnimator();
-                cOUISlidingTabStrip.mIndicatorAnimator = valueAnimator2;
-                valueAnimator2.setInterpolator(COUIAnimationUtils.FAST_OUT_SLOW_IN_INTERPOLATOR);
-                valueAnimator2.setDuration(i6);
-                valueAnimator2.setFloatValues(0.0f, 1.0f);
-                final int i12 = i11;
-                valueAnimator2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            if (index_11 != indicatorLeft || index_12 != indicatorRight) {
+                ValueAnimator valueAnimator_2 = new ValueAnimator();
+                cOUISlidingTabStrip.mIndicatorAnimator = valueAnimator_2;
+                valueAnimator_2.setInterpolator(COUIAnimationUtils.FAST_OUT_SLOW_IN_INTERPOLATOR);
+                valueAnimator_2.setDuration(index_2);
+                valueAnimator_2.setFloatValues(0.0f, 1.0f);
+                final int index_3 = index_12;
+                valueAnimator_2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                     @Override
-                    public void onAnimationUpdate(ValueAnimator valueAnimator3) {
-                        float animatedFraction = valueAnimator3.getAnimatedFraction();
-                        COUISlidingTabStrip.this.setIndicatorPosition(COUIAnimationUtils.lerp(i10, indicatorLeft, animatedFraction), COUIAnimationUtils.lerp(i12, indicatorRight, animatedFraction));
+                    public void onAnimationUpdate(ValueAnimator indicatorAnimator) {
+                        float animatedFraction = indicatorAnimator.getAnimatedFraction();
+                        COUISlidingTabStrip.this.setIndicatorPosition(COUIAnimationUtils.lerp(index_11, indicatorLeft, animatedFraction), COUIAnimationUtils.lerp(index_3, indicatorRight, animatedFraction));
                     }
                 });
-                valueAnimator2.addListener(new AnimatorListenerAdapter() {
+                valueAnimator_2.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animator) {
                         COUISlidingTabStrip cOUISlidingTabStrip2 = COUISlidingTabStrip.this;
-                        cOUISlidingTabStrip2.mSelectedPosition = i2;
+                        cOUISlidingTabStrip2.mSelectedPosition = index;
                         cOUISlidingTabStrip2.mSelectionOffset = 0.0f;
                         if (cOUITabView.getTextView() != null) {
                             cOUITabView.getTextView().setTextColor(COUISlidingTabStrip.this.mCOUITabLayout.mSelectedTextColor);
@@ -227,36 +229,36 @@ public class COUISlidingTabStrip extends LinearLayout {
                         }
                     }
                 });
-                valueAnimator2.start();
+                valueAnimator_2.start();
             }
         } else {
             final TextView textView = cOUITabView.getTextView();
-            final int i13 = this.mIndicatorLeft;
-            final int i14 = this.mIndicatorRight;
+            final int index_4 = this.mIndicatorLeft;
+            final int index_5 = this.mIndicatorRight;
             int indicatorPadding = this.mCOUITabLayout.getIndicatorPadding();
             final int indicatorLeft2 = getIndicatorLeft((cOUITabView.getLeft() + textView.getLeft()) - indicatorPadding);
             final int indicatorRight2 = getIndicatorRight(cOUITabView.getLeft() + textView.getRight() + indicatorPadding);
-            final int i15 = (indicatorRight2 - indicatorLeft2) - (i14 - i13);
-            final int i16 = indicatorLeft2 - i13;
-            int indicatorAnimTime = this.mCOUITabLayout.getIndicatorAnimTime(i2, this.mSelectedPosition);
-            int i17 = this.mIndicatorAnimTime;
-            if (i17 != -1) {
-                indicatorAnimTime = i17;
+            final int index_6 = (indicatorRight2 - indicatorLeft2) - (index_5 - index_4);
+            final int index_7 = indicatorLeft2 - index_4;
+            int indicatorAnimTime = this.mCOUITabLayout.getIndicatorAnimTime(index, this.mSelectedPosition);
+            int index_8 = this.mIndicatorAnimTime;
+            if (index_8 != -1) {
+                indicatorAnimTime = index_8;
             }
-            ValueAnimator valueAnimator3 = new ValueAnimator();
-            this.mIndicatorAnimator = valueAnimator3;
-            valueAnimator3.setDuration(indicatorAnimTime);
-            valueAnimator3.setInterpolator(new COUIEaseInterpolator());
-            valueAnimator3.setIntValues(0, 1);
+            ValueAnimator indicatorAnimator = new ValueAnimator();
+            this.mIndicatorAnimator = indicatorAnimator;
+            indicatorAnimator.setDuration(indicatorAnimTime);
+            indicatorAnimator.setInterpolator(new COUIEaseInterpolator());
+            indicatorAnimator.setIntValues(0, 1);
             final ArgbEvaluator argbEvaluator = new ArgbEvaluator();
-            final int currentTextColor = z6 ? textView.getCurrentTextColor() : this.mCOUITabLayout.mNormalTextColor;
-            final int currentTextColor2 = z6 ? cOUITabView2.getTextView().getCurrentTextColor() : this.mCOUITabLayout.mSelectedTextColor;
-            valueAnimator3.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            final int currentTextColor = flag ? textView.getCurrentTextColor() : this.mCOUITabLayout.mNormalTextColor;
+            final int currentTextColor2 = flag ? cOUITabView2.getTextView().getCurrentTextColor() : this.mCOUITabLayout.mSelectedTextColor;
+            indicatorAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
-                public void onAnimationUpdate(ValueAnimator valueAnimator4) {
-                    int i18;
-                    int i19;
-                    float animatedFraction = valueAnimator4.getAnimatedFraction();
+                public void onAnimationUpdate(ValueAnimator valueAnimator_3) {
+                    int index_13;
+                    int index_14;
+                    float animatedFraction = valueAnimator_3.getAnimatedFraction();
                     textView.setTextColor(((Integer) argbEvaluator.evaluate(animatedFraction, Integer.valueOf(currentTextColor), Integer.valueOf(COUISlidingTabStrip.this.mCOUITabLayout.mSelectedTextColor))).intValue());
                     COUITabView cOUITabView3 = cOUITabView2;
                     if (cOUITabView3 != null && cOUITabView3.getTextView() != null) {
@@ -267,46 +269,46 @@ public class COUISlidingTabStrip extends LinearLayout {
                         cOUISlidingTabStrip2.mLastOffset = animatedFraction;
                     }
                     if (animatedFraction - cOUISlidingTabStrip2.mLastOffset > 0.0f) {
-                        int i20 = i14;
-                        i18 = (int) ((i20 - i13) + (i15 * animatedFraction));
-                        i19 = (int) (i13 + (i16 * animatedFraction));
+                        int index_9 = index_5;
+                        index_13 = (int) ((index_9 - index_4) + (index_6 * animatedFraction));
+                        index_14 = (int) (index_4 + (index_7 * animatedFraction));
                     } else {
-                        int i21 = indicatorRight2;
-                        float f2 = 1.0f - animatedFraction;
-                        i18 = (int) ((i21 - indicatorLeft2) - (i15 * f2));
-                        i19 = (int) (indicatorLeft2 - (i16 * f2));
+                        int index_10 = indicatorRight2;
+                        float value = 1.0f - animatedFraction;
+                        index_13 = (int) ((index_10 - indicatorLeft2) - (index_6 * value));
+                        index_14 = (int) (indicatorLeft2 - (index_7 * value));
                     }
-                    cOUISlidingTabStrip2.setIndicatorPosition(i19, i18 + i19);
+                    cOUISlidingTabStrip2.setIndicatorPosition(index_14, index_13 + index_14);
                 }
             });
             cOUISlidingTabStrip = this;
-            valueAnimator3.addListener(new AnimatorListenerAdapter() {
+            indicatorAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animator) {
                     COUISlidingTabStrip cOUISlidingTabStrip2 = COUISlidingTabStrip.this;
-                    cOUISlidingTabStrip2.mSelectedPosition = i2;
+                    cOUISlidingTabStrip2.mSelectedPosition = index;
                     cOUISlidingTabStrip2.mSelectionOffset = 0.0f;
                     cOUISlidingTabStrip2.updateIndicatorPosition();
                     COUISlidingTabStrip.this.mCOUITabLayout.resetTextColorAfterAnim();
                 }
             });
-            valueAnimator3.start();
+            indicatorAnimator.start();
         }
         cOUISlidingTabStrip.mLastPosition = cOUISlidingTabStrip.mCOUITabLayout.getSelectedTabPosition();
     }
 
     public boolean childrenNeedLayout() {
         int childCount = getChildCount();
-        for (int i2 = 0; i2 < childCount; i2++) {
-            if (getChildAt(i2).getWidth() <= 0) {
+        for (int index = 0; index < childCount; index++) {
+            if (getChildAt(index).getWidth() <= 0) {
                 return true;
             }
         }
         return false;
     }
 
-    public int dpToPx(int i2) {
-        return Math.round(getResources().getDisplayMetrics().density * i2);
+    public int dpToPx(int index) {
+        return Math.round(getResources().getDisplayMetrics().density * index);
     }
 
     public Paint getBottomDividerPaint() {
@@ -354,8 +356,8 @@ public class COUISlidingTabStrip extends LinearLayout {
     }
 
     @Override
-    public void onLayout(boolean z6, int i2, int i6, int i10, int i11) {
-        super.onLayout(z6, i2, i6, i10, i11);
+    public void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
         if (this.mCOUITabLayout.isUpdateindicatorposition()) {
             updateIndicatorPosition();
         }
@@ -373,14 +375,14 @@ public class COUISlidingTabStrip extends LinearLayout {
     }
 
     @Override
-    public void onMeasure(int i2, int i6) {
-        if (View.MeasureSpec.getMode(i2) == 0) {
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (View.MeasureSpec.getMode(widthMeasureSpec) == 0) {
             return;
         }
-        int size = View.MeasureSpec.getSize(i2);
+        int size = View.MeasureSpec.getSize(widthMeasureSpec);
         int childCount = getChildCount();
         if (childCount == 0) {
-            super.onMeasure(i2, i6);
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             return;
         }
         int minMargin = parseMinMargin(this.mCOUITabLayout.getTabMinMargin());
@@ -389,114 +391,114 @@ public class COUISlidingTabStrip extends LinearLayout {
             this.mIndicatorWidthRatio = this.mCOUITabLayout.getDefaultIndicatoRatio();
             int iMakeMeasureSpec = View.MeasureSpec.makeMeasureSpec(this.mCOUITabLayout.mRequestedTabMaxWidth, Integer.MIN_VALUE);
             int measuredWidth = 0;
-            for (int i10 = 0; i10 < childCount; i10++) {
-                COUITabView cOUITabView = (COUITabView) getChildAt(i10);
+            for (int index = 0; index < childCount; index++) {
+                COUITabView cOUITabView = (COUITabView) getChildAt(index);
                 setMargin(cOUITabView, 0, 0);
-                measureChildWithRedDot(cOUITabView, iMakeMeasureSpec, i6);
+                measureChildWithRedDot(cOUITabView, iMakeMeasureSpec, heightMeasureSpec);
                 measuredWidth += cOUITabView.getMeasuredWidth();
             }
-            int i11 = (minMargin * 2) + measuredWidth + ((childCount - 1) * minDivider);
-            if (i11 <= this.mContentMinWidth) {
+            int index_5 = (minMargin * 2) + measuredWidth + ((childCount - 1) * minDivider);
+            if (index_5 <= this.mContentMinWidth) {
                 measureSmallChild(size, measuredWidth, minDivider);
-            } else if (i11 <= size) {
+            } else if (index_5 <= size) {
                 measureShortChild(size, measuredWidth, minDivider, minMargin);
             } else {
-                int i12 = minDivider / 2;
-                int i13 = minMargin - i12;
-                setLayoutPadding(i13, i13);
-                for (int i14 = 0; i14 < childCount; i14++) {
-                    View childAt = getChildAt(i14);
-                    setMargin(childAt, i12, i12, childAt.getMeasuredWidth());
+                int index_6 = minDivider / 2;
+                int index_7 = minMargin - index_6;
+                setLayoutPadding(index_7, index_7);
+                for (int index_2 = 0; index_2 < childCount; index_2++) {
+                    View childAt = getChildAt(index_2);
+                    setMargin(childAt, index_6, index_6, childAt.getMeasuredWidth());
                 }
             }
         } else {
             int iMakeMeasureSpec2 = View.MeasureSpec.makeMeasureSpec(this.mCOUITabLayout.mRequestedTabMaxWidth, Integer.MIN_VALUE);
-            int i15 = minDivider / 2;
-            int i16 = minMargin - i15;
-            setLayoutPadding(i16, i16);
-            for (int i17 = 0; i17 < childCount; i17++) {
-                View childAt2 = getChildAt(i17);
+            int index_8 = minDivider / 2;
+            int index_9 = minMargin - index_8;
+            setLayoutPadding(index_9, index_9);
+            for (int index_3 = 0; index_3 < childCount; index_3++) {
+                View childAt2 = getChildAt(index_3);
                 setMargin(childAt2, 0, 0);
-                measureChildWithRedDot((COUITabView) childAt2, iMakeMeasureSpec2, i6);
-                setMargin(childAt2, i15, i15, childAt2.getMeasuredWidth());
+                measureChildWithRedDot((COUITabView) childAt2, iMakeMeasureSpec2, heightMeasureSpec);
+                setMargin(childAt2, index_8, index_8, childAt2.getMeasuredWidth());
             }
         }
         int measuredWidth2 = 0;
-        for (int i18 = 0; i18 < childCount; i18++) {
-            measuredWidth2 += getChildAt(i18).getMeasuredWidth();
+        for (int index_4 = 0; index_4 < childCount; index_4++) {
+            measuredWidth2 += getChildAt(index_4).getMeasuredWidth();
         }
-        super.onMeasure(View.MeasureSpec.makeMeasureSpec(measuredWidth2, 1073741824), i6);
+        super.onMeasure(View.MeasureSpec.makeMeasureSpec(measuredWidth2, 1073741824), heightMeasureSpec);
     }
 
     @Override
-    public void onRtlPropertiesChanged(int i2) {
-        super.onRtlPropertiesChanged(i2);
+    public void onRtlPropertiesChanged(int index) {
+        super.onRtlPropertiesChanged(index);
     }
 
-    public void setBottomDividerColor(int i2) {
-        this.mBottomDividerPaint.setColor(i2);
+    public void setBottomDividerColor(int bottomDividerColor) {
+        this.mBottomDividerPaint.setColor(bottomDividerColor);
         ViewCompat.postInvalidateOnAnimation(this.mCOUITabLayout);
     }
 
-    public void setIndicatorAnimTime(int i2) {
-        this.mIndicatorAnimTime = i2;
+    public void setIndicatorAnimTime(int indicatorAnimTime) {
+        this.mIndicatorAnimTime = indicatorAnimTime;
     }
 
-    public void setIndicatorBackgroundHeight(int i2) {
-        this.mIndicatorBackgroundHeight = i2;
+    public void setIndicatorBackgroundHeight(int indicatorBackgroundHeight) {
+        this.mIndicatorBackgroundHeight = indicatorBackgroundHeight;
     }
 
-    public void setIndicatorBackgroundPaddingLeft(int i2) {
-        this.mIndicatorBackgroundPaddingLeft = i2;
+    public void setIndicatorBackgroundPaddingLeft(int indicatorBackgroundPaddingLeft) {
+        this.mIndicatorBackgroundPaddingLeft = indicatorBackgroundPaddingLeft;
     }
 
-    public void setIndicatorBackgroundPaddingRight(int i2) {
-        this.mIndicatorBackgroundPaddingRight = i2;
+    public void setIndicatorBackgroundPaddingRight(int indicatorBackgroundPaddingRight) {
+        this.mIndicatorBackgroundPaddingRight = indicatorBackgroundPaddingRight;
     }
 
-    public void setIndicatorLeft(int i2) {
-        this.mIndicatorLeft = i2;
+    public void setIndicatorLeft(int indicatorLeft) {
+        this.mIndicatorLeft = indicatorLeft;
     }
 
-    public void setIndicatorPosition(int i2, int i6) {
-        int i10 = (i2 + i6) / 2;
-        int iMax = Math.max(i6 - i2, dpToPx(32)) / 2;
-        int i11 = i10 - iMax;
-        int i12 = i10 + iMax;
-        if (i11 == this.mIndicatorLeft && i12 == this.mIndicatorRight) {
+    public void setIndicatorPosition(int x, int y) {
+        int index = (x + y) / 2;
+        int iMax = Math.max(y - x, dpToPx(32)) / 2;
+        int indicatorLeft = index - iMax;
+        int indicatorRight = index + iMax;
+        if (indicatorLeft == this.mIndicatorLeft && indicatorRight == this.mIndicatorRight) {
             return;
         }
-        this.mIndicatorLeft = i11;
-        this.mIndicatorRight = i12;
+        this.mIndicatorLeft = indicatorLeft;
+        this.mIndicatorRight = indicatorRight;
         ViewCompat.postInvalidateOnAnimation(this.mCOUITabLayout);
     }
 
-    public void setIndicatorPositionFromTabPosition(int i2, float f2) {
+    public void setIndicatorPositionFromTabPosition(int x, float y) {
         ValueAnimator valueAnimator = this.mIndicatorAnimator;
         if (valueAnimator != null && valueAnimator.isRunning()) {
             this.mIndicatorAnimator.cancel();
         }
-        this.mSelectedPosition = i2;
-        this.mSelectionOffset = f2;
+        this.mSelectedPosition = x;
+        this.mSelectionOffset = y;
         updateIndicatorPosition();
     }
 
-    public void setIndicatorRight(int i2) {
-        this.mIndicatorRight = i2;
+    public void setIndicatorRight(int indicatorRight) {
+        this.mIndicatorRight = indicatorRight;
     }
 
-    public void setIndicatorWidthRatio(float f2) {
-        this.mIndicatorWidthRatio = f2;
+    public void setIndicatorWidthRatio(float indicatorWidthRatio) {
+        this.mIndicatorWidthRatio = indicatorWidthRatio;
     }
 
-    public void setSelectedIndicatorColor(int i2) {
-        this.mSelectedIndicatorPaint.setColor(i2);
+    public void setSelectedIndicatorColor(int selectedIndicatorColor) {
+        this.mSelectedIndicatorPaint.setColor(selectedIndicatorColor);
         ViewCompat.postInvalidateOnAnimation(this.mCOUITabLayout);
     }
 
-    public void setSelectedIndicatorHeight(int i2) {
-        if (this.mSelectedIndicatorHeight != i2) {
-            this.mSelectedIndicatorHeight = i2;
+    public void setSelectedIndicatorHeight(int selectedIndicatorHeight) {
+        if (this.mSelectedIndicatorHeight != selectedIndicatorHeight) {
+            this.mSelectedIndicatorHeight = selectedIndicatorHeight;
             ViewCompat.postInvalidateOnAnimation(this.mCOUITabLayout);
         }
     }
@@ -561,21 +563,21 @@ public class COUISlidingTabStrip extends LinearLayout {
         setIndicatorPosition(left, right);
     }
 
-    private int getIndicatorLeft(int i2) {
+    private int getIndicatorLeft(int index) {
         int width = ((this.mCOUITabLayout.getWidth() - this.mCOUITabLayout.getPaddingLeft()) - this.mCOUITabLayout.getPaddingRight()) - getWidth();
-        return (!isLayoutRTL() || width <= 0) ? i2 : i2 + width;
+        return (!isLayoutRTL() || width <= 0) ? index : index + width;
     }
 
-    private int getIndicatorRight(int i2) {
+    private int getIndicatorRight(int index) {
         int width = ((this.mCOUITabLayout.getWidth() - this.mCOUITabLayout.getPaddingLeft()) - this.mCOUITabLayout.getPaddingRight()) - getWidth();
-        return (!isLayoutRTL() || width <= 0) ? i2 : i2 + width;
+        return (!isLayoutRTL() || width <= 0) ? index : index + width;
     }
 
-    private void setMargin(View view, int i2, int i6) {
+    private void setMargin(View view, int index, int index_2) {
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) view.getLayoutParams();
         ViewCompat.setPaddingRelative(view, 0, view.getPaddingTop(), 0, view.getPaddingBottom());
-        layoutParams.setMarginStart(i2);
-        layoutParams.setMarginEnd(i6);
+        layoutParams.setMarginStart(index);
+        layoutParams.setMarginEnd(index_2);
     }
 }
 

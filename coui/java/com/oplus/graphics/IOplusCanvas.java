@@ -5,10 +5,10 @@ import android.graphics.RectF;
 
 interface IOplusCanvas {
     void drawSmoothRoundRect(float left, float top, float right, float bottom, float rx, float ry,
-            Paint paint, float weight);
+                             Paint paint, float weight);
 
     void drawSmoothRoundRect(float left, float top, float right, float bottom, float rx, float ry,
-            Paint paint);
+                             Paint paint);
 
     void drawSmoothRoundRect(RectF rect, float rx, float ry, Paint paint, float weight);
 

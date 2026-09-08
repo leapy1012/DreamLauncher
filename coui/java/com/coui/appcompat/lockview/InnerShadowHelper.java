@@ -4,59 +4,65 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/* JADX INFO: loaded from: classes11.dex */
+/**
+ * Package-private helper aligned with {@code input.InnerShadowHelper} (size-guarded).
+ */
 class InnerShadowHelper {
-    List<Paint> mShadowLayerPaints = new ArrayList();
-    List<Path> mShadowLayerPaths = new ArrayList();
+    List<Paint> mShadowLayerPaints = new ArrayList<>();
+    List<Path> mShadowLayerPaths = new ArrayList<>();
     int mViewHeight;
     int mViewWidth;
 
-    public InnerShadowHelper(int i2, int i3) {
-        this.mViewWidth = i2;
-        this.mViewHeight = i3;
+    public InnerShadowHelper(int width, int height) {
+        mViewWidth = width;
+        mViewHeight = height;
     }
 
-    public void addInnerShadowLayer(float f2, float f3, float f4, int i2, int i3, float f5, Path path) {
+    public void addInnerShadowLayer(float radius, float dx, float dy, int shadowColor, int color,
+                                    float strokeWidth, Path path) {
         Paint paint = new Paint();
-        paint.setColor(i3);
+        paint.setColor(color);
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(f5);
-        paint.setShadowLayer(f2, f3, f4, i2);
-        this.mShadowLayerPaints.add(paint);
-        this.mShadowLayerPaths.add(path);
+        paint.setStrokeWidth(strokeWidth);
+        paint.setShadowLayer(radius, dx, dy, shadowColor);
+        mShadowLayerPaints.add(paint);
+        mShadowLayerPaths.add(path);
     }
 
     public Bitmap createInnerShadowBitmap() {
-        Bitmap bitmapCreateBitmap = Bitmap.createBitmap(this.mViewWidth, this.mViewHeight, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmapCreateBitmap);
+        int width = mViewWidth;
+        if (width <= 0 || mViewHeight <= 0) {
+            return null;
+        }
+        Bitmap bitmap = Bitmap.createBitmap(width, mViewHeight, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
         canvas.drawColor(0);
-        int iSaveLayer = canvas.saveLayer(0.0f, 0.0f, canvas.getWidth(), canvas.getHeight(), null);
-        for (int i2 = 0; i2 < this.mShadowLayerPaths.size(); i2++) {
-            if (this.mShadowLayerPaths.get(i2) != null && this.mShadowLayerPaints.get(i2) != null) {
-                canvas.clipPath(this.mShadowLayerPaths.get(i2));
-                canvas.drawPath(this.mShadowLayerPaths.get(i2), this.mShadowLayerPaints.get(i2));
+        int saveLayer = canvas.saveLayer(0.0f, 0.0f, canvas.getWidth(), canvas.getHeight(), null);
+        for (int i = 0; i < mShadowLayerPaths.size(); i++) {
+            if (mShadowLayerPaths.get(i) != null && mShadowLayerPaints.get(i) != null) {
+                canvas.clipPath(mShadowLayerPaths.get(i));
+                canvas.drawPath(mShadowLayerPaths.get(i), mShadowLayerPaints.get(i));
             }
         }
-        canvas.restoreToCount(iSaveLayer);
-        return bitmapCreateBitmap;
+        canvas.restoreToCount(saveLayer);
+        return bitmap;
     }
 
     public void reset() {
-        List<Paint> list = this.mShadowLayerPaints;
-        if (list != null) {
-            list.clear();
+        if (mShadowLayerPaints != null) {
+            mShadowLayerPaints.clear();
         }
-        List<Path> list2 = this.mShadowLayerPaths;
-        if (list2 != null) {
-            list2.clear();
+        if (mShadowLayerPaths != null) {
+            mShadowLayerPaths.clear();
         }
     }
 
-    public void setInnerShadowBitmapSize(int i2, int i3) {
-        this.mViewWidth = i2;
-        this.mViewHeight = i3;
+    public void setInnerShadowBitmapSize(int width, int height) {
+        mViewWidth = width;
+        mViewHeight = height;
     }
 }

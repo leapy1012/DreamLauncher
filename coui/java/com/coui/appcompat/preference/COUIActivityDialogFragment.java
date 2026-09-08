@@ -112,8 +112,8 @@ public class COUIActivityDialogFragment extends ListPreferenceDialogFragmentComp
                 decorView.setSystemUiVisibility(COUIDarkModeUtil.isNightMode(dialog.getContext())
                         ? systemUiVisibility & ~SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                         : !whiteStatus
-                        ? systemUiVisibility | SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                        : systemUiVisibility | SYSTEM_UI_FLAG_LAYOUT_STABLE);
+                          ? systemUiVisibility | SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                          : systemUiVisibility | SYSTEM_UI_FLAG_LAYOUT_STABLE);
             }
         }
 

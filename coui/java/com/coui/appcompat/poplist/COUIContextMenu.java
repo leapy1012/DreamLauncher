@@ -4,10 +4,8 @@ import android.content.Context;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.PopupWindow;
 
 import androidx.appcompat.view.menu.MenuBuilder;
-import androidx.appcompat.view.menu.MenuItemImpl;
 
 import java.util.ArrayList;
 
@@ -20,6 +18,7 @@ public class COUIContextMenu {
 
     public interface MenuShowStateListener {
         void onShow();
+
         void onDismiss();
     }
 

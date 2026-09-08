@@ -125,7 +125,7 @@ public class COUICircleProgressBar extends View {
     }
 
     public COUICircleProgressBar(Context context, AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                                 int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         mContext = context;
         COUIDarkModeUtil.setForceDarkAllow(this, false);

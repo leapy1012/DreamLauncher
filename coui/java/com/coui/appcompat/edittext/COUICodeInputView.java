@@ -221,8 +221,8 @@ public class COUICodeInputView extends RelativeLayout {
 
     private int getCellMarginHorizontal(int width, int cellWidth) {
         int margin = Math.min(Math.max(Math.round(((width - (cellWidth * codeViews.size()))
-                - (mCodeViewsContainerMarginHorizontal * 2.0f))
-                / ((codeViews.size() * 2.0f) - 2.0f)), mMinCellMarginHorizontal),
+                        - (mCodeViewsContainerMarginHorizontal * 2.0f))
+                        / ((codeViews.size() * 2.0f) - 2.0f)), mMinCellMarginHorizontal),
                 mMaxCellMarginHorizontal);
         mCellMarginHorizontal = margin;
         return margin;
@@ -285,7 +285,7 @@ public class COUICodeInputView extends RelativeLayout {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
             }
         });
-        mEditText.setOnKeyListener((view1, keyCode, event) -> {
+        mEditText.setOnKeyListener((view_2, keyCode, event) -> {
             if (!isNotEmpty(codes) || keyCode != KeyEvent.KEYCODE_DEL
                     || event.getAction() != KeyEvent.ACTION_DOWN || codes.size() <= 0) {
                 return false;
@@ -295,7 +295,7 @@ public class COUICodeInputView extends RelativeLayout {
             callBack();
             return true;
         });
-        mEditText.setOnFocusChangeListener((view12, hasFocus) -> {
+        mEditText.setOnFocusChangeListener((view_3, hasFocus) -> {
             CodeItemView itemView = codeViews.get(Math.min(codes.size(), mCellCount - 1));
             itemView.setIsSelected(hasFocus);
             itemView.invalidate();

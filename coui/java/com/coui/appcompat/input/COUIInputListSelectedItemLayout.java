@@ -115,7 +115,7 @@ public class COUIInputListSelectedItemLayout extends ListSelectedItemLayout {
         mOutlineProvider = new ViewOutlineProvider() {
             @Override
             public void getOutline(View view, Outline outline) {
-                if (Build.VERSION.SDK_INT >= 32) {
+                if (Build.VERSION.SDK_INT >= T) {
                     outline.setPath(getLayoutPath());
                     mApplyOutline = true;
                 }
@@ -216,7 +216,7 @@ public class COUIInputListSelectedItemLayout extends ListSelectedItemLayout {
 
     @Override
     public void draw(Canvas canvas) {
-        if (mIsDrawPathType || (Build.VERSION.SDK_INT >= 32 && mApplyOutline)) {
+        if (mIsDrawPathType || (Build.VERSION.SDK_INT >= T && mApplyOutline)) {
             updatePath();
             super.draw(canvas);
         } else {
@@ -260,7 +260,7 @@ public class COUIInputListSelectedItemLayout extends ListSelectedItemLayout {
     public void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         updatePath();
-        if (mIsDrawPathType || Build.VERSION.SDK_INT < 32) {
+        if (mIsDrawPathType || Build.VERSION.SDK_INT < T) {
             mApplyOutline = false;
             setClipToOutline(false);
         } else {

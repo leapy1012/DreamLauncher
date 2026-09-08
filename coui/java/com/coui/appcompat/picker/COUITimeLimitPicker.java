@@ -385,9 +385,9 @@ public class COUITimeLimitPicker extends FrameLayout {
         String amPm = isAm ? amPmStrings[0] : amPmStrings[1];
         String text = is24HourView()
                 ? hourSpinner.getCurrentText() + getContext().getString(R.string.coui_hour_abbreviation)
-                + PAUSE_STRING + minuteSpinner.getCurrentText() + getContext().getString(R.string.coui_minute_abbreviation)
+                  + PAUSE_STRING + minuteSpinner.getCurrentText() + getContext().getString(R.string.coui_minute_abbreviation)
                 : amPm + PAUSE_STRING + hourSpinner.getCurrentText() + getContext().getString(R.string.coui_hour_abbreviation)
-                + PAUSE_STRING + minuteSpinner.getCurrentText() + getContext().getString(R.string.coui_minute_abbreviation);
+                  + PAUSE_STRING + minuteSpinner.getCurrentText() + getContext().getString(R.string.coui_minute_abbreviation);
         announceForAccessibility(text);
     }
 

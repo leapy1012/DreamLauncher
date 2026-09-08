@@ -6,6 +6,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+
 import com.coui.appcompat.scrollview.COUIScrollView;
 import com.coui.appcompat.uiutil.UIUtil;
 

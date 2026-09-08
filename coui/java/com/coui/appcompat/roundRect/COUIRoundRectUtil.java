@@ -13,6 +13,7 @@ public class COUIRoundRectUtil {
         private SInstanceHolder() {
         }
     }
+
     private COUIRoundRectUtil() {
         this.mPath = new Path();
     }

@@ -18,12 +18,12 @@ public class OplusCanvasAdapter {
     }
 
     public void drawSmoothRoundRect(float left, float top, float right, float bottom, float rx,
-            float ry, Paint paint, float weight) {
+                                    float ry, Paint paint, float weight) {
         mCanvas.drawSmoothRoundRect(left, top, right, bottom, rx, ry, paint, weight);
     }
 
     public void drawSmoothRoundRect(float left, float top, float right, float bottom, float rx,
-            float ry, Paint paint) {
+                                    float ry, Paint paint) {
         mCanvas.drawSmoothRoundRect(left, top, right, bottom, rx, ry, paint);
     }
 

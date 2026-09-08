@@ -1,9 +1,9 @@
 package com.coui.appcompat.grid;
 
-import com.coui.appcompat.R;
-
 import android.content.Context;
 import android.content.res.Resources;
+
+import com.coui.appcompat.R;
 
 
 @Deprecated

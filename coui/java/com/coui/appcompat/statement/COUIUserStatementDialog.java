@@ -1,7 +1,5 @@
 package com.coui.appcompat.statement;
 
-import com.coui.appcompat.R;
-
 import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -17,8 +15,11 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.constraintlayout.widget.ConstraintLayout;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.button.COUIButton;
 import com.coui.appcompat.button.COUIButtonLayout;
 import com.coui.appcompat.button.SimpleButtonGroupCtrl;
@@ -30,12 +31,12 @@ import com.coui.appcompat.grid.COUIResponsiveUtils;
 import com.coui.appcompat.panel.COUIBottomSheetDialog;
 import com.coui.appcompat.panel.COUIPanelBarView;
 import com.coui.appcompat.panel.COUIPanelMultiWindowUtils;
-import com.coui.appcompat.statement.COUIStatementPanelStateChangeListener;
-import com.coui.appcompat.statement.COUIUserStatementDialog;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 import com.coui.appcompat.textviewcompatutil.COUITextViewCompatUtil;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import kotlin.jvm.internal.DefaultConstructorMarker;
 import kotlin.jvm.internal.Intrinsics;
 
@@ -234,7 +235,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
             TextView textView = (TextView) view.findViewById(R.id.txt_exit);
             this.exitButton = textView;
             if (textView != null) {
-                textView.setTextSize(2, 16.0f);
+                textView.setTextSize(2, BUTTON_EXTSIZE);
                 COUIChangeTextUtil.adaptFontSize(textView, 4);
             }
             View viewFindViewById = view.findViewById(R.id.small_land_button_layout);
@@ -621,7 +622,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
         }
 
 
-        public final void bindListener$lambda$0(OnItemClickListener onItemClickListener, View it) {
+        public final void onItemViewClicked(OnItemClickListener onItemClickListener, View it) {
             Intrinsics.checkNotNullParameter(this, "this$0");
             if (onItemClickListener != null) {
                 Intrinsics.checkNotNullExpressionValue(it, "it");
@@ -649,7 +650,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
                 view.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public final void onClick(View view2) {
-                        ListItemViewHolder.this.bindListener$lambda$0(onItemClickListener, view2);
+                        ListItemViewHolder.this.onItemViewClicked(onItemClickListener, view2);
                     }
                 });
             }
@@ -812,14 +813,14 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
                 COUIButton cOUIButton2 = this.bottomButton;
                 i2 = 1;
                 if (cOUIButton2 != null) {
-                    cOUIButton2.setTextSize(1, 16.0f);
+                    cOUIButton2.setTextSize(1, BUTTON_EXTSIZE);
                     COUIChangeTextUtil.adaptFontSize(cOUIButton2, 4);
                 }
                 COUIButton cOUIButton3 = this.smallLandexitButton;
-                cOUIButton3.setTextSize(1, 16.0f);
+                cOUIButton3.setTextSize(1, BUTTON_EXTSIZE);
                 COUIChangeTextUtil.adaptFontSize(cOUIButton3, 4);
                 COUIButton cOUIButton4 = this.smallLandConfirmButton;
-                cOUIButton4.setTextSize(1, 16.0f);
+                cOUIButton4.setTextSize(1, BUTTON_EXTSIZE);
                 COUIChangeTextUtil.adaptFontSize(cOUIButton4, 4);
             } else {
                 SimpleButtonGroupCtrl simpleButtonGroupCtrl2 = this.simpleButtonGroupCtrl;
@@ -841,20 +842,20 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
             }
             TextView textView = this.exitButton;
             if (textView != null) {
-                textView.setTextSize(i2, 16.0f);
+                textView.setTextSize(i2, BUTTON_EXTSIZE);
                 COUIChangeTextUtil.adaptFontSize(textView, 4);
             }
             TextView textView2 = this.titleView;
             if (textView2 != null) {
-                textView2.setTextSize(i2, 18.0f);
+                textView2.setTextSize(i2, TITLE_TEXTSIZE);
             }
             TextView textView3 = this.appStatement;
             if (textView3 != null) {
-                textView3.setTextSize(i2, 14.0f);
+                textView3.setTextSize(i2, SCROLL_TEXTSIZE);
             }
             TextView textView4 = this.protocolStatement;
             if (textView4 != null) {
-                textView4.setTextSize(i2, 14.0f);
+                textView4.setTextSize(i2, SCROLL_TEXTSIZE);
             }
             TextView textView5 = this.appStatement;
             if (textView5 != null) {
@@ -1359,25 +1360,25 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
         return new View.OnLayoutChangeListener() {
             @Override
             public final void onLayoutChange(View view, int i2, int i6, int i10, int i11, int i12, int i13, int i14, int i15) {
-                COUIUserStatementDialog.initLayoutChangeListener$lambda$40(contentViewHolder, COUIUserStatementDialog.this, charSequence, charSequence2, view, i2, i6, i10, i11, i12, i13, i14, i15);
+                COUIUserStatementDialog.onStatementLayoutChanged(contentViewHolder, COUIUserStatementDialog.this, charSequence, charSequence2, view, i2, i6, i10, i11, i12, i13, i14, i15);
             }
         };
     }
 
 
-    public static final void initLayoutChangeListener$lambda$40(final ContentViewHolder viewHolder, final COUIUserStatementDialog this$0, final CharSequence charSequence, final CharSequence charSequence2, View view, int i2, int i6, int i10, int i11, int i12, int i13, int i14, int i15) {
+    public static final void onStatementLayoutChanged(final ContentViewHolder viewHolder, final COUIUserStatementDialog this$0, final CharSequence charSequence, final CharSequence charSequence2, View view, int i2, int i6, int i10, int i11, int i12, int i13, int i14, int i15) {
         Intrinsics.checkNotNullParameter(viewHolder, "$viewHolder");
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         view.post(new Runnable() {
             @Override
             public final void run() {
-                COUIUserStatementDialog.initLayoutChangeListener$lambda$40$lambda$39(viewHolder, this$0, charSequence, charSequence2);
+                COUIUserStatementDialog.applyStatementLayoutAfterChange(viewHolder, this$0, charSequence, charSequence2);
             }
         });
     }
 
 
-    public static final void initLayoutChangeListener$lambda$40$lambda$39(ContentViewHolder viewHolder, COUIUserStatementDialog this$0, CharSequence charSequence, CharSequence charSequence2) {
+    public static final void applyStatementLayoutAfterChange(ContentViewHolder viewHolder, COUIUserStatementDialog this$0, CharSequence charSequence, CharSequence charSequence2) {
         NormalContentViewHolder normalContentViewHolder;
         Intrinsics.checkNotNullParameter(viewHolder, "$viewHolder");
         Intrinsics.checkNotNullParameter(this$0, "this$0");
@@ -1451,7 +1452,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
         exitButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIUserStatementDialog.initMINIView$lambda$23$lambda$22(COUIUserStatementDialog.this, view);
+                COUIUserStatementDialog.onMiniExitButtonClicked(COUIUserStatementDialog.this, view);
             }
         });
         COUITextViewCompatUtil.setPressRippleDrawable(exitButton);
@@ -1459,20 +1460,20 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
         bottomButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIUserStatementDialog.initMINIView$lambda$25$lambda$24(COUIUserStatementDialog.this, view);
+                COUIUserStatementDialog.onMiniConfirmButtonClicked(COUIUserStatementDialog.this, view);
             }
         });
         mINIContentViewHolder.setBottomButtonWrap(new SingleButtonWrap(bottomButton, 0));
         mINIContentViewHolder.getSmallLandexitButton().setOnClickListener(new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIUserStatementDialog.initMINIView$lambda$27$lambda$26(COUIUserStatementDialog.this, view);
+                COUIUserStatementDialog.onMiniAltExitButtonClicked(COUIUserStatementDialog.this, view);
             }
         });
         mINIContentViewHolder.getSmallLandConfirmButton().setOnClickListener(new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIUserStatementDialog.initMINIView$lambda$29$lambda$28(COUIUserStatementDialog.this, view);
+                COUIUserStatementDialog.onMiniAltConfirmButtonClicked(COUIUserStatementDialog.this, view);
             }
         });
         mINIContentViewHolder.getTitleView().setText(this.titleText);
@@ -1489,7 +1490,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void initMINIView$lambda$23$lambda$22(COUIUserStatementDialog this$0, View view) {
+    public static final void onMiniExitButtonClicked(COUIUserStatementDialog this$0, View view) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         OnButtonClickListener onButtonClickListener = this$0.onButtonClickListener;
         if (onButtonClickListener != null) {
@@ -1498,7 +1499,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void initMINIView$lambda$25$lambda$24(COUIUserStatementDialog this$0, View view) {
+    public static final void onMiniConfirmButtonClicked(COUIUserStatementDialog this$0, View view) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         OnButtonClickListener onButtonClickListener = this$0.onButtonClickListener;
         if (onButtonClickListener != null) {
@@ -1507,7 +1508,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void initMINIView$lambda$27$lambda$26(COUIUserStatementDialog this$0, View view) {
+    public static final void onMiniAltExitButtonClicked(COUIUserStatementDialog this$0, View view) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         OnButtonClickListener onButtonClickListener = this$0.onButtonClickListener;
         if (onButtonClickListener != null) {
@@ -1516,7 +1517,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void initMINIView$lambda$29$lambda$28(COUIUserStatementDialog this$0, View view) {
+    public static final void onMiniAltConfirmButtonClicked(COUIUserStatementDialog this$0, View view) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         OnButtonClickListener onButtonClickListener = this$0.onButtonClickListener;
         if (onButtonClickListener != null) {
@@ -1550,13 +1551,13 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
         tinyContentViewHolder.getBtnConfirmTiny().setOnClickListener(new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIUserStatementDialog.initTinyView$lambda$33$lambda$32(COUIUserStatementDialog.this, view);
+                COUIUserStatementDialog.onTinyExitButtonClicked(COUIUserStatementDialog.this, view);
             }
         });
         tinyContentViewHolder.getBtnExitTiny().setOnClickListener(new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIUserStatementDialog.initTinyView$lambda$35$lambda$34(COUIUserStatementDialog.this, view);
+                COUIUserStatementDialog.onTinyConfirmButtonClicked(COUIUserStatementDialog.this, view);
             }
         });
         tinyContentViewHolder.getTitleTiny().setText(this.titleText);
@@ -1573,7 +1574,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void initTinyView$lambda$33$lambda$32(COUIUserStatementDialog this$0, View view) {
+    public static final void onTinyExitButtonClicked(COUIUserStatementDialog this$0, View view) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         OnButtonClickListener onButtonClickListener = this$0.onButtonClickListener;
         if (onButtonClickListener != null) {
@@ -1582,7 +1583,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void initTinyView$lambda$35$lambda$34(COUIUserStatementDialog this$0, View view) {
+    public static final void onTinyConfirmButtonClicked(COUIUserStatementDialog this$0, View view) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         OnButtonClickListener onButtonClickListener = this$0.onButtonClickListener;
         if (onButtonClickListener != null) {
@@ -1625,7 +1626,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
             exitButton2.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public final void onClick(View view) {
-                    COUIUserStatementDialog.initViewHolderBind$lambda$12$lambda$11(COUIUserStatementDialog.this, view);
+                    COUIUserStatementDialog.onNormalExitButtonClicked(COUIUserStatementDialog.this, view);
                 }
             });
             COUITextViewCompatUtil.setPressRippleDrawable(exitButton2);
@@ -1635,20 +1636,20 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
             btnConfirm2.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public final void onClick(View view) {
-                    COUIUserStatementDialog.initViewHolderBind$lambda$14$lambda$13(COUIUserStatementDialog.this, view);
+                    COUIUserStatementDialog.onNormalConfirmButtonClicked(COUIUserStatementDialog.this, view);
                 }
             });
         }
         contentViewHolder.getSmallLandExitButton().setOnClickListener(new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIUserStatementDialog.initViewHolderBind$lambda$16$lambda$15(COUIUserStatementDialog.this, view);
+                COUIUserStatementDialog.onNormalAltExitButtonClicked(COUIUserStatementDialog.this, view);
             }
         });
         contentViewHolder.getSmallLandConfirmButton().setOnClickListener(new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIUserStatementDialog.initViewHolderBind$lambda$18$lambda$17(COUIUserStatementDialog.this, view);
+                COUIUserStatementDialog.onNormalAltConfirmButtonClicked(COUIUserStatementDialog.this, view);
             }
         });
         if (TextUtils.isEmpty(this.protocolText)) {
@@ -1659,7 +1660,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void initViewHolderBind$lambda$12$lambda$11(COUIUserStatementDialog this$0, View view) {
+    public static final void onNormalExitButtonClicked(COUIUserStatementDialog this$0, View view) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         OnButtonClickListener onButtonClickListener = this$0.onButtonClickListener;
         if (onButtonClickListener != null) {
@@ -1668,7 +1669,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void initViewHolderBind$lambda$14$lambda$13(COUIUserStatementDialog this$0, View view) {
+    public static final void onNormalConfirmButtonClicked(COUIUserStatementDialog this$0, View view) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         OnButtonClickListener onButtonClickListener = this$0.onButtonClickListener;
         if (onButtonClickListener != null) {
@@ -1677,7 +1678,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void initViewHolderBind$lambda$16$lambda$15(COUIUserStatementDialog this$0, View view) {
+    public static final void onNormalAltExitButtonClicked(COUIUserStatementDialog this$0, View view) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         OnButtonClickListener onButtonClickListener = this$0.onButtonClickListener;
         if (onButtonClickListener != null) {
@@ -1686,7 +1687,7 @@ public class COUIUserStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void initViewHolderBind$lambda$18$lambda$17(COUIUserStatementDialog this$0, View view) {
+    public static final void onNormalAltConfirmButtonClicked(COUIUserStatementDialog this$0, View view) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         OnButtonClickListener onButtonClickListener = this$0.onButtonClickListener;
         if (onButtonClickListener != null) {

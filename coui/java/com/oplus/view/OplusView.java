@@ -13,7 +13,7 @@ public class OplusView {
     }
 
     public void setOverrideLightSourceGeometry(float lightX, float lightY, float lightZ,
-            float lightRadius, float blurRadius) {
+                                               float lightRadius, float blurRadius) {
         Object viewWrapper = call(this.mView, "getViewWrapper");
         Object viewExt = call(viewWrapper, "getViewExt");
         call(viewExt, "setOverrideLightSourceGeometry",
@@ -34,14 +34,15 @@ public class OplusView {
     }
 
     private static Object call(Object target, String methodName, Class<?>[] parameterTypes,
-            Object... args) {
+                               Object... args) {
         if (target == null) {
             return null;
         }
         try {
             Method method = target.getClass().getMethod(methodName, parameterTypes);
             method.invoke(target, args);
-        } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException ignored) {
+        } catch (IllegalAccessException | NoSuchMethodException |
+                 InvocationTargetException ignored) {
         }
         return null;
     }

@@ -8,6 +8,7 @@ import android.util.AttributeSet;
 import android.view.Gravity;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+
 import androidx.appcompat.content.res.AppCompatResources;
 
 import com.coui.appcompat.R;

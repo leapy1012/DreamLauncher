@@ -9,9 +9,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.AbsListView;
+
 import androidx.dynamicanimation.animation.FloatValueHolder;
+
 import com.coui.appcompat.R;
-import com.coui.appcompat.AccessibilityUtils.COUIAccessibilityUtil;
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
@@ -20,6 +21,8 @@ import com.coui.appcompat.list.COUIForegroundListView;
 import com.coui.appcompat.log.COUILog;
 import com.coui.appcompat.scrollbar.COUIScrollBar;
 import com.coui.appcompat.state.COUIMaskEffectDrawable;
+import com.coui.appcompat.talkbackutil.COUIAccessibilityUtil;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -259,7 +262,7 @@ public class COUITouchListView extends COUIForegroundListView implements COUIScr
         if (!this.mAllowScroll && event.getActionMasked() == MotionEvent.ACTION_MOVE) {
             return true;
         }
-        if (canScrollVertically(1) || canScrollVertically(-1)) {
+        if (canScrollVertically(CAN_SCROLL_DOWN) || canScrollVertically(CAN_SCROLL_UP)) {
             this.mIsDynamicSelection = false;
         } else {
             this.mIsDynamicSelection = true;
@@ -472,7 +475,7 @@ public class COUITouchListView extends COUIForegroundListView implements COUIScr
         setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
             public void onScroll(AbsListView listView, int firstVisibleItem,
-                    int visibleItemCount, int totalItemCount) {
+                                 int visibleItemCount, int totalItemCount) {
                 if (COUITouchListView.this.mItemHeightMap != null) {
                     int scrollY = COUITouchListView.this.mItemHeightMap.get(firstVisibleItem);
                     View firstChild = listView.getChildAt(0);

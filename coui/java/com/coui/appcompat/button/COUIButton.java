@@ -19,9 +19,12 @@ import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewParent;
 import android.widget.TextView;
+
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.ViewCompat;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.button.listener.OnSizeChangeListener;
 import com.coui.appcompat.button.listener.OnTextChangeListener;
 import com.coui.appcompat.contextutil.COUIContextUtil;
@@ -38,7 +41,6 @@ import com.coui.appcompat.state.COUIStrokeDrawable;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 import com.coui.appcompat.uiutil.ShadowUtils;
 import com.oplus.graphics.OplusOutlineAdapter;
-import com.coui.appcompat.R;
 
 
 public class COUIButton extends AppCompatButton {
@@ -125,7 +127,7 @@ public class COUIButton extends AppCompatButton {
             } else {
                 this.mFillPaint.setColor(getStrokeButtonAnimatorColor(this.mDrawableColor));
             }
-            if (this.mRoundType == 1) {
+            if (this.mRoundType == COMMON_ROUND) {
                 float drawableRadius = getDrawableRadius();
                 canvas.drawRoundRect(this.mTmpRectF, drawableRadius, drawableRadius, this.mFillPaint);
                 if (this.mAnimType != 1) {
@@ -263,7 +265,7 @@ public class COUIButton extends AppCompatButton {
     }
 
     private boolean supportAddOnSmoothRound() {
-        return isOs16() && this.mRoundType == 0;
+        return isOs16() && this.mRoundType == SMOOTH_ROUND;
     }
 
     private void updateRoundRectPath() {

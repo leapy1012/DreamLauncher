@@ -28,7 +28,7 @@ public class SummaryAdapter extends BaseAdapter {
     }
 
     public SummaryAdapter(Context context, boolean isTop, boolean isBottom,
-            CharSequence[] items, CharSequence[] summaries, int[] textColor) {
+                          CharSequence[] items, CharSequence[] summaries, int[] textColor) {
         mIsTop = isTop;
         mIsBottom = isBottom;
         mContext = context;

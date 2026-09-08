@@ -68,7 +68,7 @@ class COUIGuideDialogButtonLayout extends ViewGroup {
     }
 
     public COUIGuideDialogButtonLayout(Context context, AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                                       int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         mMultipleType = true;
         mButtonSpacing = getResources().getDimensionPixelSize(
@@ -114,7 +114,7 @@ class COUIGuideDialogButtonLayout extends ViewGroup {
         mWidthSpringAnimation.addUpdateListener(new COUIDynamicAnimation.OnAnimationUpdateListener() {
             @Override
             public void onAnimationUpdate(COUIDynamicAnimation animation, float value,
-                    float velocity) {
+                                          float velocity) {
                 widthChange(value);
                 mRawOffset = value;
             }

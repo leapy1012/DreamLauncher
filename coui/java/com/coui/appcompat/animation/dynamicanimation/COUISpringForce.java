@@ -165,7 +165,7 @@ public final class COUISpringForce implements COUIForce {
     }
 
     public COUIDynamicAnimation.MassState updateValues(double value, double velocity,
-            long deltaMillis) {
+                                                       long deltaMillis) {
         init();
         double dt = deltaMillis / 1000.0d;
         double displacement = value - mFinalPosition;

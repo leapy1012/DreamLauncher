@@ -25,8 +25,8 @@ interface CardViewImpl {
     void initStatic();
 
     void initialize(CardViewDelegate delegate, Context context, ColorStateList backgroundColor,
-            float radius, float elevation, float maxElevation, float weight,
-            float cardRoundCornerRadius);
+                    float radius, float elevation, float maxElevation, float weight,
+                    float cardRoundCornerRadius);
 
     void onCompatPaddingChanged(CardViewDelegate delegate);
 

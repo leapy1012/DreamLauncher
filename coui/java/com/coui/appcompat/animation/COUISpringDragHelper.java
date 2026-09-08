@@ -4,10 +4,12 @@ import android.annotation.SuppressLint;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
+
 import com.coui.appcompat.accessibilityutil.COUIAccessibilityUtil;
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -156,7 +158,7 @@ public class COUISpringDragHelper {
     @SuppressLint({"NewApi"})
     private Vec2 findNeighborWithX(float x, float y, final float velocityX, ArrayList<Vec2> positions) {
         ArrayList sortedPositions = new ArrayList(positions);
-        sortedPositions.sort((obj, obj2) -> lambda$findNeighborWithX$4(velocityX, (Vec2) obj, (Vec2) obj2));
+        sortedPositions.sort((obj, object) -> lambda$findNeighborWithX$4(velocityX, (Vec2) obj, (Vec2) object));
         Iterator iterator = sortedPositions.iterator();
         Vec2 sameRowCandidate = null;
         Vec2 fallbackCandidate = null;
@@ -187,9 +189,9 @@ public class COUISpringDragHelper {
 
     @SuppressLint({"NewApi"})
     private Vec2 findNeighborWithXY(float x, float y, final float velocityX, final float velocityY,
-            ArrayList<Vec2> positions) {
+                                    ArrayList<Vec2> positions) {
         ArrayList sortedPositions = new ArrayList(positions);
-        sortedPositions.sort((obj, obj2) -> lambda$findNeighborWithXY$6(velocityY, velocityX, (Vec2) obj, (Vec2) obj2));
+        sortedPositions.sort((obj, object) -> lambda$findNeighborWithXY$6(velocityY, velocityX, (Vec2) obj, (Vec2) object));
         Iterator iterator = sortedPositions.iterator();
         Vec2 bothChangedCandidate = null;
         Vec2 yChangedSameXCandidate = null;
@@ -229,10 +231,10 @@ public class COUISpringDragHelper {
         }
         Vec2 result = bothChangedCandidate != null ? bothChangedCandidate
                 : yChangedSameXCandidate != null ? yChangedSameXCandidate
-                : xChangedSameYCandidate != null ? xChangedSameYCandidate
-                : yChangedOnlyCandidate != null ? yChangedOnlyCandidate
-                : xChangedOnlyCandidate != null ? xChangedOnlyCandidate
-                : (Vec2) sortedPositions.get(sortedPositions.size() - 1);
+                  : xChangedSameYCandidate != null ? xChangedSameYCandidate
+                    : yChangedOnlyCandidate != null ? yChangedOnlyCandidate
+                      : xChangedOnlyCandidate != null ? xChangedOnlyCandidate
+                        : (Vec2) sortedPositions.get(sortedPositions.size() - 1);
         Log.d(TAG, "getAttachPosition : attachFlag-3: orderPosition:" + sortedPositions
                 + ",yChangedXEqual:" + yChangedSameXCandidate
                 + ",xChangedYEqual:" + xChangedSameYCandidate
@@ -246,7 +248,7 @@ public class COUISpringDragHelper {
     @SuppressLint({"NewApi"})
     private Vec2 findNeighborWithY(float x, float y, final float velocityY, ArrayList<Vec2> positions) {
         ArrayList sortedPositions = new ArrayList(positions);
-        sortedPositions.sort((obj, obj2) -> lambda$findNeighborWithY$5(velocityY, (Vec2) obj, (Vec2) obj2));
+        sortedPositions.sort((obj, object) -> lambda$findNeighborWithY$5(velocityY, (Vec2) obj, (Vec2) object));
         Iterator iterator = sortedPositions.iterator();
         Vec2 sameColumnCandidate = null;
         Vec2 fallbackCandidate = null;
@@ -635,9 +637,9 @@ public class COUISpringDragHelper {
     }
 
     public COUISpringDragHelper(SpringChangeObserver springChangeObserver, ArrayList<Vec2> stableList,
-            float curveRatio, float maxOverDistanceX, float maxOverDistanceY,
-            float transformVelocity, float transformDistance) {
-        this(springChangeObserver, stableList, 0.15f, 0.15f, DEFAULT_RESPONSE_ATTACH, 0.2f,
+                                float curveRatio, float maxOverDistanceX, float maxOverDistanceY,
+                                float transformVelocity, float transformDistance) {
+        this(springChangeObserver, stableList, DEFAULT_RESPONSE_DRAG, DEFAULT_BOUNCE_DRAG, DEFAULT_RESPONSE_ATTACH, DEFAULT_BOUNCE_ATTACH,
                 curveRatio, maxOverDistanceX, maxOverDistanceY, transformVelocity, transformDistance);
     }
 
@@ -699,9 +701,9 @@ public class COUISpringDragHelper {
     }
 
     public COUISpringDragHelper(SpringChangeObserver springChangeObserver, ArrayList<Vec2> stableList,
-            float responseDrag, float bounceDrag, float responseAttach, float bounceAttach,
-            float curveRatio, float maxOverDistanceX, float maxOverDistanceY,
-            float transformVelocity, float transformDistance) {
+                                float responseDrag, float bounceDrag, float responseAttach, float bounceAttach,
+                                float curveRatio, float maxOverDistanceX, float maxOverDistanceY,
+                                float transformVelocity, float transformDistance) {
         this.mCustomMin = new Vec2(DEFAULT_MIN_SIZE, DEFAULT_MIN_SIZE);
         this.mCustomMax = new Vec2(DEFAULT_MAX_SIZE, DEFAULT_MAX_SIZE);
         this.mMinPosition = new Vec2(DEFAULT_MIN_SIZE, DEFAULT_MIN_SIZE);

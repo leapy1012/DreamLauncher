@@ -1,7 +1,5 @@
 package com.coui.appcompat.poplist;
 
-import com.coui.appcompat.R;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -18,11 +16,13 @@ import android.widget.BaseAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.PopupWindow;
+
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.view.ViewCompat;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.list.IListSelectedItem;
 import com.coui.appcompat.log.COUILog;
-import com.coui.appcompat.poplist.COUIPopupMenuRootView;
 import com.coui.appcompat.state.COUIStateEffectDrawable;
 import com.coui.appcompat.state.DrawableStateProxy;
 import com.coui.appcompat.uiutil.AnimLevel;
@@ -31,6 +31,7 @@ import com.coui.component.responsiveui.unit.Dp;
 import com.coui.component.responsiveui.window.WindowHeightSizeClass;
 import com.coui.component.responsiveui.window.WindowSizeClass;
 import com.coui.component.responsiveui.window.WindowWidthSizeClass;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -126,7 +127,7 @@ public class COUIPopupListWindow extends COUIPopupWindow {
         this.mMenuDismissWhenRootChange = new View.OnLayoutChangeListener() {
             @Override
             public void onLayoutChange(View view, int left, int top, int right, int bottom,
-                    int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
                 boolean layoutChanged = left != oldLeft || top != oldTop
                         || right != oldRight || bottom != oldBottom;
                 COUILog.d(COUIPopupListWindow.TAG,
@@ -235,17 +236,17 @@ public class COUIPopupListWindow extends COUIPopupWindow {
         cOUIPopupMenuRootView.setOnClickListener(new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIPopupListWindow.this.lambda$createContentView$0(view);
+                COUIPopupListWindow.this.onOutsideContentClicked(view);
             }
         });
         LayoutInflater layoutInflaterFrom = LayoutInflater.from(this.mContext);
-        int i2 = R.layout.coui_popup_list_window_layout;
-        this.mMainMenuWrapper = (RoundFrameLayout) layoutInflaterFrom.inflate(i2, (ViewGroup) cOUIPopupMenuRootView, false);
-        this.mSubMenuWrapper = (RoundFrameLayout) LayoutInflater.from(this.mContext).inflate(i2, (ViewGroup) cOUIPopupMenuRootView, false);
+        int index_2 = R.layout.coui_popup_list_window_layout;
+        this.mMainMenuWrapper = (RoundFrameLayout) layoutInflaterFrom.inflate(index_2, (ViewGroup) cOUIPopupMenuRootView, false);
+        this.mSubMenuWrapper = (RoundFrameLayout) LayoutInflater.from(this.mContext).inflate(index_2, (ViewGroup) cOUIPopupMenuRootView, false);
         RoundFrameLayout roundFrameLayout = this.mMainMenuWrapper;
-        int i6 = R.id.coui_popup_list_view;
-        this.mMainListView = (ListView) roundFrameLayout.findViewById(i6);
-        this.mSubListView = (ListView) this.mSubMenuWrapper.findViewById(i6);
+        int index_3 = R.id.coui_popup_list_view;
+        this.mMainListView = (ListView) roundFrameLayout.findViewById(index_3);
+        this.mSubListView = (ListView) this.mSubMenuWrapper.findViewById(index_3);
         TypedArray typedArrayObtainStyledAttributes = this.mContext.getTheme().obtainStyledAttributes(new int[]{R.attr.couiPopupWindowBackground});
         Drawable drawable = typedArrayObtainStyledAttributes.getDrawable(0);
         if (drawable == null) {
@@ -267,8 +268,8 @@ public class COUIPopupListWindow extends COUIPopupWindow {
             private void setListViewFocusable(ListView listView, boolean isMainMenu) {
                 if (listView != null) {
                     listView.setFocusable(false);
-                    for (int i10 = 0; i10 < listView.getChildCount(); i10++) {
-                        listView.getChildAt(i10).setFocusable(isMainMenu);
+                    for (int index = 0; index < listView.getChildCount(); index++) {
+                        listView.getChildAt(index).setFocusable(isMainMenu);
                     }
                 }
             }
@@ -279,8 +280,8 @@ public class COUIPopupListWindow extends COUIPopupWindow {
                 COUIPopupListWindow.this.mSubMenuAnchorView = null;
                 try {
                     COUIPopupListWindow.super.dismiss();
-                } catch (IllegalArgumentException e2) {
-                    COUILog.w(COUIPopupListWindow.TAG, "Failed to dismiss popup window, view may be detached: " + e2.getMessage());
+                } catch (IllegalArgumentException e) {
+                    COUILog.w(COUIPopupListWindow.TAG, "Failed to dismiss popup window, view may be detached: " + e.getMessage());
                 }
             }
 
@@ -299,8 +300,8 @@ public class COUIPopupListWindow extends COUIPopupWindow {
                 COUIPopupListWindow.this.mMainMenuHeight = 0;
                 try {
                     COUIPopupListWindow.super.dismiss();
-                } catch (IllegalArgumentException e2) {
-                    COUILog.w(COUIPopupListWindow.TAG, "Failed to dismiss popup window, view may be detached: " + e2.getMessage());
+                } catch (IllegalArgumentException e) {
+                    COUILog.w(COUIPopupListWindow.TAG, "Failed to dismiss popup window, view may be detached: " + e.getMessage());
                 }
             }
 
@@ -381,9 +382,9 @@ public class COUIPopupListWindow extends COUIPopupWindow {
     }
 
     private int getMainMenuMinWidth() {
-        int i2 = this.mCustomMenuWidth;
-        if (i2 >= 0) {
-            return i2;
+        int index = this.mCustomMenuWidth;
+        if (index >= 0) {
+            return index;
         }
         DefaultAdapter defaultAdapter = this.mMainMenuAdapter;
         if (defaultAdapter != null) {
@@ -405,11 +406,11 @@ public class COUIPopupListWindow extends COUIPopupWindow {
         return windowSizeClassCalculateFromSize.getWindowWidthSizeClass() == WindowWidthSizeClass.Compact || windowSizeClassCalculateFromSize.getWindowHeightSizeClass() == WindowHeightSizeClass.Compact;
     }
 
-    public void lambda$createContentView$0(View view) {
+    public void onOutsideContentClicked(View view) {
         forceDismiss();
     }
 
-    public static int lambda$setItemListInternal$1(PopupListItem popupListItem, PopupListItem popupListItem2) {
+    public static int comparePopupItemGroupId(PopupListItem popupListItem, PopupListItem popupListItem2) {
         return popupListItem.getGroupId() - popupListItem2.getGroupId();
     }
 
@@ -442,17 +443,17 @@ public class COUIPopupListWindow extends COUIPopupWindow {
             if (isMainMenu) {
                 Collections.sort(list, new Comparator() {
                     @Override
-                    public final int compare(Object obj, Object obj2) {
-                        return COUIPopupListWindow.lambda$setItemListInternal$1((PopupListItem) obj, (PopupListItem) obj2);
+                    public final int compare(Object obj, Object object) {
+                        return COUIPopupListWindow.comparePopupItemGroupId((PopupListItem) obj, (PopupListItem) object);
                     }
                 });
             }
             hashSet = new HashSet();
             int groupId = list.get(0).getGroupId();
-            for (int i2 = 1; i2 < list.size(); i2++) {
-                int groupId2 = list.get(i2).getGroupId();
+            for (int index = 1; index < list.size(); index++) {
+                int groupId2 = list.get(index).getGroupId();
                 if (groupId2 != groupId) {
-                    hashSet.add(Integer.valueOf(i2));
+                    hashSet.add(Integer.valueOf(index));
                     groupId = groupId2;
                 }
             }
@@ -470,18 +471,18 @@ public class COUIPopupListWindow extends COUIPopupWindow {
             return;
         }
         if (this.mLocateHelper.isCurrentContainerSmallScreen()) {
-            int i2 = activated ? 2 : 0;
+            int index = activated ? 2 : 0;
             Object item = this.mSubMenuAdapter.getItem(0);
             if (item instanceof PopupListItem) {
-                ((PopupListItem) item).setGroupState(i2);
+                ((PopupListItem) item).setGroupState(index);
                 this.mSubMenuAdapter.notifyDataSetChanged();
                 return;
             }
             return;
         }
-        int i6 = this.mLastClickedMainMenuItemPosition;
-        if (i6 != -1) {
-            Object item2 = this.mMainMenuAdapter.getItem(DefaultAdapter.dataIndexToRealPosition(i6));
+        int index_2 = this.mLastClickedMainMenuItemPosition;
+        if (index_2 != -1) {
+            Object item2 = this.mMainMenuAdapter.getItem(DefaultAdapter.dataIndexToRealPosition(index_2));
             if (item2 instanceof PopupListItem) {
                 ((PopupListItem) item2).setGroupState(activated ? 1 : 0);
                 this.mMainMenuAdapter.notifyDataSetChanged();
@@ -576,7 +577,7 @@ public class COUIPopupListWindow extends COUIPopupWindow {
             this.mIsDismissing = true;
             COUIPopupMenuRootView contentView = this.mContentView;
             if (contentView != null) {
-                contentView.postDelayedDismiss(this.mWindowAnimationDismissRunnable, 350L);
+                contentView.postDelayedDismiss(this.mWindowAnimationDismissRunnable, EXIT_DURATION);
             }
         } else {
             View view = this.mAnchorView;
@@ -913,7 +914,7 @@ public class COUIPopupListWindow extends COUIPopupWindow {
 
     public void measurePopupWindow(DefaultAdapter defaultAdapter) {
         View view;
-        int i2;
+        int index_5;
         boolean isMainMenu = defaultAdapter == this.mMainMenuAdapter;
         PopupMenuLocateHelper popupMenuLocateHelper = this.mLocateHelper;
         int maxMainMenuHeight = isMainMenu ? popupMenuLocateHelper.getMaxMainMenuHeight() : popupMenuLocateHelper.getMaxSubMenuHeight();
@@ -921,70 +922,70 @@ public class COUIPopupListWindow extends COUIPopupWindow {
         int iMakeMeasureSpec = View.MeasureSpec.makeMeasureSpec(getMainMenuMaxWidth(), Integer.MIN_VALUE);
         int iMakeMeasureSpec2 = View.MeasureSpec.makeMeasureSpec(0, 0);
         int count = defaultAdapter.getCount();
-        View view2 = null;
-        int i6 = 0;
-        int i10 = 0;
-        int i11 = 0;
-        int i12 = 0;
+        View view_2 = null;
+        int index = 0;
+        int index_2 = 0;
+        int index_3 = 0;
+        int index_4 = 0;
         int dividerHeight = 0;
-        View view3 = null;
-        boolean z10 = true;
-        while (i6 < count) {
-            if (DefaultAdapter.isDataIndex(i6)) {
-                if (defaultAdapter.getItemViewType(i6) == 3) {
-                    view = defaultAdapter.getView(i6, view2, this.mListViewUsedToMeasure);
+        View view_3 = null;
+        boolean flag = true;
+        while (index < count) {
+            if (DefaultAdapter.isDataIndex(index)) {
+                if (defaultAdapter.getItemViewType(index) == 3) {
+                    view = defaultAdapter.getView(index, view_2, this.mListViewUsedToMeasure);
                 } else {
-                    view3 = defaultAdapter.getView(i6, view3, this.mListViewUsedToMeasure);
-                    view = view3;
+                    view_3 = defaultAdapter.getView(index, view_3, this.mListViewUsedToMeasure);
+                    view = view_3;
                 }
                 if (view != null) {
-                    if ((view.getLayoutParams() instanceof AbsListView.LayoutParams) && (i2 = ((AbsListView.LayoutParams) view.getLayoutParams()).height) != -2) {
-                        iMakeMeasureSpec2 = View.MeasureSpec.makeMeasureSpec(i2, View.MeasureSpec.EXACTLY);
+                    if ((view.getLayoutParams() instanceof AbsListView.LayoutParams) && (index_5 = ((AbsListView.LayoutParams) view.getLayoutParams()).height) != -2) {
+                        iMakeMeasureSpec2 = View.MeasureSpec.makeMeasureSpec(index_5, View.MeasureSpec.EXACTLY);
                     }
                     view.measure(iMakeMeasureSpec, iMakeMeasureSpec2);
                     int measuredWidth = view.getMeasuredWidth();
                     int measuredHeight = view.getMeasuredHeight();
-                    if (measuredWidth > i11) {
-                        i11 = measuredWidth;
+                    if (measuredWidth > index_3) {
+                        index_3 = measuredWidth;
                     }
-                    if (z10 && i10 + measuredHeight > maxMainMenuHeight) {
-                        i10 -= dividerHeight;
-                        z10 = false;
+                    if (flag && index_2 + measuredHeight > maxMainMenuHeight) {
+                        index_2 -= dividerHeight;
+                        flag = false;
                     }
-                    if (z10) {
-                        i10 += measuredHeight;
+                    if (flag) {
+                        index_2 += measuredHeight;
                     }
-                    i12 += measuredHeight;
-                    if (i6 == 0 || arrayList.isEmpty()) {
+                    index_4 += measuredHeight;
+                    if (index == 0 || arrayList.isEmpty()) {
                         arrayList.add(Integer.valueOf(measuredHeight));
                     } else {
-                        arrayList.add(Integer.valueOf(measuredHeight + ((Integer) arrayList.get(i6 - 1)).intValue()));
+                        arrayList.add(Integer.valueOf(measuredHeight + ((Integer) arrayList.get(index - 1)).intValue()));
                     }
                 }
             } else {
-                dividerHeight = defaultAdapter.isGroupIndex(i6) ? defaultAdapter.getDividerHeight(2) : defaultAdapter.getDividerHeight(1);
-                if (z10) {
-                    i10 += dividerHeight;
+                dividerHeight = defaultAdapter.isGroupIndex(index) ? defaultAdapter.getDividerHeight(2) : defaultAdapter.getDividerHeight(1);
+                if (flag) {
+                    index_2 += dividerHeight;
                 }
-                i12 += dividerHeight;
-                if (i6 == 0 || arrayList.isEmpty()) {
+                index_4 += dividerHeight;
+                if (index == 0 || arrayList.isEmpty()) {
                     arrayList.add(Integer.valueOf(dividerHeight));
                 } else {
-                    arrayList.add(Integer.valueOf(dividerHeight + ((Integer) arrayList.get(i6 - 1)).intValue()));
+                    arrayList.add(Integer.valueOf(dividerHeight + ((Integer) arrayList.get(index - 1)).intValue()));
                 }
             }
-            i6++;
-            view2 = null;
+            index++;
+            view_2 = null;
         }
-        if (i10 != 0) {
-            maxMainMenuHeight = i10;
+        if (index_2 != 0) {
+            maxMainMenuHeight = index_2;
         }
         if (isMainMenu) {
-            this.mMainMenuWidth = Math.max(i11, getMainMenuMinWidth());
+            this.mMainMenuWidth = Math.max(index_3, getMainMenuMinWidth());
             this.mMainMenuHeight = maxMainMenuHeight;
             ListView listView = this.mMainListView;
             if (listView instanceof COUITouchListView) {
-                ((COUITouchListView) listView).setItemHeightMap(arrayList, i12);
+                ((COUITouchListView) listView).setItemHeightMap(arrayList, index_4);
                 return;
             }
             return;
@@ -993,7 +994,7 @@ public class COUIPopupListWindow extends COUIPopupWindow {
         this.mSubMenuHeight = maxMainMenuHeight;
         ListView listView2 = this.mSubListView;
         if (listView2 instanceof COUITouchListView) {
-            ((COUITouchListView) listView2).setItemHeightMap(arrayList, i12);
+            ((COUITouchListView) listView2).setItemHeightMap(arrayList, index_4);
         }
     }
 
@@ -1039,7 +1040,7 @@ public class COUIPopupListWindow extends COUIPopupWindow {
     }
 
     public void show(View view, boolean showAboveAnchor, int offsetX, int offsetY) {
-        int i10;
+        int index_2;
         WindowInsets rootWindowInsets;
         Context context = this.mContext;
         if (context == null) {
@@ -1058,18 +1059,18 @@ public class COUIPopupListWindow extends COUIPopupWindow {
             Log.e(TAG, "The MainMenuAdapter is null");
             return;
         }
-        boolean z10 = this.mIsDismissing && this.mAnchorView == view;
+        boolean flag = this.mIsDismissing && this.mAnchorView == view;
         this.mAnchorView = view;
         if (this.mNeedOffsetWhenSetWindowType && (rootWindowInsets = view.getRootWindowInsets()) != null) {
             getContentView().setTranslationX(-rootWindowInsets.getSystemWindowInsetLeft());
             COUILog.w(TAG, "mNeedOffsetWhenSetWindowType is true , offset the root view.");
         }
-        int i11 = this.mMainMenuWidth;
-        if (i11 != 0 && (i10 = this.mMainMenuHeight) != 0) {
+        int index = this.mMainMenuWidth;
+        if (index != 0 && (index_2 = this.mMainMenuHeight) != 0) {
             measurePopupWindow();
-            z10 &= i11 == this.mMainMenuWidth && i10 == this.mMainMenuHeight;
+            flag &= index == this.mMainMenuWidth && index_2 == this.mMainMenuHeight;
         }
-        if (z10 & (this.mReuseMenuWhenOffsetChanged || (this.mShowOffsetX == offsetX && this.mShowOffsetY == offsetY)) & (!this.mDismissWithWindowAnimation)) {
+        if (flag & (this.mReuseMenuWhenOffsetChanged || (this.mShowOffsetX == offsetX && this.mShowOffsetY == offsetY)) & (!this.mDismissWithWindowAnimation)) {
             DefaultAdapter defaultAdapter = this.mMainMenuAdapter;
             if (defaultAdapter != null) {
                 defaultAdapter.notifyDataSetChanged();

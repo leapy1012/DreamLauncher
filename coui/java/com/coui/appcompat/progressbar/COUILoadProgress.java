@@ -142,7 +142,7 @@ public class COUILoadProgress extends AppCompatButton {
     }
 
     public COUILoadProgress(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                            int defStyleRes) {
         super(context, attrs, defStyleAttr);
         mManager = (AccessibilityManager) context.getSystemService(Context.ACCESSIBILITY_SERVICE);
         init();

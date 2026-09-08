@@ -25,10 +25,10 @@ public class OplusBlurParam {
     public static final float DEFAULT_SMOOTH_CORNER_WEIGHT = 2.0f;
     private static final String TAG = "OplusBlurParam";
     private static final int PARAMS_SIZE = 17;
-    private int mBlurType = 0;
-    private int mTileMode = 0;
+    private int mBlurType = BLUR_TYPE_DEFAULT;
+    private int mTileMode = BLUR_TILE_MODE_DEFAULT;
     private float mZoomFactor = 1.0f;
-    private int mBlendMode = 0;
+    private int mBlendMode = BLUR_BLEND_MODE_DEFAULT;
     private final float[] mBlendColor = {0.0f, 0.0f, 0.0f, 0.0f};
     private final float[] mMixColor = {0.0f, 0.0f, 0.0f, 0.0f};
     private final float[] mBlurColor = {0.0f, 0.0f, 0.0f, 0.0f};

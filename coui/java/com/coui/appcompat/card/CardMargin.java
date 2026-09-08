@@ -14,7 +14,7 @@ public final class CardMargin {
     }
 
     public static CardMargin copy$default(CardMargin cardMargin, int firstRowTop, int otherRowTop,
-            int firstColumnOuter, int firstColumnInner, int mask, Object marker) {
+                                          int firstColumnOuter, int firstColumnInner, int mask, Object marker) {
         if ((mask & 1) != 0) {
             firstRowTop = cardMargin.firstRowTop;
         }

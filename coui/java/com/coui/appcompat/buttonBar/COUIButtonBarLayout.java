@@ -75,7 +75,7 @@ public class COUIButtonBarLayout extends LinearLayout {
         super(context, null);
         this.mShowDivider = true;
         this.mDynamicLayout = true;
-        this.mRecommendButtonId = -1;
+        this.mRecommendButtonId = NO_RECOMMEND_ID;
         this.mSetTopMarginFlag = true;
         this.mShowDividerWhenHasItems = false;
     }
@@ -88,7 +88,7 @@ public class COUIButtonBarLayout extends LinearLayout {
         super(context, attrs, defStyleAttr);
         this.mShowDivider = true;
         this.mDynamicLayout = true;
-        this.mRecommendButtonId = -1;
+        this.mRecommendButtonId = NO_RECOMMEND_ID;
         this.mSetTopMarginFlag = true;
         this.mShowDividerWhenHasItems = false;
         init(context, attrs);
@@ -250,8 +250,8 @@ public class COUIButtonBarLayout extends LinearLayout {
     }
 
     private void resetHorDividerVisibility() {
-        if (getButtonCount() != 2) {
-            if (getButtonCount() == 3) {
+        if (getButtonCount() != TWO) {
+            if (getButtonCount() == THREE) {
                 showDivider(this.mButDivider1, this.mButDivider2);
             } else {
                 hideAllDivider();
@@ -271,7 +271,7 @@ public class COUIButtonBarLayout extends LinearLayout {
         if (hasContent(this.mNegButton)) {
             int top;
             int bottom;
-            if (getButtonCount() > 1) {
+            if (getButtonCount() > ONE) {
                 top = this.mVerButtonVecPaddingNew;
                 if (!hasContent(this.mPosButton) && !hasContent(this.mNeuButton) && !hasContent(this.mTopPanel) && !hasContent(this.mContentPanel) && !hasContent(this.mCustomPanel)) {
                     top += this.mVerPaddingTopExtraNew;
@@ -307,7 +307,7 @@ public class COUIButtonBarLayout extends LinearLayout {
     }
 
     private void resetVerDividerVisibility() {
-        if (this.mRecommendButtonId != -1 || getButtonCount() == 0) {
+        if (this.mRecommendButtonId != NO_RECOMMEND_ID || getButtonCount() == ZERO) {
             hideAllDivider();
             return;
         }
@@ -360,13 +360,13 @@ public class COUIButtonBarLayout extends LinearLayout {
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) parent.getLayoutParams();
         layoutParams.weight = 1.0f;
         layoutParams.width = 0;
-        layoutParams.height = this.mRecommendButtonId != -1 ? -2 : -1;
+        layoutParams.height = this.mRecommendButtonId != NO_RECOMMEND_ID ? -2 : -1;
         layoutParams.gravity = 16;
         parent.setLayoutParams(layoutParams);
         int horizontal = this.mHorButHorPadding;
         int top = this.mHorButPaddingTop;
         int bottom = this.mHorButPaddingBottom;
-        if (this.mRecommendButtonId != -1) {
+        if (this.mRecommendButtonId != NO_RECOMMEND_ID) {
             horizontal = this.mHorButHorPaddingWithRecommend;
             top = this.mHorButVerPaddingWithRecommend;
             bottom = top;
@@ -456,7 +456,7 @@ public class COUIButtonBarLayout extends LinearLayout {
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) divider.getLayoutParams();
         layoutParams.width = -1;
         layoutParams.height = this.mButDividerSizeVerticalButton;
-        if (this.mRecommendButtonId != -1) {
+        if (this.mRecommendButtonId != NO_RECOMMEND_ID) {
             layoutParams.setMarginStart(this.mVerButDividerHorMargin);
             layoutParams.setMarginEnd(this.mVerButDividerHorMargin);
         } else {
@@ -472,7 +472,7 @@ public class COUIButtonBarLayout extends LinearLayout {
         showButtonParent(this.mPosButton);
         showButtonParent(this.mNeuButton);
         showButtonParent(this.mNegButton);
-        if (this.mRecommendButtonId != -1) {
+        if (this.mRecommendButtonId != NO_RECOMMEND_ID) {
             applyRecommendStyle(this.mPosButton);
             applyRecommendStyle(this.mNegButton);
             applyRecommendStyle(this.mNeuButton);
@@ -519,7 +519,7 @@ public class COUIButtonBarLayout extends LinearLayout {
     @Override
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        boolean isVertical = this.mDynamicLayout && !(!needSetButVertical(Math.min(this.mDialogMaxWidth, getMeasuredWidth())) && getButtonCount() == 2 && this.mRecommendButtonId == -1);
+        boolean isVertical = this.mDynamicLayout && !(!needSetButVertical(Math.min(this.mDialogMaxWidth, getMeasuredWidth())) && getButtonCount() == TWO && this.mRecommendButtonId == NO_RECOMMEND_ID);
         this.mIsVerticalButton = isVertical;
         if (!isVertical) {
             setButtonsHorizontal();
@@ -533,11 +533,11 @@ public class COUIButtonBarLayout extends LinearLayout {
         resetVerDividerVisibility();
         resetVerPaddingBottom();
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        if (this.mSetTopMarginFlag && (getButtonCount() > 1 || (getButtonCount() == 1 && this.mRecommendButtonId != -1))) {
+        if (this.mSetTopMarginFlag && (getButtonCount() > ONE || (getButtonCount() == ONE && this.mRecommendButtonId != NO_RECOMMEND_ID))) {
             ((ViewGroup.MarginLayoutParams) getLayoutParams()).topMargin = this.mCouiBottomAlertDialogButtonbarMargintop;
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }
-        if (this.mRecommendButtonId != -1) {
+        if (this.mRecommendButtonId != NO_RECOMMEND_ID) {
             applyRecommendLayout(this.mPosButton);
             applyRecommendLayout(this.mNegButton);
             applyRecommendLayout(this.mNeuButton);

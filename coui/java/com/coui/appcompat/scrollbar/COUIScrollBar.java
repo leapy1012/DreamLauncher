@@ -131,18 +131,26 @@ public class COUIScrollBar {
 
     public interface COUIScrollable {
         COUIScrollBar getCOUIScrollDelegate();
+
         View getCOUIScrollableView();
+
         void setNewCOUIScrollDelegate(COUIScrollBar cOUIScrollBar);
+
         int superComputeVerticalScrollExtent();
+
         int superComputeVerticalScrollOffset();
+
         int superComputeVerticalScrollRange();
+
         void superOnTouchEvent(MotionEvent motionEvent);
     }
 
     public interface OnCOUIScrollListener {
         void onCOUIScrollEnd(View view, COUIScrollBar cOUIScrollBar);
+
         void onCOUIScrollStart(View view, COUIScrollBar cOUIScrollBar);
-        void onCOUIScrolled(View view, COUIScrollBar cOUIScrollBar, int i2, int i6, float f2);
+
+        void onCOUIScrolled(View view, COUIScrollBar cOUIScrollBar, int index, int index_2, float value);
     }
 
     public static class ScrollabilityCache implements Runnable {
@@ -184,7 +192,7 @@ public class COUIScrollBar {
     }
 
     private COUIScrollBar(COUIScrollable cOUIScrollable, int width, int height,
-            Drawable drawable, boolean dynamicHeight) {
+                          Drawable drawable, boolean dynamicHeight) {
         View scrollableView = cOUIScrollable.getCOUIScrollableView();
         mView = scrollableView;
         scrollableView.setVerticalScrollBarEnabled(false);
@@ -375,9 +383,9 @@ public class COUIScrollBar {
         } else {
             view.scrollBy(0, scrollBy);
         }
-        OnCOUIScrollListener listener2 = mCOUIScrollListener;
-        if (listener2 != null) {
-            listener2.onCOUIScrolled(mView, this, dy, scrollBy, fraction);
+        OnCOUIScrollListener list = mCOUIScrollListener;
+        if (list != null) {
+            list.onCOUIScrolled(mView, this, dy, scrollBy, fraction);
         }
         return true;
     }

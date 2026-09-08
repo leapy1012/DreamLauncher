@@ -1,6 +1,5 @@
 package com.coui.appcompat.toolbar;
 
-import com.coui.appcompat.R;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
@@ -25,18 +24,22 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+
+import androidx.appcompat.view.CollapsibleActionView;
 import androidx.appcompat.view.menu.MenuBuilder;
 import androidx.appcompat.view.menu.MenuItemImpl;
 import androidx.appcompat.view.menu.MenuPresenter;
 import androidx.appcompat.view.menu.MenuView;
 import androidx.appcompat.view.menu.SubMenuBuilder;
 import androidx.appcompat.widget.ActionMenuView;
-import androidx.appcompat.widget.Toolbar;
 import androidx.appcompat.widget.TintTypedArray;
-import androidx.appcompat.view.CollapsibleActionView;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.GravityCompat;
+import androidx.core.view.MarginLayoutParamsCompat;
 import androidx.core.view.ViewCompat;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.grid.COUIResponsiveUtils;
 import com.coui.appcompat.poplist.COUIPopupListWindow;
@@ -46,9 +49,9 @@ import com.coui.appcompat.poplist.PopupMenuConfigRule;
 import com.coui.appcompat.state.COUIMaskRippleDrawable;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 import com.coui.appcompat.uiutil.UIUtil;
+
 import java.util.ArrayList;
 import java.util.List;
-import androidx.core.view.MarginLayoutParamsCompat;
 
 public class COUIToolbar extends Toolbar implements PopupMenuConfigRule {
     private static final int DEFAULT_TEXT_MAX = 24;
@@ -591,7 +594,7 @@ public class COUIToolbar extends Toolbar implements PopupMenuConfigRule {
                 this.mTitleTextView.setTextColor(titleTextColor);
             }
             this.mTitleTextView.setTextAlignment(this.mIsTitleCenterStyle ? 4 : 5);
-            if (this.mTitleType == 1) {
+            if (this.mTitleType == TITLE_TYPE_SECONDARY) {
                 this.mTitleTextView.setTextSize(0, COUIChangeTextUtil.getSuitableFontSize(this.mTitleTextView.getTextSize(), getContext().getResources().getConfiguration().fontScale, 2));
             }
         }
@@ -606,7 +609,7 @@ public class COUIToolbar extends Toolbar implements PopupMenuConfigRule {
                 || horizontalGravity == Gravity.RIGHT)
                 ? horizontalGravity
                 : layoutDirection == ViewCompat.LAYOUT_DIRECTION_RTL
-                        ? Gravity.RIGHT : Gravity.LEFT;
+                  ? Gravity.RIGHT : Gravity.LEFT;
     }
 
     private int getChildTop(View view, int alignmentHeight) {
@@ -995,10 +998,6 @@ public class COUIToolbar extends Toolbar implements PopupMenuConfigRule {
     }
 
     @Override
-    /*
-        Code decompiled incorrectly, please refer to instructions dump.
-        To view partially-correct code enable 'Show inconsistent code' option in preferences
-    */
     public void onLayout(boolean changed, int layoutLeft, int layoutTop, int layoutRight, int layoutBottom) {
         boolean isRtl = ViewCompat.getLayoutDirection(this) == ViewCompat.LAYOUT_DIRECTION_RTL;
         int width = getWidth();
@@ -1947,7 +1946,7 @@ public class COUIToolbar extends Toolbar implements PopupMenuConfigRule {
         TextView textView = this.mTitleTextView;
         if (textView != null) {
             textView.setTextAppearance(context, textAppearanceResId);
-            if (this.mTitleType == 1) {
+            if (this.mTitleType == TITLE_TYPE_SECONDARY) {
                 this.mTitleTextView.setTextSize(0, COUIChangeTextUtil.getSuitableFontSize(this.mTitleTextView.getTextSize(), getContext().getResources().getConfiguration().fontScale, 2));
             }
             TypedArray minHeightAttributes = context.obtainStyledAttributes(this.mTitleTextAppearance, new int[]{android.R.attr.minHeight});
@@ -2194,7 +2193,7 @@ public class COUIToolbar extends Toolbar implements PopupMenuConfigRule {
     }
 
     public COUIToolbar(Context context, AttributeSet attributeSet, int defStyleAttr,
-            int defStyleRes) {
+                       int defStyleRes) {
         super(context, attributeSet, defStyleAttr);
         COUIRtlSpacingHelper contentInsets = new COUIRtlSpacingHelper();
         this.mContentInsets = contentInsets;
@@ -2242,7 +2241,7 @@ public class COUIToolbar extends Toolbar implements PopupMenuConfigRule {
         TintTypedArray attributes = TintTypedArray.obtainStyledAttributes(getContext(), attributeSet, R.styleable.COUIToolbar, R.attr.couiToolbarStyle, defStyleRes);
         int titleTypeIndex = R.styleable.COUIToolbar_titleType;
         if (attributes.hasValue(titleTypeIndex)) {
-            this.mTitleType = attributes.getInt(titleTypeIndex, 0);
+            this.mTitleType = attributes.getInt(titleTypeIndex, TITLE_TYPE_HEAD);
         }
         this.mTitleTextAppearance = attributes.getResourceId(R.styleable.COUIToolbar_supportTitleTextAppearance, 0);
         this.mSubtitleTextAppearance = attributes.getResourceId(R.styleable.COUIToolbar_supportSubtitleTextAppearance, 0);
@@ -2312,7 +2311,7 @@ public class COUIToolbar extends Toolbar implements PopupMenuConfigRule {
             this.mTextMaxSize = titleTextSizeAttributes.getDimensionPixelSize(0, (int) (displayMetrics.scaledDensity * 24.0f));
             titleTextSizeAttributes.recycle();
         }
-        if (this.mTitleType == 1) {
+        if (this.mTitleType == TITLE_TYPE_SECONDARY) {
             this.mTextMaxSize = COUIChangeTextUtil.getSuitableFontSize(this.mTextMaxSize, getResources().getConfiguration().fontScale, 2);
             this.mTextMinSize = COUIChangeTextUtil.getSuitableFontSize(this.mTextMinSize, getResources().getConfiguration().fontScale, 2);
         }

@@ -1,15 +1,14 @@
 package com.coui.appcompat.poplist;
 
-import com.coui.appcompat.R;
-
 import android.animation.Animator;
 import android.util.Log;
 import android.view.View;
+
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
+
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
-import com.coui.appcompat.poplist.BasePopupMenuAnimationController;
 import com.coui.appcompat.uiutil.UIUtil;
 
 
@@ -30,8 +29,8 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
         }
 
         @Override
-        public void setValue(DefaultScreenAnimationController defaultScreenAnimationController, float f2) {
-            defaultScreenAnimationController.setSubMenuTransitionProgress(f2);
+        public void setValue(DefaultScreenAnimationController defaultScreenAnimationController, float value) {
+            defaultScreenAnimationController.setSubMenuTransitionProgress(value);
         }
     };
     private static final FloatPropertyCompat<DefaultScreenAnimationController> MAIN_MENU_SCALE_TRANSITION = new FloatPropertyCompat<DefaultScreenAnimationController>("mainMenuScaleTransition") {
@@ -41,8 +40,8 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
         }
 
         @Override
-        public void setValue(DefaultScreenAnimationController defaultScreenAnimationController, float f2) {
-            defaultScreenAnimationController.setMainMenuScaleTransitionProgress(f2);
+        public void setValue(DefaultScreenAnimationController defaultScreenAnimationController, float value) {
+            defaultScreenAnimationController.setMainMenuScaleTransitionProgress(value);
         }
     };
     private static final FloatPropertyCompat<DefaultScreenAnimationController> MAIN_MENU_ALPHA_TRANSITION = new FloatPropertyCompat<DefaultScreenAnimationController>("mainMenuAlphaTransition") {
@@ -52,27 +51,27 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
         }
 
         @Override
-        public void setValue(DefaultScreenAnimationController defaultScreenAnimationController, float f2) {
-            defaultScreenAnimationController.setMainMenuAlphaTransitionProgress(f2);
+        public void setValue(DefaultScreenAnimationController defaultScreenAnimationController, float value) {
+            defaultScreenAnimationController.setMainMenuAlphaTransitionProgress(value);
         }
     };
     private final COUIDynamicAnimation.OnAnimationEndListener mSubMenuAnimationEndListener = new COUIDynamicAnimation.OnAnimationEndListener() {
         @Override
-        public final void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z6, float f2, float f10) {
-            DefaultScreenAnimationController.this.lambda$new$0(cOUIDynamicAnimation, z6, f2, f10);
+        public final void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean flag, float value, float value_2) {
+            DefaultScreenAnimationController.this.dispatchSubMenuAnimationEnd(cOUIDynamicAnimation, flag, value, value_2);
         }
     };
     private float mMainMenuScaleTransitionProgress = 0.0f;
     private float mMainMenuAlphaTransitionProgress = 0.0f;
     private float mSubMenuTransitionProgress = 0.0f;
-    private float mRootViewAlpha = 1.0f;
+    private float mRootViewAlpha = DEFAULT_ALPHA;
 
     private void ensureMainMenuEnterAnimator() {
-        boolean z6 = (this.mMainMenuScaleAnimation == null || this.mMainMenuAlphaAnimation == null) ? false : true;
-        if (shouldReuseMainMenuAnimations(z6)) {
+        boolean flag = (this.mMainMenuScaleAnimation == null || this.mMainMenuAlphaAnimation == null) ? false : true;
+        if (shouldReuseMainMenuAnimations(flag)) {
             return;
         }
-        if (z6) {
+        if (flag) {
             this.mMainMenuScaleAnimation.cancel();
             this.mMainMenuScaleAnimation = null;
             this.mMainMenuAlphaAnimation.cancel();
@@ -122,8 +121,8 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
     }
 
 
-    public void lambda$new$0(COUIDynamicAnimation cOUIDynamicAnimation, boolean z6, float f2, float f10) {
-        if (z6) {
+    public void dispatchSubMenuAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean flag, float value, float value_2) {
+        if (flag) {
             BasePopupMenuAnimationController.OnMenuStateChangedListener onMenuStateChangedListener = this.mMenuStateChangedListener;
             if (onMenuStateChangedListener != null) {
                 onMenuStateChangedListener.onSubMenuAnimationCanceled();
@@ -131,7 +130,7 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
             }
             return;
         }
-        if (f2 == 0.0f) {
+        if (value == 0.0f) {
             BasePopupMenuAnimationController.OnMenuStateChangedListener onMenuStateChangedListener2 = this.mMenuStateChangedListener;
             if (onMenuStateChangedListener2 != null) {
                 onMenuStateChangedListener2.onSubMenuExited();
@@ -146,7 +145,7 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
     }
 
 
-    public void lambda$setMainMenuAlphaTransitionProgress$2() {
+    public void ensureMainMenuRootVisibleFromAlpha() {
         View view = this.mMainMenuRoot;
         if (view == null || view.getVisibility() == 0) {
             return;
@@ -155,7 +154,7 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
     }
 
 
-    public void lambda$setMainMenuScaleTransitionProgress$1() {
+    public void ensureMainMenuRootVisibleFromScale() {
         View view = this.mMainMenuRoot;
         if (view == null || view.getVisibility() == 0) {
             return;
@@ -164,9 +163,9 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
     }
 
 
-    public void setMainMenuAlphaTransitionProgress(float f2) {
-        this.mMainMenuAlphaTransitionProgress = f2;
-        float f10 = f2 / 10000.0f;
+    public void setMainMenuAlphaTransitionProgress(float mainMenuAlphaTransitionProgress) {
+        this.mMainMenuAlphaTransitionProgress = mainMenuAlphaTransitionProgress;
+        float value = mainMenuAlphaTransitionProgress / 10000.0f;
         AnimationExecutor executor = getExecutor();
         View view = this.mMainMenuRoot;
         if (view == null || this.mRootView == null) {
@@ -177,32 +176,32 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
             executor.runOnMainThread(this.mRootView, new Runnable() {
                 @Override
                 public final void run() {
-                    DefaultScreenAnimationController.this.lambda$setMainMenuAlphaTransitionProgress$2();
+                    DefaultScreenAnimationController.this.ensureMainMenuRootVisibleFromAlpha();
                 }
             });
         }
-        float convertedFraction = UIUtil.getConvertedFraction(0.01f, 1.0f, f10);
+        float convertedFraction = UIUtil.getConvertedFraction(0.01f, 1.0f, value);
         this.mRootViewAlpha = convertedFraction;
         executor.setAlpha(this.mRootView, convertedFraction);
-        View view2 = this.mMainMenuRoot;
-        if ((view2 instanceof RoundFrameLayout) && ((RoundFrameLayout) view2).getUseBackgroundBlur()) {
+        View view_2 = this.mMainMenuRoot;
+        if ((view_2 instanceof RoundFrameLayout) && ((RoundFrameLayout) view_2).getUseBackgroundBlur()) {
             this.mMainMenuRoot.setAlpha(this.mRootViewAlpha);
         }
-        View view3 = this.mSubMenuRoot;
-        if ((view3 instanceof RoundFrameLayout) && ((RoundFrameLayout) view3).getUseBackgroundBlur()) {
+        View view_3 = this.mSubMenuRoot;
+        if ((view_3 instanceof RoundFrameLayout) && ((RoundFrameLayout) view_3).getUseBackgroundBlur()) {
             this.mSubMenuRoot.setAlpha(this.mRootViewAlpha);
         }
     }
 
 
-    public void setMainMenuScaleTransitionProgress(float f2) {
+    public void setMainMenuScaleTransitionProgress(float mainMenuScaleTransitionProgress) {
         COUISpringAnimation cOUISpringAnimation;
         if (this.mMainMenuScaleTransitionProgress == 0.0f || this.mMainMenuAlphaTransitionProgress != 0.0f || (cOUISpringAnimation = this.mMainMenuScaleAnimation) == null || !cOUISpringAnimation.canSkipToEnd()) {
-            this.mMainMenuScaleTransitionProgress = f2;
+            this.mMainMenuScaleTransitionProgress = mainMenuScaleTransitionProgress;
         } else {
             this.mMainMenuScaleTransitionProgress = 0.0f;
         }
-        float f10 = this.mMainMenuScaleTransitionProgress / 10000.0f;
+        float value = this.mMainMenuScaleTransitionProgress / 10000.0f;
         AnimationExecutor executor = getExecutor();
         View view = this.mMainMenuRoot;
         if (view == null || this.mRootView == null) {
@@ -213,32 +212,32 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
             executor.runOnMainThread(this.mRootView, new Runnable() {
                 @Override
                 public final void run() {
-                    DefaultScreenAnimationController.this.lambda$setMainMenuScaleTransitionProgress$1();
+                    DefaultScreenAnimationController.this.ensureMainMenuRootVisibleFromScale();
                 }
             });
         }
-        float convertedFraction = UIUtil.getConvertedFraction(0.0f, 1.0f, f10);
+        float convertedFraction = UIUtil.getConvertedFraction(0.0f, 1.0f, value);
         executor.setScaleX(this.mRootView, convertedFraction);
         executor.setScaleY(this.mRootView, convertedFraction);
     }
 
 
-    public void setSubMenuTransitionProgress(float f2) {
-        this.mSubMenuTransitionProgress = f2;
-        float f10 = f2 / 10000.0f;
+    public void setSubMenuTransitionProgress(float subMenuTransitionProgress) {
+        this.mSubMenuTransitionProgress = subMenuTransitionProgress;
+        float value = subMenuTransitionProgress / 10000.0f;
         View view = this.mSubMenuRoot;
         if (view != null) {
             if (view.getVisibility() != 0) {
                 this.mSubMenuRoot.setVisibility(0);
             }
-            float convertedFraction = UIUtil.getConvertedFraction(0.01f, 1.0f, f10);
-            View view2 = this.mSubMenuRoot;
-            if ((view2 instanceof RoundFrameLayout) && ((RoundFrameLayout) view2).getUseBackgroundBlur()) {
-                this.mSubMenuRoot.setVisibility(convertedFraction <= 0.1f ? 8 : 0);
+            float convertedFraction = UIUtil.getConvertedFraction(0.01f, 1.0f, value);
+            View view_2 = this.mSubMenuRoot;
+            if ((view_2 instanceof RoundFrameLayout) && ((RoundFrameLayout) view_2).getUseBackgroundBlur()) {
+                this.mSubMenuRoot.setVisibility(convertedFraction <= MIN_ALPHA ? 8 : 0);
             }
             this.mSubMenuRoot.setAlpha(convertedFraction * this.mRootViewAlpha);
-            this.mSubMenuRoot.setScaleX(UIUtil.getConvertedFraction(0.0f, 1.0f, f10));
-            this.mSubMenuRoot.setScaleY(UIUtil.getConvertedFraction(0.0f, 1.0f, f10));
+            this.mSubMenuRoot.setScaleX(UIUtil.getConvertedFraction(0.0f, 1.0f, value));
+            this.mSubMenuRoot.setScaleY(UIUtil.getConvertedFraction(0.0f, 1.0f, value));
         }
     }
 
@@ -247,8 +246,8 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
         View view = this.mSubMenuRoot;
         if (view instanceof RoundFrameLayout) {
             view.setAlpha(1.0f);
-            this.mSubMenuRoot.setScaleX(1.0f);
-            this.mSubMenuRoot.setScaleY(1.0f);
+            this.mSubMenuRoot.setScaleX(DEFAULT_SCALE);
+            this.mSubMenuRoot.setScaleY(DEFAULT_SCALE);
         }
     }
 
@@ -270,9 +269,9 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
                 animator.cancel();
                 this.mMainMenuScaleRenderAnimator = null;
             }
-            Animator animator2 = this.mMainMenuAlphaRenderAnimator;
-            if (animator2 != null) {
-                animator2.cancel();
+            Animator animator_2 = this.mMainMenuAlphaRenderAnimator;
+            if (animator_2 != null) {
+                animator_2.cancel();
                 this.mMainMenuAlphaRenderAnimator = null;
             }
         }
@@ -298,7 +297,7 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
     }
 
     @Override
-    public void startMainMenuEnter(boolean z6) {
+    public void startMainMenuEnter(boolean flag) {
         // Leapy modified: restore OPPO's decoded direct spring-animation flow.
         if (this.mMainMenuRoot == null) {
             Log.w(TAG, "No main menu root view! Set a main menu view before starting animation!");
@@ -314,14 +313,14 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
         this.mMainMenuScaleAnimation.getSpring().setBounce(0.2f);
         this.mMainMenuScaleAnimation.setStartValue(this.mMainMenuScaleTransitionProgress);
         this.mMainMenuScaleAnimation.animateToFinalPosition(10000.0f);
-        if (!z6 && this.mMainMenuScaleAnimation.canSkipToEnd()) {
+        if (!flag && this.mMainMenuScaleAnimation.canSkipToEnd()) {
             this.mMainMenuScaleAnimation.skipToEnd();
         }
         this.mMainMenuAlphaAnimation.getSpring().setResponse(0.35f);
         this.mMainMenuAlphaAnimation.getSpring().setBounce(0.2f);
         this.mMainMenuAlphaAnimation.setStartValue(this.mMainMenuAlphaTransitionProgress);
         this.mMainMenuAlphaAnimation.animateToFinalPosition(10000.0f);
-        if (z6 || !this.mMainMenuAlphaAnimation.canSkipToEnd()) {
+        if (flag || !this.mMainMenuAlphaAnimation.canSkipToEnd()) {
             return;
         }
         this.mMainMenuAlphaAnimation.skipToEnd();
@@ -329,7 +328,7 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
     }
 
     @Override
-    public void startMainMenuExit(boolean z6) {
+    public void startMainMenuExit(boolean flag) {
         // Leapy modified: restore OPPO's decoded direct spring-animation flow.
         if (this.mMainMenuRoot == null) {
             Log.w(TAG, "No main menu root view! Set a main menu view before starting animation!");
@@ -345,14 +344,14 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
         this.mMainMenuScaleAnimation.getSpring().setBounce(0.0f);
         this.mMainMenuScaleAnimation.setStartValue(this.mMainMenuScaleTransitionProgress);
         this.mMainMenuScaleAnimation.animateToFinalPosition(0.0f);
-        if (!z6 && this.mMainMenuScaleAnimation.canSkipToEnd()) {
+        if (!flag && this.mMainMenuScaleAnimation.canSkipToEnd()) {
             this.mMainMenuScaleAnimation.skipToEnd();
         }
         this.mMainMenuAlphaAnimation.getSpring().setResponse(0.25f);
         this.mMainMenuAlphaAnimation.getSpring().setBounce(0.0f);
         this.mMainMenuAlphaAnimation.setStartValue(this.mMainMenuAlphaTransitionProgress);
         this.mMainMenuAlphaAnimation.animateToFinalPosition(0.0f);
-        if (z6 || !this.mMainMenuAlphaAnimation.canSkipToEnd()) {
+        if (flag || !this.mMainMenuAlphaAnimation.canSkipToEnd()) {
             return;
         }
         this.mMainMenuAlphaAnimation.skipToEnd();
@@ -360,7 +359,7 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
     }
 
     @Override
-    public void startSubMenuEnter(boolean z6) {
+    public void startSubMenuEnter(boolean flag) {
         if (this.mMainMenuRoot == null) {
             Log.e(TAG, "No main menu view! Add a main menu view before showing sub menu!");
             return;
@@ -378,14 +377,14 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
         this.mSubMenuRoot.setPivotY(this.mDomain.getSubMenuEnterPivotY());
         this.mSubMenuAnimation.setStartValue(this.mSubMenuTransitionProgress);
         this.mSubMenuAnimation.animateToFinalPosition(10000.0f);
-        if (z6 || !this.mSubMenuAnimation.canSkipToEnd()) {
+        if (flag || !this.mSubMenuAnimation.canSkipToEnd()) {
             return;
         }
         this.mSubMenuAnimation.skipToEnd();
     }
 
     @Override
-    public void startSubMenuExit(boolean z6) {
+    public void startSubMenuExit(boolean flag) {
         if (this.mMainMenuRoot == null) {
             Log.e(TAG, "No main menu view! Add a main menu view before showing sub menu!");
             return;
@@ -401,7 +400,7 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
         ensureSubMenuAnimator();
         this.mSubMenuAnimation.setStartValue(this.mSubMenuTransitionProgress);
         this.mSubMenuAnimation.animateToFinalPosition(0.0f);
-        if (z6 || !this.mSubMenuAnimation.canSkipToEnd()) {
+        if (flag || !this.mSubMenuAnimation.canSkipToEnd()) {
             return;
         }
         this.mSubMenuAnimation.skipToEnd();
@@ -423,20 +422,20 @@ class DefaultScreenAnimationController extends BasePopupMenuAnimationController 
             setMainMenuAlphaTransitionProgress(0.0f);
             View view = this.mMainMenuRoot;
             if (view != null && (view instanceof RoundFrameLayout) && ((RoundFrameLayout) view).getUseBackgroundBlur()) {
-                this.mMainMenuRoot.setAlpha(1.0f);
+                this.mMainMenuRoot.setAlpha(DEFAULT_ALPHA);
             }
-            View view2 = this.mSubMenuRoot;
-            if (view2 != null && (view2 instanceof RoundFrameLayout) && ((RoundFrameLayout) view2).getUseBackgroundBlur()) {
-                this.mSubMenuRoot.setAlpha(1.0f);
+            View view_2 = this.mSubMenuRoot;
+            if (view_2 != null && (view_2 instanceof RoundFrameLayout) && ((RoundFrameLayout) view_2).getUseBackgroundBlur()) {
+                this.mSubMenuRoot.setAlpha(DEFAULT_ALPHA);
             }
         }
         Animator animator = this.mMainMenuScaleRenderAnimator;
         if (animator != null) {
             animator.cancel();
         }
-        Animator animator2 = this.mMainMenuAlphaRenderAnimator;
-        if (animator2 != null) {
-            animator2.cancel();
+        Animator animator_2 = this.mMainMenuAlphaRenderAnimator;
+        if (animator_2 != null) {
+            animator_2.cancel();
         }
         COUISpringAnimation cOUISpringAnimation3 = this.mSubMenuAnimation;
         if (cOUISpringAnimation3 != null) {

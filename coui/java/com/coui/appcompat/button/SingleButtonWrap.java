@@ -5,6 +5,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.util.TypedValue;
 import android.view.View;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.button.listener.OnSizeChangeListener;
 import com.coui.appcompat.button.listener.OnTextChangeListener;
@@ -16,6 +17,7 @@ import com.coui.appcompat.state.SizeProcessor;
 import com.coui.appcompat.state.TextSizeProcessor;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 import com.coui.appcompat.uiutil.UIUtil;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -67,7 +69,7 @@ public class SingleButtonWrap extends COUIViewStateController implements OnTextC
         this.mCOUIButton.setOnSizeChangeListener(this);
         this.mCOUIButton.setOnTextChangeListener(this);
         this.mCOUIButton.setSingleLine(false);
-        this.mCOUIButton.setMaxLines(2);
+        this.mCOUIButton.setMaxLines(BUTTON_MAX_LINE);
         this.mSmallPaddingStart = this.mCOUIButton.getContext().getResources().getDimensionPixelSize(R.dimen.coui_small_single_btn_padding_horizontal);
         initProcessor();
         setSmallButtonStateChange();
@@ -109,7 +111,7 @@ public class SingleButtonWrap extends COUIViewStateController implements OnTextC
         ArrayList arrayList = new ArrayList();
         int dimensionPixelSize = this.mType == 4 ? context.getResources().getDimensionPixelSize(R.dimen.coui_medium_btn_width) : context.getResources().getDimensionPixelSize(R.dimen.coui_larger_btn_width);
         if (COUIResponsiveUtils.isSmallScreen(context, context.getResources().getDisplayMetrics().widthPixels)) {
-            dimensionPixelSize = this.mType == 7 ? getLargeButtonWidth(context) : -1;
+            dimensionPixelSize = this.mType == Type.DescLarge ? getLargeButtonWidth(context) : -1;
         }
         arrayList.add(new SizeProcessor.Builder(1).setHeight(-2).setWidth(dimensionPixelSize).create());
         PaddingProcessor.Builder builder = new PaddingProcessor.Builder(1);

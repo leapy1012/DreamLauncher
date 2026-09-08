@@ -50,7 +50,7 @@ public class COUIForegroundListView extends ListView {
     }
 
     public COUIForegroundListView(Context context, AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                                  int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         initKeyValue(context);
     }

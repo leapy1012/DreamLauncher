@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <attr name="COUICardLockScreenPwdInputStyleEdit" format="reference" />
-    <attr name="COUICardLockScreenPwdInputStyleEditDesktop" format="reference" />
+
+
     <attr name="enableFollowSystemForceDarkRank" format="boolean" />
     <attr name="lineSpacingMultiplier" format="float" />
     <attr name="selectSystemForceDarkType" format="integer" />
@@ -11,7 +11,7 @@
         <enum name="rectangle" value="0" />
         <enum name="circle" value="1" />
     </attr>
-    <attr name="circleButton" format="boolean" />
+
     <attr name="couiEmptyHint" format="reference" />
     <attr name="couiIsSplitHideWithActionBar" format="boolean" />
     <attr name="expandOffset" format="dimension" />
@@ -19,14 +19,14 @@
     <attr name="pressBackgroundColor" format="color" />
     <attr name="startingWindowTitle" format="string" />
     <attr name="windowSnapshotPreviewToken" format="string" />
-    <attr name="couiPanelPaddingBottom" format="dimension" />
-    <attr name="couiPanelSupportExitBlockingAnimation" format="boolean" />
+
+
     <attr name="hasShadowNinePatchDrawable" format="boolean" />
     <attr name="ignoreWindowInsetsBottom" format="boolean" />
     <attr name="ignoreWindowInsetsLeft" format="boolean" />
     <attr name="ignoreWindowInsetsRight" format="boolean" />
     <attr name="ignoreWindowInsetsTop" format="boolean" />
-    <attr name="maxPanelHeight" format="float|reference" />
+
     <attr name="couiColorContainer8" format="reference|color" />
     <attr name="couiColorContainer4" format="reference|color" />
     <attr name="couiColorContainer12" format="reference|color" />
@@ -75,11 +75,11 @@
     <attr name="elevationOverlayAccentColor" format="color" />
     <attr name="elevationOverlayColor" format="color" />
     <attr name="elevationOverlayEnabled" format="boolean" />
-    <attr name="couiActivityDialogPreferenceStyle" format="reference" />
+
     <attr name="supportTitleTextAppearance" format="reference" />
     <attr name="couiTextAppearanceBody" format="reference" />
     <attr name="couiTextAppearanceHeadline6" format="reference" />
-    <attr name="couiTextAppearanceSmallButton" format="reference" />
+
     <attr name="couiTextBodyS" format="reference" />
     <attr name="couiBtnRadioColorOn" format="reference|color" />
     <attr name="editTextStyle" format="reference" />
@@ -99,41 +99,33 @@
     </attr>
     <attr name="subtitleText" format="string" />
     <attr name="titleText" format="string" />
-    <attr name="isNotificationSnackBar" format="boolean" />
-    <attr name="couiSnackBarIcon" format="reference" />
-    <attr name="defaultSnackBarContentText" format="string" />
+
+
     <attr name="snackBarDisappearTime" format="integer" />
     <attr name="couiRotatingSpinnerJsonName" format="reference" />
-    <attr name="couiPreferenceWithDividerItem" format="boolean" />
+
     <attr name="couiBlurAnimLevel">
         <enum name="hignEnd" value="1" />
         <enum name="midEnd" value="2" />
         <enum name="lowEnd" value="3" />
         <enum name="ultraLowEnd" value="4" />
     </attr>
-    <attr name="couiCheckBoxStyle" format="reference" />
-    <attr name="couiDialogBlurBackground" format="boolean" />
+
+
     <attr name="btnDrawableColor" format="color" />
     <attr name="btnText" format="string" />
     <attr name="btnTextColor" format="color" />
     <attr name="btnTextSize" format="integer" />
-    <attr name="couiButtonPreferenceStyle" format="reference" />
-    <attr name="couiCheckBoxAssignment" format="string" />
-    <attr name="couiCheckBoxPreferenceStyle" format="reference" />
-    <attr name="couiCheckBoxWithDividerPreferenceStyle" format="reference" />
-    <attr name="couiEditTextPreferenceStyle" format="reference" />
-    <attr name="couiInputPreferenceEditTextStyle" format="reference" />
-    <attr name="couiInputPreferenceStyle" format="reference" />
-    <attr name="couiSlideSelectPreferenceStyle" format="reference" />
-    <attr name="couiSpannablePreferenceStyle" format="reference" />
+
+
     <attr name="couiStepperMinusImage" format="reference" />
     <attr name="couiStepperPlusImage" format="reference" />
-    <attr name="couiStepperPreferenceStyle" format="reference" />
+
     <attr name="couiStepperTextStyle" format="reference" />
     <attr name="couiStepperViewStyle" format="reference" />
-    <attr name="couiStatusSwitchingPreferenceStyle" format="reference" />
+
     <attr name="couiTextAppearanceHeadline5" format="reference" />
-    <attr name="couiSmallButtonColorStyle" format="reference" />
+
     <attr name="couiAssignmentColor" format="color" />
     <attr name="coui_select_mark" format="reference" />
     <attr name="coui_select_status1" format="string" />
@@ -167,10 +159,10 @@
     <attr name="iconRedDotMode" format="integer" />
     <attr name="isBackgroundAnimationEnabled" format="boolean" />
     <attr name="isHeaderView" format="boolean" />
-    <attr name="isShowLoadingText" format="boolean" />
+
     <attr name="isSupportCardUse" format="boolean" />
     <attr name="loadingText" format="string" />
-    <attr name="preference_icon_radius" format="dimension" />
+
     <attr name="titleTextColor" format="color" />
     <attr name="couiDividerDrawable" format="reference" />
     <attr name="couiColorCardBackground" format="reference|color" />
@@ -183,8 +175,8 @@
     <attr name="couiRoundCornerFULL" format="reference" />
     <attr name="couiCardRadius" format="dimension" />
     <attr name="couiCardListHorizontalMargin" format="dimension" />
-    <attr name="couiInputListHorizontalMargin" format="dimension" />
-    <attr name="couiInputRadius" format="dimension" />
+
+
     <attr name="listIsTiny" format="boolean" />
     <attr name="couiAHavePriority" format="boolean" />
     <attr name="couiBStickToC" format="boolean" />
@@ -268,16 +260,8 @@
         <enum name="medium" value="2" />
         <enum name="large" value="3" />
     </attr>
-    <attr name="couiEditTextDeleteBgColorNormal" format="reference|color" />
-    <attr name="couiEditTextDeleteIconNormal" format="reference" />
-    <attr name="couiEditTextDeleteIconPressed" format="reference" />
-    <attr name="couiEditTextErrorColor" format="reference|color" />
-    <attr name="couiEditTextHintLines" format="integer" />
-    <attr name="couiEditTextIsEllipsis" format="boolean" />
-    <attr name="couiEditTextLineHintDisableStyle" format="reference" />
-    <attr name="couiEditTextLineStyle" format="reference" />
-    <attr name="couiEditTextNoEllipsisText" format="string" />
-    <attr name="couiEditTextRectangleStyle" format="reference" />
+
+
     <attr name="couiShowDeleteIcon" format="boolean" />
     <attr name="couiDefaultStrokeColor" format="reference|color" />
     <attr name="couiDisabledStrokeColor" format="reference|color" />
@@ -289,33 +273,24 @@
     <attr name="collapsedTextColor" format="reference|color" />
     <attr name="collapsedTextSize" format="dimension" />
     <attr name="cornerRadius" format="dimension" />
-    <attr name="couiShapeCheckBoxStyle" format="reference" />
-    <attr name="couiSupportEmptyInput" format="boolean" />
-    <attr name="couiSwitchLoadPreferenceStyle" format="reference" />
-    <attr name="couiSwitchStyle" format="reference" />
-    <attr name="couiSwitchWithDividerPreferenceStyle" format="reference" />
+
+
     <attr name="couiContent" format="string" />
     <attr name="couiEditLineColor" format="boolean" />
     <attr name="couiEnableError" format="boolean" />
-    <attr name="couiEnableInputCount" format="boolean" />
+
     <attr name="couiEnablePassword" format="boolean" />
-    <attr name="couiEnableSecurityInput" format="boolean" />
+
     <attr name="couiHint" format="string" />
-    <attr name="couiInputCustomFormat" format="boolean" />
-    <attr name="couiInputMaxCount" format="integer" />
-    <attr name="couiInputMinCount" format="integer" />
-    <attr name="couiCodeInputCount" format="integer" />
+
+
     <attr name="icon" format="reference" />
     <attr name="iconMarginDependOnImageView" format="boolean" />
     <attr name="itemEnabled" format="boolean" />
     <attr name="summary" format="string" />
     <attr name="couiTitle" format="string" />
     <attr name="couiJustShowFocusLine" format="boolean" />
-    <attr name="couiInputType">
-        <enum name="text" value="0" />
-        <enum name="number" value="1" />
-        <enum name="numberPassword" value="2" />
-    </attr>
+
     <attr name="couiIsScenesMode">
         <enum name="setting" value="0" />
         <enum name="desktop" value="1" />
@@ -334,51 +309,28 @@
         <flag name="none" value="0x0" />
         <flag name="vertical" value="0x200" />
     </attr>
-    <attr name="couiCircleProgressBarStyle" format="reference" />
-    <attr name="couiCircularProgressBarStyle" format="reference" />
-    <attr name="couiHorizontalProgressBarStyle" format="reference" />
-    <attr name="couiLoadInstallProgressPreferenceStyle" format="reference" />
-    <attr name="couiInstallLoadProgressStyle" format="reference" />
-    <attr name="couiInstallLoadProgressCircleStyle" format="reference" />
-    <attr name="couiInstallLoadProgressLargeStyle" format="reference" />
-    <attr name="couiInstallLoadProgressSmallStyle" format="reference" />
-    <attr name="couiLoadProgressStyle" format="reference" />
-    <attr name="couiLoadingViewStyle" format="reference" />
-    <attr name="couiLottieLoadingViewStyle" format="reference" />
+
+
     <attr name="couiNumberPickerStyle" format="reference" />
     <attr name="couiPageIndicatorStyle" format="reference" />
-    <attr name="couiSearchBarStyle" format="reference" />
-    <attr name="couiSearchClearSelector" format="reference" />
-    <attr name="couiSearchIcon" format="reference" />
-    <attr name="couiSearchViewAnimateStyle" format="reference" />
-    <attr name="couiSearchViewAnimateType">
-        <enum name="typeInstantSearch" value="0" />
-        <enum name="typeNonInstantSearch" value="1" />
-    </attr>
-    <attr name="couiSearchViewMainIcon" format="reference" />
-    <attr name="couiSearchViewNormalHintColorDisable" format="color" />
-    <attr name="couiSearchViewSelectorColorPressed" format="color" />
-    <attr name="couiSearchViewSubIcon" format="reference" />
-    <attr name="couiSearchviewHintBgColorDisabled" format="color" />
-    <attr name="couiSearchviewHintBgColorNormal" format="color" />
+
+
     <attr name="couiTimePickerStyle" format="reference" />
     <attr name="couiRoundCornerXXLWeight" format="reference|float" />
     <attr name="couiRoundCornerMWeight" format="reference|float" />
-    <attr name="couiColorPrimaryTextOnPopup" format="reference|color" />
+
     <attr name="layoutBackgroundTint" format="color" />
-    <attr name="couiSeekBarStyle" format="reference" />
-    <attr name="couiIntentSeekBarStyle" format="reference" />
-    <attr name="couiSectionSeekBarStyle" format="reference" />
-    <attr name="couiVerticalSeekBarStyle" format="reference" />
+
+
     <attr name="contentMaxHeight" format="dimension" />
     <attr name="contentMaxWidth" format="dimension" />
     <attr name="customContentLayout" format="reference" />
-    <attr name="hasLoading" format="boolean" />
+
     <attr name="isAssignMentLayout" format="boolean" />
     <attr name="isCustomStyle" format="boolean" />
     <attr name="isForceCenterStyleInLargeScreen" format="boolean" />
     <attr name="isNeedToAdaptMessageAndList" format="boolean" />
-    <attr name="isTinyDialog" format="boolean" />
+
     <attr name="windowAnimStyle" format="reference" />
     <attr name="buttonBarDividerSize" format="dimension" />
     <attr name="buttonBarShowDivider" format="boolean" />
@@ -411,12 +363,8 @@
     <attr name="contentPaddingRight" format="dimension" />
     <attr name="contentPaddingTop" format="dimension" />
     <attr name="couiAsyncLoad" format="boolean" />
-    <attr name="couiButton" format="reference" />
-    <attr name="couiCheckBoxState">
-        <enum name="unSelected" value="0" />
-        <enum name="partSelected" value="1" />
-        <enum name="allSelected" value="2" />
-    </attr>
+
+
     <attr name="descText" format="string" />
     <attr name="disabledColor" format="reference|color" />
     <attr name="drawableColor" format="reference|color" />
@@ -442,9 +390,8 @@
     <attr name="strokeColor" format="reference|color" />
     <attr name="strokeWidth" format="dimension" />
     <attr name="themedCheckedDrawable" format="reference" />
-    <attr name="themedLoadingCheckedBackground" format="reference" />
-    <attr name="themedLoadingDrawable" format="reference" />
-    <attr name="themedLoadingUncheckedBackground" format="reference" />
+
+
     <attr name="themedUncheckedDrawable" format="reference" />
     <attr name="coui_state_allSelect" format="boolean" />
     <attr name="coui_state_partSelect" format="boolean" />
@@ -473,26 +420,22 @@
         <enum name="tintByGlobalTheme" value="1" />
         <enum name="tintAnyway" value="2" />
     </attr>
-    <attr name="couiJumpPreferenceStyle" format="reference" />
+
     <attr name="coui_jump_mark" format="reference" />
     <attr name="coui_jump_status1" format="string" />
     <attr name="couiMarkAssignment" format="string" />
-    <attr name="couiMarkPreferenceStyle" format="reference" />
-    <attr name="couiMenuPreferenceStyle" format="reference" />
+
+
     <attr name="couiMarkStyle">
         <enum name="tail" value="0" />
         <enum name="head" value="1" />
     </attr>
     <attr name="groupIds" format="reference" />
     <attr name="maxShowItemCount" format="integer" />
-    <attr name="popInputMethod">
-        <enum name="none" value="0" />
-        <enum name="needed" value="1" />
-        <enum name="notNeeded" value="2" />
-    </attr>
+
     <attr name="placeholderHeight" format="dimension" />
-    <attr name="couiRadioWithDividerPreferenceStyle" format="reference" />
-    <attr name="couiRecommendedPreferenceStyle" format="reference" />
+
+
     <attr name="recommendedCardBgColor" format="color" />
     <attr name="recommendedCardBgRadius" format="dimension" />
     <attr name="recommendedHeaderTitle" format="string" />
@@ -530,9 +473,8 @@
     <attr name="calendarViewShown" format="boolean" />
     <attr name="endYear" format="integer" />
     <attr name="buttonDivider" format="reference" />
-    <attr name="couiHideFunctionalButton" format="boolean" />
-    <attr name="functionalButtonText" format="string|reference" />
-    <attr name="functionalButtonTextColor" format="color|reference" />
+
+
     <attr name="inputHintTextColor" format="color|reference" />
     <attr name="inputTextColor" format="color|reference" />
     <attr name="inputTextSize" format="dimension" />
@@ -545,106 +487,26 @@
     <attr name="spinnersShown" format="boolean" />
     <attr name="startYear" format="integer" />
     <attr name="couiYearIgnorable" format="boolean" />
-    <attr name="couiSeekBarAdaptiveVibrator" format="boolean" />
-    <attr name="couiSeekBarBackGroundEnlargeScale" format="float" />
-    <attr name="couiSeekBarBackgroundColor" format="color|reference" />
-    <attr name="couiSeekBarBackgroundHeight" format="dimension" />
-    <attr name="couiSeekBarBackgroundHighlightColor" format="color|reference" />
-    <attr name="couiSeekBarBackgroundRadius" format="dimension" />
-    <attr name="couiSeekBarBackgroundRoundCornerWeight" format="float" />
-    <attr name="couiSeekBarDeformation" format="boolean" />
-    <attr name="couiSeekBarEnableVibrator" format="boolean" />
-    <attr name="couiSeekBarInnerShadowSize" format="dimension" />
-    <attr name="couiSeekBarIsFollowThumb" format="boolean" />
-    <attr name="couiSeekBarMaxWidth" format="dimension" />
-    <attr name="couiSeekBarMinHeight" format="dimension" />
-    <attr name="couiSeekBarPhysicsEnable" format="boolean" />
-    <attr name="couiSeekBarProgressColor" format="color|reference" />
-    <attr name="couiSeekBarProgressEnlargeScale" format="float" />
-    <attr name="couiSeekBarProgressFull" format="boolean" />
-    <attr name="couiSeekBarProgressHeight" format="dimension" />
-    <attr name="couiSeekBarProgressPaddingHorizontal" format="dimension" />
-    <attr name="couiSeekBarProgressRadius" format="dimension" />
-    <attr name="couiSeekBarProgressRoundCornerWeight" format="float" />
-    <attr name="couiSeekBarProgressScaleRadius" format="dimension" />
-    <attr name="couiSeekBarSecondaryProgressColor" format="color|reference" />
-    <attr name="couiSeekBarShadowColor" format="color|reference" />
-    <attr name="couiSeekBarShadowSize" format="dimension" />
-    <attr name="couiSeekBarShowGlitterEffect" format="boolean" />
-    <attr name="couiSeekBarShowProgress" format="boolean" />
-    <attr name="couiSeekBarShowText" format="boolean" />
-    <attr name="couiSeekBarShowThumb" format="boolean" />
-    <attr name="couiSeekBarStartMiddle" format="boolean" />
-    <attr name="couiSeekBarText" format="string" />
-    <attr name="couiSeekBarTextColor" format="color|reference" />
-    <attr name="couiSeekBarTextMarginTop" format="dimension" />
-    <attr name="couiSeekBarThumbColor" format="color|reference" />
-    <attr name="couiSeekBarThumbOutRadius" format="dimension" />
-    <attr name="couiSeekBarThumbShadowColor" format="color|reference" />
-    <attr name="couiSeekBarThumbShadowSize" format="dimension" />
-    <attr name="couiCircleProgress" format="integer" />
+
+
     <attr name="couiCircleMax" format="integer" />
-    <attr name="couiCircleProgressBarBgCircleColor" format="color|reference" />
-    <attr name="couiCircleProgressBarColor" format="color|reference" />
-    <attr name="couiCircleProgressBarHeight" format="dimension" />
-    <attr name="couiCircleProgressBarType">
-        <enum name="small" value="0" />
-        <enum name="medium" value="1" />
-        <enum name="large" value="2" />
-    </attr>
-    <attr name="couiCircleProgressBarWidth" format="dimension" />
-    <attr name="couiCircularProgress" format="integer" />
+
+
     <attr name="couiCircularMax" format="integer" />
     <attr name="couiCircularErrorDrawableTint" format="color|reference" />
     <attr name="couiCircularPauseDrawableTint" format="color|reference" />
-    <attr name="couiCircularProgressBarColor" format="color|reference" />
-    <attr name="couiCircularProgressBarHeight" format="dimension" />
-    <attr name="couiCircularProgressBarSize">
-        <enum name="medium_size" value="0" />
-        <enum name="large_size" value="1" />
-    </attr>
-    <attr name="couiCircularProgressBarTrackColor" format="color|reference" />
-    <attr name="couiCircularProgressBarType">
-        <enum name="default_type" value="0" />
-        <enum name="on_image" value="1" />
-        <enum name="follow_theme" value="2" />
-    </attr>
-    <attr name="couiCircularProgressBarWidth" format="dimension" />
-    <attr name="couiHorizontalProgressBarBackgroundColor" format="color|reference" />
-    <attr name="couiHorizontalProgressBarProgressColor" format="color|reference" />
-    <attr name="couiHorizontalProgressNeedRadius" format="boolean" />
-    <attr name="couiLoadingViewColor" format="color|reference" />
-    <attr name="couiLoadingViewBgCircleColor" format="color|reference" />
-    <attr name="couiLoadingViewHeight" format="dimension" />
-    <attr name="couiLoadingViewType">
-        <enum name="small" value="0" />
-        <enum name="medium" value="1" />
-        <enum name="large" value="2" />
-    </attr>
-    <attr name="couiLoadingViewWidth" format="dimension" />
-    <attr name="couiLoadingType">
-        <enum name="large_animation" value="0" />
-        <enum name="small_animation" value="1" />
-        <enum name="small_animation_with_text_horizontal" value="2" />
-        <enum name="large_animation_with_text_vertical" value="3" />
-        <enum name="small_animation_with_text_vertical" value="4" />
-    </attr>
-    <attr name="couiLottieLoadingRawRes" format="reference" />
-    <attr name="couiLottieLoadingJsonName" format="string" />
-    <attr name="couiLottieLoadingViewHeight" format="dimension" />
-    <attr name="couiLottieLoadingViewWidth" format="dimension" />
-    <attr name="couiSmallLottieLoadingViewHeight" format="dimension" />
-    <attr name="couiSmallLottieLoadingViewWidth" format="dimension" />
+
+
     <attr name="couiRepeatCount" format="integer" />
     <attr name="couiAutoPlay" format="boolean" />
     <attr name="couiTextFix" format="boolean" />
     <attr name="loadingTips" format="string" />
-    <attr name="couiLoadProgressColor" format="color|reference" />
+
     <attr name="couiDefaultDrawable" format="reference" />
-    <attr name="loadingButtonNeedVibrate" format="boolean" />
+
     <attr name="backgroundColor" format="color" />
     <attr name="installBackgroundColor" format="color" />
-    <attr name="installProgressTextColor" format="color" />
+
     <attr name="progressText" format="string" />
     <attr name="progressTextColor" format="color" />
     <attr name="progressTextSize" format="dimension" />
@@ -664,40 +526,8 @@
     <attr name="couiThemeColor" format="color|reference" />
     <attr name="couiThemeColorSecondary" format="color|reference" />
     <attr name="couiThemeTextColor" format="color|reference" />
-    <attr name="couiProgress" format="integer" />
-    <attr name="couiProgressbarBackgroundColorDisabled" format="color|reference" />
-    <attr name="couiProgressbarProgressColorDisabled" format="color|reference" />
-    <attr name="couiSeekBarProgressColorDisabled" format="color|reference" />
-    <attr name="couiVerticalSeekBarAdaptiveVibrator" format="boolean" />
-    <attr name="couiVerticalSeekBarBackGroundEnlargeScale" format="float" />
-    <attr name="couiVerticalSeekBarBackGroundRadiusEnlargeScale" format="float" />
-    <attr name="couiVerticalSeekBarBackgroundColor" format="color|reference" />
-    <attr name="couiVerticalSeekBarBackgroundHighlightColor" format="color|reference" />
-    <attr name="couiVerticalSeekBarBackgroundRadius" format="dimension" />
-    <attr name="couiVerticalSeekBarBackgroundRoundCornerWeight" format="float" />
-    <attr name="couiVerticalSeekBarBackgroundWidth" format="dimension" />
-    <attr name="couiVerticalSeekBarDeformation" format="boolean" />
-    <attr name="couiVerticalSeekBarEnableVibrator" format="boolean" />
-    <attr name="couiVerticalSeekBarMaxHeight" format="dimension" />
-    <attr name="couiVerticalSeekBarMinWidth" format="dimension" />
-    <attr name="couiVerticalSeekBarPhysicsEnable" format="boolean" />
-    <attr name="couiVerticalSeekBarProgressColor" format="color|reference" />
-    <attr name="couiVerticalSeekBarProgressEnlargeScale" format="float" />
-    <attr name="couiVerticalSeekBarProgressFull" format="boolean" />
-    <attr name="couiVerticalSeekBarProgressPaddingVertical" format="dimension" />
-    <attr name="couiVerticalSeekBarProgressRadius" format="dimension" />
-    <attr name="couiVerticalSeekBarProgressRadiusEnlargeScale" format="float" />
-    <attr name="couiVerticalSeekBarProgressRoundCornerWeight" format="float" />
-    <attr name="couiVerticalSeekBarProgressScaleRadius" format="dimension" />
-    <attr name="couiVerticalSeekBarProgressWidth" format="dimension" />
-    <attr name="couiVerticalSeekBarShowProgress" format="boolean" />
-    <attr name="couiVerticalSeekBarShowText" format="boolean" />
-    <attr name="couiVerticalSeekBarShowThumb" format="boolean" />
-    <attr name="couiVerticalSeekBarText" format="string" />
-    <attr name="couiVerticalSeekBarTextColor" format="color|reference" />
-    <attr name="couiVerticalSeekBarTextMarginTop" format="dimension" />
-    <attr name="couiVerticalSeekBarThumbColor" format="color|reference" />
-    <attr name="couiVerticalSeekBarThumbOutRadius" format="dimension" />
+
+
     <attr name="couiState">
         <enum name="defualtUpOrDown" value="0" />
         <enum name="upingOrDowning" value="1" />
@@ -716,44 +546,40 @@
     <attr name="couiLimitMaxWidth" format="dimension" />
     <attr name="assignment" format="string" />
     <attr name="couiAdaptiveVibrator" format="boolean" />
-    <attr name="couiAlertDialogContentTextColor" format="color" />
+
     <attr name="couiBackgroundAlignMode" format="integer">
         <enum name="middle" value="0" />
         <enum name="left" value="1" />
         <enum name="right" value="2" />
     </attr>
-    <attr name="couiCardMultiInputEditTextStyle" format="reference" />
-    <attr name="couiCardSingleInputEditTextStyle" format="reference" />
+
+
     <attr name="couiFirstIsCharacter" format="boolean" />
     <attr name="couiFirstMarginTop" format="boolean" />
-    <attr name="couiFullPageStatementDividerColor" format="color|reference" />
-    <attr name="couiFullPageStatementPrivacyIcon" format="reference" />
-    <attr name="couiFullPageStatementStyle" format="reference" />
-    <attr name="couiFullPageStatementTextButtonColor" format="color|reference" />
-    <attr name="couiFullPageStatementTextColor" format="color|reference" />
-    <attr name="couiFullPageStatementTitleText" format="string" />
-    <attr name="appStatement" format="string" />
-    <attr name="bottomButtonText" format="string" />
-    <attr name="exitButtonText" format="string" />
+
+
     <attr name="couiHandleViewHasPressAnim" format="boolean" />
-    <attr name="couiIsHandlePanel" format="boolean" />
+
     <attr name="couiKeyCollect" format="color|reference" />
     <attr name="couiKeyTextColor" format="color|reference" />
     <attr name="couiKeyTextSize" format="dimension" />
     <attr name="couiMarginLeft" format="dimension" />
     <attr name="couiMarginRigh" format="dimension" />
-    <attr name="couiPanelEdgeToEdge" format="boolean" />
-    <attr name="couiPanelLayoutWithShadowTint" format="color" />
+
+
     <attr name="couiShowMaxHeight" format="boolean" />
     <attr name="couiTabAutoResize" format="boolean" />
     <attr name="couiTabBackground" format="reference" />
     <attr name="couiTabBottomDividerColor" format="color" />
     <attr name="couiTabBottomDividerEnabled" format="boolean" />
-    <attr name="couiTabButtonMarginEnd" format="dimension" />
+
     <attr name="couiTabContentStart" format="dimension" />
     <attr name="couiTabEnableVibrator" format="boolean" />
     <attr name="couiTabFontFamily" format="string" />
-    <attr name="couiTabGravity"><enum name="fill" value="0" /><enum name="center" value="1" /></attr>
+    <attr name="couiTabGravity">
+        <enum name="fill" value="0" />
+        <enum name="center" value="1" />
+    </attr>
     <attr name="couiTabIndicatorBackgroundColor" format="color" />
     <attr name="couiTabIndicatorBackgroundHeight" format="dimension" />
     <attr name="couiTabIndicatorBackgroundPaddingLeft" format="dimension" />
@@ -767,7 +593,10 @@
     <attr name="couiTabMinDivider" format="dimension" />
     <attr name="couiTabMinMargin" format="dimension" />
     <attr name="couiTabMinWidth" format="dimension" />
-    <attr name="couiTabMode"><enum name="scrollable" value="0" /><enum name="fixed" value="1" /></attr>
+    <attr name="couiTabMode">
+        <enum name="scrollable" value="0" />
+        <enum name="fixed" value="1" />
+    </attr>
     <attr name="couiTabPadding" format="dimension" />
     <attr name="couiTabPaddingBottom" format="dimension" />
     <attr name="couiTabPaddingEnd" format="dimension" />
@@ -826,19 +655,10 @@
     <declare-styleable name="COUIScrollView">
         <attr name="couiScrollViewEnableVibrator" />
     </declare-styleable>
-    <declare-styleable name="COUISnackBar">
-        <attr name="couiSnackBarIcon" />
-        <attr name="defaultSnackBarContentText" />
-        <attr name="snackBarDisappearTime" />
-    </declare-styleable>
+
     <attr name="couiThemeIdentifier" format="integer|reference" />
-    <attr name="couiTouchSearchVibrateLevel">
-        <enum name="crisp" value="0" />
-        <enum name="soft" value="1" />
-    </attr>
-    <attr name="couiTouchSearchViewStyle" format="reference" />
-    <attr name="couiToolbarNavigationButtonStyle" format="reference" />
-    <attr name="couiToolbarStyle" format="reference" />
+
+
     <attr name="dotClickable" format="boolean" />
     <attr name="dotColor" format="color" />
     <attr name="dotCornerRadius" format="dimension" />
@@ -855,7 +675,7 @@
     <attr name="panelBackgroundTintColor" format="color" />
     <attr name="panelDragViewIcon" format="reference" />
     <attr name="panelDragViewTintColor" format="color" />
-    <attr name="supportButtonGravity"><enum name="top" value="48" /><enum name="center_vertical" value="16" /><enum name="bottom" value="80" /></attr>
+
     <attr name="supportCollapsed" format="boolean" />
     <attr name="supportCollapsedAnimate" format="boolean" />
     <attr name="supportCollapseContentDescription" format="string" />
@@ -866,10 +686,10 @@
     <attr name="supportContentInsetStart" format="dimension" />
     <attr name="supportExpanded" format="boolean" />
     <attr name="supportExpandedAnimate" format="boolean" />
-    <attr name="supportMaxButtonHeight" format="dimension" />
+
     <attr name="supportIsTiny" format="boolean" />
-    <attr name="supportPanelStyle" format="boolean" />
-    <attr name="supportPopupTheme" format="reference" />
+
+
     <attr name="supportNavigationContentDescription" format="string" />
     <attr name="supportNavigationIcon" format="reference" />
     <attr name="supportRotateType">
@@ -889,73 +709,16 @@
     <attr name="titleCenter" format="boolean" />
     <attr name="titleType" format="integer" />
     <attr name="traceDotColor" format="color" />
-    <declare-styleable name="COUIToolbar">
-        <attr name="android:gravity" />
-        <attr name="minTitleTextSize" />
-        <attr name="supportButtonGravity" />
-        <attr name="supportCollapseContentDescription" />
-        <attr name="supportCollapseIcon" />
-        <attr name="supportContentInsetEnd" />
-        <attr name="supportContentInsetLeft" />
-        <attr name="supportContentInsetRight" />
-        <attr name="supportContentInsetStart" />
-        <attr name="supportIsTiny" />
-        <attr name="supportMaxButtonHeight" />
-        <attr name="supportNavigationContentDescription" />
-        <attr name="supportNavigationIcon" />
-        <attr name="supportPanelStyle" />
-        <attr name="supportPopupTheme" />
-        <attr name="supportSubtitle" />
-        <attr name="supportSubtitleTextAppearance" />
-        <attr name="supportTitle" />
-        <attr name="supportTitleMarginBottom" />
-        <attr name="supportTitleMarginEnd" />
-        <attr name="supportTitleMargins" />
-        <attr name="supportTitleMarginStart" />
-        <attr name="supportTitleMarginTop" />
-        <attr name="supportTitlePaddingBottom" />
-        <attr name="supportTitlePaddingTop" />
-        <attr name="supportTitleTextAppearance" />
-        <attr name="titleCenter" />
-        <attr name="titleType" />
-    </declare-styleable>
+
     <!-- Leapy added 2026-07-20: Attribute order and defaults follow the decoded
          OPPO COUIDividerAppBarLayout implementation. -->
-    <declare-styleable name="COUIDividerAppBarLayout">
-        <attr name="dividerEndAlpha" />
-        <attr name="dividerEndMarginHorizontal" />
-        <attr name="dividerStartAlpha" />
-        <attr name="dividerStartMarginHorizontal" />
-        <attr name="hasDivider" />
-    </declare-styleable>
+
     <!-- Leapy end -->
     <declare-styleable name="COUIRotateView">
         <attr name="supportExpanded" />
         <attr name="supportRotateType" />
     </declare-styleable>
-    <declare-styleable name="COUITouchSearchView">
-        <attr name="couiAdaptiveVibrator" />
-        <attr name="couiBackgroundAlignMode" />
-        <attr name="couiFirstIsCharacter" />
-        <attr name="couiFirstMarginTop" />
-        <attr name="couiKeyCollect" />
-        <attr name="couiKeyTextColor" />
-        <attr name="couiKeyTextSize" />
-        <attr name="couiMarginLeft" />
-        <attr name="couiMarginRigh" />
-        <attr name="couiPopupCollect" />
-        <attr name="couiPopupWinFirstHeight" />
-        <attr name="couiPopupWinFirstTextColor" />
-        <attr name="couiPopupWinFirstTextSize" />
-        <attr name="couiPopupWinFirstWidth" />
-        <attr name="couiPopupWinMinTop" />
-        <attr name="couiPopupWinSecondHeight" />
-        <attr name="couiPopupWinSecondMargin" />
-        <attr name="couiPopupWinSecondOffset" />
-        <attr name="couiPopupWinSecondTextSize" />
-        <attr name="couiPopupWinSecondWidth" />
-        <attr name="couiTouchSearchVibrateLevel" />
-    </declare-styleable>
+
     <declare-styleable name="ViewDrawableStates">
         <attr name="android:state_window_focused" />
         <attr name="android:state_selected" />
@@ -968,135 +731,23 @@
         <attr name="android:state_drag_can_accept" />
         <attr name="android:state_drag_hovered" />
     </declare-styleable>
-    <declare-styleable name="COUIButton">
-        <attr name="android:textColor" />
-        <attr name="animEnable" />
-        <attr name="animType" />
-        <attr name="brightness" />
-        <attr name="closeLimitTextSize" />
-        <attr name="couiRoundType" />
-        <attr name="descText" />
-        <attr name="disabledColor" />
-        <attr name="drawableColor" />
-        <attr name="drawableRadius" />
-        <attr name="isDescType" />
-        <attr name="isShowLoadingText" />
-        <attr name="loadingText" />
-        <attr name="needVibrate" />
-        <attr name="pressColor" />
-        <attr name="scaleEnable" />
-        <attr name="strokeColor" />
-        <attr name="strokeWidth" />
-    </declare-styleable>
-    <declare-styleable name="COUIButtonLayout">
-        <attr name="horizontalLayoutPadding" />
-        <attr name="verticalLayoutPadding" />
-        <attr name="couiLimitMaxWidth" />
-    </declare-styleable>
-    <declare-styleable name="COUICheckBox">
-        <attr name="couiAsyncLoad" />
-        <attr name="couiButton" />
-        <attr name="couiCheckBoxState" />
-    </declare-styleable>
-    <declare-styleable name="COUISwitch">
-        <attr name="barCheckedDisabledColor" />
-        <attr name="barHeight" />
-        <attr name="barUncheckedDisabledColor" />
-        <attr name="circlePadding" />
-        <attr name="innerCircleCheckedDisabledColor" />
-        <attr name="innerCircleColor" />
-        <attr name="innerCircleUncheckedDisabledColor" />
-        <attr name="innerCircleWidth" />
-        <attr name="loadingDrawable" />
-        <attr name="outerCircleCheckedDisabledColor" />
-        <attr name="outerCircleColor" />
-        <attr name="outerCircleStrokeWidth" />
-        <attr name="outerCircleUncheckedDisabledColor" />
-        <attr name="outerCircleWidth" />
-        <attr name="outerUnCheckedCircleColor" />
-        <attr name="themedCheckedDrawable" />
-        <attr name="themedLoadingCheckedBackground" />
-        <attr name="themedLoadingDrawable" />
-        <attr name="themedLoadingUncheckedBackground" />
-        <attr name="themedUncheckedDrawable" />
-    </declare-styleable>
-    <declare-styleable name="COUISwitchPreference">
-        <attr name="hasTitleRedDot" />
-    </declare-styleable>
-    <declare-styleable name="COUIEditText">
-        <attr name="android:hint" />
-        <attr name="android:textColor" />
-        <attr name="android:textColorHint" />
-        <attr name="collapsedTextColor" />
-        <attr name="collapsedTextSize" />
-        <attr name="cornerRadius" />
-        <attr name="couiBackgroundMode" />
-        <attr name="couiDefaultStrokeColor" />
-        <attr name="couiDisabledStrokeColor" />
-        <attr name="couiEditTextDeleteIconNormal" />
-        <attr name="couiEditTextDeleteIconPressed" />
-        <attr name="couiEditTextErrorColor" />
-        <attr name="couiEditTextHintLines" />
-        <attr name="couiEditTextIsEllipsis" />
-        <attr name="couiEditTextNoEllipsisText" />
-        <attr name="couiFocusStrokeWidth" />
-        <attr name="couiHintAnimationEnabled" />
-        <attr name="couiHintEnabled" />
-        <attr name="couiShowDeleteIcon" />
-        <attr name="couiStrokeColor" />
-        <attr name="couiStrokeWidth" />
-        <attr name="quickDelete" />
-        <attr name="rectModePaddingTop" />
-    </declare-styleable>
+
+
     <declare-styleable name="COUICardListSelectedItemLayout">
         <attr name="couiCardListHorizontalMargin" />
         <attr name="couiCardRadius" />
         <attr name="listIsTiny" />
     </declare-styleable>
-    <declare-styleable name="COUIInputListSelectedItemLayout">
-        <attr name="couiInputListHorizontalMargin" />
-        <attr name="couiInputRadius" />
-        <attr name="listIsTiny" />
-    </declare-styleable>
+
     <declare-styleable name="COUICustomListSelectedLinearLayout">
         <attr name="couiPreferenceWithDividerItem" />
     </declare-styleable>
-    <declare-styleable name="COUICustomLinearLayoutForPreference">
-        <attr name="couiAHavePriority" />
-        <attr name="couiBStickToC" />
-        <attr name="couiMarginEndOfA" />
-        <attr name="couiMessageLayoutMarginEnd" />
-    </declare-styleable>
+
     <declare-styleable name="COUIHalfHeightHorizontalPaddingLinearLayout">
         <attr name="fixPaddingEnd" />
     </declare-styleable>
-    <declare-styleable name="COUIInputPreference">
-        <attr name="couiContent" />
-        <attr name="couiJustShowFocusLine" />
-    </declare-styleable>
-    <declare-styleable name="COUIInputView">
-        <attr name="couiTitle" />
-        <attr name="couiHint" />
-        <attr name="couiEnablePassword" />
-        <attr name="couiPasswordType" />
-        <attr name="couiEnableError" />
-        <attr name="couiInputMaxCount" />
-        <attr name="couiEnableInputCount" />
-        <attr name="couiInputType" />
-        <attr name="couiInputCustomFormat" />
-        <attr name="couiEditLineColor" />
-    </declare-styleable>
-    <declare-styleable name="COUILockScreenPwdInputLayout">
-        <attr name="couiEnableInputCount" />
-        <attr name="couiInputMaxCount" />
-        <attr name="couiInputMinCount" />
-        <attr name="couiInputType" />
-        <attr name="couiIsScenesMode" />
-    </declare-styleable>
-    <declare-styleable name="COUICodeInputView">
-        <attr name="couiCodeInputCount" />
-        <attr name="couiEnableSecurityInput" />
-    </declare-styleable>
+
+
     <declare-styleable name="COUIBaseListItemView">
         <attr name="assignInRightAsMainLayout" />
         <attr name="iconMarginDependOnImageView" />
@@ -1120,20 +771,7 @@
         <attr name="subtitleText" />
         <attr name="titleText" />
     </declare-styleable>
-    <declare-styleable name="COUIPreferenceCategory">
-        <attr name="coui_jump_status" />
-        <attr name="icon_in_right" />
-        <attr name="icon_in_right_content_description" />
-        <attr name="icon_with_title" />
-        <attr name="icon_with_title_content_description" />
-        <attr name="isFirstCategory" />
-        <attr name="isShowIcon" />
-        <attr name="text_in_reddot" />
-        <attr name="text_in_right" />
-        <attr name="title_margin_start_type" />
-        <attr name="title_type" />
-        <attr name="top_margin_type" />
-    </declare-styleable>
+
     <declare-styleable name="COUIHintRedDot">
         <attr name="couiCornerRadius" />
         <attr name="couiDotDiameter" />
@@ -1167,86 +805,8 @@
         <attr name="isImageView" />
         <attr name="sizeType" />
     </declare-styleable>
-    <declare-styleable name="COUIPreference">
-        <attr name="assignRedDotMode" />
-        <attr name="couiAssignment" />
-        <attr name="couiAssignmentColor" />
-        <attr name="couiBlurAnimLevel" />
-        <attr name="couiClickStyle" />
-        <attr name="couiDialogBlurBackground" />
-        <attr name="couiDividerDrawable" />
-        <attr name="couiEnalbeClickSpan" />
-        <attr name="couiIconStyle" />
-        <attr name="couiIfFollowHand" />
-        <attr name="couiIsCustomIcon" />
-        <attr name="couiNormalStyleBackground" />
-        <attr name="couiSetDefaultColor" />
-        <attr name="couiShowDivider" />
-        <attr name="couiSummaryColor" />
-        <attr name="couiSummaryLineLimit" />
-        <attr name="coui_assign_icon" />
-        <attr name="coui_jump_mark" />
-        <attr name="coui_jump_status1" />
-        <attr name="endRedDotMode" />
-        <attr name="endRedDotNum" />
-        <attr name="hasBorder" />
-        <attr name="iconRedDotMode" />
-        <attr name="isBackgroundAnimationEnabled" />
-        <attr name="isHeaderView" />
-        <attr name="isSupportCardUse" />
-        <attr name="preference_icon_radius" />
-        <attr name="titleTextColor" />
-    </declare-styleable>
-    <declare-styleable name="COUIButtonPreference">
-        <attr name="btnDrawableColor" />
-        <attr name="btnText" />
-        <attr name="btnTextColor" />
-        <attr name="btnTextSize" />
-    </declare-styleable>
-    <declare-styleable name="COUIBottomPreference">
-        <attr name="placeholderHeight" />
-    </declare-styleable>
-    <declare-styleable name="COUICheckBoxPreference">
-        <attr name="couiCheckBoxAssignment" />
-    </declare-styleable>
-    <declare-styleable name="COUICheckBoxPreferenceCategory">
-        <attr name="default_checkbox_state" />
-    </declare-styleable>
-    <declare-styleable name="COUILoadingPreferenceCategory">
-        <attr name="coui_loading_after_layout" />
-        <attr name="coui_loading_before_layout" />
-        <attr name="text_in_loading" />
-    </declare-styleable>
-    <declare-styleable name="couiEditTextPreference">
-        <attr name="couiSupportEmptyInput" />
-    </declare-styleable>
-    <declare-styleable name="COUIAlertDialogBuilder">
-        <attr name="android:gravity" />
-        <attr name="contentMaxHeight" />
-        <attr name="contentMaxWidth" />
-        <attr name="customContentLayout" />
-        <attr name="hasLoading" />
-        <attr name="isAssignMentLayout" />
-        <attr name="isCustomStyle" />
-        <attr name="isForceCenterStyleInLargeScreen" />
-        <attr name="isNeedToAdaptMessageAndList" />
-        <attr name="isTinyDialog" />
-        <attr name="windowAnimStyle" />
-    </declare-styleable>
-    <declare-styleable name="COUIButtonBarLayout">
-        <attr name="buttonBarDividerSize" />
-        <attr name="buttonBarShowDivider" />
-        <attr name="forceVertical" />
-        <attr name="verNegButVerPaddingOffset" />
-    </declare-styleable>
-    <declare-styleable name="COUIAlertDialogMaxLinearLayout">
-        <attr name="clip_radius_root" />
-        <attr name="maxHeight" />
-        <attr name="maxWidth" />
-    </declare-styleable>
-    <declare-styleable name="COUIAlertDialogClipCornerLinearLayout">
-        <attr name="clip_radius" />
-    </declare-styleable>
+
+
     <declare-styleable name="COUIPageIndicator">
         <attr name="dotClickable" />
         <attr name="dotColor" />
@@ -1273,10 +833,7 @@
     </declare-styleable>
     <!-- Leapy removed 2026-07-26: EffectiveAnimationView was replaced by
          LottieAnimationView and now consumes Lottie's own lottie_* attributes. -->
-    <declare-styleable name="COUIAlertDialogMaxScrollView">
-        <attr name="maxHeight" />
-        <attr name="maxWidth" />
-    </declare-styleable>
+
     <declare-styleable name="COUIPickersCommonAttrs">
         <attr name="couiPickersMaxWidth" />
     </declare-styleable>
@@ -1323,188 +880,8 @@
     <declare-styleable name="COUILunarDatePicker">
         <attr name="couiYearIgnorable" />
     </declare-styleable>
-    <declare-styleable name="COUISeekBar">
-        <attr name="couiSeekBarAdaptiveVibrator" />
-        <attr name="couiSeekBarBackGroundEnlargeScale" />
-        <attr name="couiSeekBarBackgroundColor" />
-        <attr name="couiSeekBarBackgroundHeight" />
-        <attr name="couiSeekBarBackgroundHighlightColor" />
-        <attr name="couiSeekBarBackgroundRadius" />
-        <attr name="couiSeekBarBackgroundRoundCornerWeight" />
-        <attr name="couiSeekBarDeformation" />
-        <attr name="couiSeekBarEnableVibrator" />
-        <attr name="couiSeekBarInnerShadowSize" />
-        <attr name="couiSeekBarIsFollowThumb" />
-        <attr name="couiSeekBarMaxWidth" />
-        <attr name="couiSeekBarMinHeight" />
-        <attr name="couiSeekBarPhysicsEnable" />
-        <attr name="couiSeekBarProgressColor" />
-        <attr name="couiSeekBarProgressColorDisabled" />
-        <attr name="couiSeekBarProgressEnlargeScale" />
-        <attr name="couiSeekBarProgressFull" />
-        <attr name="couiSeekBarProgressHeight" />
-        <attr name="couiSeekBarProgressPaddingHorizontal" />
-        <attr name="couiSeekBarProgressRadius" />
-        <attr name="couiSeekBarProgressRoundCornerWeight" />
-        <attr name="couiSeekBarProgressScaleRadius" />
-        <attr name="couiSeekBarSecondaryProgressColor" />
-        <attr name="couiSeekBarShadowColor" />
-        <attr name="couiSeekBarShadowSize" />
-        <attr name="couiSeekBarShowGlitterEffect" />
-        <attr name="couiSeekBarShowProgress" />
-        <attr name="couiSeekBarShowText" />
-        <attr name="couiSeekBarShowThumb" />
-        <attr name="couiSeekBarStartMiddle" />
-        <attr name="couiSeekBarText" />
-        <attr name="couiSeekBarTextColor" />
-        <attr name="couiSeekBarTextMarginTop" />
-        <attr name="couiSeekBarThumbColor" />
-        <attr name="couiSeekBarThumbOutRadius" />
-        <attr name="couiSeekBarThumbShadowColor" />
-        <attr name="couiSeekBarThumbShadowSize" />
-        <attr name="android:max" />
-        <attr name="android:min" />
-        <attr name="android:progress" />
-    </declare-styleable>
-    <declare-styleable name="COUISectionSeekBar">
-        <attr name="couiSeekBarActiveMarkColor" format="color|reference" />
-        <attr name="couiSeekBarInactiveMarkColor" format="color|reference" />
-    </declare-styleable>
-    <declare-styleable name="COUIIntentSeekBar">
-        <attr name="couiSeekBarIsFollowThumb" />
-        <attr name="couiSeekBarSecondaryProgressColor" />
-    </declare-styleable>
-    <declare-styleable name="COUIVerticalSeekBar">
-        <attr name="android:max" />
-        <attr name="android:min" />
-        <attr name="android:progress" />
-        <attr name="couiVerticalSeekBarAdaptiveVibrator" />
-        <attr name="couiVerticalSeekBarBackGroundEnlargeScale" />
-        <attr name="couiVerticalSeekBarBackGroundRadiusEnlargeScale" />
-        <attr name="couiVerticalSeekBarBackgroundColor" />
-        <attr name="couiVerticalSeekBarBackgroundHighlightColor" />
-        <attr name="couiVerticalSeekBarBackgroundRadius" />
-        <attr name="couiVerticalSeekBarBackgroundRoundCornerWeight" />
-        <attr name="couiVerticalSeekBarBackgroundWidth" />
-        <attr name="couiVerticalSeekBarDeformation" />
-        <attr name="couiVerticalSeekBarEnableVibrator" />
-        <attr name="couiVerticalSeekBarMaxHeight" />
-        <attr name="couiVerticalSeekBarMinWidth" />
-        <attr name="couiVerticalSeekBarPhysicsEnable" />
-        <attr name="couiVerticalSeekBarProgressColor" />
-        <attr name="couiVerticalSeekBarProgressEnlargeScale" />
-        <attr name="couiVerticalSeekBarProgressFull" />
-        <attr name="couiVerticalSeekBarProgressPaddingVertical" />
-        <attr name="couiVerticalSeekBarProgressRadius" />
-        <attr name="couiVerticalSeekBarProgressRadiusEnlargeScale" />
-        <attr name="couiVerticalSeekBarProgressRoundCornerWeight" />
-        <attr name="couiVerticalSeekBarProgressScaleRadius" />
-        <attr name="couiVerticalSeekBarProgressWidth" />
-        <attr name="couiVerticalSeekBarShowProgress" />
-        <attr name="couiVerticalSeekBarShowText" />
-        <attr name="couiVerticalSeekBarShowThumb" />
-        <attr name="couiVerticalSeekBarText" />
-        <attr name="couiVerticalSeekBarTextColor" />
-        <attr name="couiVerticalSeekBarTextMarginTop" />
-        <attr name="couiVerticalSeekBarThumbColor" />
-        <attr name="couiVerticalSeekBarThumbOutRadius" />
-    </declare-styleable>
-    <declare-styleable name="COUIHorizontalProgressBar">
-        <attr name="couiHorizontalProgressBarBackgroundColor" />
-        <attr name="couiHorizontalProgressBarProgressColor" />
-        <attr name="couiHorizontalProgressNeedRadius" />
-    </declare-styleable>
-    <declare-styleable name="COUILoadingView">
-        <attr name="couiLoadingViewColor" />
-        <attr name="couiLoadingViewBgCircleColor" />
-        <attr name="couiLoadingViewHeight" />
-        <attr name="couiLoadingViewType" />
-        <attr name="couiLoadingViewWidth" />
-    </declare-styleable>
-    <declare-styleable name="COUILottieLoadingView">
-        <attr name="couiLottieLoadingJsonName" />
-        <attr name="couiLottieLoadingViewHeight" />
-        <attr name="couiLottieLoadingViewWidth" />
-    </declare-styleable>
-    <declare-styleable name="COUICircleProgressBar">
-        <attr name="couiCircleProgress" />
-        <attr name="couiCircleProgressBarBgCircleColor" />
-        <attr name="couiCircleProgressBarColor" />
-        <attr name="couiCircleProgressBarHeight" />
-        <attr name="couiCircleProgressBarType" />
-        <attr name="couiCircleProgressBarWidth" />
-        <attr name="couiCircleMax" />
-    </declare-styleable>
-    <declare-styleable name="COUICircularProgressBar">
-        <attr name="couiCircularProgress" />
-        <attr name="couiCircularProgressBarColor" />
-        <attr name="couiCircularProgressBarHeight" />
-        <attr name="couiCircularProgressBarSize" />
-        <attr name="couiCircularProgressBarTrackColor" />
-        <attr name="couiCircularProgressBarType" />
-        <attr name="couiCircularProgressBarWidth" />
-        <attr name="couiCircularMax" />
-        <attr name="couiCircularPauseDrawableTint" />
-        <attr name="couiCircularErrorDrawableTint" />
-    </declare-styleable>
-    <declare-styleable name="COUICompProgressIndicator">
-        <attr name="couiLoadingType" />
-        <attr name="loadingTips" />
-        <attr name="couiLottieLoadingJsonName" />
-        <attr name="couiLottieLoadingRawRes" />
-        <attr name="couiRepeatCount" />
-        <attr name="couiAutoPlay" />
-        <attr name="couiLottieLoadingViewWidth" />
-        <attr name="couiLottieLoadingViewHeight" />
-        <attr name="couiSmallLottieLoadingViewWidth" />
-        <attr name="couiSmallLottieLoadingViewHeight" />
-        <attr name="couiTextFix" />
-    </declare-styleable>
-    <declare-styleable name="COUILoadProgress">
-        <attr name="couiLoadProgressColor" />
-        <attr name="couiDefaultDrawable" />
-        <attr name="couiProgress" />
-        <attr name="couiState" />
-        <attr name="loadingButtonNeedVibrate" />
-    </declare-styleable>
-    <declare-styleable name="COUILoadInstallProgressPreference">
-        <attr name="backgroundColor" />
-        <attr name="installBackgroundColor" />
-        <attr name="installProgressTextColor" />
-        <attr name="progressText" />
-        <attr name="progressTextColor" />
-        <attr name="progressTextSize" />
-    </declare-styleable>
-    <declare-styleable name="COUIMarkPreference">
-        <attr name="couiMarkAssignment" />
-        <attr name="couiMarkStyle" />
-    </declare-styleable>
-    <declare-styleable name="COUIMenuPreference">
-        <attr name="android:value" />
-        <attr name="android:entries" />
-        <attr name="android:entryValues" />
-        <attr name="groupIds" />
-        <attr name="maxShowItemCount" />
-        <attr name="popInputMethod" />
-    </declare-styleable>
-    <declare-styleable name="COUIPagerFooterPreference">
-        <attr name="withExtraMarginBottom" />
-    </declare-styleable>
-    <declare-styleable name="COUIRecommendedPreference">
-        <attr name="recommendedCardBgColor" />
-        <attr name="recommendedCardBgRadius" />
-        <attr name="recommendedHeaderTitle" />
-    </declare-styleable>
-    <declare-styleable name="COUISlideSelectPreference">
-        <attr name="coui_select_mark" />
-        <attr name="coui_select_status1" />
-    </declare-styleable>
-    <declare-styleable name="COUIStepperPreference">
-        <attr name="couiDefStep" />
-        <attr name="couiMaximum" />
-        <attr name="couiMinimum" />
-        <attr name="couiUnit" />
-    </declare-styleable>
+
+
     <declare-styleable name="COUIStepperView">
         <attr name="couiDefStep" />
         <attr name="couiMaximum" />
@@ -1514,50 +891,8 @@
         <attr name="couiStepperTextStyle" />
         <attr name="couiUnit" />
     </declare-styleable>
-    <declare-styleable name="COUIInstallLoadProgress">
-        <attr name="brightness" />
-        <attr name="disabledColor" />
-        <attr name="couiInstallDefaultColor" />
-        <attr name="couiInstallGiftBg" />
-        <attr name="couiInstallPadding" />
-        <attr name="couiInstallTextsize" />
-        <attr name="couiInstallTextview" />
-        <attr name="couiInstallViewHeight" />
-        <attr name="couiInstallViewWidth" />
-        <attr name="couiStyle" />
-        <attr name="couiThemeColor" />
-        <attr name="couiThemeColorSecondary" />
-        <attr name="couiThemeTextColor" />
-    </declare-styleable>
-    <declare-styleable name="COUISearchBar">
-        <attr name="couiHideFunctionalButton" />
-        <attr name="couiSearchClearSelector" />
-        <attr name="couiSearchIcon" />
-        <attr name="functionalButtonText" />
-        <attr name="functionalButtonTextColor" />
-        <attr name="inputTextColor" />
-        <attr name="inputTextSize" />
-        <attr name="normalHintColor" />
-        <attr name="searchHint" />
-    </declare-styleable>
-    <declare-styleable name="COUISearchViewAnimate">
-        <attr name="android:gravity" />
-        <attr name="buttonDivider" />
-        <attr name="couiSearchClearSelector" />
-        <attr name="couiSearchIcon" />
-        <attr name="couiSearchViewAnimateType" />
-        <attr name="couiSearchViewMainIcon" />
-        <attr name="couiSearchViewSubIcon" />
-        <attr name="functionalButtonText" />
-        <attr name="functionalButtonTextColor" />
-        <attr name="inputHintTextColor" />
-        <attr name="inputTextColor" />
-        <attr name="inputTextSize" />
-        <attr name="normalBackground" />
-        <attr name="normalHintColor" />
-        <attr name="searchBackground" />
-        <attr name="searchHint" />
-    </declare-styleable>
+
+
     <declare-styleable name="COUIMaxHeightScrollView">
         <attr name="scrollViewInterceptWhenCannotScroll" />
         <attr name="scrollViewMaxHeight" />
@@ -1580,25 +915,8 @@
         <attr name="couiCardCornerWeight" />
         <attr name="couiCardRoundCornerRadius" />
     </declare-styleable>
-    <declare-styleable name="COUICardEntrancePreference">
-        <attr name="entranceCardType" />
-        <attr name="showSummary" />
-        <attr name="tintIcon" />
-    </declare-styleable>
-    <declare-styleable name="COUICardInstructionPreference">
-        <attr name="instructionCardType" />
-    </declare-styleable>
-    <declare-styleable name="COUIFullPageStatement">
-        <attr name="android:layout" />
-        <attr name="appStatement" />
-        <attr name="bottomButtonText" />
-        <attr name="couiFullPageStatementDividerColor" />
-        <attr name="couiFullPageStatementPrivacyIcon" />
-        <attr name="couiFullPageStatementTextButtonColor" />
-        <attr name="couiFullPageStatementTextColor" />
-        <attr name="couiFullPageStatementTitleText" />
-        <attr name="exitButtonText" />
-    </declare-styleable>
+
+
     <declare-styleable name="COUIRecyclerView">
         <attr name="couiRecyclerViewEnableVibrator" />
         <attr name="couiScrollbarSize" />
@@ -1746,34 +1064,27 @@
     </declare-styleable>
     <attr name="title" format="string" />
     <attr name="colorPrimaryVariant" format="color" />
-    <attr name="actionOverflowButtonStyle" format="reference" />
-    <attr name="borderlessButtonSolidColor" format="color" />
-    <attr name="borderlessButtonSolidDisabledColor" format="color" />
-    <attr name="borderlessButtonSolidSelectColor" format="color" />
-    <attr name="borderlessButtonTextColor" format="color" />
-    <attr name="borderlessButtonTextDisabledColor" format="color" />
-    <attr name="borderlessButtonTextSelectColor" format="color" />
+
+
     <attr name="buttonStyle" format="reference" />
     <attr name="buttonTextColor" format="color" />
     <attr name="buttonTextDisableColor" format="color" />
     <attr name="buttonTextSelectColor" format="color" />
     <attr name="checkboxStyle" format="reference" />
     <attr name="colorAccent" format="color" />
-    <attr name="colorButtonNormal" format="color" />
+
     <attr name="colorControlActivated" format="color" />
     <attr name="colorControlHighlight" format="color" />
     <attr name="colorControlNormal" format="color" />
     <attr name="colorPrimary" format="color" />
     <attr name="colorPrimaryDark" format="color" />
-    <attr name="colorSwitchThumbNormal" format="color" />
+
     <attr name="couiBtnDefaultTextColorDisable" format="color|reference" />
     <attr name="couiBtnDrawableColorDisabled" format="color|reference" />
     <attr name="couiBtnPartCheckInnerColorOnDisabled" format="color|reference" />
     <attr name="couiBtnSecondaryTextColorDisable" format="color|reference" />
-    <attr name="couiButtonColorfulDefaultStyle" format="reference" />
-    <attr name="couiButtonColorfulLargeStyle" format="reference" />
-    <attr name="couiButtonColorfulWhiteStyle" format="reference" />
-    <attr name="couiButtonNextStyle" format="reference" />
+
+
     <attr name="couiColorAdditional" format="color|reference" />
     <attr name="couiColorAssist" format="color|reference" />
     <attr name="couiColorAzure" format="color|reference" />
@@ -1837,8 +1148,8 @@
     <attr name="couiRoundCornerXXLRadius" format="reference" />
     <attr name="couiTextAppearanceArticleBody" format="reference" />
     <attr name="couiTextAppearanceBodyL" format="reference" />
-    <attr name="couiTextAppearanceButton" format="reference" />
-    <attr name="couiTextAppearanceButtonL" format="reference" />
+
+
     <attr name="couiTextAppearanceCaption" format="reference" />
     <attr name="couiTextAppearanceDescription" format="reference" />
     <attr name="couiTextAppearanceDisplay" format="reference" />
@@ -1852,9 +1163,8 @@
     <attr name="couiTextBodyL" format="reference" />
     <attr name="couiTextBodyM" format="reference" />
     <attr name="couiTextBodyXS" format="reference" />
-    <attr name="couiTextButtonL" format="reference" />
-    <attr name="couiTextButtonM" format="reference" />
-    <attr name="couiTextButtonS" format="reference" />
+
+
     <attr name="couiTextCaption" format="reference" />
     <attr name="couiTextDescription" format="reference" />
     <attr name="couiTextDisplayL" format="reference" />
@@ -1866,12 +1176,8 @@
     <attr name="couiTextHeadlineS" format="reference" />
     <attr name="couiTextHeadlineXS" format="reference" />
     <attr name="couiTextTag" format="reference" />
-    <attr name="couiTinyFullButtonColorStyle" format="reference" />
-    <attr name="couiTinyFullButtonSecondaryColorStyle" format="reference" />
-    <attr name="couiTinyHalfColorButtonColorStyle" format="reference" />
-    <attr name="couiTinySmallButtonColorStyle" format="reference" />
-    <attr name="couiTinySmallButtonSecondaryColorStyle" format="reference" />
-    <attr name="couiTinyTranslateButtonColorStyle" format="reference" />
+
+
     <attr name="dropDownListViewStyle" format="reference" />
     <attr name="listChoiceBackgroundIndicator" format="reference" />
     <attr name="listPreferredItemHeight" format="dimension" />
@@ -1879,47 +1185,29 @@
     <attr name="listPreferredItemHeightSmall" format="dimension" />
     <attr name="listPreferredItemPaddingLeft" format="dimension" />
     <attr name="listPreferredItemPaddingRight" format="dimension" />
-    <attr name="radioButtonStyle" format="reference" />
+
     <attr name="toolbarStyle" format="reference" />
     <attr name="showText" format="boolean" />
     <attr name="switchMinWidth" format="dimension" />
     <attr name="switchTextAppearance" format="reference" />
     <attr name="track" format="reference" />
-    <attr name="negativeButtonText" format="string" />
-    <attr name="positiveButtonText" format="string" />
+
+
     <attr name="widgetLayout" format="reference" />
     <attr name="dialogLayout" format="reference" />
-    <attr name="dialogPreferenceStyle" format="reference" />
-    <attr name="editTextPreferenceStyle" format="reference" />
-    <attr name="preferenceCategoryStyle" format="reference" />
-    <attr name="preferenceStyle" format="reference" />
-    <attr name="switchPreferenceCompatStyle" format="reference" />
-    <attr name="switchPreferenceStyle" format="reference" />
-    <attr name="preferenceFragmentCompatStyle" format="reference" />
+
+
     <attr name="listItemLayout" format="reference" />
     <attr name="listLayout" format="reference" />
     <attr name="multiChoiceItemLayout" format="reference" />
     <attr name="singleChoiceItemLayout" format="reference" />
     <attr name="fontFamily" format="string" />
     <attr name="windowActionBar" format="boolean" />
-    <attr name="alertDialogTheme" format="reference" />
-    <attr name="alertDialogStyle" format="reference" />
+
+
     <attr name="navigationContentDescription" format="string" />
-    <attr name="couiPopupCollect" format="color|reference" />
-    <attr name="couiPopupWinFirstHeight" format="dimension" />
-    <attr name="couiPopupWinFirstTextColor" format="color|reference" />
-    <attr name="couiPopupWinFirstTextSize" format="dimension" />
-    <attr name="couiPopupWinFirstWidth" format="dimension" />
-    <attr name="couiPopupWinMinTop" format="integer" />
-    <attr name="couiPopupWinSecondHeight" format="dimension" />
-    <attr name="couiPopupWinSecondMargin" format="dimension" />
-    <attr name="couiPopupWinSecondOffset" format="dimension" />
-    <attr name="couiPopupWinSecondTextSize" format="dimension" />
-    <attr name="couiPopupWinSecondWidth" format="dimension" />
-    <attr name="couiPopupListWindowTextColor" format="color|reference" />
-    <attr name="couiPopupListWindowTextColorDisabled" format="color" />
-    <attr name="couiPopupListWindowTextColorNormal" format="color" />
-    <attr name="couiPopupWindowBackground" format="reference" />
+
+
     <attr name="popupMenuStyle" format="reference" />
     <attr name="popupWindowStyle" format="reference" />
     <attr name="couiRoundCornerRadius" format="dimension" />
@@ -1976,80 +1264,16 @@
         <attr name="couiClipType" />
         <attr name="couirfRoundCornerWeight" />
     </declare-styleable>
-    <attr name="couiToolTipsArrowDownDrawable" format="reference" />
-    <attr name="couiToolTipsArrowLeftDrawable" format="reference" />
-    <attr name="couiToolTipsArrowOverflowOffset" format="dimension" />
-    <attr name="couiToolTipsArrowRightDrawable" format="reference" />
-    <attr name="couiToolTipsArrowUpDrawable" format="reference" />
-    <attr name="couiToolTipsBackground" format="color|reference" />
-    <attr name="couiToolTipsBackgroundColor" format="color" />
-    <attr name="couiToolTipsContainerLayoutGravity">
-        <flag name="top" value="0x30" />
-        <flag name="bottom" value="0x50" />
-        <flag name="left" value="0x03" />
-        <flag name="right" value="0x05" />
-        <flag name="center_vertical" value="0x10" />
-        <flag name="fill_vertical" value="0x70" />
-        <flag name="center_horizontal" value="0x01" />
-        <flag name="fill_horizontal" value="0x07" />
-        <flag name="center" value="0x11" />
-        <flag name="fill" value="0x77" />
-        <flag name="clip_vertical" value="0x80" />
-        <flag name="clip_horizontal" value="0x08" />
-        <flag name="start" value="0x00800003" />
-        <flag name="end" value="0x00800005" />
-    </attr>
-    <attr name="couiToolTipsContainerLayoutMarginBottom" format="dimension" />
-    <attr name="couiToolTipsContainerLayoutMarginEnd" format="dimension" />
-    <attr name="couiToolTipsContainerLayoutMarginStart" format="dimension" />
-    <attr name="couiToolTipsContainerLayoutMarginTop" format="dimension" />
-    <attr name="couiToolTipsContentTextColor" format="color|reference" />
-    <attr name="couiToolTipsDetailFloatingStyle" format="reference" />
-    <attr name="couiToolTipsIconStyle" format="reference" />
-    <attr name="couiToolTipsImageStyle" format="reference" />
-    <attr name="couiToolTipsMinWidth" format="dimension" />
-    <attr name="couiToolTipsPaddingBottom" format="dimension" />
-    <attr name="couiToolTipsPaddingEnd" format="dimension" />
-    <attr name="couiToolTipsPaddingStart" format="dimension" />
-    <attr name="couiToolTipsPaddingTop" format="dimension" />
-    <attr name="couiToolTipsStyle" format="reference" />
-    <attr name="couiToolTipsViewportOffsetBottom" format="dimension" />
-    <attr name="couiToolTipsViewportOffsetEnd" format="dimension" />
-    <attr name="couiToolTipsViewportOffsetStart" format="dimension" />
-    <attr name="couiToolTipsViewportOffsetTop" format="dimension" />
-    <declare-styleable name="COUIToolTips">
-        <attr name="couiToolTipsArrowDownDrawable" />
-        <attr name="couiToolTipsArrowLeftDrawable" />
-        <attr name="couiToolTipsArrowOverflowOffset" />
-        <attr name="couiToolTipsArrowRightDrawable" />
-        <attr name="couiToolTipsArrowUpDrawable" />
-        <attr name="couiToolTipsBackground" />
-        <attr name="couiToolTipsBackgroundColor" />
-        <attr name="couiToolTipsContainerLayoutGravity" />
-        <attr name="couiToolTipsContainerLayoutMarginBottom" />
-        <attr name="couiToolTipsContainerLayoutMarginEnd" />
-        <attr name="couiToolTipsContainerLayoutMarginStart" />
-        <attr name="couiToolTipsContainerLayoutMarginTop" />
-        <attr name="couiToolTipsContentTextColor" />
-        <attr name="couiToolTipsMinWidth" />
-        <attr name="couiToolTipsPaddingBottom" />
-        <attr name="couiToolTipsPaddingEnd" />
-        <attr name="couiToolTipsPaddingStart" />
-        <attr name="couiToolTipsPaddingTop" />
-        <attr name="couiToolTipsViewportOffsetBottom" />
-        <attr name="couiToolTipsViewportOffsetEnd" />
-        <attr name="couiToolTipsViewportOffsetStart" />
-        <attr name="couiToolTipsViewportOffsetTop" />
-    </declare-styleable>
+
 
     <!-- Leapy added 2026-07-31: COUI chip public attributes copied from the decoded
          OPPO COUI chip support module. -->
-    <attr name="couiChipStyle" format="reference" />
-    <attr name="couiChipGroupStyle" format="reference" />
+
+
     <attr name="checkedBackgroundColor" format="color|reference" />
-    <attr name="checkedChipIconTint" format="color|reference" />
+
     <attr name="checkedDisabledBackgroundColor" format="color|reference" />
-    <attr name="checkedDisabledChipIconTint" format="color|reference" />
+
     <attr name="checkedDisabledTextColor" format="color|reference" />
     <attr name="checkedTextAppearance" format="reference" />
     <attr name="checkedTextColor" format="color|reference" />
@@ -2072,12 +1296,12 @@
     <attr name="textEndPadding" format="dimension" />
     <attr name="textStartPadding" format="dimension" />
     <attr name="uncheckedBackgroundColor" format="color|reference" />
-    <attr name="uncheckedChipIconTint" format="color|reference" />
+
     <attr name="uncheckedDisabledBackgroundColor" format="color|reference" />
-    <attr name="uncheckedDisabledChipIconTint" format="color|reference" />
+
     <attr name="uncheckedDisabledTextColor" format="color|reference" />
     <attr name="uncheckedTextColor" format="color|reference" />
-    <attr name="checkedChip" format="reference" />
+
     <attr name="chipSpacing" format="dimension" />
     <attr name="chipSpacingHorizontal" format="dimension" />
     <attr name="chipSpacingVertical" format="dimension" />
@@ -2088,77 +1312,17 @@
     <attr name="singleLine" format="boolean" />
     <attr name="singleSelection" format="boolean" />
 
-    <declare-styleable name="COUIChip">
-        <attr name="android:checkable" />
-        <attr name="android:checked" />
-        <attr name="android:ellipsize" />
-        <attr name="android:maxWidth" />
-        <attr name="android:minHeight" />
-        <attr name="android:minWidth" />
-        <attr name="android:text" />
-        <attr name="android:textAppearance" />
-        <attr name="android:textSize" />
-        <attr name="checkedBackgroundColor" />
-        <attr name="checkedChipIconTint" />
-        <attr name="checkedDisabledBackgroundColor" />
-        <attr name="checkedDisabledChipIconTint" />
-        <attr name="checkedDisabledTextColor" />
-        <attr name="checkedTextAppearance" />
-        <attr name="checkedTextColor" />
-        <attr name="chipCornerRadius" />
-        <attr name="chipEndPadding" />
-        <attr name="chipIcon" />
-        <attr name="chipIconApplyTint" />
-        <attr name="chipIconEndPadding" />
-        <attr name="chipIconSize" />
-        <attr name="chipIconStartPadding" />
-        <attr name="chipIconVisible" />
-        <attr name="chipStartPadding" />
-        <attr name="chipTextMaxWidth" />
-        <attr name="closeIcon" />
-        <attr name="closeIconEndPadding" />
-        <attr name="closeIconSize" />
-        <attr name="closeIconStartPadding" />
-        <attr name="closeIconTouchBoundsSize" />
-        <attr name="closeIconVisible" />
-        <attr name="textEndPadding" />
-        <attr name="textStartPadding" />
-        <attr name="uncheckedBackgroundColor" />
-        <attr name="uncheckedChipIconTint" />
-        <attr name="uncheckedDisabledBackgroundColor" />
-        <attr name="uncheckedDisabledChipIconTint" />
-        <attr name="uncheckedDisabledTextColor" />
-        <attr name="uncheckedTextColor" />
-    </declare-styleable>
 
-    <declare-styleable name="COUIChipGroup">
-        <attr name="checkedChip" />
-        <attr name="chipSpacing" />
-        <attr name="chipSpacingHorizontal" />
-        <attr name="chipSpacingVertical" />
-        <attr name="collapsedMaxRows" />
-        <attr name="isCollapsable" />
-        <attr name="isCollapsed" />
-        <attr name="selectionRequired" />
-        <attr name="singleLine" />
-        <attr name="singleSelection" />
-    </declare-styleable>
     <!-- Leapy end -->
 
     <!-- Leapy added 2026-08-01: Decoded OPPO segment-button public contract. -->
-    <attr name="couiSegmentButtonStyle" format="reference" />
-    <attr name="couiColorSegmentButtonBackground" format="color|reference" />
+
+
     <attr name="UnSelectedTextColor" format="color" />
     <attr name="selectedTextColor" format="color" />
-    <attr name="segmentButtonTextSize" format="dimension" />
+
     <attr name="enableTextScale" format="boolean" />
     <attr name="enableResponsiveWidth" format="boolean" />
-    <declare-styleable name="COUISegmentButtonLayout">
-        <attr name="UnSelectedTextColor" />
-        <attr name="selectedTextColor" />
-        <attr name="segmentButtonTextSize" />
-        <attr name="enableTextScale" />
-        <attr name="enableResponsiveWidth" />
-    </declare-styleable>
+
     <!-- Leapy end -->
 </resources>

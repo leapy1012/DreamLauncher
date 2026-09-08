@@ -6,11 +6,11 @@ import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.RectF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -21,14 +21,14 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
-import android.view.Gravity;
+import android.view.animation.Interpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
-import android.view.animation.Interpolator;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -40,14 +40,14 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
 
-import java.util.List;
-import java.util.Locale;
-
 import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIInEaseInterpolator;
 import com.coui.appcompat.animation.COUILinearInterpolator;
 import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
+
+import java.util.List;
+import java.util.Locale;
 
 public class COUIEditText extends AppCompatEditText {
     public static final int MODE_BACKGROUND_NONE = 0;

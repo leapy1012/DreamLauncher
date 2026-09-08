@@ -7,8 +7,8 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.coui.appcompat.R;
 import com.airbnb.lottie.LottieAnimationView;
+import com.coui.appcompat.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -190,7 +190,7 @@ public final class CardInstructionDescriptionAdapter
             LinearLayout.LayoutParams params = layoutParams instanceof LinearLayout.LayoutParams
                     ? (LinearLayout.LayoutParams) layoutParams
                     : new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT);
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
             params.gravity = android.view.Gravity.CENTER_HORIZONTAL;
             if (width > 0 && height > 0) {
                 params.width = width;

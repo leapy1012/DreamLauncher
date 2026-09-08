@@ -1,7 +1,6 @@
 package com.coui.appcompat.searchview;
 
 
-import com.coui.appcompat.R;
 import android.animation.ArgbEvaluator;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -10,6 +9,7 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+
 import com.coui.appcompat.roundRect.COUIShapePath;
 import com.coui.appcompat.roundcorner.RoundCornerUtil;
 import com.oplus.graphics.OplusPathAdapter;
@@ -75,7 +75,7 @@ class COUISearchBarDrawingProxyDrawable extends Drawable {
     }
 
     @Override
-    public void setAlpha(int i2) {
+    public void setAlpha(int alpha) {
     }
 
     public void setBackgroundRect(Rect rect) {
@@ -91,8 +91,8 @@ class COUISearchBarDrawingProxyDrawable extends Drawable {
         invalidateSelf();
     }
 
-    public void setButtonDividerColor(int i2) {
-        this.mButtonDividerColor = i2;
+    public void setButtonDividerColor(int color) {
+        this.mButtonDividerColor = color;
         invalidateSelf();
     }
 
@@ -101,13 +101,13 @@ class COUISearchBarDrawingProxyDrawable extends Drawable {
         invalidateSelf();
     }
 
-    public void setCurrentBackgroundColor(int i2) {
-        this.mCurrentBackgroundColor = i2;
+    public void setCurrentBackgroundColor(int color) {
+        this.mCurrentBackgroundColor = color;
         invalidateSelf();
     }
 
-    public void setDividerAlpha(float f2) {
-        this.mDividerAlpha = f2;
+    public void setDividerAlpha(float alpha) {
+        this.mDividerAlpha = alpha;
         invalidateSelf();
     }
 

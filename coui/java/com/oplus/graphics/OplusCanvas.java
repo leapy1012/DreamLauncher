@@ -13,13 +13,13 @@ public class OplusCanvas implements IOplusCanvas {
 
     @Override
     public void drawSmoothRoundRect(float left, float top, float right, float bottom, float rx,
-            float ry, Paint paint, float weight) {
+                                    float ry, Paint paint, float weight) {
         mCanvas.drawRoundRect(left, top, right, bottom, rx, ry, paint);
     }
 
     @Override
     public void drawSmoothRoundRect(float left, float top, float right, float bottom, float rx,
-            float ry, Paint paint) {
+                                    float ry, Paint paint) {
         mCanvas.drawRoundRect(left, top, right, bottom, rx, ry, paint);
     }
 

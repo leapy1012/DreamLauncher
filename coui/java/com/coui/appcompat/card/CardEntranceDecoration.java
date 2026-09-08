@@ -22,7 +22,7 @@ public final class CardEntranceDecoration extends BaseCardItemDecoration {
     }
 
     public CardEntranceDecoration(Context appContext, CardPositionPredicate cardPositionPredicate,
-            PreferenceGroupAdapter adapter) {
+                                  PreferenceGroupAdapter adapter) {
         super(appContext);
         if (cardPositionPredicate == null) {
             throw new NullPointerException("cardPositionPredicate");

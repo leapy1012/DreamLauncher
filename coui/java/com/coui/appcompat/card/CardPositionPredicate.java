@@ -11,7 +11,7 @@ public final class CardPositionPredicate {
     private final Predicate isLastColumn;
 
     public CardPositionPredicate(Predicate isFirstRow, Predicate isLastRow,
-            Predicate isFirstColumn, Predicate isLastColumn) {
+                                 Predicate isFirstColumn, Predicate isLastColumn) {
         if (isFirstRow == null || isLastRow == null || isFirstColumn == null || isLastColumn == null) {
             throw new NullPointerException("CardPositionPredicate predicates cannot be null");
         }

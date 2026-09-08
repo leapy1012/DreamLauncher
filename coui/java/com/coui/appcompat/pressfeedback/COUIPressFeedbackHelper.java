@@ -42,9 +42,16 @@ public class COUIPressFeedbackHelper {
             };
 
     public interface COUIPressFeedbackHelperCallback {
-        default int getTargetHeight() { return 0; }
-        default int getTargetWidth() { return 0; }
-        default void onScaleUpdate(float scale) { }
+        default int getTargetHeight() {
+            return 0;
+        }
+
+        default int getTargetWidth() {
+            return 0;
+        }
+
+        default void onScaleUpdate(float scale) {
+        }
     }
 
     private COUIPressFeedbackHelperCallback mCallback;
@@ -121,7 +128,7 @@ public class COUIPressFeedbackHelper {
     }
 
     private float getScaledRatioByAnimatedValue() {
-        return 1.0f - ((1.0f - getCardScaleRatio()) * (mCurrentScaleValue / DEFAULT_SCALE_FACTOR));
+        return DEFAULT_SCALE_START_RATIO - ((DEFAULT_SCALE_START_RATIO - getCardScaleRatio()) * (mCurrentScaleValue / DEFAULT_SCALE_FACTOR));
     }
 
     private void setProgress(float value) {

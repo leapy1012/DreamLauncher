@@ -2,6 +2,7 @@ package com.coui.appcompat.textviewcompatutil;
 
 import android.graphics.Canvas;
 import android.graphics.Rect;
+
 import com.coui.appcompat.roundRect.COUIRoundDrawable;
 
 public class COUITextPressMaskDrawable extends COUIRoundDrawable {

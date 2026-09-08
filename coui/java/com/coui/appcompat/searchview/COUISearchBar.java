@@ -1,7 +1,6 @@
 package com.coui.appcompat.searchview;
 
 
-import com.coui.appcompat.R;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -37,7 +36,10 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.core.view.ViewCompat;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.accessibilityutil.COUIAccessibilityUtil;
 import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
@@ -45,7 +47,6 @@ import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.grid.COUIResponsiveUtils;
 import com.coui.appcompat.log.COUILog;
 import com.coui.appcompat.rippleutil.COUIRippleDrawableUtil;
-import com.coui.appcompat.searchview.ImeInsetsAnimationCallback;
 import com.coui.appcompat.state.COUIMaskEffectDrawable;
 import com.coui.appcompat.state.COUIMaskRippleDrawable;
 import com.coui.appcompat.state.COUIStateEffectDrawable;
@@ -54,6 +55,7 @@ import com.coui.appcompat.textutil.COUIChangeTextUtil;
 import com.coui.appcompat.textviewcompatutil.COUITextViewCompatUtil;
 import com.coui.appcompat.toolbar.COUIToolbar;
 import com.coui.appcompat.uiutil.UIUtil;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
@@ -192,10 +194,10 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         public void endAnimateToEditState() {
             this.mTopOffset = 0;
-            if (COUISearchBar.this.mSearchViewType == 0) {
-                int i2 = this.mStartY - this.mExtraY;
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
+                int index = this.mStartY - this.mExtraY;
                 if (((ViewGroup.MarginLayoutParams) COUISearchBar.this.getLayoutParams()) != null) {
-                    ((ViewGroup.MarginLayoutParams) COUISearchBar.this.getLayoutParams()).topMargin = this.mTopMargin - i2;
+                    ((ViewGroup.MarginLayoutParams) COUISearchBar.this.getLayoutParams()).topMargin = this.mTopMargin - index;
                 }
                 COUISearchBar.this.mShrinkFraction = 1.0f;
                 if (COUISearchBar.this.functionalButtonShouldShow()) {
@@ -214,7 +216,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         public void endAnimateToNormalState() {
             this.mTopOffset = 0;
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 if (((ViewGroup.MarginLayoutParams) COUISearchBar.this.getLayoutParams()) != null) {
                     ((ViewGroup.MarginLayoutParams) COUISearchBar.this.getLayoutParams()).topMargin = this.mTopMargin;
                 }
@@ -240,9 +242,9 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         private void initButtonEnterAnimator() {
             COUISearchBar.this.mFunctionalButtonAlphaEnterAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-            COUISearchBar.this.mFunctionalButtonAlphaEnterAnimator.setDuration(COUISearchBar.this.mSearchViewType == 0 ? COUISearchBar.DEFAULT_BUTTON_ALPHA_CHANGE_DURATION : COUISearchBar.this.getOuterButtonCount() == 1 ? 400L : 100L);
+            COUISearchBar.this.mFunctionalButtonAlphaEnterAnimator.setDuration(COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH ? COUISearchBar.DEFAULT_BUTTON_ALPHA_CHANGE_DURATION : COUISearchBar.this.getOuterButtonCount() == 1 ? COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_ALPHA_FADE_IN_DURATION : NON_INSTANT_SEARCH_BUTTON_ALPHA_CHANGE_DURATION);
             COUISearchBar.this.mFunctionalButtonAlphaEnterAnimator.setInterpolator(COUISearchBar.DEFAULT_BUTTON_ALPHA_CHANGE_INTERPOLATOR);
-            COUISearchBar.this.mFunctionalButtonAlphaEnterAnimator.setStartDelay(COUISearchBar.this.mSearchViewType != 0 ? COUISearchBar.this.getOuterButtonCount() == 1 ? COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_ANIMATION_START_DELAY : 0L : 100L);
+            COUISearchBar.this.mFunctionalButtonAlphaEnterAnimator.setStartDelay(COUISearchBar.this.mSearchViewType != TYPE_INSTANT_SEARCH ? COUISearchBar.this.getOuterButtonCount() == 1 ? COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_ANIMATION_START_DELAY : 0L : 100L);
             COUISearchBar.this.mFunctionalButtonAlphaEnterAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public final void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -250,7 +252,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
                 }
             });
             COUISearchBar.this.mFunctionalButtonOffsetEnterAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-            COUISearchBar.this.mFunctionalButtonOffsetEnterAnimator.setDuration(400L);
+            COUISearchBar.this.mFunctionalButtonOffsetEnterAnimator.setDuration(COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_OFFSET_DURATION);
             COUISearchBar.this.mFunctionalButtonOffsetEnterAnimator.setInterpolator(COUISearchBar.DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_INTERPOLATOR);
             COUISearchBar.this.mFunctionalButtonOffsetEnterAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -268,7 +270,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
                 }
             });
             COUISearchBar.this.mOuterButtonOffsetEnterAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-            COUISearchBar.this.mOuterButtonOffsetEnterAnimator.setDuration(400L);
+            COUISearchBar.this.mOuterButtonOffsetEnterAnimator.setDuration(COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_OFFSET_DURATION);
             COUISearchBar.this.mOuterButtonOffsetEnterAnimator.setInterpolator(COUISearchBar.DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_INTERPOLATOR);
             COUISearchBar.this.mOuterButtonOffsetEnterAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -280,7 +282,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         private void initButtonExitAnimator() {
             COUISearchBar.this.mFunctionalButtonAlphaExitAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-            COUISearchBar.this.mFunctionalButtonAlphaExitAnimator.setDuration(COUISearchBar.this.mSearchViewType == 0 ? COUISearchBar.DEFAULT_BUTTON_ALPHA_CHANGE_DURATION : COUISearchBar.this.getOuterButtonCount() == 1 ? COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_ALPHA_FADE_OUT_DURATION : 100L);
+            COUISearchBar.this.mFunctionalButtonAlphaExitAnimator.setDuration(COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH ? COUISearchBar.DEFAULT_BUTTON_ALPHA_CHANGE_DURATION : COUISearchBar.this.getOuterButtonCount() == 1 ? COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_ALPHA_FADE_OUT_DURATION : NON_INSTANT_SEARCH_BUTTON_ALPHA_CHANGE_DURATION);
             COUISearchBar.this.mFunctionalButtonAlphaExitAnimator.setInterpolator(COUISearchBar.DEFAULT_BUTTON_ALPHA_CHANGE_INTERPOLATOR);
             COUISearchBar.this.mFunctionalButtonAlphaExitAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -289,7 +291,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
                 }
             });
             COUISearchBar.this.mFunctionalButtonOffsetExitAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-            COUISearchBar.this.mFunctionalButtonOffsetExitAnimator.setDuration(400L);
+            COUISearchBar.this.mFunctionalButtonOffsetExitAnimator.setDuration(COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_OFFSET_DURATION);
             COUISearchBar.this.mFunctionalButtonOffsetExitAnimator.setInterpolator(COUISearchBar.DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_INTERPOLATOR);
             COUISearchBar.this.mFunctionalButtonOffsetExitAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -298,7 +300,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
                 }
             });
             COUISearchBar.this.mOuterButtonAlphaExitAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-            COUISearchBar.this.mOuterButtonAlphaExitAnimator.setDuration(400L);
+            COUISearchBar.this.mOuterButtonAlphaExitAnimator.setDuration(COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_ALPHA_FADE_IN_DURATION);
             COUISearchBar.this.mOuterButtonAlphaExitAnimator.setStartDelay(COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_ANIMATION_START_DELAY);
             COUISearchBar.this.mOuterButtonAlphaExitAnimator.setInterpolator(COUISearchBar.DEFAULT_BUTTON_ALPHA_CHANGE_INTERPOLATOR);
             COUISearchBar.this.mOuterButtonAlphaExitAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -308,7 +310,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
                 }
             });
             COUISearchBar.this.mOuterButtonOffsetExitAnimator = ValueAnimator.ofFloat(1.0f, 0.0f);
-            COUISearchBar.this.mOuterButtonOffsetExitAnimator.setDuration(400L);
+            COUISearchBar.this.mOuterButtonOffsetExitAnimator.setDuration(COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_OFFSET_DURATION);
             COUISearchBar.this.mOuterButtonOffsetExitAnimator.setStartDelay(COUISearchBar.DEFAULT_SEARCH_VIEW_BUTTON_ANIMATION_START_DELAY);
             COUISearchBar.this.mOuterButtonOffsetExitAnimator.setInterpolator(COUISearchBar.DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_INTERPOLATOR);
             COUISearchBar.this.mOuterButtonOffsetExitAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -321,7 +323,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         private void initSearchViewEnterAnimator() {
             COUISearchBar.this.mSearchViewOffsetEnterAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-            COUISearchBar.this.mSearchViewOffsetEnterAnimator.setDuration(450L);
+            COUISearchBar.this.mSearchViewOffsetEnterAnimator.setDuration(COUISearchBar.DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_DURATION);
             COUISearchBar.this.mSearchViewOffsetEnterAnimator.setInterpolator(COUISearchBar.DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_INTERPOLATOR);
             COUISearchBar.this.mSearchViewOffsetEnterAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -330,7 +332,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
                 }
             });
             COUISearchBar.this.mSearchViewScaleEnterAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-            COUISearchBar.this.mSearchViewScaleEnterAnimator.setDuration(450L);
+            COUISearchBar.this.mSearchViewScaleEnterAnimator.setDuration(COUISearchBar.DEFAULT_SEARCH_VIEW_SCALE_CHANGE_DURATION);
             COUISearchBar.this.mSearchViewScaleEnterAnimator.setInterpolator(COUISearchBar.DEFAULT_SEARCH_VIEW_SCALE_CHANGE_INTERPOLATOR);
             COUISearchBar.this.mSearchViewScaleEnterAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -342,7 +344,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         private void initSearchViewExitAnimator() {
             COUISearchBar.this.mSearchViewOffsetExitAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-            COUISearchBar.this.mSearchViewOffsetExitAnimator.setDuration(450L);
+            COUISearchBar.this.mSearchViewOffsetExitAnimator.setDuration(COUISearchBar.DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_DURATION);
             COUISearchBar.this.mSearchViewOffsetExitAnimator.setInterpolator(COUISearchBar.DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_INTERPOLATOR);
             COUISearchBar.this.mSearchViewOffsetExitAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -351,7 +353,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
                 }
             });
             COUISearchBar.this.mSearchViewScaleExitAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-            COUISearchBar.this.mSearchViewScaleExitAnimator.setDuration(450L);
+            COUISearchBar.this.mSearchViewScaleExitAnimator.setDuration(COUISearchBar.DEFAULT_SEARCH_VIEW_SCALE_CHANGE_DURATION);
             COUISearchBar.this.mSearchViewScaleExitAnimator.setInterpolator(COUISearchBar.DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_INTERPOLATOR);
             COUISearchBar.this.mSearchViewScaleExitAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -411,7 +413,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         public void lambda$initButtonEnterAnimator$2(ValueAnimator valueAnimator) {
             float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 if (COUISearchBar.this.functionalButtonShouldShow()) {
                     COUISearchBar.this.mFunctionalButton.setAlpha(fFloatValue);
                 }
@@ -425,7 +427,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
 
         public void lambda$initButtonEnterAnimator$3(ValueAnimator valueAnimator) {
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
                 if (COUISearchBar.this.functionalButtonShouldShow()) {
                     COUISearchBar.this.mFunctionalButton.setTranslationX((1.0f - fFloatValue) * COUISearchBar.this.mButtonOffsetAnimationDistance);
@@ -435,7 +437,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
 
         public void lambda$initButtonEnterAnimator$4(ValueAnimator valueAnimator) {
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
                 if (COUISearchBar.this.mOuterPrimaryButton != null) {
                     COUISearchBar.this.mOuterPrimaryButton.setAlpha(1.0f - fFloatValue);
@@ -448,7 +450,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
 
         public void lambda$initButtonEnterAnimator$5(ValueAnimator valueAnimator) {
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
                 if (COUISearchBar.this.mOuterPrimaryButton != null) {
                     COUISearchBar.this.mOuterPrimaryButton.setTranslationX((-fFloatValue) * COUISearchBar.this.mButtonOffsetAnimationDistance);
@@ -461,7 +463,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
 
         public void lambda$initButtonExitAnimator$10(ValueAnimator valueAnimator) {
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
                 if (COUISearchBar.this.mOuterPrimaryButton != null) {
                     COUISearchBar.this.mOuterPrimaryButton.setAlpha(fFloatValue);
@@ -474,7 +476,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
 
         public void lambda$initButtonExitAnimator$11(ValueAnimator valueAnimator) {
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
                 if (COUISearchBar.this.mOuterPrimaryButton != null) {
                     COUISearchBar.this.mOuterPrimaryButton.setTranslationX((-fFloatValue) * COUISearchBar.this.mButtonOffsetAnimationDistance);
@@ -488,15 +490,15 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         public void lambda$initButtonExitAnimator$8(ValueAnimator valueAnimator) {
             float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 if (COUISearchBar.this.functionalButtonShouldShow()) {
                     COUISearchBar.this.mFunctionalButton.setAlpha(1.0f - fFloatValue);
                 }
             } else if (COUISearchBar.this.mSearchViewType == 1) {
-                float f2 = 1.0f - fFloatValue;
-                COUISearchBar.this.mDrawingProxyDrawable.setDividerAlpha(f2);
+                float fraction = 1.0f - fFloatValue;
+                COUISearchBar.this.mDrawingProxyDrawable.setDividerAlpha(fraction);
                 if (COUISearchBar.this.functionalButtonShouldShow()) {
-                    COUISearchBar.this.mFunctionalButton.setAlpha(f2);
+                    COUISearchBar.this.mFunctionalButton.setAlpha(fraction);
                 }
             }
         }
@@ -514,10 +516,10 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         public void lambda$initSearchViewEnterAnimator$0(ValueAnimator valueAnimator) {
             float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-            if (COUISearchBar.this.mSearchViewType == 0) {
-                int i2 = (int) (fFloatValue * (this.mStartY - this.mExtraY));
-                ((ViewGroup.MarginLayoutParams) COUISearchBar.this.getLayoutParams()).topMargin -= i2 - this.mTopOffset;
-                this.mTopOffset = i2;
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
+                int topOffset = (int) (fFloatValue * (this.mStartY - this.mExtraY));
+                ((ViewGroup.MarginLayoutParams) COUISearchBar.this.getLayoutParams()).topMargin -= topOffset - this.mTopOffset;
+                this.mTopOffset = topOffset;
                 COUISearchBar.this.requestLayout();
             }
         }
@@ -525,7 +527,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         public void lambda$initSearchViewEnterAnimator$1(ValueAnimator valueAnimator) {
             float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 COUISearchBar.this.mShrinkFraction = fFloatValue;
             }
         }
@@ -533,10 +535,10 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         public void lambda$initSearchViewExitAnimator$6(ValueAnimator valueAnimator) {
             float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-            if (COUISearchBar.this.mSearchViewType == 0) {
-                int i2 = (int) (fFloatValue * (this.mStartY - this.mExtraY));
-                ((ViewGroup.MarginLayoutParams) COUISearchBar.this.getLayoutParams()).topMargin += i2 - this.mTopOffset;
-                this.mTopOffset = i2;
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
+                int topOffset = (int) (fFloatValue * (this.mStartY - this.mExtraY));
+                ((ViewGroup.MarginLayoutParams) COUISearchBar.this.getLayoutParams()).topMargin += topOffset - this.mTopOffset;
+                this.mTopOffset = topOffset;
                 COUISearchBar.this.requestLayout();
             }
         }
@@ -544,7 +546,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
         public void lambda$initSearchViewExitAnimator$7(ValueAnimator valueAnimator) {
             float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 COUISearchBar.this.mShrinkFraction = 1.0f - fFloatValue;
             }
         }
@@ -562,8 +564,8 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
             if ((!COUISearchBar.this.mIsAtLeastR || COUISearchBar.this.mShowImeAnimDuration == 0) && COUISearchBar.this.mInputMethodAnimationEnabled) {
                 COUISearchBar.this.openSoftInput(true);
             }
-            COUISearchBar.this.mState.set(1);
-            COUISearchBar.this.notifyOnStateChange(0, 1);
+            COUISearchBar.this.mState.set(STATE_EDIT);
+            COUISearchBar.this.notifyOnStateChange(STATE_NORMAL, STATE_EDIT);
         }
 
         private void startAnimateToNormalState() {
@@ -572,34 +574,34 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
             if (COUISearchBar.this.mInputMethodAnimationEnabled) {
                 COUISearchBar.this.openSoftInput(false);
             }
-            if (COUISearchBar.this.mSearchViewType == 0) {
+            if (COUISearchBar.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                 COUISearchBar.this.setOuterButtonVisibility(0);
             }
-            COUISearchBar.this.mState.set(0);
-            COUISearchBar.this.notifyOnStateChange(1, 0);
+            COUISearchBar.this.mState.set(STATE_NORMAL);
+            COUISearchBar.this.notifyOnStateChange(STATE_EDIT, STATE_NORMAL);
         }
 
-        public void runStateChangeAnimation(int i2) {
-            if (COUISearchBar.this.mState.get() == i2) {
-                COUILog.d(COUISearchBar.TAG, "runStateChangeAnimation: same state , return. targetState = " + i2);
+        public void runStateChangeAnimation(int targetState) {
+            if (COUISearchBar.this.mState.get() == targetState) {
+                COUILog.d(COUISearchBar.TAG, "runStateChangeAnimation: same state , return. targetState = " + targetState);
                 return;
             }
-            if (i2 == 1) {
+            if (targetState == 1) {
                 startToEditAnimator();
-            } else if (i2 == 0) {
+            } else if (targetState == 0) {
                 startToNormalAnimator();
             }
         }
 
-        public void runStateChangeImmediately(int i2) {
+        public void runStateChangeImmediately(int targetState) {
             if (this.mAnimatingAtomic.get()) {
                 COUILog.w(COUISearchBar.TAG, "animating");
                 return;
             }
-            if (i2 == 1) {
+            if (targetState == 1) {
                 startAnimateToEditState();
                 endAnimateToEditState();
-            } else if (i2 == 0) {
+            } else if (targetState == 0) {
                 startAnimateToNormalState();
                 endAnimateToNormalState();
             }
@@ -630,8 +632,8 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
 
             @Override
-            public COUISavedState[] newArray(int i2) {
-                return new COUISavedState[i2];
+            public COUISavedState[] newArray(int size) {
+                return new COUISavedState[size];
             }
         };
         float mCollapsingHeightPercent;
@@ -650,8 +652,8 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
 
         @Override
-        public void writeToParcel(Parcel parcel, int i2) {
-            super.writeToParcel(parcel, i2);
+        public void writeToParcel(Parcel parcel, int flags) {
+            super.writeToParcel(parcel, flags);
             parcel.writeFloat(this.mCollapsingHeightPercent);
         }
 
@@ -683,20 +685,20 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
     }
 
     public interface OnAnimationListener {
-        void onAnimationEnd(int i2);
+        void onAnimationEnd(int state);
 
-        void onAnimationStart(int i2);
+        void onAnimationStart(int state);
 
         @Deprecated
-        void onUpdate(int i2, ValueAnimator valueAnimator);
+        void onUpdate(int state, ValueAnimator valueAnimator);
     }
 
     public interface OnSearchBarBackgroundBoundsChangedListener {
-        void onBackgroundBoundsChanged(int i2, int i6, int i10, int i11);
+        void onBackgroundBoundsChanged(int left, int top, int right, int bottom);
     }
 
     public interface OnStateChangeListener {
-        void onStateChange(int i2, int i6);
+        void onStateChange(int fromState, int toState);
     }
 
     @Retention(RetentionPolicy.SOURCE)
@@ -711,24 +713,24 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         this(context, null);
     }
 
-    private int calculateRelativeTop(int i2, int i6, int i10) {
-        return i2 + ((i6 - i10) / 2);
+    private int calculateRelativeTop(int index, int count, int value) {
+        return index + ((count - value) / 2);
     }
 
-    private float clampMarginValue(float f2) {
-        return Math.max(0.0f, Math.min(1.0f, f2 / 0.3f));
+    private float clampMarginValue(float fraction) {
+        return Math.max(0.0f, Math.min(1.0f, fraction / CLAMP_ANIMATION_PERCENT));
     }
 
-    private float clampSearchViewHeight(float f2) {
-        return (f2 / 0.7f) - 0.42857146f;
+    private float clampSearchViewHeight(float fraction) {
+        return (fraction / 0.7f) - 0.42857146f;
     }
 
-    private void configImageViewDrawable(ImageView imageView, Drawable drawable, int i2) {
+    private void configImageViewDrawable(ImageView imageView, Drawable drawable, int index) {
         if (imageView != null) {
             imageView.setImageDrawable(drawable);
             imageView.setClickable(true);
             if (drawable != null) {
-                int intrinsicWidth = (i2 - drawable.getIntrinsicWidth()) / 2;
+                int intrinsicWidth = (index - drawable.getIntrinsicWidth()) / 2;
                 imageView.setPadding(intrinsicWidth, 0, intrinsicWidth, 0);
             }
         }
@@ -736,11 +738,11 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
     private void configResponsive() {
         if (COUIResponsiveUtils.isSmallScreen(getContext(), getMeasuredWidth())) {
-            this.mResponsiveWidthSize = 0;
+            this.mResponsiveWidthSize = RESPONSIVE_WIDTH_TYPE_COMPAT;
         } else if (COUIResponsiveUtils.isMediumScreen(getContext(), getMeasuredWidth(), UIUtil.getScreenHeightMetrics(getContext()))) {
-            this.mResponsiveWidthSize = 1;
+            this.mResponsiveWidthSize = RESPONSIVE_WIDTH_TYPE_MEDIUM;
         } else if (COUIResponsiveUtils.isLargeScreen(getContext(), getMeasuredWidth(), UIUtil.getScreenHeightMetrics(getContext()))) {
-            this.mResponsiveWidthSize = 2;
+            this.mResponsiveWidthSize = RESPONSIVE_WIDTH_TYPE_EXPANDED;
         }
     }
 
@@ -767,17 +769,17 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
     }
 
-    private ImageView ensureImageView(Drawable drawable, boolean z6, boolean z10, int i2) {
+    private ImageView ensureImageView(Drawable drawable, boolean enabled, boolean flag, int index) {
         if (drawable == null) {
             return null;
         }
         ImageView imageView = new ImageView(getContext());
-        if (!z10) {
+        if (!flag) {
             imageView.setClickable(false);
             imageView.setFocusable(false);
         }
-        if (z6 && z10) {
-            COUIRippleDrawableUtil.setIconPressRippleDrawable(imageView, i2);
+        if (enabled && flag) {
+            COUIRippleDrawableUtil.setIconPressRippleDrawable(imageView, index);
         }
         addView(imageView);
         return imageView;
@@ -842,18 +844,18 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         return cOUIHintAnimationLayout != null ? cOUIHintAnimationLayout : this.mSearchEditText;
     }
 
-    private void init(Context context, AttributeSet attributeSet, int i2, int i6) {
+    private void init(Context context, AttributeSet attributeSet, int style, int index) {
         this.mIsAtLeastR = true;
         initDrawingProxyView();
         initEdittext();
-        loadHideFunctionButtonAttr(context, attributeSet, i2, i6);
+        loadHideFunctionButtonAttr(context, attributeSet, style, index);
         initFunctionButton();
         this.mAttrs = attributeSet;
         if (attributeSet != null) {
             this.mStyle = attributeSet.getStyleAttribute();
         }
         if (this.mStyle == 0) {
-            this.mStyle = i2;
+            this.mStyle = style;
         }
         setWillNotDraw(false);
         setClipChildren(false);
@@ -875,14 +877,14 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         this.mFunctionButtonStartGap = context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_functional_button_start_gap);
         this.mButtonOffsetAnimationDistance = context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_functional_button_offset_distance);
         Resources resources = context.getResources();
-        int i10 = R.dimen.coui_search_view_icon_size;
-        this.mIconMaxWidth = resources.getDimensionPixelSize(i10);
-        this.mIconMaxHeight = context.getResources().getDimensionPixelSize(i10);
+        int value = R.dimen.coui_search_view_icon_size;
+        this.mIconMaxWidth = resources.getDimensionPixelSize(value);
+        this.mIconMaxHeight = context.getResources().getDimensionPixelSize(value);
         this.mFunctionButtonEndGap = new int[]{context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_functional_button_end_gap_compat), context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_functional_button_end_gap_medium), context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_functional_button_end_gap_expanded)};
         this.mNavigationButtonStartGap = new int[]{context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_navigation_button_start_gap_compat), context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_navigation_button_start_gap_medium), context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_navigation_button_start_gap_expanded)};
         this.mOuterButtonEndGap = new int[]{context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_outer_button_end_gap_compat), context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_outer_button_end_gap_medium), context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_outer_button_end_gap_expanded)};
         this.mResponsiveHorizontalPadding = new int[]{context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_responsive_horizontal_padding_compat), context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_responsive_horizontal_padding_medium), context.getResources().getDimensionPixelOffset(R.dimen.coui_search_bar_responsive_horizontal_padding_expanded)};
-        loadAttr(context, attributeSet, i2, i6);
+        loadAttr(context, attributeSet, style, index);
         this.mNormalBackgroundColor = androidx.core.content.res.ResourcesCompat.getColor(getContext().getResources(), R.color.coui_search_view_selector_color_normal, getContext().getTheme());
         this.mPressedBackgroundColor = androidx.core.content.res.ResourcesCompat.getColor(getContext().getResources(), R.color.coui_search_view_selector_color_pressed, getContext().getTheme());
         this.mDrawingProxyDrawable.setButtonDividerColor(COUIContextUtil.getAttrColor(getContext(), R.attr.couiColorDivider));
@@ -908,8 +910,8 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         setDefaultFocusHighlightEnabled(false);
         setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
-            public final void onFocusChange(View view2, boolean z6) {
-                COUISearchBar.this.lambda$initDrawingProxyView$0(view2, z6);
+            public final void onFocusChange(View otherView, boolean enabled) {
+                COUISearchBar.this.lambda$initDrawingProxyView$0(otherView, enabled);
             }
         });
     }
@@ -918,7 +920,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         EditText editText = new EditText(new ContextThemeWrapper(getContext(), R.style.Widget_COUI_EditText_SearchViewStyle), null);
         this.mSearchEditText = editText;
         editText.setVerticalScrollBarEnabled(false);
-        this.mSearchEditText.setMaxLines(1);
+        this.mSearchEditText.setMaxLines(DEFAULT_MAX_LINES);
         this.mSearchEditText.setInputType(1);
         this.mSearchEditText.setEllipsize(TextUtils.TruncateAt.END);
         this.mSearchEditText.setImeOptions(3);
@@ -946,12 +948,12 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
             }
 
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i2, int i6, int i10) {
+            public void beforeTextChanged(CharSequence charSequence, int index, int count, int value) {
                 COUISearchBar.this.ensureQuickDeleteButton();
             }
 
             @Override
-            public void onTextChanged(CharSequence charSequence, int i2, int i6, int i10) {
+            public void onTextChanged(CharSequence charSequence, int index, int count, int value) {
             }
         });
         addView(this.mSearchEditText);
@@ -964,7 +966,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
         TextView textView = new TextView(getContext());
         this.mFunctionalButton = textView;
-        textView.setMaxLines(1);
+        textView.setMaxLines(DEFAULT_MAX_LINES);
         this.mFunctionalButton.setEllipsize(TextUtils.TruncateAt.END);
         this.mFunctionalButton.setTextAppearance(getContext(), R.style.couiTextAppearanceButton);
         this.mFunctionalButton.setText(R.string.coui_search_view_cancel);
@@ -985,24 +987,24 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         return false;
     }
 
-    private boolean isInsideBackground(float f2, float f10) {
-        return this.mBackgroundRect.contains((int) f2, (int) f10);
+    private boolean isInsideBackground(float fraction, float ratio) {
+        return this.mBackgroundRect.contains((int) fraction, (int) ratio);
     }
 
-    private boolean isInsideFunctionButton(float f2, float f10) {
-        return isInsideView(this.mFunctionalButton, f2, f10);
+    private boolean isInsideFunctionButton(float fraction, float ratio) {
+        return isInsideView(this.mFunctionalButton, fraction, ratio);
     }
 
-    private boolean isInsideInnerButton(float f2, float f10) {
-        return isInsideView(this.mInnerPrimaryButton, f2, f10) || isInsideView(this.mInnerSecondaryButton, f2, f10) || isInsideView(this.mQuickDeleteButton, f2, f10);
+    private boolean isInsideInnerButton(float fraction, float ratio) {
+        return isInsideView(this.mInnerPrimaryButton, fraction, ratio) || isInsideView(this.mInnerSecondaryButton, fraction, ratio) || isInsideView(this.mQuickDeleteButton, fraction, ratio);
     }
 
-    private boolean isInsideOuterButton(float f2, float f10) {
-        return isInsideView(this.mOuterPrimaryButton, f2, f10) || isInsideView(this.mOuterSecondaryButton, f2, f10) || isInsideView(this.mNavigationView, f2, f10);
+    private boolean isInsideOuterButton(float fraction, float ratio) {
+        return isInsideView(this.mOuterPrimaryButton, fraction, ratio) || isInsideView(this.mOuterSecondaryButton, fraction, ratio) || isInsideView(this.mNavigationView, fraction, ratio);
     }
 
-    private boolean isInsideView(View view, float f2, float f10) {
-        return view != null && view.getVisibility() != 8 && f2 >= ((float) view.getLeft()) && f2 <= ((float) view.getRight()) && f10 >= ((float) view.getTop()) && f10 <= ((float) view.getBottom());
+    private boolean isInsideView(View view, float fraction, float ratio) {
+        return view != null && view.getVisibility() != 8 && fraction >= ((float) view.getLeft()) && fraction <= ((float) view.getRight()) && ratio >= ((float) view.getTop()) && ratio <= ((float) view.getBottom());
     }
 
     private boolean isRtl() {
@@ -1023,8 +1025,8 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
     }
 
 
-    public void lambda$initDrawingProxyView$0(View view, boolean z6) {
-        this.mStateEffectBackground.setFocused(z6);
+    public void lambda$initDrawingProxyView$0(View view, boolean enabled) {
+        this.mStateEffectBackground.setFocused(enabled);
     }
 
 
@@ -1079,9 +1081,9 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
     }
 
     private void layoutBackgroundRight() {
-        int i2 = this.mSearchViewType;
-        if (i2 != 0) {
-            if (i2 == 1) {
+        int index = this.mSearchViewType;
+        if (index != 0) {
+            if (index == 1) {
                 layoutOuterButton();
             }
         } else {
@@ -1092,23 +1094,23 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
     }
 
-    private int layoutDivider(int i2) {
+    private int layoutDivider(int index) {
         int iWidth;
-        int i6;
+        int count;
         Rect rect = this.mBackgroundRect;
         int iCalculateRelativeTop = calculateRelativeTop(rect.top, rect.height(), this.mDividerRect.height());
         int iHeight = this.mDividerRect.height() + iCalculateRelativeTop;
         if (isRtl()) {
-            int iWidth2 = i2 - this.mDividerRect.width();
-            i6 = i2 - this.mNonInstantSearchInnerGap;
-            iWidth = i2;
-            i2 = iWidth2;
+            int iWidth2 = index - this.mDividerRect.width();
+            count = index - this.mNonInstantSearchInnerGap;
+            iWidth = index;
+            index = iWidth2;
         } else {
-            iWidth = this.mDividerRect.width() + i2;
-            i6 = this.mNonInstantSearchInnerGap + i2;
+            iWidth = this.mDividerRect.width() + index;
+            count = this.mNonInstantSearchInnerGap + index;
         }
-        int iWidth3 = i6 + this.mDividerRect.width();
-        this.mDividerRect.set(i2, iCalculateRelativeTop, iWidth, iHeight);
+        int iWidth3 = count + this.mDividerRect.width();
+        this.mDividerRect.set(index, iCalculateRelativeTop, iWidth, iHeight);
         this.mDrawingProxyDrawable.setDividerRect(this.mDividerRect);
         return iWidth3;
     }
@@ -1125,16 +1127,16 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
     }
 
-    private void layoutFunctionalButton(int i2) {
+    private void layoutFunctionalButton(int index) {
         if (shouldLayoutOut(this.mFunctionalButton)) {
             Rect rect = this.mBackgroundRect;
             int iCalculateRelativeTop = calculateRelativeTop(rect.top, rect.height(), this.mFunctionalButton.getMeasuredHeight());
             if (isRtl()) {
                 TextView textView = this.mFunctionalButton;
-                textView.layout(i2 - textView.getMeasuredWidth(), iCalculateRelativeTop, i2, this.mFunctionalButton.getMeasuredHeight() + iCalculateRelativeTop);
+                textView.layout(index - textView.getMeasuredWidth(), iCalculateRelativeTop, index, this.mFunctionalButton.getMeasuredHeight() + iCalculateRelativeTop);
             } else {
                 TextView textView2 = this.mFunctionalButton;
-                textView2.layout(i2, iCalculateRelativeTop, textView2.getMeasuredWidth() + i2, this.mFunctionalButton.getMeasuredHeight() + iCalculateRelativeTop);
+                textView2.layout(index, iCalculateRelativeTop, textView2.getMeasuredWidth() + index, this.mFunctionalButton.getMeasuredHeight() + iCalculateRelativeTop);
             }
         }
     }
@@ -1198,9 +1200,9 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
                 ImageView imageView = this.mNavigationView;
                 imageView.layout(measuredWidth - imageView.getMeasuredWidth(), iCalculateRelativeTop, measuredWidth, this.mNavigationView.getMeasuredHeight() + iCalculateRelativeTop);
             } else {
-                int i2 = this.mNavigationButtonStartGap[this.mResponsiveWidthSize];
+                int index = this.mNavigationButtonStartGap[this.mResponsiveWidthSize];
                 ImageView imageView2 = this.mNavigationView;
-                imageView2.layout(i2, iCalculateRelativeTop, imageView2.getMeasuredWidth() + i2, this.mNavigationView.getMeasuredHeight() + iCalculateRelativeTop);
+                imageView2.layout(index, iCalculateRelativeTop, imageView2.getMeasuredWidth() + index, this.mNavigationView.getMeasuredHeight() + iCalculateRelativeTop);
             }
         }
     }
@@ -1241,50 +1243,50 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
             Rect rect = this.mBackgroundRect;
             int iCalculateRelativeTop = calculateRelativeTop(rect.top, rect.height(), this.mSearchIconView.getMeasuredHeight());
             if (isRtl()) {
-                int i2 = this.mBackgroundRect.right - this.mSearchIconStartGap;
+                int index = this.mBackgroundRect.right - this.mSearchIconStartGap;
                 ImageView imageView = this.mSearchIconView;
-                imageView.layout(i2 - imageView.getMeasuredWidth(), iCalculateRelativeTop, i2, this.mSearchIconView.getMeasuredHeight() + iCalculateRelativeTop);
+                imageView.layout(index - imageView.getMeasuredWidth(), iCalculateRelativeTop, index, this.mSearchIconView.getMeasuredHeight() + iCalculateRelativeTop);
             } else {
-                int i6 = this.mBackgroundRect.left + this.mSearchIconStartGap;
+                int count = this.mBackgroundRect.left + this.mSearchIconStartGap;
                 ImageView imageView2 = this.mSearchIconView;
-                imageView2.layout(i6, iCalculateRelativeTop, imageView2.getMeasuredWidth() + i6, this.mSearchIconView.getMeasuredHeight() + iCalculateRelativeTop);
+                imageView2.layout(count, iCalculateRelativeTop, imageView2.getMeasuredWidth() + count, this.mSearchIconView.getMeasuredHeight() + iCalculateRelativeTop);
             }
         }
     }
 
-    private void loadAttr(Context context, AttributeSet attributeSet, int i2, int i6) {
-        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISearchBar, i2, i6);
-        int i10 = R.styleable.COUISearchBar_inputTextSize;
-        if (typedArrayObtainStyledAttributes.hasValue(i10)) {
-            int dimensionPixelSize = typedArrayObtainStyledAttributes.getDimensionPixelSize(i10, 0);
+    private void loadAttr(Context context, AttributeSet attributeSet, int index, int count) {
+        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISearchBar, index, count);
+        int delta = R.styleable.COUISearchBar_inputTextSize;
+        if (typedArrayObtainStyledAttributes.hasValue(delta)) {
+            int dimensionPixelSize = typedArrayObtainStyledAttributes.getDimensionPixelSize(delta, 0);
             this.mSearchEditText.setTextSize(0, dimensionPixelSize);
             COUIHintAnimationLayout cOUIHintAnimationLayout = this.mCOUIHintAnimationLayout;
             if (cOUIHintAnimationLayout != null) {
                 cOUIHintAnimationLayout.setTextSize(dimensionPixelSize);
             }
         }
-        int i11 = R.styleable.COUISearchBar_inputTextColor;
-        if (typedArrayObtainStyledAttributes.hasValue(i11)) {
-            this.mSearchEditText.setTextColor(typedArrayObtainStyledAttributes.getColorStateList(i11));
+        int start = R.styleable.COUISearchBar_inputTextColor;
+        if (typedArrayObtainStyledAttributes.hasValue(start)) {
+            this.mSearchEditText.setTextColor(typedArrayObtainStyledAttributes.getColorStateList(start));
         }
-        int i12 = R.styleable.COUISearchBar_normalHintColor;
-        if (typedArrayObtainStyledAttributes.hasValue(i12)) {
-            this.mSearchEditText.setHintTextColor(typedArrayObtainStyledAttributes.getColorStateList(i12));
+        int end = R.styleable.COUISearchBar_normalHintColor;
+        if (typedArrayObtainStyledAttributes.hasValue(end)) {
+            this.mSearchEditText.setHintTextColor(typedArrayObtainStyledAttributes.getColorStateList(end));
         }
-        int i13 = R.styleable.COUISearchBar_functionalButtonText;
-        if (typedArrayObtainStyledAttributes.hasValue(i13) && functionalButtonShouldShow()) {
-            this.mFunctionalButton.setText(typedArrayObtainStyledAttributes.getString(i13));
+        int min = R.styleable.COUISearchBar_functionalButtonText;
+        if (typedArrayObtainStyledAttributes.hasValue(min) && functionalButtonShouldShow()) {
+            this.mFunctionalButton.setText(typedArrayObtainStyledAttributes.getString(min));
         }
-        int i14 = R.styleable.COUISearchBar_functionalButtonTextColor;
-        if (typedArrayObtainStyledAttributes.hasValue(i14) && functionalButtonShouldShow()) {
-            this.mFunctionalButton.setTextColor(typedArrayObtainStyledAttributes.getColorStateList(i14));
+        int max = R.styleable.COUISearchBar_functionalButtonTextColor;
+        if (typedArrayObtainStyledAttributes.hasValue(max) && functionalButtonShouldShow()) {
+            this.mFunctionalButton.setTextColor(typedArrayObtainStyledAttributes.getColorStateList(max));
         }
-        int i15 = R.styleable.COUISearchBar_couiSearchIcon;
-        Drawable drawable = typedArrayObtainStyledAttributes.hasValue(i15) ? typedArrayObtainStyledAttributes.getDrawable(i15) : androidx.core.content.res.ResourcesCompat.getDrawable(getContext().getResources(), R.drawable.coui_search_view_icon, getContext().getTheme());
+        int size = R.styleable.COUISearchBar_couiSearchIcon;
+        Drawable drawable = typedArrayObtainStyledAttributes.hasValue(size) ? typedArrayObtainStyledAttributes.getDrawable(size) : androidx.core.content.res.ResourcesCompat.getDrawable(getContext().getResources(), R.drawable.coui_search_view_icon, getContext().getTheme());
         int intrinsicWidth = drawable.getIntrinsicWidth();
-        int i16 = this.mIconMaxWidth;
-        if (intrinsicWidth > i16) {
-            drawable = zoomDrawable(drawable, (int) (i16 * getResources().getDisplayMetrics().density), (int) (this.mIconMaxHeight * getResources().getDisplayMetrics().density));
+        int pos = this.mIconMaxWidth;
+        if (intrinsicWidth > pos) {
+            drawable = zoomDrawable(drawable, (int) (pos * getResources().getDisplayMetrics().density), (int) (this.mIconMaxHeight * getResources().getDisplayMetrics().density));
         }
         if (this.mSearchIconView == null) {
             ImageView imageViewEnsureImageView = ensureImageView(drawable, false, false, 0);
@@ -1293,47 +1295,47 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
             this.mSearchIconView.setImportantForAccessibility(2);
         }
         configImageViewDrawable(this.mSearchIconView, drawable, this.mInnerIconSize);
-        int i17 = R.styleable.COUISearchBar_searchHint;
-        if (typedArrayObtainStyledAttributes.hasValue(i17)) {
-            this.mSearchEditText.setHint(typedArrayObtainStyledAttributes.getString(i17));
+        int width = R.styleable.COUISearchBar_searchHint;
+        if (typedArrayObtainStyledAttributes.hasValue(width)) {
+            this.mSearchEditText.setHint(typedArrayObtainStyledAttributes.getString(width));
         }
         this.mClearTextDrawableResourceId = typedArrayObtainStyledAttributes.getResourceId(R.styleable.COUISearchBar_couiSearchClearSelector, R.drawable.ic_edit_text_delete_search_view);
         typedArrayObtainStyledAttributes.recycle();
     }
 
-    private void loadHideFunctionButtonAttr(Context context, AttributeSet attributeSet, int i2, int i6) {
-        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISearchBar, i2, i6);
+    private void loadHideFunctionButtonAttr(Context context, AttributeSet attributeSet, int index, int count) {
+        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISearchBar, index, count);
         this.mHideFunctionalButton = typedArrayObtainStyledAttributes.getBoolean(R.styleable.COUISearchBar_couiHideFunctionalButton, false);
         typedArrayObtainStyledAttributes.recycle();
     }
 
-    private int measureBackground(int i2) {
+    private int measureBackground(int index) {
         measureFunctionalButton();
         measureView(this.mDrawingProxyView, View.MeasureSpec.makeMeasureSpec(getMeasuredWidth(), 1073741824), View.MeasureSpec.makeMeasureSpec(getMeasuredHeight(), 1073741824));
-        int i6 = this.mSearchViewType;
-        if (i6 == 0) {
+        int count = this.mSearchViewType;
+        if (count == 0) {
             int collapsedWidth = (getMeasuredWidth() - getInternalPaddingStart()) - (!functionalButtonShouldShow() ? getInternalPaddingEnd() : (this.mFunctionalButton.getMeasuredWidth() + this.mFunctionButtonStartGap) + this.mFunctionButtonEndGap[this.mResponsiveWidthSize]);
-            int measuredWidth = (int) (collapsedWidth + ((i2 - collapsedWidth) * (1.0f - this.mShrinkFraction)));
+            int measuredWidth = (int) (collapsedWidth + ((index - collapsedWidth) * (1.0f - this.mShrinkFraction)));
             measureRect(this.mBackgroundRect, (this.mExtraHorizontalBackground * 2) + measuredWidth, (int) Float.max(this.mCollapsedMinHeight, this.mNormalBackgroundHeight * this.mBackgroundScaleFraction));
             return measuredWidth;
         }
-        if (i6 != 1) {
-            return i2;
+        if (count != 1) {
+            return index;
         }
-        measureRect(this.mBackgroundRect, i2, (int) Float.max(this.mCollapsedMinHeight, this.mNormalBackgroundHeight * this.mBackgroundScaleFraction));
-        return i2;
+        measureRect(this.mBackgroundRect, index, (int) Float.max(this.mCollapsedMinHeight, this.mNormalBackgroundHeight * this.mBackgroundScaleFraction));
+        return index;
     }
 
-    private int measureDivider(int i2) {
+    private int measureDivider(int index) {
         if (this.mSearchViewType != 1) {
-            return i2;
+            return index;
         }
         measureRect(this.mDividerRect, this.mDividerWidth, this.mDividerHeight);
-        return (i2 - this.mNonInstantSearchInnerGap) - this.mDividerWidth;
+        return (index - this.mNonInstantSearchInnerGap) - this.mDividerWidth;
     }
 
-    private void measureEditFrame(int i2) {
-        measureView(getSearchEditOrAnimationLayout(), View.MeasureSpec.makeMeasureSpec(i2, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mNormalBackgroundHeight, Integer.MIN_VALUE));
+    private void measureEditFrame(int index) {
+        measureView(getSearchEditOrAnimationLayout(), View.MeasureSpec.makeMeasureSpec(index, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mNormalBackgroundHeight, Integer.MIN_VALUE));
     }
 
     private void measureFunctionalButton() {
@@ -1342,23 +1344,23 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
     }
 
-    private int measureInnerButton(int i2) {
-        int iMeasureView = shouldLayoutOut(this.mInnerPrimaryButton) ? i2 - measureView(this.mInnerPrimaryButton, View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824)) : i2;
+    private int measureInnerButton(int index) {
+        int iMeasureView = shouldLayoutOut(this.mInnerPrimaryButton) ? index - measureView(this.mInnerPrimaryButton, View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824)) : index;
         if (shouldLayoutOut(this.mInnerSecondaryButton)) {
             iMeasureView -= measureView(this.mInnerSecondaryButton, View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824));
         }
         if (shouldLayoutOut(this.mQuickDeleteButton)) {
             iMeasureView -= measureView(this.mQuickDeleteButton, View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824));
         }
-        return iMeasureView != i2 ? iMeasureView - this.mNonInstantSearchInnerGap : iMeasureView;
+        return iMeasureView != index ? iMeasureView - this.mNonInstantSearchInnerGap : iMeasureView;
     }
 
-    private void measureInsideBackground(int i2) {
-        int iMeasureSearchIcon = measureSearchIcon(i2);
-        int i6 = this.mSearchViewType;
-        if (i6 == 0) {
+    private void measureInsideBackground(int index) {
+        int iMeasureSearchIcon = measureSearchIcon(index);
+        int value = this.mSearchViewType;
+        if (value == 0) {
             iMeasureSearchIcon = measureInnerButton(iMeasureSearchIcon);
-        } else if (i6 == 1) {
+        } else if (value == 1) {
             if (shouldLayoutOut(this.mFunctionalButton)) {
                 iMeasureSearchIcon = measureDivider(iMeasureSearchIcon - (this.mFunctionalButton.getMeasuredWidth() + this.mNonInstantSearchInnerGap));
             }
@@ -1367,23 +1369,23 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         measureEditFrame(iMeasureSearchIcon - this.mEditFrameEndGap);
     }
 
-    private int measureNavigationButton(int i2) {
+    private int measureNavigationButton(int index) {
         if (!shouldLayoutOut(this.mNavigationView) || this.mSearchViewType != 1) {
-            return i2;
+            return index;
         }
-        int iMeasureView = i2 - measureView(this.mNavigationView, View.MeasureSpec.makeMeasureSpec(this.mNavigationButtonWidth, 1073741824), View.MeasureSpec.makeMeasureSpec(getMeasuredHeight(), 1073741824));
-        return (iMeasureView == i2 || !this.mUseResponsivePadding) ? iMeasureView : (iMeasureView + getInternalPaddingStart()) - this.mNavigationButtonStartGap[this.mResponsiveWidthSize];
+        int iMeasureView = index - measureView(this.mNavigationView, View.MeasureSpec.makeMeasureSpec(this.mNavigationButtonWidth, 1073741824), View.MeasureSpec.makeMeasureSpec(getMeasuredHeight(), 1073741824));
+        return (iMeasureView == index || !this.mUseResponsivePadding) ? iMeasureView : (iMeasureView + getInternalPaddingStart()) - this.mNavigationButtonStartGap[this.mResponsiveWidthSize];
     }
 
-    private int measureOuterButton(int i2) {
+    private int measureOuterButton(int index) {
         if (this.mSearchViewType != 1 && getOuterButtonCount() != 1) {
-            return i2;
+            return index;
         }
-        int iMeasureView = shouldLayoutOut(this.mOuterPrimaryButton) ? i2 - measureView(this.mOuterPrimaryButton, View.MeasureSpec.makeMeasureSpec(this.mOuterButtonWidth, 1073741824), View.MeasureSpec.makeMeasureSpec(getMeasuredHeight(), 1073741824)) : i2;
+        int iMeasureView = shouldLayoutOut(this.mOuterPrimaryButton) ? index - measureView(this.mOuterPrimaryButton, View.MeasureSpec.makeMeasureSpec(this.mOuterButtonWidth, 1073741824), View.MeasureSpec.makeMeasureSpec(getMeasuredHeight(), 1073741824)) : index;
         if (shouldLayoutOut(this.mOuterSecondaryButton)) {
             iMeasureView -= measureView(this.mOuterSecondaryButton, View.MeasureSpec.makeMeasureSpec(this.mOuterButtonWidth, 1073741824), View.MeasureSpec.makeMeasureSpec(getMeasuredHeight(), 1073741824));
         }
-        if (iMeasureView == i2) {
+        if (iMeasureView == index) {
             return iMeasureView;
         }
         if (this.mUseResponsivePadding) {
@@ -1396,32 +1398,32 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         return measureOuterButton(measureNavigationButton((getMeasuredWidth() - getInternalPaddingStart()) - getInternalPaddingEnd()));
     }
 
-    private void measureRect(Rect rect, int i2, int i6) {
+    private void measureRect(Rect rect, int index, int count) {
         if (rect != null) {
-            rect.set(0, 0, i2, i6);
+            rect.set(0, 0, index, count);
         }
     }
 
-    private int measureSearchIcon(int i2) {
+    private int measureSearchIcon(int index) {
         if (!shouldLayoutOut(this.mSearchIconView)) {
-            return i2;
+            return index;
         }
-        int iMeasureView = i2 - measureView(this.mSearchIconView, View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824));
-        return iMeasureView != i2 ? iMeasureView - this.mSearchIconStartGap : iMeasureView;
+        int iMeasureView = index - measureView(this.mSearchIconView, View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mInnerIconSize, 1073741824));
+        return iMeasureView != index ? iMeasureView - this.mSearchIconStartGap : iMeasureView;
     }
 
-    private int measureView(View view, int i2, int i6) {
-        view.measure(i2, i6);
+    private int measureView(View view, int index, int count) {
+        view.measure(index, count);
         return view.getMeasuredWidth();
     }
 
 
-    public void notifyOnStateChange(int i2, int i6) {
+    public void notifyOnStateChange(int index, int count) {
         List<OnStateChangeListener> list = this.mOnStateChangeListeners;
         if (list != null) {
             for (OnStateChangeListener onStateChangeListener : list) {
                 if (onStateChangeListener != null) {
-                    onStateChangeListener.onStateChange(i2, i6);
+                    onStateChangeListener.onStateChange(index, count);
                 }
             }
         }
@@ -1429,9 +1431,9 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
     private void removeLast() {
         int childCount = this.mToolBar.getChildCount();
-        for (int i2 = 0; i2 < childCount; i2++) {
-            if (getClass().isInstance(this.mToolBar.getChildAt(i2))) {
-                this.mToolBar.removeViewAt(i2);
+        for (int i = 0; i < childCount; i++) {
+            if (getClass().isInstance(this.mToolBar.getChildAt(i))) {
+                this.mToolBar.removeViewAt(i);
                 return;
             }
         }
@@ -1446,41 +1448,41 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
     }
 
 
-    public void setOuterButtonVisibility(int i2) {
-        if (i2 == 0 || i2 == 4 || i2 == 8) {
+    public void setOuterButtonVisibility(int index) {
+        if (index == 0 || index == 4 || index == 8) {
             ImageView imageView = this.mOuterPrimaryButton;
             if (imageView != null) {
-                imageView.setVisibility(i2);
+                imageView.setVisibility(index);
             }
             ImageView imageView2 = this.mOuterSecondaryButton;
             if (imageView2 != null) {
-                imageView2.setVisibility(i2);
+                imageView2.setVisibility(index);
             }
         }
     }
 
-    private void setToolBarAlpha(float f2) {
+    private void setToolBarAlpha(float fraction) {
         COUIToolbar cOUIToolbar = this.mToolBar;
         if (cOUIToolbar != null) {
             int childCount = cOUIToolbar.getChildCount();
-            for (int i2 = 0; i2 < childCount; i2++) {
-                View childAt = this.mToolBar.getChildAt(i2);
+            for (int i = 0; i < childCount; i++) {
+                View childAt = this.mToolBar.getChildAt(i);
                 if (childAt != this) {
-                    childAt.setAlpha(f2);
+                    childAt.setAlpha(fraction);
                 }
             }
         }
     }
 
 
-    public void setToolBarChildVisibility(int i2) {
+    public void setToolBarChildVisibility(int index) {
         COUIToolbar cOUIToolbar = this.mToolBar;
         if (cOUIToolbar != null) {
             int childCount = cOUIToolbar.getChildCount();
-            for (int i6 = 0; i6 < childCount; i6++) {
-                View childAt = this.mToolBar.getChildAt(i6);
+            for (int i = 0; i < childCount; i++) {
+                View childAt = this.mToolBar.getChildAt(i);
                 if (childAt != this) {
-                    childAt.setVisibility(i2);
+                    childAt.setVisibility(index);
                 }
             }
         }
@@ -1494,9 +1496,9 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
     }
 
 
-    public void showButton(View view, boolean z6) {
+    public void showButton(View view, boolean enabled) {
         if (view != null) {
-            view.setVisibility(z6 ? 0 : 8);
+            view.setVisibility(enabled ? 0 : 8);
         }
     }
 
@@ -1507,10 +1509,10 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
     }
 
-    private void updateAccessibilityImportance(int i2) {
-        if (i2 == 1) {
+    private void updateAccessibilityImportance(int index) {
+        if (index == 1) {
             this.mSearchEditText.setImportantForAccessibility(1);
-        } else if (i2 == 0) {
+        } else if (index == 0) {
             this.mSearchEditText.setImportantForAccessibility(2);
         }
     }
@@ -1519,8 +1521,8 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         this.mDrawingProxyDrawable.setBackgroundRect(this.mBackgroundRect);
     }
 
-    private Drawable zoomDrawable(Drawable drawable, int i2, int i6) {
-        return new BitmapDrawable(Bitmap.createScaledBitmap(drawableToBitmap(drawable), i2, i6, true));
+    private Drawable zoomDrawable(Drawable drawable, int index, int count) {
+        return new BitmapDrawable(Bitmap.createScaledBitmap(drawableToBitmap(drawable), index, count, true));
     }
 
     public void addOnStateChangeListener(OnStateChangeListener onStateChangeListener) {
@@ -1530,20 +1532,20 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         this.mOnStateChangeListeners.add(onStateChangeListener);
     }
 
-    public void changeState(int i2, boolean z6) {
-        if (z6) {
-            changeStateWithAnimation(i2);
+    public void changeState(int index, boolean enabled) {
+        if (enabled) {
+            changeStateWithAnimation(index);
         } else {
-            changeStateImmediately(i2);
+            changeStateImmediately(index);
         }
     }
 
-    public void changeStateImmediately(int i2) {
-        if (this.mState.get() == i2) {
-            COUILog.d(TAG, "changeStateImmediately: same state , return. targetState = " + i2);
+    public void changeStateImmediately(int index) {
+        if (this.mState.get() == index) {
+            COUILog.d(TAG, "changeStateImmediately: same state , return. targetState = " + index);
             return;
         }
-        updateAccessibilityImportance(i2);
+        updateAccessibilityImportance(index);
         if (this.mState.get() == 1) {
             getAnimatorHelper().runStateChangeImmediately(0);
         } else if (this.mState.get() == 0) {
@@ -1551,12 +1553,12 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
     }
 
-    public void changeStateWithAnimation(int i2) {
-        if (this.mState.get() == i2) {
-            COUILog.d(TAG, "changeStateWithAnimation: same state , return. targetState = " + i2);
+    public void changeStateWithAnimation(int index) {
+        if (this.mState.get() == index) {
+            COUILog.d(TAG, "changeStateWithAnimation: same state , return. targetState = " + index);
             return;
         }
-        updateAccessibilityImportance(i2);
+        updateAccessibilityImportance(index);
         if (this.mState.get() == 1) {
             getAnimatorHelper().runStateChangeAnimation(0);
         } else if (this.mState.get() == 0) {
@@ -1564,15 +1566,15 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
     }
 
-    public void controlImeShowAnim(int i2, Interpolator interpolator) {
-        this.mShowImeAnimDuration = i2;
+    public void controlImeShowAnim(int showImeAnimDuration, Interpolator interpolator) {
+        this.mShowImeAnimDuration = showImeAnimDuration;
         this.mShowImeInterpolator = interpolator;
     }
 
     @Override
     public void dispatchDraw(Canvas canvas) {
-        float f2 = this.mCollapsingHeightPercent;
-        if (f2 >= 1.0f || f2 < 0.75f) {
+        float fraction = this.mCollapsingHeightPercent;
+        if (fraction >= 1.0f || fraction < FLOAT_POINT_SEVEN_FIVE) {
             super.dispatchDraw(canvas);
             return;
         }
@@ -1681,8 +1683,8 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
         this.mToolBarAnimationRunning = true;
         ensureAddedToToolBar();
-        if (this.mAddToToolbarWay == 1) {
-            animate().alpha(0.0f).setDuration(150L).setListener(new AnimatorListenerAdapter() {
+        if (this.mAddToToolbarWay == WAY_AT_BEHIND) {
+            animate().alpha(0.0f).setDuration(DEFAULT_FADE_DURATION).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animator) {
                     super.onAnimationEnd(animator);
@@ -1691,7 +1693,7 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
             }).start();
         }
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
-        valueAnimatorOfFloat.setDuration(150L);
+        valueAnimatorOfFloat.setDuration(DEFAULT_FADE_DURATION);
         valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public final void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -1763,15 +1765,15 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
     }
 
     @Override
-    public void onLayout(boolean z6, int i2, int i6, int i10, int i11) {
+    public void onLayout(boolean changed, int left, int top, int right, int bottom) {
         layoutBackgroundLeft();
         layoutBackgroundArea();
         layoutBackgroundRight();
     }
 
     @Override
-    public void onMeasure(int i2, int i6) {
-        setMeasuredDimension(View.MeasureSpec.getSize(i2), View.MeasureSpec.getSize(i6));
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        setMeasuredDimension(View.MeasureSpec.getSize(widthMeasureSpec), View.MeasureSpec.getSize(heightMeasureSpec));
         configResponsive();
         measureInsideBackground(measureBackground(measureOutsideBackground()));
     }
@@ -1803,11 +1805,11 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         return true;
     }
 
-    public void openSoftInput(boolean z6) {
+    public void openSoftInput(boolean enabled) {
         if (this.mSearchEditText != null) {
             InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService("input_method");
-            COUILog.d(TAG, "openSoftInput: " + z6);
-            if (!z6) {
+            COUILog.d(TAG, "openSoftInput: " + enabled);
+            if (!enabled) {
                 this.mSearchEditText.clearFocus();
                 if (inputMethodManager == null || !inputMethodManager.isActive()) {
                     return;
@@ -1849,62 +1851,62 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         list.remove(onStateChangeListener);
     }
 
-    public void setAtBehindToolBar(COUIToolbar cOUIToolbar, int i2, MenuItem menuItem) {
+    public void setAtBehindToolBar(COUIToolbar cOUIToolbar, int gravityInToolBar, MenuItem menuItem) {
         this.mToolBar = cOUIToolbar;
-        this.mGravityInToolBar = i2;
-        this.mAddToToolbarWay = 1;
+        this.mGravityInToolBar = gravityInToolBar;
+        this.mAddToToolbarWay = WAY_AT_BEHIND;
         setMenuItem(menuItem);
         setVisibility(8);
     }
 
-    public void setAtFrontToolBar(COUIToolbar cOUIToolbar, int i2, MenuItem menuItem) {
+    public void setAtFrontToolBar(COUIToolbar cOUIToolbar, int gravityInToolBar, MenuItem menuItem) {
         this.mToolBar = cOUIToolbar;
-        this.mGravityInToolBar = i2;
-        this.mAddToToolbarWay = 2;
+        this.mGravityInToolBar = gravityInToolBar;
+        this.mAddToToolbarWay = WAY_AT_FRONT;
         setMenuItem(menuItem);
         ensureAddedToToolBar();
         menuItem.setVisible(false);
     }
 
     @Override
-    public void setEnabled(boolean z6) {
-        super.setEnabled(z6);
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
         if (functionalButtonShouldShow()) {
-            this.mFunctionalButton.setEnabled(z6);
+            this.mFunctionalButton.setEnabled(enabled);
         }
-        this.mDrawingProxyView.setEnabled(z6);
+        this.mDrawingProxyView.setEnabled(enabled);
         ImageView imageView = this.mSearchIconView;
         if (imageView != null) {
-            imageView.setEnabled(z6);
+            imageView.setEnabled(enabled);
         }
         ImageView imageView2 = this.mNavigationView;
         if (imageView2 != null) {
-            imageView2.setEnabled(z6);
+            imageView2.setEnabled(enabled);
         }
         ImageView imageView3 = this.mQuickDeleteButton;
         if (imageView3 != null) {
-            imageView3.setEnabled(z6);
+            imageView3.setEnabled(enabled);
         }
         ImageView imageView4 = this.mInnerPrimaryButton;
         if (imageView4 != null) {
-            imageView4.setEnabled(z6);
+            imageView4.setEnabled(enabled);
         }
         ImageView imageView5 = this.mInnerSecondaryButton;
         if (imageView5 != null) {
-            imageView5.setEnabled(z6);
+            imageView5.setEnabled(enabled);
         }
         ImageView imageView6 = this.mOuterPrimaryButton;
         if (imageView6 != null) {
-            imageView6.setEnabled(z6);
+            imageView6.setEnabled(enabled);
         }
         ImageView imageView7 = this.mOuterSecondaryButton;
         if (imageView7 != null) {
-            imageView7.setEnabled(z6);
+            imageView7.setEnabled(enabled);
         }
     }
 
-    public void setExtraActivateMarginTop(int i2) {
-        getAnimatorHelper().mExtraY = i2;
+    public void setExtraActivateMarginTop(int extraY) {
+        getAnimatorHelper().mExtraY = extraY;
     }
 
     public void setFunctionalButtonText(String str) {
@@ -1913,10 +1915,10 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
     }
 
-    public void setHideFunctionalButton(boolean z6) {
-        if (this.mHideFunctionalButton != z6) {
-            this.mHideFunctionalButton = z6;
-            if (z6) {
+    public void setHideFunctionalButton(boolean hideFunctionalButton) {
+        if (this.mHideFunctionalButton != hideFunctionalButton) {
+            this.mHideFunctionalButton = hideFunctionalButton;
+            if (hideFunctionalButton) {
                 this.mFunctionalButton.setVisibility(8);
             } else {
                 if (this.mFunctionalButton == null) {
@@ -1945,9 +1947,9 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
     public void setInnerPrimaryButton(Drawable drawable) {
         int intrinsicWidth = drawable.getIntrinsicWidth();
-        int i2 = this.mIconMaxWidth;
-        if (intrinsicWidth > i2) {
-            drawable = zoomDrawable(drawable, (int) (i2 * getResources().getDisplayMetrics().density), (int) (this.mIconMaxHeight * getResources().getDisplayMetrics().density));
+        int index = this.mIconMaxWidth;
+        if (intrinsicWidth > index) {
+            drawable = zoomDrawable(drawable, (int) (index * getResources().getDisplayMetrics().density), (int) (this.mIconMaxHeight * getResources().getDisplayMetrics().density));
         }
         if (this.mInnerPrimaryButton == null) {
             this.mInnerPrimaryButton = ensureImageView(drawable, true, true, this.mInnerIconSize / 2);
@@ -1960,9 +1962,9 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
 
     public void setInnerSecondaryButton(Drawable drawable) {
         int intrinsicWidth = drawable.getIntrinsicWidth();
-        int i2 = this.mIconMaxWidth;
-        if (intrinsicWidth > i2) {
-            drawable = zoomDrawable(drawable, (int) (i2 * getResources().getDisplayMetrics().density), (int) (this.mIconMaxHeight * getResources().getDisplayMetrics().density));
+        int index = this.mIconMaxWidth;
+        if (intrinsicWidth > index) {
+            drawable = zoomDrawable(drawable, (int) (index * getResources().getDisplayMetrics().density), (int) (this.mIconMaxHeight * getResources().getDisplayMetrics().density));
         }
         if (this.mInnerSecondaryButton == null) {
             this.mInnerSecondaryButton = ensureImageView(drawable, true, true, this.mInnerIconSize / 2);
@@ -1973,8 +1975,8 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
     }
 
-    public void setInputMethodAnimationEnabled(boolean z6) {
-        this.mInputMethodAnimationEnabled = z6;
+    public void setInputMethodAnimationEnabled(boolean inputMethodAnimationEnabled) {
+        this.mInputMethodAnimationEnabled = inputMethodAnimationEnabled;
     }
 
     public void setNavigationViewDrawable(Drawable drawable) {
@@ -2029,64 +2031,64 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
     }
 
-    public void setSearchAnimateType(int i2) {
+    public void setSearchAnimateType(int searchViewType) {
         if (this.mState.get() != 1) {
-            this.mSearchViewType = i2;
+            this.mSearchViewType = searchViewType;
             requestLayout();
             return;
         }
-        COUILog.d(TAG, "setSearchAnimateType to " + TYPE_NAME[i2] + " is not allowed in STATE_EDIT");
+        COUILog.d(TAG, "setSearchAnimateType to " + TYPE_NAME[searchViewType] + " is not allowed in STATE_EDIT");
     }
 
     public void setSearchBackgroundColor(ColorStateList colorStateList) {
         if (colorStateList != null) {
-            int i2 = this.mNormalBackgroundColor;
+            int index = this.mNormalBackgroundColor;
             int defaultColor = colorStateList.getDefaultColor();
             this.mNormalBackgroundColor = defaultColor;
             this.mPressedBackgroundColor = colorStateList.getColorForState(new int[]{16842919}, defaultColor);
-            if (this.mDrawingProxyDrawable.getCurrentBackgroundColor() == i2) {
+            if (this.mDrawingProxyDrawable.getCurrentBackgroundColor() == index) {
                 this.mDrawingProxyDrawable.setCurrentBackgroundColor(this.mNormalBackgroundColor);
             }
             invalidate();
         }
     }
 
-    public void setSearchViewAnimateHeightPercent(float f2) {
-        this.mCollapsingHeightPercent = f2;
-        this.mBackgroundScaleFraction = clampSearchViewHeight(f2);
-        this.mExtraHorizontalBackground = (int) (getInternalPaddingEnd() * (1.0f - clampMarginValue(f2)));
-        setTranslationY(Math.max(0.0f, ((this.mInitSearchBarHeight / 2.0f) * (1.0f - f2)) - 1.0f));
-        float f10 = (f2 - 0.75f) * FLOAT_FOUR;
+    public void setSearchViewAnimateHeightPercent(float collapsingHeightPercent) {
+        this.mCollapsingHeightPercent = collapsingHeightPercent;
+        this.mBackgroundScaleFraction = clampSearchViewHeight(collapsingHeightPercent);
+        this.mExtraHorizontalBackground = (int) (getInternalPaddingEnd() * (1.0f - clampMarginValue(collapsingHeightPercent)));
+        setTranslationY(Math.max(0.0f, ((this.mInitSearchBarHeight / 2.0f) * (1.0f - collapsingHeightPercent)) - 1.0f));
+        float fraction = (collapsingHeightPercent - FLOAT_POINT_SEVEN_FIVE) * FLOAT_FOUR;
         ImageView imageView = this.mSearchIconView;
         if (imageView != null) {
-            imageView.setAlpha(f10);
+            imageView.setAlpha(fraction);
         }
         ImageView imageView2 = this.mInnerPrimaryButton;
         if (imageView2 != null) {
-            imageView2.setAlpha(f10);
+            imageView2.setAlpha(fraction);
         }
         ImageView imageView3 = this.mInnerSecondaryButton;
         if (imageView3 != null) {
-            imageView3.setAlpha(f10);
+            imageView3.setAlpha(fraction);
         }
         ImageView imageView4 = this.mOuterPrimaryButton;
         if (imageView4 != null) {
-            imageView4.setAlpha(f10);
+            imageView4.setAlpha(fraction);
         }
         ImageView imageView5 = this.mOuterSecondaryButton;
         if (imageView5 != null) {
-            imageView5.setAlpha(f10);
+            imageView5.setAlpha(fraction);
         }
-        this.mDrawingProxyDrawable.setCurrentBackgroundColor(((Integer) DEFAULT_EVALUATOR.evaluate(clampMarginValue(f2), Integer.valueOf(this.mHorizontalDividerColor), Integer.valueOf(this.mNormalBackgroundColor))).intValue());
+        this.mDrawingProxyDrawable.setCurrentBackgroundColor(((Integer) DEFAULT_EVALUATOR.evaluate(clampMarginValue(collapsingHeightPercent), Integer.valueOf(this.mHorizontalDividerColor), Integer.valueOf(this.mNormalBackgroundColor))).intValue());
         COUIHintAnimationLayout cOUIHintAnimationLayout = this.mCOUIHintAnimationLayout;
         if (cOUIHintAnimationLayout != null) {
-            cOUIHintAnimationLayout.setAlpha(f10);
+            cOUIHintAnimationLayout.setAlpha(fraction);
         } else {
-            this.mSearchEditText.setAlpha(f10);
+            this.mSearchEditText.setAlpha(fraction);
         }
         COUIHintAnimationLayout cOUIHintAnimationLayout2 = this.mCOUIHintAnimationLayout;
         if (cOUIHintAnimationLayout2 != null) {
-            if (f2 < 1.0f) {
+            if (collapsingHeightPercent < 1.0f) {
                 cOUIHintAnimationLayout2.pauseHintsAnimation();
             } else {
                 cOUIHintAnimationLayout2.resumeHintsAnimation();
@@ -2107,8 +2109,8 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         configImageViewDrawable(this.mSearchIconView, drawable, this.mInnerIconSize);
     }
 
-    public void setUseResponsivePadding(boolean z6) {
-        this.mUseResponsivePadding = z6;
+    public void setUseResponsivePadding(boolean useResponsivePadding) {
+        this.mUseResponsivePadding = useResponsivePadding;
         requestLayout();
     }
 
@@ -2118,15 +2120,15 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         }
         this.mToolBarAnimationRunning = true;
         ensureAddedToToolBar();
-        if (this.mAddToToolbarWay == 1) {
+        if (this.mAddToToolbarWay == WAY_AT_BEHIND) {
             setVisibility(0);
             setAlpha(0.0f);
-            changeStateImmediately(1);
-            animate().alpha(1.0f).setDuration(150L).setListener(null).start();
+            changeStateImmediately(STATE_EDIT);
+            animate().alpha(1.0f).setDuration(DEFAULT_FADE_DURATION).setListener(null).start();
         }
         setToolBarChildVisibility(8);
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(1.0f, 0.0f);
-        valueAnimatorOfFloat.setDuration(150L);
+        valueAnimatorOfFloat.setDuration(DEFAULT_FADE_DURATION);
         valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public final void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -2155,18 +2157,18 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         this(context, attributeSet, R.attr.couiSearchBarStyle);
     }
 
-    public COUISearchBar(Context context, AttributeSet attributeSet, int i2) {
-        this(context, attributeSet, i2, COUIContextUtil.isCOUIDarkTheme(context) ? R.style.Widget_COUI_COUISearchBar_Dark : R.style.Widget_COUI_COUISearchBar);
+    public COUISearchBar(Context context, AttributeSet attributeSet, int index) {
+        this(context, attributeSet, index, COUIContextUtil.isCOUIDarkTheme(context) ? R.style.Widget_COUI_COUISearchBar_Dark : R.style.Widget_COUI_COUISearchBar);
     }
 
-    public COUISearchBar(Context context, AttributeSet attributeSet, int i2, int i6) {
-        super(context, attributeSet, i2, i6);
+    public COUISearchBar(Context context, AttributeSet attributeSet, int index, int count) {
+        super(context, attributeSet, index, count);
         this.mDrawingProxyDrawable = new COUISearchBarDrawingProxyDrawable();
         this.mBackgroundRect = new Rect();
         this.mDividerRect = new Rect();
         this.mBackgroundScaleFraction = 1.0f;
-        this.mResponsiveWidthSize = 0;
-        this.mAddToToolbarWay = 0;
+        this.mResponsiveWidthSize = RESPONSIVE_WIDTH_TYPE_COMPAT;
+        this.mAddToToolbarWay = WAY_NONE;
         this.mGravityInToolBar = 48;
         this.mPressed = false;
         this.mUseResponsivePadding = true;
@@ -2182,6 +2184,6 @@ public class COUISearchBar extends ViewGroup implements CollapsibleActionView, I
         this.mState = new AtomicInteger(0);
         this.mSearchViewType = 0;
         this.mHideFunctionalButton = false;
-        init(context, attributeSet, i2, i6);
+        init(context, attributeSet, index, count);
     }
 }

@@ -4,6 +4,6 @@
     <alpha
         android:duration="150"
         android:fromAlpha="1.0"
-        android:interpolator="@anim/android_alert_dialog_exit"
+        android:interpolator="@interpolator/android_alert_dialog_exit"
         android:toAlpha="0.0" />
 </set>

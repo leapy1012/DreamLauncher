@@ -297,14 +297,47 @@ public class COUIHintRedDotHelper {
         return Math.max(mMediumWidth, mViewHeight);
     }
 
-    public void setBgColor(int color) { mBgColor = color; mBgPaint.setColor(color); }
-    public void setCornerRadius(int radius) { mCornerRadius = radius; }
-    public void setDotDiameter(int diameter) { mDotDiameter = diameter; }
-    public void setEllipsisDiameter(int diameter) { mEllipsisDiameter = diameter; }
-    public void setLargeWidth(int width) { mLargeWidth = width; }
-    public void setMediumWidth(int width) { mMediumWidth = width; }
-    public void setSmallWidth(int width) { mSmallWidth = width; }
-    public void setTextColor(int color) { mTextColor = color; mTextPaint.setColor(color); }
-    public void setTextSize(int size) { mTextSize = size; mTextPaint.setTextSize(size); }
-    public void setViewHeight(int height) { mViewHeight = height; setCornerRadius(height / 2); }
+    public void setBgColor(int color) {
+        mBgColor = color;
+        mBgPaint.setColor(color);
+    }
+
+    public void setCornerRadius(int radius) {
+        mCornerRadius = radius;
+    }
+
+    public void setDotDiameter(int diameter) {
+        mDotDiameter = diameter;
+    }
+
+    public void setEllipsisDiameter(int diameter) {
+        mEllipsisDiameter = diameter;
+    }
+
+    public void setLargeWidth(int width) {
+        mLargeWidth = width;
+    }
+
+    public void setMediumWidth(int width) {
+        mMediumWidth = width;
+    }
+
+    public void setSmallWidth(int width) {
+        mSmallWidth = width;
+    }
+
+    public void setTextColor(int color) {
+        mTextColor = color;
+        mTextPaint.setColor(color);
+    }
+
+    public void setTextSize(int size) {
+        mTextSize = size;
+        mTextPaint.setTextSize(size);
+    }
+
+    public void setViewHeight(int height) {
+        mViewHeight = height;
+        setCornerRadius(height / 2);
+    }
 }

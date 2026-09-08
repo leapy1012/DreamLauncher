@@ -4,6 +4,7 @@ import android.content.ComponentCallbacks;
 import android.content.res.Configuration;
 import android.util.SparseArray;
 import android.view.View;
+
 import java.util.LinkedList;
 import java.util.List;
 

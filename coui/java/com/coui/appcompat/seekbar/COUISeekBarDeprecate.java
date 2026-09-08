@@ -24,7 +24,7 @@ public class COUISeekBarDeprecate extends COUISeekBar {
     }
 
     public COUISeekBarDeprecate(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                                int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
     }
 

@@ -5,7 +5,7 @@
         android:duration="250"
         android:fromXScale="0.8"
         android:fromYScale="0.8"
-        android:interpolator="@anim/android_alert_dialog_enter"
+        android:interpolator="@interpolator/android_alert_dialog_enter"
         android:pivotX="50.0%"
         android:pivotY="50.0%"
         android:toXScale="1.0"
@@ -13,6 +13,6 @@
     <alpha
         android:duration="250"
         android:fromAlpha="0.0"
-        android:interpolator="@anim/android_alert_dialog_enter"
+        android:interpolator="@interpolator/android_alert_dialog_enter"
         android:toAlpha="1.0" />
 </set>

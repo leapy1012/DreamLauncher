@@ -64,9 +64,18 @@ public class COUIStrokeDrawable extends StatefulDrawable {
         canvas.restore();
     }
 
-    @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
-    @Override public void setAlpha(int alpha) { }
-    @Override public void setColorFilter(ColorFilter colorFilter) { }
+    @Override
+    public int getOpacity() {
+        return PixelFormat.TRANSLUCENT;
+    }
+
+    @Override
+    public void setAlpha(int alpha) {
+    }
+
+    @Override
+    public void setColorFilter(ColorFilter colorFilter) {
+    }
 
     @Override
     public void invalidateSelf() {

@@ -24,11 +24,30 @@ public abstract class COUIFragmentStateAdapter extends FragmentStateAdapter {
         @Override
         public abstract void onChanged();
 
-        @Override public final void onItemRangeChanged(int positionStart, int itemCount) { onChanged(); }
-        @Override public final void onItemRangeChanged(int positionStart, int itemCount, Object payload) { onChanged(); }
-        @Override public final void onItemRangeInserted(int positionStart, int itemCount) { onChanged(); }
-        @Override public final void onItemRangeMoved(int fromPosition, int toPosition, int itemCount) { onChanged(); }
-        @Override public final void onItemRangeRemoved(int positionStart, int itemCount) { onChanged(); }
+        @Override
+        public final void onItemRangeChanged(int positionStart, int itemCount) {
+            onChanged();
+        }
+
+        @Override
+        public final void onItemRangeChanged(int positionStart, int itemCount, Object payload) {
+            onChanged();
+        }
+
+        @Override
+        public final void onItemRangeInserted(int positionStart, int itemCount) {
+            onChanged();
+        }
+
+        @Override
+        public final void onItemRangeMoved(int fromPosition, int toPosition, int itemCount) {
+            onChanged();
+        }
+
+        @Override
+        public final void onItemRangeRemoved(int positionStart, int itemCount) {
+            onChanged();
+        }
     }
 
 }

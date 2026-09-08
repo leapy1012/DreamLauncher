@@ -8,7 +8,7 @@
         android:fillBefore="false"
         android:fillEnabled="true"
         android:fromXDelta="109.99756%"
-        android:interpolator="@anim/coui_task_slide"
+        android:interpolator="@interpolator/coui_task_slide"
         android:toXDelta="0.0%" />
     <scale
         android:duration="150"
@@ -17,7 +17,7 @@
         android:fillEnabled="true"
         android:fromXScale="100.0%"
         android:fromYScale="100.0%"
-        android:interpolator="@anim/coui_ease"
+        android:interpolator="@interpolator/coui_ease"
         android:pivotX="50.0%"
         android:pivotY="50.0%"
         android:toXScale="95.00001%"
@@ -29,7 +29,7 @@
         android:fillEnabled="true"
         android:fromXScale="100.0%"
         android:fromYScale="100.0%"
-        android:interpolator="@anim/coui_task_scale_up"
+        android:interpolator="@interpolator/coui_task_scale_up"
         android:pivotX="50.0%"
         android:pivotY="50.0%"
         android:startOffset="150"

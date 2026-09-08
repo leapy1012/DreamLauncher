@@ -1,10 +1,10 @@
 package com.coui.appcompat.poplist;
 
-import com.coui.appcompat.R;
-
 import android.view.View;
+
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.version.COUIVersionUtil;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -40,8 +40,8 @@ abstract class BasePopupMenuAnimationController {
     Runnable mPendingMainMenuAnimationCallback = null;
     final COUIDynamicAnimation.OnAnimationEndListener mMainMenuAnimationEndListener = new COUIDynamicAnimation.OnAnimationEndListener() {
         @Override
-        public final void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z6, float f2, float f10) {
-            BasePopupMenuAnimationController.this.lambda$new$1(cOUIDynamicAnimation, z6, f2, f10);
+        public final void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean canceled, float value, float velocity) {
+            BasePopupMenuAnimationController.this.onMainMenuSpringAnimationEnd(cOUIDynamicAnimation, canceled, value, velocity);
         }
     };
 
@@ -68,20 +68,20 @@ abstract class BasePopupMenuAnimationController {
     }
 
 
-    public void lambda$new$0(long j2, boolean z6, float f2) {
-        if (j2 == this.mMainMenuAnimationGeneration.get()) {
-            notifyMainMenuAnimationStateChange(z6, f2);
+    public void dispatchMainMenuAnimationEndIfCurrent(long generation, boolean canceled, float value) {
+        if (generation == this.mMainMenuAnimationGeneration.get()) {
+            notifyMainMenuAnimationStateChange(canceled, value);
         }
         this.mPendingMainMenuAnimationCallback = null;
     }
 
 
-    public void lambda$new$1(COUIDynamicAnimation cOUIDynamicAnimation, final boolean z6, final float f2, float f10) {
+    public void onMainMenuSpringAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, final boolean canceled, final float value, float velocity) {
         View view;
-        final long j2 = this.mMainMenuAnimationGeneration.get();
+        final long generation = this.mMainMenuAnimationGeneration.get();
         AnimationExecutor executor = getExecutor();
         if (!executor.isAsynchronous() || (view = this.mRootView) == null) {
-            notifyMainMenuAnimationStateChange(z6, f2);
+            notifyMainMenuAnimationStateChange(canceled, value);
             return;
         }
         Runnable runnable = this.mPendingMainMenuAnimationCallback;
@@ -91,7 +91,7 @@ abstract class BasePopupMenuAnimationController {
         Runnable runnable2 = new Runnable() {
             @Override
             public final void run() {
-                BasePopupMenuAnimationController.this.lambda$new$0(j2, z6, f2);
+                BasePopupMenuAnimationController.this.dispatchMainMenuAnimationEndIfCurrent(generation, canceled, value);
             }
         };
         this.mPendingMainMenuAnimationCallback = runnable2;
@@ -126,8 +126,8 @@ abstract class BasePopupMenuAnimationController {
         this.mPendingMainMenuAnimationCallback = null;
     }
 
-    public void notifyMainMenuAnimationStateChange(boolean z6, float f2) {
-        if (z6) {
+    public void notifyMainMenuAnimationStateChange(boolean canceled, float value) {
+        if (canceled) {
             OnMenuStateChangedListener onMenuStateChangedListener = this.mMenuStateChangedListener;
             if (onMenuStateChangedListener != null) {
                 onMenuStateChangedListener.onMainMenuAnimationCanceled();
@@ -135,7 +135,7 @@ abstract class BasePopupMenuAnimationController {
             }
             return;
         }
-        if (f2 == 0.0f) {
+        if (value == 0.0f) {
             OnMenuStateChangedListener onMenuStateChangedListener2 = this.mMenuStateChangedListener;
             if (onMenuStateChangedListener2 != null) {
                 onMenuStateChangedListener2.onMainMenuExited();
@@ -153,8 +153,8 @@ abstract class BasePopupMenuAnimationController {
         this.mDomain = popupMenuDomain;
     }
 
-    public void setEnableRenderThreadAnimation(boolean z6) {
-        this.mEnableRenderThreadAnimation = z6;
+    public void setEnableRenderThreadAnimation(boolean enable) {
+        this.mEnableRenderThreadAnimation = enable;
     }
 
     public void setMainMenuView(View view) {
@@ -173,9 +173,9 @@ abstract class BasePopupMenuAnimationController {
         this.mSubMenuRoot = view;
     }
 
-    public boolean shouldReuseMainMenuAnimations(boolean z6) {
+    public boolean shouldReuseMainMenuAnimations(boolean animationsExist) {
         boolean zShouldUseRenderThreadAnimation = shouldUseRenderThreadAnimation();
-        if (z6 && this.mAnimationsCreatedForRt == zShouldUseRenderThreadAnimation) {
+        if (animationsExist && this.mAnimationsCreatedForRt == zShouldUseRenderThreadAnimation) {
             return true;
         }
         this.mAnimationsCreatedForRt = zShouldUseRenderThreadAnimation;
@@ -183,23 +183,23 @@ abstract class BasePopupMenuAnimationController {
     }
 
     public boolean shouldUseRenderThreadAnimation() {
-        if (!this.mEnableRenderThreadAnimation || !COUIVersionUtil.checkOPlusViewSubSDK(37, 15)) {
+        if (!this.mEnableRenderThreadAnimation || !COUIVersionUtil.checkOPlusViewSubSDK(RT_ANIMATION_ADDON_MAJOR_VERSION, RT_ANIMATION_ADDON_SUB_VERSION)) {
             return false;
         }
         View view = this.mMainMenuRoot;
         return (view instanceof RoundFrameLayout) && !((RoundFrameLayout) view).getUseBackgroundBlur();
     }
 
-    public void startMainMenuEnter(boolean z6) {
+    public void startMainMenuEnter(boolean skipToEnd) {
     }
 
-    public void startMainMenuExit(boolean z6) {
+    public void startMainMenuExit(boolean skipToEnd) {
     }
 
-    public void startSubMenuEnter(boolean z6) {
+    public void startSubMenuEnter(boolean skipToEnd) {
     }
 
-    public void startSubMenuExit(boolean z6) {
+    public void startSubMenuExit(boolean skipToEnd) {
     }
 
     public void stopAllAnimation() {

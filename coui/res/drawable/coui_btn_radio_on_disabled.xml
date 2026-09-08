@@ -10,10 +10,10 @@
         android:fillColor="?attr/couiColorPrimary"
         android:pathData="M12,12m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"
         android:strokeWidth="1"
-        android:fillAlpha="0.3"/>
+        android:fillAlpha="0.3" />
     <path
         android:name="path_1"
         android:fillColor="@color/coui_btn_radio_color_on_disabled"
         android:pathData="M12,12m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0"
-        android:strokeWidth="1"/>
+        android:strokeWidth="1" />
 </vector>

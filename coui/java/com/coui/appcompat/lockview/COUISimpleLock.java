@@ -13,20 +13,22 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.PathInterpolator;
+
 import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIEaseInterpolator;
 import com.coui.appcompat.animation.COUILinearInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.vibrateutil.VibrateUtils;
-import com.coui.appcompat.R;
+
 import java.util.LinkedList;
 import java.util.List;
 
-/* JADX INFO: loaded from: classes11.dex */
 public class COUISimpleLock extends View {
     public static final int DEFAULTTYPE = 0;
     private static final int FOURCIRCLE = 4;
@@ -93,7 +95,7 @@ public class COUISimpleLock extends View {
             this.mTempRect = new Rect();
         }
 
-        public CharSequence getItemDescription(int i2) {
+        public CharSequence getItemDescription(int virtualViewId) {
             if (COUISimpleLock.this.mDecription == null || COUISimpleLock.this.mNumberStrList == null) {
                 return SimpleLockTouchHelper.class.getSimpleName();
             }
@@ -102,49 +104,49 @@ public class COUISimpleLock extends View {
             return COUISimpleLock.this.mDecription.replace('x', String.valueOf(COUISimpleLock.this.mNumberStrList.size()).charAt(0));
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public int getVirtualViewAt(float f2, float f3) {
-            return (f2 < 0.0f || f2 > ((float) COUISimpleLock.this.mContentWidth) || f3 < 0.0f || f3 > ((float) COUISimpleLock.this.mDrawableHeight)) ? -2 : 0;
+        @Override
+        public int getVirtualViewAt(float x, float y) {
+            return (x < 0.0f || x > ((float) COUISimpleLock.this.mContentWidth) || y < 0.0f || y > ((float) COUISimpleLock.this.mDrawableHeight)) ? -2 : 0;
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
+        @Override
         public void getVisibleVirtualViews(List<Integer> list) {
             list.add(0);
         }
 
-        public boolean onItemClicked(int i2) {
-            sendEventForVirtualView(i2, 1);
+        public boolean onItemClicked(int virtualViewId) {
+            sendEventForVirtualView(virtualViewId, 1);
             return false;
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public boolean onPerformActionForVirtualView(int i2, int i3, Bundle bundle) {
-            if (i3 != 16) {
+        @Override
+        public boolean onPerformActionForVirtualView(int virtualViewId, int action, Bundle bundle) {
+            if (action != 16) {
                 return false;
             }
-            return onItemClicked(i2);
+            return onItemClicked(virtualViewId);
         }
 
-        @Override // androidx.core.view.AccessibilityDelegateCompat
+        @Override
         public void onPopulateAccessibilityEvent(View view, AccessibilityEvent accessibilityEvent) {
             super.onPopulateAccessibilityEvent(view, accessibilityEvent);
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public void onPopulateEventForVirtualView(int i2, AccessibilityEvent accessibilityEvent) {
-            accessibilityEvent.getText().add(getItemDescription(i2));
+        @Override
+        public void onPopulateEventForVirtualView(int virtualViewId, AccessibilityEvent accessibilityEvent) {
+            accessibilityEvent.getText().add(getItemDescription(virtualViewId));
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public void onPopulateNodeForVirtualView(int i2, @NonNull AccessibilityNodeInfoCompat accessibilityNodeInfoCompat) {
-            accessibilityNodeInfoCompat.setContentDescription(getItemDescription(i2));
+        @Override
+        public void onPopulateNodeForVirtualView(int virtualViewId, @NonNull AccessibilityNodeInfoCompat accessibilityNodeInfoCompat) {
+            accessibilityNodeInfoCompat.setContentDescription(getItemDescription(virtualViewId));
             accessibilityNodeInfoCompat.addAction(16);
-            setRectBounds(i2, this.mTempRect);
+            setRectBounds(virtualViewId, this.mTempRect);
             accessibilityNodeInfoCompat.setBoundsInParent(this.mTempRect);
         }
 
-        public void setRectBounds(int i2, Rect rect) {
-            if (i2 < 0 || i2 >= 1) {
+        public void setRectBounds(int virtualViewId, Rect rect) {
+            if (virtualViewId < 0 || virtualViewId >= 1) {
                 return;
             }
             rect.set(0, 0, COUISimpleLock.this.mContentWidth, COUISimpleLock.this.mDrawableHeight);
@@ -164,29 +166,29 @@ public class COUISimpleLock extends View {
         this.mDeleteAnimator = valueAnimatorOfInt;
         valueAnimatorOfInt.setInterpolator(this.mDeleteAnimatorInterpolator);
         this.mDeleteAnimator.setDuration(230L);
-        this.mDeleteAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUISimpleLock.3
-            @Override // android.animation.ValueAnimator.AnimatorUpdateListener
-            public void onAnimationUpdate(ValueAnimator valueAnimator2) {
-                COUISimpleLock.this.setOpacity(((Integer) valueAnimator2.getAnimatedValue()).intValue());
+        this.mDeleteAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                COUISimpleLock.this.setOpacity(((Integer) animation.getAnimatedValue()).intValue());
                 COUISimpleLock.this.invalidate();
             }
         });
-        this.mDeleteAnimator.addListener(new Animator.AnimatorListener() { // from class: com.coui.appcompat.lockview.COUISimpleLock.4
-            @Override // android.animation.Animator.AnimatorListener
+        this.mDeleteAnimator.addListener(new Animator.AnimatorListener() {
+            @Override
             public void onAnimationCancel(Animator animator) {
             }
 
-            @Override // android.animation.Animator.AnimatorListener
+            @Override
             public void onAnimationEnd(Animator animator) {
                 COUISimpleLock.this.fto_lastDraw = true;
                 COUISimpleLock.this.invalidate();
             }
 
-            @Override // android.animation.Animator.AnimatorListener
+            @Override
             public void onAnimationRepeat(Animator animator) {
             }
 
-            @Override // android.animation.Animator.AnimatorListener
+            @Override
             public void onAnimationStart(Animator animator) {
                 COUISimpleLock.this.fto_lastDraw = false;
             }
@@ -202,19 +204,19 @@ public class COUISimpleLock extends View {
         ValueAnimator valueAnimatorOfInt = ValueAnimator.ofInt(0, 255);
         this.mAddAnimator = valueAnimatorOfInt;
         valueAnimatorOfInt.setDuration(230L);
-        this.mAddAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUISimpleLock.1
-            @Override // android.animation.ValueAnimator.AnimatorUpdateListener
-            public void onAnimationUpdate(ValueAnimator valueAnimator2) {
-                COUISimpleLock.this.setOpacity(((Integer) valueAnimator2.getAnimatedValue()).intValue());
+        this.mAddAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                COUISimpleLock.this.setOpacity(((Integer) animation.getAnimatedValue()).intValue());
                 COUISimpleLock.this.invalidate();
             }
         });
-        this.mAddAnimator.addListener(new Animator.AnimatorListener() { // from class: com.coui.appcompat.lockview.COUISimpleLock.2
-            @Override // android.animation.Animator.AnimatorListener
+        this.mAddAnimator.addListener(new Animator.AnimatorListener() {
+            @Override
             public void onAnimationCancel(Animator animator) {
             }
 
-            @Override // android.animation.Animator.AnimatorListener
+            @Override
             public void onAnimationEnd(Animator animator) {
                 COUISimpleLock.this.otf_lastDraw = true;
                 COUISimpleLock.this.invalidate();
@@ -231,11 +233,11 @@ public class COUISimpleLock extends View {
                 }
             }
 
-            @Override // android.animation.Animator.AnimatorListener
+            @Override
             public void onAnimationRepeat(Animator animator) {
             }
 
-            @Override // android.animation.Animator.AnimatorListener
+            @Override
             public void onAnimationStart(Animator animator) {
                 COUISimpleLock.this.otf_lastDraw = false;
             }
@@ -243,52 +245,52 @@ public class COUISimpleLock extends View {
         return this.mAddAnimator;
     }
 
-    private void drawAllCodeAnimation(Canvas canvas, int i2) {
-        int i3 = this.mCodeImageStart;
-        int i4 = this.mDrawableHeight;
+    private void drawAllCodeAnimation(Canvas canvas, int codeIndex) {
+        int startX = this.mCodeImageStart;
+        int height = this.mDrawableHeight;
         if (this.otf_lastDraw) {
             drawPreviousState(canvas, this.mCodeNumber);
             this.animationMode = 0;
             return;
         }
-        int iJudgeType = judgeType();
-        int i5 = i3;
-        for (int i6 = 0; i6 < iJudgeType; i6++) {
-            int i7 = i5 + this.mDrawableWidth;
-            drawOutLinedRectangle(canvas, i5, 0, i7, i4);
-            if (i6 <= i2) {
-                drawFilledRectangle(canvas, i5, 0, i7, i4);
+        int circleCount = judgeType();
+        int left = startX;
+        for (int index = 0; index < circleCount; index++) {
+            int right = left + this.mDrawableWidth;
+            drawOutLinedRectangle(canvas, left, 0, right, height);
+            if (index <= codeIndex) {
+                drawFilledRectangle(canvas, left, 0, right, height);
             }
-            if (i6 > i2) {
-                drawFilledRectangle(canvas, 0, i5, i7, i4, this.mOpacity);
+            if (index > codeIndex) {
+                drawFilledRectangle(canvas, 0, left, right, height, this.mOpacity);
             }
-            i5 = i7 + this.mRectanglePadding;
+            left = right + this.mRectanglePadding;
         }
     }
 
-    private void drawClearAllAnimation(Canvas canvas, int i2) {
-        int i3 = this.mCodeImageStart;
-        int i4 = this.mDrawableHeight;
+    private void drawClearAllAnimation(Canvas canvas, int codeIndex) {
+        int startX = this.mCodeImageStart;
+        int height = this.mDrawableHeight;
         if (this.fto_lastDraw) {
             drawPreviousState(canvas, this.mCodeNumber);
             this.animationMode = 0;
             return;
         }
-        int iJudgeType = judgeType();
-        int i5 = i3;
-        for (int i6 = 0; i6 < iJudgeType; i6++) {
-            int i7 = i5 + this.mDrawableWidth;
-            drawOutLinedRectangle(canvas, i5, 0, i7, i4);
-            if (i6 <= i2) {
-                drawFilledRectangleWithAlphaChange(canvas, 0, i5, i7, i4, this.mOpacity);
+        int circleCount = judgeType();
+        int left = startX;
+        for (int index = 0; index < circleCount; index++) {
+            int right = left + this.mDrawableWidth;
+            drawOutLinedRectangle(canvas, left, 0, right, height);
+            if (index <= codeIndex) {
+                drawFilledRectangleWithAlphaChange(canvas, 0, left, right, height, this.mOpacity);
             }
-            i5 = i7 + this.mRectanglePadding;
+            left = right + this.mRectanglePadding;
         }
     }
 
-    private void drawFailedAnimation(Canvas canvas, int i2) {
-        int i3 = this.mCodeImageStart;
-        int i4 = this.mDrawableHeight;
+    private void drawFailedAnimation(Canvas canvas, int codeIndex) {
+        int startX = this.mCodeImageStart;
+        int height = this.mDrawableHeight;
         if (this.fail_lastDraw) {
             this.animationMode = 0;
             this.mDrawFailedAnimation = false;
@@ -296,31 +298,31 @@ public class COUISimpleLock extends View {
             drawPreviousState(canvas, -1);
             return;
         }
-        int iJudgeType = judgeType();
-        int i5 = i3;
-        for (int i6 = 0; i6 < iJudgeType; i6++) {
-            int i7 = i5 + this.mDrawableWidth;
-            drawOutLinedRectangleShake(canvas, 0, i5, i7, i4, 0.0f, 0.0f);
-            if (i6 <= i2) {
-                drawFilledRectangleShakeAndFall(canvas, 0, i5, i7, i4, 0.0f, 0.0f, i6);
+        int circleCount = judgeType();
+        int left = startX;
+        for (int index = 0; index < circleCount; index++) {
+            int right = left + this.mDrawableWidth;
+            drawOutLinedRectangleShake(canvas, 0, left, right, height, 0.0f, 0.0f);
+            if (index <= codeIndex) {
+                drawFilledRectangleShakeAndFall(canvas, 0, left, right, height, 0.0f, 0.0f, index);
             }
-            i5 = i5 + this.mDrawableWidth + this.mRectanglePadding;
+            left = left + this.mDrawableWidth + this.mRectanglePadding;
         }
     }
 
-    private void drawFilledRectangle(Canvas canvas, int i2, int i3, int i4, int i5) {
+    private void drawFilledRectangle(Canvas canvas, int left, int top, int right, int bottom) {
         Drawable drawableNewDrawable = this.mFilledRectangleDrawable.getConstantState().newDrawable();
         this.mDrawable = drawableNewDrawable;
-        float f2 = this.mTransitionX;
-        drawableNewDrawable.setBounds((int) (i2 + f2), i3, (int) (i4 + f2), i5);
+        float transitionX = this.mTransitionX;
+        drawableNewDrawable.setBounds((int) (left + transitionX), top, (int) (right + transitionX), bottom);
         this.mDrawable.draw(canvas);
     }
 
-    private void drawFilledRectangleShakeAndFall(Canvas canvas, int i2, int i3, int i4, int i5, float f2, float f3, int i6) {
+    private void drawFilledRectangleShakeAndFall(Canvas canvas, int top, int left, int right, int bottom, float unusedOffsetX, float unusedOffsetY, int index) {
         this.mDrawable = this.mFilledRectangleDrawable.getConstantState().newDrawable();
-        float f4 = this.mTransitionX;
-        this.mDrawable.setBounds((int) (i3 + f4), (int) (i2 + getDelayFallHeight(i6, this.mTransitionY)), (int) (i4 + f4), (int) (i5 + getDelayFallHeight(i6, this.mTransitionY)));
-        int delayFallHeight = (int) ((1.0f - (getDelayFallHeight(i6, this.mTransitionY) / 150.0f)) * 140.0f);
+        float transitionX = this.mTransitionX;
+        this.mDrawable.setBounds((int) (left + transitionX), (int) (top + getDelayFallHeight(index, this.mTransitionY)), (int) (right + transitionX), (int) (bottom + getDelayFallHeight(index, this.mTransitionY)));
+        int delayFallHeight = (int) ((1.0f - (getDelayFallHeight(index, this.mTransitionY) / 150.0f)) * 140.0f);
         Drawable drawable = this.mDrawable;
         if (delayFallHeight <= 0) {
             delayFallHeight = 0;
@@ -329,125 +331,124 @@ public class COUISimpleLock extends View {
         this.mDrawable.draw(canvas);
     }
 
-    private void drawFilledRectangleWithAlphaChange(Canvas canvas, int i2, int i3, int i4, int i5, int i6) {
+    private void drawFilledRectangleWithAlphaChange(Canvas canvas, int top, int left, int right, int bottom, int alpha) {
         Drawable drawableNewDrawable = this.mFilledRectangleDrawable.getConstantState().newDrawable();
         this.mDrawable = drawableNewDrawable;
-        float f2 = this.mTransitionX;
-        drawableNewDrawable.setBounds((int) (i3 + f2), i2, (int) (i4 + f2), i5);
-        this.mDrawable.setAlpha(i6);
+        float transitionX = this.mTransitionX;
+        drawableNewDrawable.setBounds((int) (left + transitionX), top, (int) (right + transitionX), bottom);
+        this.mDrawable.setAlpha(alpha);
         this.mDrawable.draw(canvas);
     }
 
-    private void drawFilledToOutLined(Canvas canvas, int i2) {
-        int i3 = this.mCodeImageStart;
-        int i4 = this.mDrawableHeight;
+    private void drawFilledToOutLined(Canvas canvas, int codeIndex) {
+        int startX = this.mCodeImageStart;
+        int height = this.mDrawableHeight;
         if (this.fto_lastDraw) {
             this.animationMode = 0;
             drawPreviousState(canvas, this.mCodeNumber);
             return;
         }
-        int iJudgeType = judgeType();
-        int i5 = i3;
-        for (int i6 = 0; i6 < iJudgeType; i6++) {
-            int i7 = i5 + this.mDrawableWidth;
-            drawOutLinedRectangle(canvas, i5, 0, i7, i4);
-            if (i6 < i2) {
-                drawFilledRectangle(canvas, i5, 0, i7, i4);
+        int circleCount = judgeType();
+        int left = startX;
+        for (int index = 0; index < circleCount; index++) {
+            int right = left + this.mDrawableWidth;
+            drawOutLinedRectangle(canvas, left, 0, right, height);
+            if (index < codeIndex) {
+                drawFilledRectangle(canvas, left, 0, right, height);
             }
-            if (i6 == i2) {
-                drawFilledRectangleWithAlphaChange(canvas, 0, i5, i7, i4, this.mOpacity);
+            if (index == codeIndex) {
+                drawFilledRectangleWithAlphaChange(canvas, 0, left, right, height, this.mOpacity);
             }
-            i5 = i7 + this.mRectanglePadding;
+            left = right + this.mRectanglePadding;
         }
     }
 
-    private void drawOutLinedRectangle(Canvas canvas, int i2, int i3, int i4, int i5) {
+    private void drawOutLinedRectangle(Canvas canvas, int left, int top, int right, int bottom) {
         Drawable drawableNewDrawable = this.mOutlinedRectangleDrawable.getConstantState().newDrawable();
         this.mDrawable = drawableNewDrawable;
-        float f2 = this.mTransitionX;
-        drawableNewDrawable.setBounds((int) (i2 + f2), i3, (int) (i4 + f2), i5);
+        float transitionX = this.mTransitionX;
+        drawableNewDrawable.setBounds((int) (left + transitionX), top, (int) (right + transitionX), bottom);
         this.mDrawable.draw(canvas);
     }
 
-    private void drawOutLinedRectangleShake(Canvas canvas, int i2, int i3, int i4, int i5, float f2, float f3) {
+    private void drawOutLinedRectangleShake(Canvas canvas, int top, int left, int right, int bottom, float unusedOffsetX, float unusedOffsetY) {
         Drawable drawableNewDrawable = this.mOutlinedRectangleDrawable.getConstantState().newDrawable();
         this.mDrawable = drawableNewDrawable;
-        float f4 = this.mTransitionX;
-        drawableNewDrawable.setBounds((int) (i3 + f4), i2, (int) (i4 + f4), i5);
+        float transitionX = this.mTransitionX;
+        drawableNewDrawable.setBounds((int) (left + transitionX), top, (int) (right + transitionX), bottom);
         this.mDrawable.draw(canvas);
     }
 
-    private void drawOutLinedToFilled(Canvas canvas, int i2) {
-        int i3 = this.mCodeImageStart;
-        int i4 = this.mDrawableHeight;
+    private void drawOutLinedToFilled(Canvas canvas, int codeIndex) {
+        int startX = this.mCodeImageStart;
+        int height = this.mDrawableHeight;
         if (this.otf_lastDraw) {
             this.animationMode = 0;
             drawPreviousState(canvas, this.mCodeNumber);
             return;
         }
-        int iJudgeType = judgeType();
-        int i5 = i3;
-        for (int i6 = 0; i6 < iJudgeType; i6++) {
-            int i7 = i5 + this.mDrawableWidth;
-            drawOutLinedRectangle(canvas, i5, 0, i7, i4);
-            if (i6 < i2) {
-                drawFilledRectangle(canvas, i5, 0, i7, i4);
+        int circleCount = judgeType();
+        int left = startX;
+        for (int index = 0; index < circleCount; index++) {
+            int right = left + this.mDrawableWidth;
+            drawOutLinedRectangle(canvas, left, 0, right, height);
+            if (index < codeIndex) {
+                drawFilledRectangle(canvas, left, 0, right, height);
             }
-            if (i6 == i2) {
-                drawFilledRectangle(canvas, 0, i5, i7, i4, this.mOpacity);
+            if (index == codeIndex) {
+                drawFilledRectangle(canvas, 0, left, right, height, this.mOpacity);
             }
             if (this.mDrawFailedAnimation) {
-                drawFilledRectangleShakeAndFall(canvas, 0, i5, i7, i4, 0.0f, 0.0f, i6);
+                drawFilledRectangleShakeAndFall(canvas, 0, left, right, height, 0.0f, 0.0f, index);
             }
-            i5 = i5 + this.mDrawableWidth + this.mRectanglePadding;
+            left = left + this.mDrawableWidth + this.mRectanglePadding;
         }
     }
 
-    private void drawPreviousState(Canvas canvas, int i2) {
-        int i3 = this.mCodeImageStart;
-        int i4 = this.mDrawableHeight;
-        int iJudgeType = judgeType();
-        int i5 = i3;
-        for (int i6 = 0; i6 < iJudgeType; i6++) {
-            int i7 = i5 + this.mDrawableWidth;
-            if (i6 <= i2) {
-                drawFilledRectangle(canvas, i5, 0, i7, i4);
+    private void drawPreviousState(Canvas canvas, int codeIndex) {
+        int startX = this.mCodeImageStart;
+        int height = this.mDrawableHeight;
+        int circleCount = judgeType();
+        int left = startX;
+        for (int index = 0; index < circleCount; index++) {
+            int right = left + this.mDrawableWidth;
+            if (index <= codeIndex) {
+                drawFilledRectangle(canvas, left, 0, right, height);
             }
-            if (i6 > i2) {
-                drawOutLinedRectangle(canvas, i5, 0, i7, i4);
+            if (index > codeIndex) {
+                drawOutLinedRectangle(canvas, left, 0, right, height);
             }
-            i5 = i7 + this.mRectanglePadding;
+            left = right + this.mRectanglePadding;
         }
     }
 
-    private float getDelayFallHeight(int i2, float f2) {
-        int i3 = this.mRectangleNum;
-        if (i3 == 4) {
-            float f3 = f2 - this.DELAY_FOUR[i2];
-            if (f3 >= 0.0f) {
-                return f3;
+    private float getDelayFallHeight(int index, float transitionY) {
+        int rectangleNum = this.mRectangleNum;
+        if (rectangleNum == 4) {
+            float delayedHeight = transitionY - this.DELAY_FOUR[index];
+            if (delayedHeight >= 0.0f) {
+                return delayedHeight;
             }
             return 0.0f;
         }
-        if (i3 != 6) {
-            return f2;
+        if (rectangleNum != 6) {
+            return transitionY;
         }
-        float f4 = f2 - this.DELAY_SIX[i2];
-        if (f4 >= 0.0f) {
-            return f4;
+        float delayedHeight = transitionY - this.DELAY_SIX[index];
+        if (delayedHeight >= 0.0f) {
+            return delayedHeight;
         }
         return 0.0f;
     }
 
     private int judgeType() {
-        int i2 = this.mRectangleNum;
-        if (i2 == 4) {
+        int rectangleNum = this.mRectangleNum;
+        if (rectangleNum == 4) {
             return 4;
         }
-        return i2 == 6 ? 6 : -1;
+        return rectangleNum == 6 ? 6 : -1;
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
     public void performFeedback() {
         if (this.mIsLinearMotorVersion) {
             performHapticFeedback(304);
@@ -461,49 +462,49 @@ public class COUISimpleLock extends View {
         if (animator != null) {
             return animator;
         }
-        ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 30.0f, -28.0f, 14.0f, -8.0f, 4.0f, -3.0f, 0.0f);
-        valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUISimpleLock.5
-            @Override // android.animation.ValueAnimator.AnimatorUpdateListener
-            public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                COUISimpleLock.this.setInternalTranslationX(((Float) valueAnimator.getAnimatedValue()).floatValue());
+        ValueAnimator shakeAnimator = ValueAnimator.ofFloat(0.0f, 30.0f, -28.0f, 14.0f, -8.0f, 4.0f, -3.0f, 0.0f);
+        shakeAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                COUISimpleLock.this.setInternalTranslationX(((Float) animation.getAnimatedValue()).floatValue());
                 COUISimpleLock.this.invalidate();
             }
         });
-        final ValueAnimator valueAnimatorOfFloat2 = ValueAnimator.ofFloat(0.0f, 250.0f);
-        valueAnimatorOfFloat2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUISimpleLock.6
-            @Override // android.animation.ValueAnimator.AnimatorUpdateListener
-            public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                COUISimpleLock.this.setInternalTranslationY(((Float) valueAnimator.getAnimatedValue()).floatValue());
+        final ValueAnimator fallAnimator = ValueAnimator.ofFloat(0.0f, 250.0f);
+        fallAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                COUISimpleLock.this.setInternalTranslationY(((Float) animation.getAnimatedValue()).floatValue());
             }
         });
-        valueAnimatorOfFloat.setInterpolator(new COUILinearInterpolator());
-        valueAnimatorOfFloat2.setInterpolator(new COUILinearInterpolator());
-        valueAnimatorOfFloat.setDuration(800L);
-        valueAnimatorOfFloat2.setDuration(800L);
-        valueAnimatorOfFloat.addListener(new Animator.AnimatorListener() { // from class: com.coui.appcompat.lockview.COUISimpleLock.7
-            @Override // android.animation.Animator.AnimatorListener
-            public void onAnimationCancel(Animator animator2) {
+        shakeAnimator.setInterpolator(new COUILinearInterpolator());
+        fallAnimator.setInterpolator(new COUILinearInterpolator());
+        shakeAnimator.setDuration(800L);
+        fallAnimator.setDuration(800L);
+        shakeAnimator.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationCancel(Animator animation) {
             }
 
-            @Override // android.animation.Animator.AnimatorListener
-            public void onAnimationEnd(Animator animator2) {
+            @Override
+            public void onAnimationEnd(Animator animation) {
                 COUISimpleLock.this.setInternalTranslationX(0.0f);
                 COUISimpleLock.this.fail_lastDraw = true;
                 COUISimpleLock.this.mDrawFailedAnimation = false;
                 COUISimpleLock.this.invalidate();
             }
 
-            @Override // android.animation.Animator.AnimatorListener
-            public void onAnimationRepeat(Animator animator2) {
+            @Override
+            public void onAnimationRepeat(Animator animation) {
             }
 
-            @Override // android.animation.Animator.AnimatorListener
-            public void onAnimationStart(Animator animator2) {
+            @Override
+            public void onAnimationStart(Animator animation) {
                 COUISimpleLock.this.animationMode = 5;
                 COUISimpleLock.this.setInternalTranslationX(0.0f);
                 COUISimpleLock.this.fail_lastDraw = false;
                 COUISimpleLock.this.mDrawFailedAnimation = true;
-                valueAnimatorOfFloat2.start();
+                fallAnimator.start();
                 if (COUISimpleLock.this.isFingerprintMode) {
                     COUISimpleLock.this.isFingerprintMode = false;
                 } else if (COUISimpleLock.this.mIsVibrator) {
@@ -512,11 +513,11 @@ public class COUISimpleLock extends View {
                 }
             }
         });
-        this.mFailedAnimator = valueAnimatorOfFloat;
-        return valueAnimatorOfFloat;
+        this.mFailedAnimator = shakeAnimator;
+        return shakeAnimator;
     }
 
-    @Override // android.view.View
+    @Override
     public boolean dispatchHoverEvent(MotionEvent motionEvent) {
         SimpleLockTouchHelper simpleLockTouchHelper = this.mTouchHelper;
         if (simpleLockTouchHelper == null || !simpleLockTouchHelper.dispatchHoverEvent(motionEvent)) {
@@ -542,33 +543,33 @@ public class COUISimpleLock extends View {
         return this.mNumberStrList;
     }
 
-    @Override // android.view.View
+    @Override
     public void onDraw(Canvas canvas) {
-        int i2 = this.animationMode;
-        if (i2 == 1) {
+        int mode = this.animationMode;
+        if (mode == 1) {
             drawFilledToOutLined(canvas, this.mCodeNumber + 1);
             return;
         }
-        if (i2 == 2) {
+        if (mode == 2) {
             drawOutLinedToFilled(canvas, this.mCodeNumber);
             return;
         }
-        if (i2 == 3) {
+        if (mode == 3) {
             drawClearAllAnimation(canvas, this.mRectanglesNumber);
             return;
         }
-        if (i2 == 4) {
+        if (mode == 4) {
             drawAllCodeAnimation(canvas, this.mRectanglesNumber);
-        } else if (i2 != 5) {
+        } else if (mode != 5) {
             drawPreviousState(canvas, this.mCodeNumber);
         } else {
             drawFailedAnimation(canvas, this.mCodeNumber);
         }
     }
 
-    @Override // android.view.View
-    public void onMeasure(int i2, int i3) {
-        int size = View.MeasureSpec.getSize(i2);
+    @Override
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int size = View.MeasureSpec.getSize(widthMeasureSpec);
         this.mContentWidth = size;
         this.mCodeImageStart = (size - this.mRectanglesWidth) / 2;
         setMeasuredDimension(size, this.mDrawableHeight + 150);
@@ -590,16 +591,16 @@ public class COUISimpleLock extends View {
     }
 
     public void reset() {
-        ValueAnimator valueAnimator = this.mDeleteAnimator;
-        if (valueAnimator != null && valueAnimator.isRunning()) {
+        ValueAnimator deleteAnimator = this.mDeleteAnimator;
+        if (deleteAnimator != null && deleteAnimator.isRunning()) {
             this.mDeleteAnimator.cancel();
         }
-        ValueAnimator valueAnimator2 = this.mAddAnimator;
-        if (valueAnimator2 != null && valueAnimator2.isRunning()) {
+        ValueAnimator addAnimator = this.mAddAnimator;
+        if (addAnimator != null && addAnimator.isRunning()) {
             this.mAddAnimator.cancel();
         }
-        Animator animator = this.mFailedAnimator;
-        if (animator != null && animator.isRunning()) {
+        Animator failedAnimator = this.mFailedAnimator;
+        if (failedAnimator != null && failedAnimator.isRunning()) {
             this.mFailedAnimator.cancel();
         }
         this.mCodeNumber = -1;
@@ -609,40 +610,40 @@ public class COUISimpleLock extends View {
         invalidate();
     }
 
-    public void setAllCode(boolean z2) {
-        int i2 = this.mRectangleNum;
-        if (i2 == 4) {
+    public void setAllCode(boolean animate) {
+        int rectangleNum = this.mRectangleNum;
+        if (rectangleNum == 4) {
             if (this.mDrawFailedAnimation || this.mCodeNumber >= 3) {
                 return;
             }
-            Animator animator = this.mFailedAnimator;
-            if (animator != null && animator.isRunning()) {
+            Animator failedAnimator = this.mFailedAnimator;
+            if (failedAnimator != null && failedAnimator.isRunning()) {
                 return;
             }
-        } else if (i2 == 6) {
+        } else if (rectangleNum == 6) {
             if (this.mDrawFailedAnimation || this.mCodeNumber >= 5) {
                 return;
             }
-            Animator animator2 = this.mFailedAnimator;
-            if (animator2 != null && animator2.isRunning()) {
+            Animator failedAnimator = this.mFailedAnimator;
+            if (failedAnimator != null && failedAnimator.isRunning()) {
                 return;
             }
         }
-        if (z2) {
-            ValueAnimator valueAnimator = this.mDeleteAnimator;
-            if (valueAnimator != null && valueAnimator.isRunning()) {
+        if (animate) {
+            ValueAnimator deleteAnimator = this.mDeleteAnimator;
+            if (deleteAnimator != null && deleteAnimator.isRunning()) {
                 this.mDeleteAnimator.end();
             }
-            ValueAnimator valueAnimator2 = this.mAddAnimator;
-            if (valueAnimator2 != null && valueAnimator2.isRunning()) {
+            ValueAnimator addAnimator = this.mAddAnimator;
+            if (addAnimator != null && addAnimator.isRunning()) {
                 this.mAddAnimator.end();
             }
             this.animationMode = 4;
             this.mRectanglesNumber = this.mCodeNumber;
-            int i3 = this.mRectangleNum;
-            if (i3 == 4) {
+            int num = this.mRectangleNum;
+            if (num == 4) {
                 this.mCodeNumber = 3;
-            } else if (i3 == 6) {
+            } else if (num == 6) {
                 this.mCodeNumber = 5;
             }
             ValueAnimator valueAnimatorCreateMorphingAnimationOutLinedToFilled = createMorphingAnimationOutLinedToFilled();
@@ -651,33 +652,33 @@ public class COUISimpleLock extends View {
         }
     }
 
-    public void setClearAll(boolean z2) {
-        int i2 = this.mRectangleNum;
-        if (i2 == 4) {
-            int i3 = this.mCodeNumber;
-            if (i3 == -1 || this.mDrawFailedAnimation || i3 > 3 || !z2) {
+    public void setClearAll(boolean clear) {
+        int rectangleNum = this.mRectangleNum;
+        if (rectangleNum == 4) {
+            int codeNumber = this.mCodeNumber;
+            if (codeNumber == -1 || this.mDrawFailedAnimation || codeNumber > 3 || !clear) {
                 return;
             }
-            Animator animator = this.mFailedAnimator;
-            if (animator != null && animator.isRunning()) {
+            Animator failedAnimator = this.mFailedAnimator;
+            if (failedAnimator != null && failedAnimator.isRunning()) {
                 return;
             }
-        } else if (i2 == 6) {
-            int i4 = this.mCodeNumber;
-            if (i4 == -1 || this.mDrawFailedAnimation || i4 > 5 || !z2) {
+        } else if (rectangleNum == 6) {
+            int codeNumber = this.mCodeNumber;
+            if (codeNumber == -1 || this.mDrawFailedAnimation || codeNumber > 5 || !clear) {
                 return;
             }
-            Animator animator2 = this.mFailedAnimator;
-            if (animator2 != null && animator2.isRunning()) {
+            Animator failedAnimator = this.mFailedAnimator;
+            if (failedAnimator != null && failedAnimator.isRunning()) {
                 return;
             }
         }
-        ValueAnimator valueAnimator = this.mDeleteAnimator;
-        if (valueAnimator != null && valueAnimator.isRunning()) {
+        ValueAnimator deleteAnimator = this.mDeleteAnimator;
+        if (deleteAnimator != null && deleteAnimator.isRunning()) {
             this.mDeleteAnimator.end();
         }
-        ValueAnimator valueAnimator2 = this.mAddAnimator;
-        if (valueAnimator2 != null && valueAnimator2.isRunning()) {
+        ValueAnimator addAnimator = this.mAddAnimator;
+        if (addAnimator != null && addAnimator.isRunning()) {
             this.mAddAnimator.end();
         }
         LinkedList<String> linkedList = this.mNumberStrList;
@@ -692,18 +693,18 @@ public class COUISimpleLock extends View {
         valueAnimatorCreateMorphingAnimationFilledToOutLined.start();
     }
 
-    public void setDeleteLast(boolean z2) {
-        int i2;
-        int i3 = this.mRectangleNum;
-        if ((i3 == 4 || i3 == 6) && ((i2 = this.mCodeNumber) == -1 || !z2 || i2 >= i3)) {
+    public void setDeleteLast(boolean delete) {
+        int codeNumber;
+        int rectangleNum = this.mRectangleNum;
+        if ((rectangleNum == 4 || rectangleNum == 6) && ((codeNumber = this.mCodeNumber) == -1 || !delete || codeNumber >= rectangleNum)) {
             return;
         }
         LinkedList<String> linkedList = this.mNumberStrList;
         if (linkedList != null && !linkedList.isEmpty()) {
             this.mNumberStrList.removeFirst();
-            String str = this.mDecription;
-            if (str != null && this.mNumberStrList != null) {
-                this.mDecription = str.replace('y', String.valueOf(this.mRectangleNum).charAt(0));
+            String description = this.mDecription;
+            if (description != null && this.mNumberStrList != null) {
+                this.mDecription = description.replace('y', String.valueOf(this.mRectangleNum).charAt(0));
                 announceForAccessibility(this.mDecription.replace('x', String.valueOf(this.mNumberStrList.size()).charAt(0)));
             }
         }
@@ -711,18 +712,18 @@ public class COUISimpleLock extends View {
         if (this.mDrawFailedAnimation) {
             return;
         }
-        Animator animator = this.mFailedAnimator;
-        if (animator == null || !animator.isRunning()) {
+        Animator failedAnimator = this.mFailedAnimator;
+        if (failedAnimator == null || !failedAnimator.isRunning()) {
             if (this.mCodeNumber < -1) {
                 this.mCodeNumber = -1;
                 return;
             }
-            ValueAnimator valueAnimator = this.mDeleteAnimator;
-            if (valueAnimator != null && valueAnimator.isRunning()) {
+            ValueAnimator deleteAnimator = this.mDeleteAnimator;
+            if (deleteAnimator != null && deleteAnimator.isRunning()) {
                 this.mDeleteAnimator.end();
             }
-            ValueAnimator valueAnimator2 = this.mAddAnimator;
-            if (valueAnimator2 != null && valueAnimator2.isRunning()) {
+            ValueAnimator addAnimator = this.mAddAnimator;
+            if (addAnimator != null && addAnimator.isRunning()) {
                 this.mAddAnimator.end();
             }
             this.animationMode = 1;
@@ -732,52 +733,52 @@ public class COUISimpleLock extends View {
         }
     }
 
-    public void setFailed(boolean z2) {
-        Animator animator = this.mFailedAnimator;
-        if (animator != null && animator.isRunning()) {
+    public void setFailed(boolean failed) {
+        Animator failedAnimator = this.mFailedAnimator;
+        if (failedAnimator != null && failedAnimator.isRunning()) {
             this.mFailedAnimator.end();
         }
-        this.mDrawFailedAnimation = z2;
+        this.mDrawFailedAnimation = failed;
     }
 
     public void setFilledRectangleDrawable(Drawable drawable) {
         this.mFilledRectangleDrawable = drawable;
     }
 
-    public void setFingerprintRecognition(boolean z2) {
-        this.isFingerprintMode = z2;
+    public void setFingerprintRecognition(boolean enabled) {
+        this.isFingerprintMode = enabled;
     }
 
-    public void setInternalTranslationX(float f2) {
-        this.mTransitionX = f2;
+    public void setInternalTranslationX(float translationX) {
+        this.mTransitionX = translationX;
     }
 
-    public void setInternalTranslationY(float f2) {
-        this.mTransitionY = f2;
+    public void setInternalTranslationY(float translationY) {
+        this.mTransitionY = translationY;
     }
 
-    public void setOneCode(int i2) {
-        int i3 = this.mRectangleNum;
-        if (i3 == 4) {
+    public void setOneCode(int code) {
+        int rectangleNum = this.mRectangleNum;
+        if (rectangleNum == 4) {
             if (this.mCodeNumber > 3) {
                 return;
             }
-        } else if (i3 == 6 && this.mCodeNumber > 5) {
+        } else if (rectangleNum == 6 && this.mCodeNumber > 5) {
             return;
         }
-        if (i3 == 4) {
+        if (rectangleNum == 4) {
             if (this.mCodeNumber == 3) {
                 this.mCodeNumber = -1;
             }
-        } else if (i3 == 6 && this.mCodeNumber == 5) {
+        } else if (rectangleNum == 6 && this.mCodeNumber == 5) {
             this.mCodeNumber = -1;
         }
-        ValueAnimator valueAnimator = this.mDeleteAnimator;
-        if (valueAnimator != null && valueAnimator.isRunning()) {
+        ValueAnimator deleteAnimator = this.mDeleteAnimator;
+        if (deleteAnimator != null && deleteAnimator.isRunning()) {
             this.mDeleteAnimator.end();
         }
-        ValueAnimator valueAnimator2 = this.mAddAnimator;
-        if (valueAnimator2 != null && valueAnimator2.isRunning()) {
+        ValueAnimator addAnimator = this.mAddAnimator;
+        if (addAnimator != null && addAnimator.isRunning()) {
             this.mAddAnimator.end();
         }
         this.animationMode = 2;
@@ -786,46 +787,46 @@ public class COUISimpleLock extends View {
         this.mAddAnimator = valueAnimatorCreateMorphingAnimationOutLinedToFilled;
         valueAnimatorCreateMorphingAnimationOutLinedToFilled.start();
         if (this.mNumberStrList != null) {
-            String strValueOf = String.valueOf(i2);
+            String codeStr = String.valueOf(code);
             if (this.mCodeNumber != this.mRectangleNum - 1) {
-                this.mNumberStrList.addFirst(strValueOf);
+                this.mNumberStrList.addFirst(codeStr);
             } else {
                 this.mNumberStrList.clear();
             }
         }
     }
 
-    public void setOpacity(int i2) {
-        this.mOpacity = i2;
+    public void setOpacity(int opacity) {
+        this.mOpacity = opacity;
     }
 
     public void setOutlinedRectangleDrawable(Drawable drawable) {
         this.mOutlinedRectangleDrawable = drawable;
     }
 
-    public void setRectanglePadding(int i2) {
-        this.mRectanglePadding = i2;
+    public void setRectanglePadding(int padding) {
+        this.mRectanglePadding = padding;
     }
 
-    public void setRectangleType(int i2) {
-        this.mRectangleType = i2;
+    public void setRectangleType(int type) {
+        this.mRectangleType = type;
     }
 
-    @Override // android.view.View
-    public void setScaleX(float f2) {
-        this.mScaleX = f2;
+    @Override
+    public void setScaleX(float scaleX) {
+        this.mScaleX = scaleX;
     }
 
-    @Override // android.view.View
-    public void setScaleY(float f2) {
-        this.mScaleY = f2;
+    @Override
+    public void setScaleY(float scaleY) {
+        this.mScaleY = scaleY;
     }
 
-    public void setSimpleLockType(int i2) {
-        if (i2 == 0) {
+    public void setSimpleLockType(int type) {
+        if (type == 0) {
             this.mRectangleNum = 4;
             this.mRectanglesWidth = (this.mDrawableWidth * 4) + (this.mRectanglePadding * 3);
-        } else if (i2 == 1) {
+        } else if (type == 1) {
             this.mRectangleNum = 6;
             this.mRectanglesWidth = (this.mDrawableWidth * 6) + (this.mRectanglePadding * 5);
         }
@@ -837,12 +838,12 @@ public class COUISimpleLock extends View {
         this(context, attributeSet, R.attr.couiSimpleLockStyle);
     }
 
-    public COUISimpleLock(Context context, AttributeSet attributeSet, int i2) {
-        this(context, attributeSet, i2, COUIContextUtil.isCOUIDarkTheme(context) ? R.style.Widget_COUI_COUISimpleLock_Dark : R.style.Widget_COUI_COUISimpleLock);
+    public COUISimpleLock(Context context, AttributeSet attributeSet, int defStyleAttr) {
+        this(context, attributeSet, defStyleAttr, COUIContextUtil.isCOUIDarkTheme(context) ? R.style.Widget_COUI_COUISimpleLock_Dark : R.style.Widget_COUI_COUISimpleLock);
     }
 
-    public COUISimpleLock(Context context, AttributeSet attributeSet, int i2, int i3) {
-        super(context, attributeSet, i2, i3);
+    public COUISimpleLock(Context context, AttributeSet attributeSet, int defStyleAttr, int defStyleRes) {
+        super(context, attributeSet, defStyleAttr, defStyleRes);
         this.mCodeNumber = -1;
         this.DELETE_ANIMATION = 1;
         this.ADD_ANIMATION = 2;
@@ -883,11 +884,11 @@ public class COUISimpleLock extends View {
         if (attributeSet != null && attributeSet.getStyleAttribute() != 0) {
             this.mStyle = attributeSet.getStyleAttribute();
         } else {
-            this.mStyle = i2;
+            this.mStyle = defStyleAttr;
         }
         this.mContext = context;
         COUIDarkModeUtil.setForceDarkAllow(this, false);
-        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISimpleLock, i2, i3);
+        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISimpleLock, defStyleAttr, defStyleRes);
         this.mRectanglePadding = typedArrayObtainStyledAttributes.getDimensionPixelSize(R.styleable.COUISimpleLock_couiRectanglePadding, 0);
         this.mOutlinedRectangleDrawable = typedArrayObtainStyledAttributes.getDrawable(R.styleable.COUISimpleLock_couiOutLinedRectangleIconDrawable);
         this.mFilledRectangleDrawable = typedArrayObtainStyledAttributes.getDrawable(R.styleable.COUISimpleLock_couiFilledRectangleIconDrawable);
@@ -898,11 +899,11 @@ public class COUISimpleLock extends View {
             this.mDrawable = drawable;
             this.mDrawableWidth = drawable.getIntrinsicWidth();
             this.mDrawableHeight = this.mDrawable.getIntrinsicHeight();
-            int i4 = this.mRectangleType;
-            if (i4 == 0) {
+            int rectangleType = this.mRectangleType;
+            if (rectangleType == 0) {
                 this.mRectangleNum = 4;
                 this.mRectanglesWidth = (this.mDrawableWidth * 4) + (this.mRectanglePadding * 3);
-            } else if (i4 == 1) {
+            } else if (rectangleType == 1) {
                 this.mRectangleNum = 6;
                 this.mRectanglesWidth = (this.mDrawableWidth * 6) + (this.mRectanglePadding * 5);
             }
@@ -918,12 +919,12 @@ public class COUISimpleLock extends View {
         this.mIsLinearMotorVersion = VibrateUtils.isLinearMotorVersion(context);
     }
 
-    private void drawFilledRectangle(Canvas canvas, int i2, int i3, int i4, int i5, int i6) {
+    private void drawFilledRectangle(Canvas canvas, int top, int left, int right, int bottom, int alpha) {
         Drawable drawableNewDrawable = this.mFilledRectangleDrawable.getConstantState().newDrawable();
         this.mDrawable = drawableNewDrawable;
-        float f2 = this.mTransitionX;
-        drawableNewDrawable.setBounds((int) (i3 + f2), i2, (int) (i4 + f2), i5);
-        this.mDrawable.setAlpha(i6 > 0 ? 255 : 0);
+        float transitionX = this.mTransitionX;
+        drawableNewDrawable.setBounds((int) (left + transitionX), top, (int) (right + transitionX), bottom);
+        this.mDrawable.setAlpha(alpha > 0 ? 255 : 0);
         this.mDrawable.draw(canvas);
     }
 }

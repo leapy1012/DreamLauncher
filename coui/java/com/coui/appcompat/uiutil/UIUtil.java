@@ -22,8 +22,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.TextView;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.log.COUILog;
+
 import java.util.List;
 
 public class UIUtil {
@@ -71,21 +73,21 @@ public class UIUtil {
     public static final int TWO_FIVE_FIVE = 255;
     private static SparseArray<String> sStringMap;
     public static final AnimLevel ANIM_LEVEL_SUPPORT_BLUR_MIN = AnimLevel.MID_END;
-    private static int sCurrentAnimLevel = -1;
+    private static int sCurrentAnimLevel = ANIM_LEVEL_INVALID;
 
-    public static int alphaColor(int i2, float f2) {
-        return (i2 & CONSTANT_COLOR_MASK) | (((int) (f2 * 255.0f)) << 24);
+    public static int alphaColor(int index, float value) {
+        return (index & CONSTANT_COLOR_MASK) | (((int) (value * TWO_FIVE_FIVE)) << INT_TWENTY_FOUR);
     }
 
-    public static float[] colorToFloats(int i2) {
-        return new float[]{((i2 >> 16) & 255) / 255.0f, ((i2 >> 8) & 255) / 255.0f, (i2 & 255) / 255.0f, ((i2 >> 24) & 255) / 255.0f};
+    public static float[] colorToFloats(int index) {
+        return new float[]{((index >> 16) & TWO_FIVE_FIVE) / (float) TWO_FIVE_FIVE, ((index >> 8) & TWO_FIVE_FIVE) / (float) TWO_FIVE_FIVE, (index & TWO_FIVE_FIVE) / (float) TWO_FIVE_FIVE, ((index >> INT_TWENTY_FOUR) & TWO_FIVE_FIVE) / (float) TWO_FIVE_FIVE};
     }
 
     public static boolean confirmLevelAnim(AnimLevel animLevel) {
-        if (sCurrentAnimLevel == -1) {
+        if (sCurrentAnimLevel == ANIM_LEVEL_INVALID) {
             sCurrentAnimLevel = getAnimLevelVersion();
         }
-        return sCurrentAnimLevel <= animLevel.getIntValue() && sCurrentAnimLevel != -1;
+        return sCurrentAnimLevel <= animLevel.getIntValue() && sCurrentAnimLevel != ANIM_LEVEL_INVALID;
     }
 
     public static Activity contextToActivity(Context context) {
@@ -98,16 +100,16 @@ public class UIUtil {
         return null;
     }
 
-    public static int dip2px(Context context, float f2) {
-        return Math.round(f2 * context.getResources().getDisplayMetrics().density);
+    public static int dip2px(Context context, float value) {
+        return Math.round(value * context.getResources().getDisplayMetrics().density);
     }
 
-    public static int getAdjustmentPointerIndex(MotionEvent motionEvent, int i2) {
-        return Math.min(Math.max(0, i2), motionEvent.getPointerCount() - 1);
+    public static int getAdjustmentPointerIndex(MotionEvent motionEvent, int index) {
+        return Math.min(Math.max(0, index), motionEvent.getPointerCount() - 1);
     }
 
     public static int getAnimLevel() {
-        if (sCurrentAnimLevel == -1) {
+        if (sCurrentAnimLevel == ANIM_LEVEL_INVALID) {
             sCurrentAnimLevel = getAnimLevelVersion();
         }
         return sCurrentAnimLevel;
@@ -120,26 +122,26 @@ public class UIUtil {
                 return -1;
             }
             return Integer.parseInt(str.trim());
-        } catch (Exception e2) {
-            COUILog.e(TAG, "getAnimLevelVersion e: " + e2);
+        } catch (Exception e) {
+            COUILog.e(TAG, "getAnimLevelVersion e: " + e);
             return -1;
         }
     }
 
-    public static ColorStateList getColorStateListCompatNoCache(Context context, int i2) {
-        return context.getResources().getColorStateList(i2, context.getTheme());
+    public static ColorStateList getColorStateListCompatNoCache(Context context, int index) {
+        return context.getResources().getColorStateList(index, context.getTheme());
     }
 
-    public static final float getConvertedFraction(float f2, float f10, float f11) {
-        return f2 + ((f10 - f2) * f11);
+    public static final float getConvertedFraction(float value, float value_2, float value_3) {
+        return value + ((value_2 - value) * value_3);
     }
 
-    public static String getPrice(double d2) {
-        return removeZero(d2 + "");
+    public static String getPrice(double doubleValue) {
+        return removeZero(doubleValue + "");
     }
 
-    public static int getPx(Context context, int i2) {
-        return context.getResources().getDimensionPixelSize(i2);
+    public static int getPx(Context context, int index) {
+        return context.getResources().getDimensionPixelSize(index);
     }
 
     public static int getScreenHeightMetrics(Context context) {
@@ -177,41 +179,41 @@ public class UIUtil {
         if (identifier > 0) {
             try {
                 return context.getApplicationContext().getResources().getDimensionPixelSize(identifier);
-            } catch (Exception e2) {
-                e2.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return -1;
     }
 
-    public static String getString(Context context, int i2) {
+    public static String getString(Context context, int index) {
         if (sStringMap == null) {
             sStringMap = new SparseArray<>();
         }
-        String str = sStringMap.get(i2);
+        String str = sStringMap.get(index);
         if (str != null) {
             return str;
         }
-        String string = context.getString(i2);
-        sStringMap.put(i2, string);
+        String string = context.getString(index);
+        sStringMap.put(index, string);
         return string;
     }
 
-    public static void initEditViewCursor(TextView textView, int i2) {
+    public static void initEditViewCursor(TextView textView, int index) {
         if (textView == null) {
             return;
         }
         CharSequence text = textView.getText();
         if (text instanceof Spannable) {
             Spannable spannable = (Spannable) text;
-            if (i2 <= text.length()) {
-                Selection.setSelection(spannable, i2);
+            if (index <= text.length()) {
+                Selection.setSelection(spannable, index);
                 return;
             }
             try {
                 throw new Exception("the cursor of EditText is indexOutOfBoundException!!!!!");
-            } catch (Exception e2) {
-                e2.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -229,106 +231,106 @@ public class UIUtil {
     }
 
     public static boolean isLargeScreenBaseOnRealSize(Context context) {
-        return px2dip(context, getScreenWidthRealSize(context)) >= 840;
+        return px2dip(context, getScreenWidthRealSize(context)) >= LARGE_WIDTH_DP;
     }
 
     public static boolean isSmallScreenBaseOnRealSize(Context context) {
-        return px2dip(context, getScreenWidthRealSize(context)) < 600;
+        return px2dip(context, getScreenWidthRealSize(context)) < MEDIUM_WIDTH_DP;
     }
 
-    public static GradientDrawable makeGradientDrawable(int i2, int i6) {
+    public static GradientDrawable makeGradientDrawable(int index, int index_2) {
         GradientDrawable gradientDrawable = new GradientDrawable();
-        gradientDrawable.setColors(new int[]{i2, i6});
+        gradientDrawable.setColors(new int[]{index, index_2});
         return gradientDrawable;
     }
 
-    public static StateListDrawable makeSelector(Drawable drawable, Drawable drawable2) {
+    public static StateListDrawable makeSelector(Drawable drawable, Drawable doubleValue) {
         StateListDrawable stateListDrawable = new StateListDrawable();
         stateListDrawable.addState(new int[]{-16842908, -16842913, -16842919}, drawable);
-        stateListDrawable.addState(new int[]{-16842908, 16842913, -16842919}, drawable2);
-        stateListDrawable.addState(new int[]{16842908, -16842913, -16842919}, drawable2);
-        stateListDrawable.addState(new int[]{16842908, 16842913, -16842919}, drawable2);
-        stateListDrawable.addState(new int[]{16842913, 16842919}, drawable2);
-        stateListDrawable.addState(new int[]{16842919}, drawable2);
+        stateListDrawable.addState(new int[]{-16842908, 16842913, -16842919}, doubleValue);
+        stateListDrawable.addState(new int[]{16842908, -16842913, -16842919}, doubleValue);
+        stateListDrawable.addState(new int[]{16842908, 16842913, -16842919}, doubleValue);
+        stateListDrawable.addState(new int[]{16842913, 16842919}, doubleValue);
+        stateListDrawable.addState(new int[]{16842919}, doubleValue);
         return stateListDrawable;
     }
 
-    public static GradientDrawable makeShapeDrawable(float f2, int i2, int i6, int i10) {
+    public static GradientDrawable makeShapeDrawable(float value, int index, int index_2, int index_3) {
         GradientDrawable gradientDrawable = new GradientDrawable();
-        gradientDrawable.setColor(i10);
-        if (f2 > 0.0f) {
-            gradientDrawable.setCornerRadius(f2);
+        gradientDrawable.setColor(index_3);
+        if (value > 0.0f) {
+            gradientDrawable.setCornerRadius(value);
         }
-        if (i2 > 0) {
-            gradientDrawable.setStroke(i2, i6);
+        if (index > 0) {
+            gradientDrawable.setStroke(index, index_2);
         }
         return gradientDrawable;
     }
 
-    public static int px2dip(Context context, int i2) {
-        return Math.round(i2 / context.getResources().getDisplayMetrics().density);
+    public static int px2dip(Context context, int index) {
+        return Math.round(index / context.getResources().getDisplayMetrics().density);
     }
 
     public static String removeZero(String str) {
         return str.indexOf(".") > 0 ? str.replaceAll("0+?$", "").replaceAll("[.]$", "") : str;
     }
 
-    public static void safeForceHasOverlappingRendering(View view, boolean z6) {
+    public static void safeForceHasOverlappingRendering(View view, boolean flag) {
         if (view == null) {
             return;
         }
-        view.forceHasOverlappingRendering(z6);
+        view.forceHasOverlappingRendering(flag);
     }
 
-    public static void safeSetOutlineAmbientShadowColor(View view, int i2) {
+    public static void safeSetOutlineAmbientShadowColor(View view, int index) {
         if (view == null) {
             return;
         }
-        view.setOutlineAmbientShadowColor(i2);
+        view.setOutlineAmbientShadowColor(index);
     }
 
-    public static void safeSetOutlineSpotShadowColor(View view, int i2) {
+    public static void safeSetOutlineSpotShadowColor(View view, int index) {
         if (view == null) {
             return;
         }
-        view.setOutlineSpotShadowColor(i2);
+        view.setOutlineSpotShadowColor(index);
     }
 
-    public static void setElevationToView(View view, int i2, int i6) {
-        setElevationToView(view, i2, i6, view.getResources().getDimensionPixelOffset(R.dimen.support_shadow_size_level_for_lowerP));
+    public static void setElevationToView(View view, int index, int index_2) {
+        setElevationToView(view, index, index_2, view.getResources().getDimensionPixelOffset(R.dimen.support_shadow_size_level_for_lowerP));
     }
 
-    public static void setMargin(View view, int i2, int i6) {
+    public static void setMargin(View view, int index, int index_2) {
         if (view != null) {
             ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
             if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
-                if (i2 == 0) {
-                    ((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = i6;
-                } else if (i2 == 1) {
-                    ((ViewGroup.MarginLayoutParams) layoutParams).topMargin = i6;
-                } else if (i2 == 2) {
-                    ((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = i6;
-                } else if (i2 == 3) {
-                    ((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = i6;
-                } else if (i2 == 4) {
-                    ((ViewGroup.MarginLayoutParams) layoutParams).setMarginEnd(i6);
-                } else if (i2 == 5) {
-                    ((ViewGroup.MarginLayoutParams) layoutParams).setMarginStart(i6);
+                if (index == 0) {
+                    ((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = index_2;
+                } else if (index == 1) {
+                    ((ViewGroup.MarginLayoutParams) layoutParams).topMargin = index_2;
+                } else if (index == 2) {
+                    ((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = index_2;
+                } else if (index == 3) {
+                    ((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = index_2;
+                } else if (index == 4) {
+                    ((ViewGroup.MarginLayoutParams) layoutParams).setMarginEnd(index_2);
+                } else if (index == 5) {
+                    ((ViewGroup.MarginLayoutParams) layoutParams).setMarginStart(index_2);
                 }
                 view.setLayoutParams(layoutParams);
             }
         }
     }
 
-    public static void setElevationToView(View view, int i2, int i6, int i10) {
+    public static void setElevationToView(View view, int index, int index_2, int index_3) {
         if (view == null) {
             return;
         }
-        view.setOutlineSpotShadowColor(i6);
-        view.setElevation(i2);
+        view.setOutlineSpotShadowColor(index_2);
+        view.setElevation(index);
     }
 
-    public static StateListDrawable makeSelector(int i2, int i6) {
-        return makeSelector(new ColorDrawable(i2), new ColorDrawable(i6));
+    public static StateListDrawable makeSelector(int index, int index_2) {
+        return makeSelector(new ColorDrawable(index), new ColorDrawable(index_2));
     }
 }

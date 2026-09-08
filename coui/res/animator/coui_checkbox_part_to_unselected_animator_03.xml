@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<set xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" android:ordering="together">
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:ordering="together">
     <objectAnimator
         android:interpolator="@interpolator/coui_checkbox_part_to_unselected_interpolator_06"
         android:duration="150"
@@ -7,7 +8,7 @@
         android:valueFrom="1"
         android:valueTo="1.08"
         android:valueType="floatType"
-        android:propertyName="scaleX"/>
+        android:propertyName="scaleX" />
     <objectAnimator
         android:interpolator="@interpolator/coui_checkbox_part_to_unselected_interpolator_07"
         android:duration="150"
@@ -15,7 +16,7 @@
         android:valueFrom="1"
         android:valueTo="1.08"
         android:valueType="floatType"
-        android:propertyName="scaleY"/>
+        android:propertyName="scaleY" />
     <objectAnimator
         android:interpolator="@interpolator/coui_checkbox_part_to_unselected_interpolator_08"
         android:duration="150"
@@ -23,7 +24,7 @@
         android:valueFrom="1.08"
         android:valueTo="1"
         android:valueType="floatType"
-        android:propertyName="scaleX"/>
+        android:propertyName="scaleX" />
     <objectAnimator
         android:interpolator="@interpolator/coui_checkbox_part_to_unselected_interpolator_09"
         android:duration="150"
@@ -31,5 +32,5 @@
         android:valueFrom="1.08"
         android:valueTo="1"
         android:valueType="floatType"
-        android:propertyName="scaleY"/>
+        android:propertyName="scaleY" />
 </set>

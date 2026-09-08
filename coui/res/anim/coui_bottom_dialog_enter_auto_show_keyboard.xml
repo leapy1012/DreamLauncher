@@ -7,6 +7,6 @@
         android:fillBefore="false"
         android:fillEnabled="true"
         android:fromYDelta="100.0%p"
-        android:interpolator="@anim/coui_bottom_dialog_enter_auto_show_keyboard_interpolator"
+        android:interpolator="@interpolator/coui_bottom_dialog_enter_auto_show_keyboard_interpolator"
         android:toYDelta="0.0%p" />
 </set>

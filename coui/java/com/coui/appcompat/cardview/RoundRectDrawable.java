@@ -40,7 +40,7 @@ class RoundRectDrawable extends Drawable {
     }
 
     RoundRectDrawable(ColorStateList colorStateList, float radius, float weight,
-            float cardRoundCornerRadius) {
+                      float cardRoundCornerRadius) {
         mRadius = radius;
         mWeight = weight;
         mCardRoundCornerRadius = cardRoundCornerRadius;

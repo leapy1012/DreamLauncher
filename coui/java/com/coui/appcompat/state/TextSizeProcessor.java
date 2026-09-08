@@ -2,6 +2,7 @@ package com.coui.appcompat.state;
 
 import android.util.SparseArray;
 import android.widget.TextView;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

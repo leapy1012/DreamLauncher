@@ -20,4 +20,20 @@
     <color name="coui_searchview_hint_bg_color_normal">#26ffffff</color>
     <color name="coui_searchview_hint_bg_color_disabled">#13ffffff</color>
     <!-- Leapy end -->
+
+    <!-- Leapy added 2026-09-01: Exact decoded OPPO values-night lockview inks.
+         Light widget styles (and SettingsLockPatternStyle) bind these base
+         names; night flips them so Force Dark / Main.Dark stay readable. -->
+    <color name="coui_lock_pattern_dot_color">#66ffffff</color>
+    <color name="coui_lock_pattern_path_color">#ffffff</color>
+    <color name="coui_lock_pattern_success_color">#ffffff</color>
+    <color name="coui_numeric_keyboard_dark_letter_color">#59ffffff</color>
+    <color name="coui_numeric_keyboard_dark_line_color">#00ffffff</color>
+    <color name="coui_numeric_keyboard_dark_number_color">#ffffffff</color>
+    <color name="coui_numeric_keyboard_dark_number_press_color">#ffffffff</color>
+    <color name="coui_simple_lock_filled_rectangle_icon_color">#e6ffffff</color>
+    <color name="coui_simple_lock_outlined_rectangle_icon_color">#66ffffff</color>
+    <!-- Leapy added 2026-09-01: OPPO night card surface for App info buttons. -->
+    <color name="coui_color_card_background">#1affffff</color>
+    <!-- Leapy end -->
 </resources>

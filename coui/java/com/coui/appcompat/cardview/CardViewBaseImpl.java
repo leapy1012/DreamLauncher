@@ -8,7 +8,7 @@ import com.coui.appcompat.roundRect.COUIRoundRectUtil;
 
 class CardViewBaseImpl implements CardViewImpl {
     private RoundRectDrawableWithShadow createBackground(Context context,
-            ColorStateList colorStateList, float radius, float elevation, float maxElevation) {
+                                                         ColorStateList colorStateList, float radius, float elevation, float maxElevation) {
         return new RoundRectDrawableWithShadow(
                 context.getResources(), colorStateList, radius, elevation, maxElevation);
     }
@@ -60,8 +60,8 @@ class CardViewBaseImpl implements CardViewImpl {
 
     @Override
     public void initialize(CardViewDelegate delegate, Context context, ColorStateList colorStateList,
-            float radius, float elevation, float maxElevation, float weight,
-            float cardRoundCornerRadius) {
+                           float radius, float elevation, float maxElevation, float weight,
+                           float cardRoundCornerRadius) {
         RoundRectDrawableWithShadow background =
                 createBackground(context, colorStateList, radius, elevation, maxElevation);
         background.setAddPaddingForCorners(delegate.getPreventCornerOverlap());

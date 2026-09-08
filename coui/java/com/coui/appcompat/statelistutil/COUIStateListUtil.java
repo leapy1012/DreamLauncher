@@ -15,7 +15,7 @@ public class COUIStateListUtil {
     }
 
     public static ColorStateList createColorStateList(int normalColor, int disabledColor,
-            int checkedColor, int pressedColor) {
+                                                      int checkedColor, int pressedColor) {
         return new ColorStateList(
                 new int[][]{
                         new int[]{-android.R.attr.state_enabled},

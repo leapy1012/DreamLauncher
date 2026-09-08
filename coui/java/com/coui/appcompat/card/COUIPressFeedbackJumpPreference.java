@@ -56,7 +56,7 @@ public class COUIPressFeedbackJumpPreference extends COUIJumpPreference {
     }
 
     private static boolean onBindViewHolderTouch(COUIPressFeedbackJumpPreference preference,
-            COUIPressFeedbackHelper pressFeedbackHelper, View view, MotionEvent event) {
+                                                 COUIPressFeedbackHelper pressFeedbackHelper, View view, MotionEvent event) {
         View root = preference.rootView;
         if (root != null && root.isEnabled()) {
             int action = event.getAction();

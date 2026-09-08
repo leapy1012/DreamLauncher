@@ -33,7 +33,7 @@ public class COUIGuideDialogBuilder {
     }
 
     public COUIGuideDialogBuilder setButtonText(CharSequence skip, CharSequence next,
-            CharSequence start) {
+                                                CharSequence start) {
         mContentView.setButtonText(skip, next, start);
         return this;
     }

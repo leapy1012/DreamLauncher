@@ -9,7 +9,7 @@ public abstract class COUIFragmentStatePagerAdapter extends FragmentStatePagerAd
         super(fragmentManager);
     }
 
-    public int getPageIcon(int i2) {
+    public int getPageIcon(int index) {
         return 0;
     }
 }

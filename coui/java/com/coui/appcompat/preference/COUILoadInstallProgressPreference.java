@@ -47,7 +47,7 @@ public class COUILoadInstallProgressPreference extends COUIPreference {
     }
 
     public COUILoadInstallProgressPreference(Context context, AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                                             int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         mListener = new COUILoadProgress.OnStateChangeListener() {
             @Override

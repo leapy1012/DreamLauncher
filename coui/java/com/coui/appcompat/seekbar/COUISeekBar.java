@@ -1,7 +1,7 @@
 package com.coui.appcompat.seekbar;
 
-import android.animation.ValueAnimator;
 import android.animation.PropertyValuesHolder;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
@@ -39,14 +39,9 @@ import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
-import com.coui.appcompat.statelistutil.COUIStateListUtil;
 import com.coui.appcompat.hapticfeedback.COUIHapticFeedbackConstants;
-import com.oplus.physicsengine.engine.AnimationListener;
-import com.oplus.physicsengine.engine.AnimationUpdateListener;
-import com.oplus.physicsengine.engine.BaseBehavior;
-import com.oplus.physicsengine.engine.FlingBehavior;
-import com.oplus.physicsengine.engine.PhysicalAnimator;
 import com.coui.appcompat.roundcorner.RoundCornerUtil;
+import com.coui.appcompat.statelistutil.COUIStateListUtil;
 import com.coui.appcompat.vibrateutil.VibrateUtils;
 import com.coui.appcompat.view.DescendantOffsetUtil;
 import com.coui.appcompat.view.ViewUtil;
@@ -56,6 +51,11 @@ import com.facebook.rebound.SpringListener;
 import com.facebook.rebound.SpringSystem;
 import com.oplus.graphics.OplusCanvas;
 import com.oplus.graphics.OplusPathAdapter;
+import com.oplus.physicsengine.engine.AnimationListener;
+import com.oplus.physicsengine.engine.AnimationUpdateListener;
+import com.oplus.physicsengine.engine.BaseBehavior;
+import com.oplus.physicsengine.engine.FlingBehavior;
+import com.oplus.physicsengine.engine.PhysicalAnimator;
 
 import java.util.Locale;
 
@@ -80,6 +80,7 @@ public class COUISeekBar extends AbsSeekBar
                     seekBar.setCurGlitterEffectValue(value);
                 }
             };
+
     public interface OnSeekBarChangeListener {
         void onProgressChanged(COUISeekBar seekBar, int progress, boolean fromUser);
 

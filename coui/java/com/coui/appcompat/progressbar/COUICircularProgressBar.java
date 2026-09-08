@@ -3,7 +3,6 @@ package com.coui.appcompat.progressbar;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
@@ -121,7 +120,7 @@ public class COUICircularProgressBar extends View {
     }
 
     public COUICircularProgressBar(Context context, AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                                   int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         mContext = context;
         COUIDarkModeUtil.setForceDarkAllow(this, false);

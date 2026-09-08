@@ -3,9 +3,11 @@ package com.coui.appcompat.tablayout;
 import android.content.Context;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
+
 import androidx.interpolator.view.animation.FastOutLinearInInterpolator;
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator;
+
 import com.coui.appcompat.animation.COUILinearInterpolator;
 
 
@@ -21,12 +23,12 @@ public class COUIAnimationUtils {
         return (int) (context.getResources().getDisplayMetrics().density * 100.0f);
     }
 
-    public static float lerp(float f2, float f10, float f11) {
-        return f2 + (f11 * (f10 - f2));
+    public static float lerp(float start, float end, float fraction) {
+        return start + (fraction * (end - start));
     }
 
-    public static int lerp(int i2, int i6, float f2) {
-        return i2 + Math.round(f2 * (i6 - i2));
+    public static int lerp(int start, int end, float fraction) {
+        return start + Math.round(fraction * (end - start));
     }
 }
 

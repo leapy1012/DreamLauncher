@@ -286,7 +286,7 @@ public class COUIInputView extends ConstraintLayout {
     private void initListener() {
         if (mButtonLayout != null) {
             mButtonLayout.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop,
-                    oldRight, oldBottom) -> {
+                                                     oldRight, oldBottom) -> {
                 if (oldRight - oldLeft != right - left) {
                     updatePadding(true);
                 }

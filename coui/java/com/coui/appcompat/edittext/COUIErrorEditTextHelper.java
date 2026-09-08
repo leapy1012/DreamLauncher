@@ -290,7 +290,7 @@ public class COUIErrorEditTextHelper {
     }
 
     public void drawModeBackgroundLine(Canvas canvas, int lineY, int width, int focusedWidth, Paint normalPaint,
-            Paint focusedPaint) {
+                                       Paint focusedPaint) {
         mErrorPaint.setColor(getGradientColor(normalPaint.getColor(), mErrorColor,
                 mHintColorChangeProgress));
         float y = lineY;
@@ -319,7 +319,7 @@ public class COUIErrorEditTextHelper {
     }
 
     public void init(int errorColor, int strokeWidth, int backgroundMode, float[] cornerRadii,
-            COUICutoutDrawable.COUICollapseTextHelper helper) {
+                     COUICutoutDrawable.COUICollapseTextHelper helper) {
         mOriginalTextColors = mEditText.getTextColors();
         mOriginalHighlightColor = mEditText.getHighlightColor();
         mErrorColor = errorColor;

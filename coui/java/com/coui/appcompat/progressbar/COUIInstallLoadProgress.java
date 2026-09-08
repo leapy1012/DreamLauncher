@@ -128,7 +128,7 @@ public class COUIInstallLoadProgress extends COUILoadProgress {
     }
 
     public COUIInstallLoadProgress(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                                   int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         COUIDarkModeUtil.setForceDarkAllow(this, false);
         mStyle = attrs == null || attrs.getStyleAttribute() == 0 ? defStyleAttr : attrs.getStyleAttribute();
@@ -344,7 +344,7 @@ public class COUIInstallLoadProgress extends COUILoadProgress {
     }
 
     private void onDrawRoundRect(Canvas canvas, float left, float top, float right, float bottom,
-            boolean primary, float translateX, float translateY) {
+                                 boolean primary, float translateX, float translateY) {
         canvas.translate(translateX, translateY);
         mRoundRectPaint.setColor(primary
                 ? getCurrentColor(mThemeColorStateList == null ? mColorPrimary : mThemeColor)

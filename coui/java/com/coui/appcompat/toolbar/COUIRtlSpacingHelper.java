@@ -27,72 +27,72 @@ public class COUIRtlSpacingHelper {
         return this.mIsRtl ? this.mRight : this.mLeft;
     }
 
-    public void setAbsolute(int i2, int i6) {
+    public void setAbsolute(int left, int right) {
         this.mIsRelative = false;
-        if (i2 != Integer.MIN_VALUE) {
-            this.mExplicitLeft = i2;
-            this.mLeft = i2;
+        if (left != Integer.MIN_VALUE) {
+            this.mExplicitLeft = left;
+            this.mLeft = left;
         }
-        if (i6 != Integer.MIN_VALUE) {
-            this.mExplicitRight = i6;
-            this.mRight = i6;
+        if (right != Integer.MIN_VALUE) {
+            this.mExplicitRight = right;
+            this.mRight = right;
         }
     }
 
-    public void setDirection(boolean z6) {
-        if (z6 == this.mIsRtl) {
+    public void setDirection(boolean isRtl) {
+        if (isRtl == this.mIsRtl) {
             return;
         }
-        this.mIsRtl = z6;
+        this.mIsRtl = isRtl;
         if (!this.mIsRelative) {
             this.mLeft = this.mExplicitLeft;
             this.mRight = this.mExplicitRight;
             return;
         }
-        if (z6) {
-            int i2 = this.mEnd;
-            if (i2 == Integer.MIN_VALUE) {
-                i2 = this.mExplicitLeft;
+        if (isRtl) {
+            int left = this.mEnd;
+            if (left == Integer.MIN_VALUE) {
+                left = this.mExplicitLeft;
             }
-            this.mLeft = i2;
-            int i6 = this.mStart;
-            if (i6 == Integer.MIN_VALUE) {
-                i6 = this.mExplicitRight;
+            this.mLeft = left;
+            int right = this.mStart;
+            if (right == Integer.MIN_VALUE) {
+                right = this.mExplicitRight;
             }
-            this.mRight = i6;
+            this.mRight = right;
             return;
         }
-        int i10 = this.mStart;
-        if (i10 == Integer.MIN_VALUE) {
-            i10 = this.mExplicitLeft;
+        int left2 = this.mStart;
+        if (left2 == Integer.MIN_VALUE) {
+            left2 = this.mExplicitLeft;
         }
-        this.mLeft = i10;
-        int i11 = this.mEnd;
-        if (i11 == Integer.MIN_VALUE) {
-            i11 = this.mExplicitRight;
+        this.mLeft = left2;
+        int right2 = this.mEnd;
+        if (right2 == Integer.MIN_VALUE) {
+            right2 = this.mExplicitRight;
         }
-        this.mRight = i11;
+        this.mRight = right2;
     }
 
-    public void setRelative(int i2, int i6) {
-        this.mStart = i2;
-        this.mEnd = i6;
+    public void setRelative(int start, int end) {
+        this.mStart = start;
+        this.mEnd = end;
         this.mIsRelative = true;
         if (this.mIsRtl) {
-            if (i6 != Integer.MIN_VALUE) {
-                this.mLeft = i6;
+            if (end != Integer.MIN_VALUE) {
+                this.mLeft = end;
             }
-            if (i2 != Integer.MIN_VALUE) {
-                this.mRight = i2;
+            if (start != Integer.MIN_VALUE) {
+                this.mRight = start;
                 return;
             }
             return;
         }
-        if (i2 != Integer.MIN_VALUE) {
-            this.mLeft = i2;
+        if (start != Integer.MIN_VALUE) {
+            this.mLeft = start;
         }
-        if (i6 != Integer.MIN_VALUE) {
-            this.mRight = i6;
+        if (end != Integer.MIN_VALUE) {
+            this.mRight = end;
         }
     }
 }

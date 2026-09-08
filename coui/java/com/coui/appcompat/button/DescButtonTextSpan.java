@@ -7,6 +7,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ReplacementSpan;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 

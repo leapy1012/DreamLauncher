@@ -7,9 +7,11 @@ import android.view.Choreographer;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
 import android.widget.OverScroller;
+
 import com.coui.appcompat.animation.COUISpringInterpolator;
 import com.coui.appcompat.log.COUILog;
 import com.coui.appcompat.uiutil.UIUtil;
+
 import java.lang.reflect.Method;
 
 
@@ -67,14 +69,14 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             VISCOUS_FLUID_OFFSET = 1.0f - (fViscousFluid * viscousFluid(1.0f));
         }
 
-        private static float viscousFluid(float f2) {
-            float f10 = f2 * VISCOUS_FLUID_SCALE;
-            return f10 < 1.0f ? f10 - (1.0f - ((float) Math.exp(-f10))) : 0.36787945f + ((1.0f - ((float) Math.exp(1.0f - f10))) * 0.63212055f);
+        private static float viscousFluid(float x) {
+            float fraction = x * VISCOUS_FLUID_SCALE;
+            return fraction < 1.0f ? fraction - (1.0f - ((float) Math.exp(-fraction))) : 0.36787945f + ((1.0f - ((float) Math.exp(1.0f - fraction))) * 0.63212055f);
         }
 
         @Override
-        public float getInterpolation(float f2) {
-            float fViscousFluid = VISCOUS_FLUID_NORMALIZE * viscousFluid(f2);
+        public float getInterpolation(float input) {
+            float fViscousFluid = VISCOUS_FLUID_NORMALIZE * viscousFluid(input);
             return fViscousFluid > 0.0f ? fViscousFluid + VISCOUS_FLUID_OFFSET : fViscousFluid;
         }
     }
@@ -176,31 +178,31 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             double mFriction;
             double mTension;
 
-            public ReboundConfig(double d2, double d7) {
-                this.mFriction = frictionFromOrigamiValue((float) d2);
-                this.mTension = tensionFromOrigamiValue((float) d7);
+            public ReboundConfig(double positionD, double tension) {
+                this.mFriction = frictionFromOrigamiValue((float) positionD);
+                this.mTension = tensionFromOrigamiValue((float) tension);
             }
 
-            private float frictionFromOrigamiValue(float f2) {
-                if (f2 == 0.0f) {
+            private float frictionFromOrigamiValue(float value) {
+                if (value == 0.0f) {
                     return 0.0f;
                 }
-                return 25.0f + ((f2 - 8.0f) * 3.0f);
+                return 25.0f + ((value - 8.0f) * 3.0f);
             }
 
-            private double tensionFromOrigamiValue(float f2) {
-                if (f2 == 0.0f) {
+            private double tensionFromOrigamiValue(float value) {
+                if (value == 0.0f) {
                     return 0.0d;
                 }
-                return ((f2 - 30.0f) * 3.62f) + 194.0f;
+                return ((value - 30.0f) * 3.62f) + 194.0f;
             }
 
-            public void setFriction(double d2) {
-                this.mFriction = frictionFromOrigamiValue((float) d2);
+            public void setFriction(double friction) {
+                this.mFriction = frictionFromOrigamiValue((float) friction);
             }
 
-            public void setTension(double d2) {
-                this.mTension = tensionFromOrigamiValue((float) d2);
+            public void setTension(double tension) {
+                this.mTension = tensionFromOrigamiValue((float) tension);
             }
         }
 
@@ -210,24 +212,24 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             double mTempPosition;
             double mTempVelocity;
 
-            public Rk4Data(double d2, double d7, double d10, double d11) {
-                this.mCurrentPosition = d2;
-                this.mCurrentVelocity = d7;
-                this.mTempPosition = d10;
-                this.mTempVelocity = d11;
+            public Rk4Data(double currentPosition, double currentVelocity, double tempPosition, double tempVelocity) {
+                this.mCurrentPosition = currentPosition;
+                this.mCurrentVelocity = currentVelocity;
+                this.mTempPosition = tempPosition;
+                this.mTempVelocity = tempVelocity;
             }
         }
 
         public ReboundOverScroller() {
-            float f2 = sCouiFlingFrictionNormal;
-            this.mFlingFriction = f2;
+            float flingFriction = sCouiFlingFrictionNormal;
+            this.mFlingFriction = flingFriction;
             this.mRestSpeedThreshold = 20.0d;
             this.mDisplacementFromRestThreshold = 0.05d;
             this.mCOUICount = 1;
             this.mIsScrollView = false;
             this.mSpringBackTensionMultiple = 0.83f;
-            this.mFlingConfig = new ReboundConfig(f2, 0.0d);
-            this.mSpringBackConfig = new ReboundConfig(12.1899995803833d, 16.0d);
+            this.mFlingConfig = new ReboundConfig(flingFriction, 0.0d);
+            this.mSpringBackConfig = new ReboundConfig(SPRING_BACK_FRICTION, SPRING_BACK_TENSION);
             setConfig(this.mFlingConfig);
             this.mFinished = true;
             int animLevel = UIUtil.getAnimLevel();
@@ -245,94 +247,94 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             if (this.mIsSpringBack || this.mCOUICount != 1) {
                 return;
             }
-            if (Math.abs(this.mCurrentState.mVelocity) > MID_VELOCITY_ADJUST_FRICTION && Math.abs(this.mCurrentState.mVelocity) < 10000.0d) {
+            if (Math.abs(this.mCurrentState.mVelocity) > MID_VELOCITY_ADJUST_FRICTION && Math.abs(this.mCurrentState.mVelocity) < MAX_VELOCITY_ADJUST_FRICTION) {
                 this.mConfig.mFriction = sMidFlingBaseFriction;
             } else if (Math.abs(this.mCurrentState.mVelocity) <= MID_VELOCITY_ADJUST_FRICTION) {
                 this.mConfig.mFriction = sSlowFlingBaseFriction;
             }
         }
 
-        private void calculateCurStateWithInterpolator(float f2) {
-            float interpolation = this.mSpringInterpolator.getInterpolation(f2);
+        private void calculateCurStateWithInterpolator(float fraction) {
+            float interpolation = this.mSpringInterpolator.getInterpolation(fraction);
             PhysicsState physicsState = this.mCurrentState;
             physicsState.mPosition = ((double) (this.mSimulateSplineDistance * interpolation)) + this.mStartValue;
-            physicsState.mVelocity = ((this.mSpringInterpolator.getSpeed(f2) * this.mSimulateSplineDistance) / this.mSimulateSplineDuration) * SpringOverScroller.ONE_SECOND;
+            physicsState.mVelocity = ((this.mSpringInterpolator.getSpeed(fraction) * this.mSimulateSplineDistance) / this.mSimulateSplineDuration) * SpringOverScroller.ONE_SECOND;
             if (SpringOverScroller.DEBUG) {
-                Log.d(SpringOverScroller.TAG, " calculateCurStateWithInterpolator fraction:" + f2 + ", ratio: " + interpolation + ", position : " + this.mCurrentState.mPosition + ", mVelocity: " + this.mCurrentState.mVelocity);
+                Log.d(SpringOverScroller.TAG, " calculateCurStateWithInterpolator fraction:" + fraction + ", ratio: " + interpolation + ", position : " + this.mCurrentState.mPosition + ", mVelocity: " + this.mCurrentState.mVelocity);
             }
             this.mCOUICount++;
         }
 
-        private int[] calculateFinalPosition(double d2, boolean z6) {
+        private int[] calculateFinalPosition(double position, boolean enabled) {
             PhysicsState physicsState = this.mCurrentState;
-            int i2 = (int) physicsState.mPosition;
-            int i6 = (int) physicsState.mVelocity;
-            int i10 = this.mCOUICount;
-            boolean z10 = this.mFinished;
+            int position2 = (int) physicsState.mPosition;
+            int velocity = (int) physicsState.mVelocity;
+            int cOUICount = this.mCOUICount;
+            boolean finished = this.mFinished;
             PhysicsState physicsState2 = this.mTempState;
             physicsState2.mPosition = 0.0d;
             physicsState2.mVelocity = 0.0d;
             float frameIntervalNanos = getFrameIntervalNanos() / SpringOverScroller.NANO_TO_MILLIS;
-            float f2 = SpringOverScroller.ONE_SECOND;
+            float fraction = SpringOverScroller.ONE_SECOND;
             float unused = SpringOverScroller.mRefreshTime = frameIntervalNanos / SpringOverScroller.ONE_SECOND;
             if (SpringOverScroller.mRefreshTime == 0.0f) {
                 calculateRefreshTime();
             }
             if (SpringOverScroller.DEBUG) {
-                Log.d(SpringOverScroller.TAG, this + " calculateFinalPosition finalValue " + d2 + " savedPosition " + i2 + " savedVelocity " + i6 + ", mRefreshTime: " + SpringOverScroller.mRefreshTime);
+                Log.d(SpringOverScroller.TAG, this + " calculateFinalPosition finalValue " + position + " savedPosition " + position2 + " savedVelocity " + velocity + ", mRefreshTime: " + SpringOverScroller.mRefreshTime);
             }
-            boolean z11 = true;
+            boolean finished2 = true;
             this.mCOUICount = 1;
-            boolean z12 = false;
+            boolean flag = false;
             while (!this.mFinished) {
-                double d7 = this.mCurrentState.mPosition;
-                if (z6) {
-                    calculateCurStateWithInterpolator(((this.mCOUICount * SpringOverScroller.mRefreshTime) * f2) / this.mSimulateSplineDuration);
+                double positionD = this.mCurrentState.mPosition;
+                if (enabled) {
+                    calculateCurStateWithInterpolator(((this.mCOUICount * SpringOverScroller.mRefreshTime) * fraction) / this.mSimulateSplineDuration);
                 } else {
                     calculateOnceWithRebound();
                 }
-                double d10 = this.mCurrentState.mPosition;
-                double dAbs = Math.abs(d10 - d7);
+                double tension = this.mCurrentState.mPosition;
+                double dAbs = Math.abs(tension - positionD);
                 if (lostVelocity()) {
                     if (SpringOverScroller.DEBUG) {
                         Log.d(SpringOverScroller.TAG, this + " calculateFinalPosition lostVelocity");
                     }
-                    this.mFinished = z11;
+                    this.mFinished = finished2;
                 }
                 if (dAbs < this.mSplineMinDelta) {
                     if (SpringOverScroller.DEBUG) {
                         Log.d(SpringOverScroller.TAG, this + " calculateFinalPosition deltaPosition < " + this.mSplineMinDelta);
                     }
-                    z11 = true;
+                    finished2 = true;
                     this.mFinished = true;
                 } else {
-                    z11 = true;
+                    finished2 = true;
                 }
-                if (d2 != -1.0d && !z12 && (d7 - d2) * (d10 - d2) <= 0.0d) {
-                    this.mCurrentState.mPosition = d2;
-                    if (z6) {
+                if (position != -1.0d && !flag && (positionD - position) * (tension - position) <= 0.0d) {
+                    this.mCurrentState.mPosition = position;
+                    if (enabled) {
                         this.mDuration = (int) (this.mCOUICount * SpringOverScroller.mRefreshTime * SpringOverScroller.ONE_SECOND);
                     } else {
                         this.mSimulateDuration = (int) (this.mCOUICount * SpringOverScroller.mRefreshTime * SpringOverScroller.ONE_SECOND);
                     }
                     if (SpringOverScroller.DEBUG) {
-                        Log.d(SpringOverScroller.TAG, this + " calculateFinalPosition reaching edge" + d2);
+                        Log.d(SpringOverScroller.TAG, this + " calculateFinalPosition reaching edge" + position);
                     }
-                    z12 = z11;
+                    flag = finished2;
                 }
-                f2 = SpringOverScroller.ONE_SECOND;
+                fraction = SpringOverScroller.ONE_SECOND;
             }
-            int i11 = (int) this.mCurrentState.mPosition;
-            int i12 = (int) (this.mCOUICount * SpringOverScroller.mRefreshTime * SpringOverScroller.ONE_SECOND);
+            int index = (int) this.mCurrentState.mPosition;
+            int count = (int) (this.mCOUICount * SpringOverScroller.mRefreshTime * SpringOverScroller.ONE_SECOND);
             PhysicsState physicsState3 = this.mCurrentState;
-            physicsState3.mPosition = i2;
-            physicsState3.mVelocity = i6;
-            this.mCOUICount = i10;
+            physicsState3.mPosition = position2;
+            physicsState3.mVelocity = velocity;
+            this.mCOUICount = cOUICount;
             PhysicsState physicsState4 = this.mTempState;
             physicsState4.mPosition = 0.0d;
             physicsState4.mVelocity = 0.0d;
-            this.mFinished = z10;
-            return new int[]{i11, i12};
+            this.mFinished = finished;
+            return new int[]{index, count};
         }
 
         private void calculateOnceWithRebound() {
@@ -352,79 +354,79 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             physicsState3.mVelocity = rk4DataCalculateWithRk4.mTempVelocity;
         }
 
-        private Rk4Data calculateWithRk4(Rk4Data rk4Data, ReboundConfig reboundConfig, double d2, float f2) {
-            double d7 = rk4Data.mCurrentPosition;
-            double d10 = rk4Data.mCurrentVelocity;
-            double d11 = rk4Data.mTempPosition;
-            double d12 = reboundConfig.mTension;
-            double d13 = reboundConfig.mFriction;
-            double d14 = (d2 - d11) * d12;
-            double d15 = f2;
-            double d16 = ((d10 * d15) / MIN_FLING_FRICTION_REDUCE) + d7;
-            double d17 = d10 + ((d14 * d15) / MIN_FLING_FRICTION_REDUCE);
-            double d18 = ((d2 - d16) * d12) - (d13 * d17);
-            double d19 = d7 + ((d17 * d15) / MIN_FLING_FRICTION_REDUCE);
-            double d20 = d10 + ((d18 * d15) / MIN_FLING_FRICTION_REDUCE);
-            double d21 = ((d2 - d19) * d12) - (d13 * d20);
-            double d22 = d7 + (d20 * d15);
-            double d23 = d10 + (d21 * d15);
-            double d24 = (d10 + ((d17 + d20) * MIN_FLING_FRICTION_REDUCE) + d23) * 0.16699999570846558d;
-            double d25 = (d14 + ((d18 + d21) * MIN_FLING_FRICTION_REDUCE) + (((d2 - d22) * d12) - (d13 * d23))) * 0.16699999570846558d;
-            double d26 = d7 + (d24 * d15);
-            double d27 = d10 + (d25 * d15);
-            rk4Data.mCurrentPosition = d26;
-            rk4Data.mCurrentVelocity = d27;
-            rk4Data.mTempPosition = d22;
-            rk4Data.mTempVelocity = d23;
+        private Rk4Data calculateWithRk4(Rk4Data rk4Data, ReboundConfig reboundConfig, double positionD, float fraction) {
+            double tension = rk4Data.mCurrentPosition;
+            double friction = rk4Data.mCurrentVelocity;
+            double velocityD = rk4Data.mTempPosition;
+            double deltaD = reboundConfig.mTension;
+            double valueD = reboundConfig.mFriction;
+            double tempD = (positionD - velocityD) * deltaD;
+            double endD = fraction;
+            double minD = ((friction * endD) / MIN_FLING_FRICTION_REDUCE) + tension;
+            double maxD = friction + ((tempD * endD) / MIN_FLING_FRICTION_REDUCE);
+            double dx = ((positionD - minD) * deltaD) - (valueD * maxD);
+            double dy = tension + ((maxD * endD) / MIN_FLING_FRICTION_REDUCE);
+            double force = friction + ((dx * endD) / MIN_FLING_FRICTION_REDUCE);
+            double accel = ((positionD - dy) * deltaD) - (valueD * force);
+            double tempPosition = tension + (force * endD);
+            double tempVelocity = friction + (accel * endD);
+            double dt = (friction + ((maxD + force) * MIN_FLING_FRICTION_REDUCE) + tempVelocity) * 0.16699999570846558d;
+            double sumD = (tempD + ((dx + accel) * MIN_FLING_FRICTION_REDUCE) + (((positionD - tempPosition) * deltaD) - (valueD * tempVelocity))) * 0.16699999570846558d;
+            double currentPosition = tension + (dt * endD);
+            double currentVelocity = friction + (sumD * endD);
+            rk4Data.mCurrentPosition = currentPosition;
+            rk4Data.mCurrentVelocity = currentVelocity;
+            rk4Data.mTempPosition = tempPosition;
+            rk4Data.mTempVelocity = tempVelocity;
             if (SpringOverScroller.DEBUG) {
-                Log.d(SpringOverScroller.TAG, " calculateOnceWithRebound, position : " + d26 + ", mVelocity: " + d27 + ",tempPosition:" + d22 + ",tempVelocity:" + d23 + ",tension:" + d12 + ",friction:" + d13 + ",refreshTime:" + f2);
+                Log.d(SpringOverScroller.TAG, " calculateOnceWithRebound, position : " + currentPosition + ", mVelocity: " + currentVelocity + ",tempPosition:" + tempPosition + ",tempVelocity:" + tempVelocity + ",tension:" + deltaD + ",friction:" + valueD + ",refreshTime:" + fraction);
             }
             return rk4Data;
         }
 
-        private float getDistanceScale(float f2) {
-            float f10;
-            float f11 = 1.0f;
-            if (f2 <= FLING_VELOCITY_LOWEST) {
+        private float getDistanceScale(float fraction) {
+            float ratio;
+            float scale = 1.0f;
+            if (fraction <= FLING_VELOCITY_LOWEST) {
                 return 1.0f;
             }
-            if (f2 <= FLING_VELOCITY_LOW) {
-                f10 = ((f2 - FLING_VELOCITY_LOWEST) / 4000.0f) * 0.19999999f;
+            if (fraction <= FLING_VELOCITY_LOW) {
+                ratio = ((fraction - FLING_VELOCITY_LOWEST) / (float) MID_VELOCITY_ADJUST_FRICTION) * 0.19999999f;
             } else {
-                f11 = 0.8f;
-                if (f2 <= 10000.0f) {
+                scale = 0.8f;
+                if (fraction <= 10000.0f) {
                     return 0.8f;
                 }
-                if (f2 > FLING_VELOCITY_HIGHEST) {
+                if (fraction > FLING_VELOCITY_HIGHEST) {
                     return DISTANCE_SCALE_MIN;
                 }
-                f10 = ((f2 - 10000.0f) / 10000.0f) * DISTANCE_SCALE_MIN;
+                ratio = ((fraction - 10000.0f) / 10000.0f) * DISTANCE_SCALE_MIN;
             }
-            return f11 - f10;
+            return scale - ratio;
         }
 
-        private float getDurationScale(float f2) {
-            float f10;
-            float f11;
-            float f12 = DURATION_SCALE_MAX;
-            if (f2 <= FLING_VELOCITY_LOWEST) {
+        private float getDurationScale(float fraction) {
+            float ratio;
+            float scale;
+            float x = DURATION_SCALE_MAX;
+            if (fraction <= FLING_VELOCITY_LOWEST) {
                 return DURATION_SCALE_MAX;
             }
-            if (f2 <= FLING_VELOCITY_LOW) {
-                f10 = (f2 - FLING_VELOCITY_LOWEST) / 4000.0f;
-                f11 = 0.49999994f;
+            if (fraction <= FLING_VELOCITY_LOW) {
+                ratio = (fraction - FLING_VELOCITY_LOWEST) / (float) MID_VELOCITY_ADJUST_FRICTION;
+                scale = 0.49999994f;
             } else {
-                f12 = 0.8f;
-                if (f2 <= 10000.0f) {
+                x = 0.8f;
+                if (fraction <= 10000.0f) {
                     return 0.8f;
                 }
-                if (f2 > FLING_VELOCITY_HIGHEST) {
+                if (fraction > FLING_VELOCITY_HIGHEST) {
                     return 0.5f;
                 }
-                f10 = (f2 - 10000.0f) / 10000.0f;
-                f11 = 0.3f;
+                ratio = (fraction - 10000.0f) / 10000.0f;
+                scale = 0.3f;
             }
-            return f12 - (f10 * f11);
+            return x - (ratio * scale);
         }
 
         private long getFrameIntervalNanos() {
@@ -438,11 +440,11 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
                     declaredMethod.setAccessible(true);
                 }
                 return ((Long) this.mGetFrameIntervalNanos.invoke(this.mChoreographer, new Object[0])).longValue();
-            } catch (Exception e2) {
+            } catch (Exception e) {
                 if (!SpringOverScroller.DEBUG) {
                     return 0L;
                 }
-                Log.e(SpringOverScroller.TAG, "getFrameIntervalNanos error" + e2);
+                Log.e(SpringOverScroller.TAG, "getFrameIntervalNanos error" + e);
                 return 0L;
             }
         }
@@ -463,16 +465,16 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
         }
 
 
-        public void updateComputeTimeFromCallback(long j2) {
+        public void updateComputeTimeFromCallback(long timestamp) {
             this.mLastComputeTimeFromCallback = this.mCurrentComputeTimeFromCallback;
-            this.mCurrentComputeTimeFromCallback = j2;
+            this.mCurrentComputeTimeFromCallback = timestamp;
             this.mComputeTimeFromCallbackUpdated = true;
         }
 
-        public void adjustSimulateSplineDistance(float f2) {
-            int i2 = (int) f2;
-            this.mSimulateSplineDistance = i2;
-            this.mEndValue = this.mStartValue + ((double) i2);
+        public void adjustSimulateSplineDistance(float fraction) {
+            int simulateSplineDistance = (int) fraction;
+            this.mSimulateSplineDistance = simulateSplineDistance;
+            this.mEndValue = this.mStartValue + ((double) simulateSplineDistance);
             if (SpringOverScroller.DEBUG) {
                 Log.d(SpringOverScroller.TAG, "adjustSimulateSplineDistance: StartValue = " + this.mStartValue + " EndValue = " + this.mEndValue + " SimulateSplineDistance = " + this.mSimulateSplineDistance);
             }
@@ -504,53 +506,53 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             this.mLastComputeTime = this.mCurrentComputeTime;
         }
 
-        public void fling(int i2, int i6, int i10, int i11, int i12) {
+        public void fling(int start, int min, int max, int velocity, int over) {
             if (SpringOverScroller.DEBUG) {
-                Log.d(SpringOverScroller.TAG, this + " fling start " + i2 + " min " + i6 + " max " + i10 + " velocity " + i11 + " over " + i12);
+                Log.d(SpringOverScroller.TAG, this + " fling start " + start + " min " + min + " max " + max + " velocity " + velocity + " over " + over);
             }
-            this.mSplineMinDelta = getSplineMinDelta(Math.abs(i11));
+            this.mSplineMinDelta = getSplineMinDelta(Math.abs(velocity));
             this.mFinished = false;
-            initFling(i2, i11);
+            initFling(start, velocity);
             this.mSplineDuration = 0;
             this.mDuration = 0;
             this.mSimulateSplineDuration = 0;
             this.mSimulateDuration = 0;
-            this.mSpringInterpolator = new COUISpringInterpolator(DEFAULT_STIFFNESS, DEFAULT_DAMPINGRATIO, i11, 1.0f, DEFAULT_VELOCITY_UNIT, true);
-            initFling(i2, i11);
-            float durationScale = getDurationScale(Math.abs(i11));
-            float distanceScale = getDistanceScale(Math.abs(i11));
-            double d2 = i11 >= 0 ? i10 : i6;
-            int[] iArrCalculateFinalPosition = calculateFinalPosition(d2, false);
-            int i13 = iArrCalculateFinalPosition[0] - i2;
-            int i14 = iArrCalculateFinalPosition[1];
-            int i15 = this.mSimulateDuration;
-            if (i15 == 0) {
-                i15 = i14;
+            this.mSpringInterpolator = new COUISpringInterpolator(DEFAULT_STIFFNESS, DEFAULT_DAMPINGRATIO, velocity, 1.0f, DEFAULT_VELOCITY_UNIT, true);
+            initFling(start, velocity);
+            float durationScale = getDurationScale(Math.abs(velocity));
+            float distanceScale = getDistanceScale(Math.abs(velocity));
+            double positionD = velocity >= 0 ? max : min;
+            int[] iArrCalculateFinalPosition = calculateFinalPosition(positionD, false);
+            int splineDistance = iArrCalculateFinalPosition[0] - start;
+            int splineDuration = iArrCalculateFinalPosition[1];
+            int simulateDuration = this.mSimulateDuration;
+            if (simulateDuration == 0) {
+                simulateDuration = splineDuration;
             }
-            this.mSimulateDuration = i15;
-            this.mSimulateSplineDistance = (int) (i13 * distanceScale);
-            this.mSimulateSplineDuration = (int) (i14 * durationScale);
-            int[] iArrCalculateFinalPosition2 = calculateFinalPosition(d2, true);
-            this.mSplineDistance = iArrCalculateFinalPosition2[0] - i2;
-            int i16 = iArrCalculateFinalPosition2[1];
-            this.mSplineDuration = i16;
-            int i17 = this.mDuration;
-            if (i17 == 0) {
-                i17 = i16;
+            this.mSimulateDuration = simulateDuration;
+            this.mSimulateSplineDistance = (int) (splineDistance * distanceScale);
+            this.mSimulateSplineDuration = (int) (splineDuration * durationScale);
+            int[] iArrCalculateFinalPosition2 = calculateFinalPosition(positionD, true);
+            this.mSplineDistance = iArrCalculateFinalPosition2[0] - start;
+            int splineDuration2 = iArrCalculateFinalPosition2[1];
+            this.mSplineDuration = splineDuration2;
+            int duration = this.mDuration;
+            if (duration == 0) {
+                duration = splineDuration2;
             }
-            this.mDuration = i17;
-            this.mWithSpring = i16 == i17;
+            this.mDuration = duration;
+            this.mWithSpring = splineDuration2 == duration;
             if (SpringOverScroller.DEBUG) {
-                Log.d(SpringOverScroller.TAG, this + " fling mStartTime " + this.mStartTime + " mStart " + this.mStartValue + " edge " + d2 + " distanceScale " + distanceScale + " durationScale " + durationScale + " mWithSpring " + this.mWithSpring + " [ Distance_old " + i13 + " Distance_new " + this.mSplineDistance + " ] [ SplineDuration_old " + i14 + " Duration_old " + this.mSimulateDuration + " SplineDuration_new " + this.mSplineDuration + " mSimulateSplineDistance " + this.mSimulateSplineDistance + " Duration_new " + this.mDuration + " ]");
+                Log.d(SpringOverScroller.TAG, this + " fling mStartTime " + this.mStartTime + " mStart " + this.mStartValue + " edge " + positionD + " distanceScale " + distanceScale + " durationScale " + durationScale + " mWithSpring " + this.mWithSpring + " [ Distance_old " + splineDistance + " Distance_new " + this.mSplineDistance + " ] [ SplineDuration_old " + splineDuration + " Duration_old " + this.mSimulateDuration + " SplineDuration_new " + this.mSplineDuration + " mSimulateSplineDistance " + this.mSimulateSplineDistance + " Duration_new " + this.mDuration + " ]");
             }
             if (this.mWithSpring) {
-                this.mEndValue = Math.max(Math.min(iArrCalculateFinalPosition2[0], i10), i6);
+                this.mEndValue = Math.max(Math.min(iArrCalculateFinalPosition2[0], max), min);
                 return;
             }
-            this.mSplineDistance = i13;
-            this.mSplineDuration = i14;
+            this.mSplineDistance = splineDistance;
+            this.mSplineDuration = splineDuration;
             this.mDuration = this.mSimulateDuration;
-            this.mEndValue = Math.max(Math.min(iArrCalculateFinalPosition[0], i10), i6);
+            this.mEndValue = Math.max(Math.min(iArrCalculateFinalPosition[0], max), min);
         }
 
         public double getCurrentValue() {
@@ -577,16 +579,16 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             return this.mSimulateSplineDistance;
         }
 
-        public double getSplineMinDelta(float f2) {
-            double d2 = f2;
-            return d2 <= DELTA_POSITION_VELOCITY_LOW ? DELTA_POSITION_LOW : d2 <= DELTA_POSITION_VELOCITY_HIGH ? DELTA_POSITION_MID : DELTA_POSITION_HIGH;
+        public double getSplineMinDelta(float velocity) {
+            double positionD = velocity;
+            return positionD <= DELTA_POSITION_VELOCITY_LOW ? DELTA_POSITION_LOW : positionD <= DELTA_POSITION_VELOCITY_HIGH ? DELTA_POSITION_MID : DELTA_POSITION_HIGH;
         }
 
         public double getVelocity() {
             return this.mCurrentState.mVelocity;
         }
 
-        public void initFling(int i2, int i6) {
+        public void initFling(int index, int count) {
             long jCurrentAnimationTimeMillis = AnimationUtils.currentAnimationTimeMillis();
             this.mStartTime = jCurrentAnimationTimeMillis;
             this.mLastFlingUpdateTime = jCurrentAnimationTimeMillis;
@@ -595,8 +597,8 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             this.mFlingConfig.setFriction(this.mFlingFriction);
             this.mFlingConfig.setTension(0.0d);
             setConfig(this.mFlingConfig);
-            setCurrentValue(i2, true);
-            setVelocity(i6);
+            setCurrentValue(index, true);
+            setVelocity(count);
             long jElapsedRealtime = SystemClock.elapsedRealtime();
             this.mLastComputeTime = jElapsedRealtime;
             this.mCurrentComputeTime = jElapsedRealtime;
@@ -606,22 +608,22 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             return Math.abs(this.mCurrentState.mVelocity) <= getRestSpeedThreshold() && (getDisplacementDistanceForState(this.mCurrentState) <= getDisplacementFromRestThreshold() || this.mConfig.mTension == 0.0d);
         }
 
-        public void notifyEdgeReached(int i2, int i6, int i10) {
+        public void notifyEdgeReached(int position, int position2, int index) {
             PhysicsState physicsState = this.mCurrentState;
-            physicsState.mPosition = i2;
+            physicsState.mPosition = position;
             PhysicsState physicsState2 = this.mPreviousState;
             physicsState2.mPosition = 0.0d;
             physicsState2.mVelocity = 0.0d;
             PhysicsState physicsState3 = this.mTempState;
-            physicsState3.mPosition = i6;
+            physicsState3.mPosition = position2;
             physicsState3.mVelocity = physicsState.mVelocity;
         }
 
         public void setAtRest() {
             PhysicsState physicsState = this.mCurrentState;
-            double d2 = physicsState.mPosition;
-            this.mEndValue = d2;
-            this.mTempState.mPosition = d2;
+            double endValue = physicsState.mPosition;
+            this.mEndValue = endValue;
+            this.mTempState.mPosition = endValue;
             physicsState.mVelocity = 0.0d;
             this.mIsSpringBack = false;
             this.mCancelCallback = true;
@@ -634,65 +636,65 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             this.mConfig = reboundConfig;
         }
 
-        public void setCurrentValue(double d2, boolean z6) {
-            this.mStartValue = d2;
+        public void setCurrentValue(double startValue, boolean enabled) {
+            this.mStartValue = startValue;
             if (!this.mIsScrollView) {
                 this.mPreviousState.mPosition = 0.0d;
                 this.mTempState.mPosition = 0.0d;
             }
-            this.mCurrentState.mPosition = d2;
-            if (z6) {
+            this.mCurrentState.mPosition = startValue;
+            if (enabled) {
                 setAtRest();
             }
         }
 
-        public void setEndValue(double d2) {
-            if (this.mEndValue == d2) {
+        public void setEndValue(double endValue) {
+            if (this.mEndValue == endValue) {
                 return;
             }
             this.mStartValue = getCurrentValue();
-            this.mEndValue = d2;
+            this.mEndValue = endValue;
             this.mFinished = false;
         }
 
-        public void setVelocity(double d2) {
-            if (Math.abs(d2 - this.mCurrentState.mVelocity) < 1.0000000116860974E-7d) {
+        public void setVelocity(double velocity) {
+            if (Math.abs(velocity - this.mCurrentState.mVelocity) < 1.0000000116860974E-7d) {
                 return;
             }
-            this.mCurrentState.mVelocity = d2;
+            this.mCurrentState.mVelocity = velocity;
         }
 
-        public boolean springBack(int i2, int i6, int i10, boolean z6) {
-            double d2 = i2;
-            setCurrentValue(d2, false);
+        public boolean springBack(int index, int count, int value, boolean enabled) {
+            double positionD = index;
+            setCurrentValue(positionD, false);
             long jElapsedRealtime = SystemClock.elapsedRealtime();
             this.mLastComputeTime = jElapsedRealtime;
             this.mCurrentComputeTime = jElapsedRealtime;
-            if (i2 <= i10 && i2 >= i6 && !z6) {
+            if (index <= value && index >= count && !enabled) {
                 setConfig(new ReboundConfig(this.mFlingFriction, 0.0d));
                 return false;
             }
-            if (i2 > i10) {
-                setEndValue(i10);
-            } else if (i2 < i6) {
-                setEndValue(i6);
-            } else if (z6) {
-                setEndValue(d2);
+            if (index > value) {
+                setEndValue(value);
+            } else if (index < count) {
+                setEndValue(count);
+            } else if (enabled) {
+                setEndValue(positionD);
             }
             this.mIsSpringBack = true;
             this.mSpringBackConfig.setFriction(SpringOverScroller.mSpringBackFriction);
-            this.mSpringBackConfig.setTension(this.mSpringBackTensionMultiple * 16.0f);
+            this.mSpringBackConfig.setTension(this.mSpringBackTensionMultiple * SPRING_BACK_TENSION);
             setConfig(this.mSpringBackConfig);
             return true;
         }
 
-        public void startScroll(int i2, int i6, int i10, long j2) {
-            this.mScrollStart = i2;
-            int i11 = i2 + i6;
-            this.mScrollFinal = i11;
-            this.mEndValue = i11;
-            this.mDuration = i10;
-            this.mScrollStartTime = j2;
+        public void startScroll(int scrollStart, int index, int duration, long timestamp) {
+            this.mScrollStart = scrollStart;
+            int scrollFinal = scrollStart + index;
+            this.mScrollFinal = scrollFinal;
+            this.mEndValue = scrollFinal;
+            this.mDuration = duration;
+            this.mScrollStartTime = timestamp;
             setConfig(this.mFlingConfig);
             long jElapsedRealtime = SystemClock.elapsedRealtime();
             this.mLastComputeTime = jElapsedRealtime;
@@ -706,11 +708,11 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
                     return false;
                 }
                 PhysicsState physicsState = this.mCurrentState;
-                double d2 = physicsState.mPosition;
+                double positionD = physicsState.mPosition;
                 double displacementDistanceForState = getDisplacementDistanceForState(physicsState);
                 if (!this.mTensionAdjusted && displacementDistanceForState < 180.0d) {
                     this.mTensionAdjusted = true;
-                } else if (displacementDistanceForState < 0.25d) {
+                } else if (displacementDistanceForState < SPRING_BACK_STOP_THRESHOLD) {
                     this.mCurrentState.mPosition = this.mEndValue;
                     this.mTensionAdjusted = false;
                     this.mIsSpringBack = false;
@@ -729,9 +731,9 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
                     physicsState3.mPosition = rk4DataCalculateWithRk4.mTempPosition;
                     PhysicsState physicsState4 = this.mCurrentState;
                     physicsState4.mVelocity = rk4DataCalculateWithRk4.mCurrentVelocity;
-                    double d7 = rk4DataCalculateWithRk4.mCurrentPosition;
-                    physicsState4.mPosition = d7;
-                    if (Math.abs(d2 - d7) > SpringOverScroller.MIN_UPDATE_ONE_STEP || !this.mIsSpringBack) {
+                    double position = rk4DataCalculateWithRk4.mCurrentPosition;
+                    physicsState4.mPosition = position;
+                    if (Math.abs(positionD - position) > SpringOverScroller.MIN_UPDATE_ONE_STEP || !this.mIsSpringBack) {
                         break;
                     }
                 } while (!isAtRest());
@@ -747,7 +749,7 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
                     float unused = SpringOverScroller.mRefreshTime = Math.min((frameIntervalNanos / SpringOverScroller.ONE_SECOND) / SpringOverScroller.NANO_TO_MILLIS, (jCurrentAnimationTimeMillis - this.mLastFlingUpdateTime) / SpringOverScroller.ONE_SECOND);
                 }
                 this.mLastFlingUpdateTime = jCurrentAnimationTimeMillis;
-                double d10 = this.mCurrentState.mPosition;
+                double tension = this.mCurrentState.mPosition;
                 if (!this.mWithSpring || this.mIsSpringBack) {
                     calculateOnceWithRebound();
                 } else {
@@ -759,8 +761,8 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
                     }
                     calculateCurStateWithInterpolator(Math.max(jCurrentAnimationTimeMillis - this.mStartTime, 0.0f) / this.mSimulateSplineDuration);
                 }
-                double d11 = this.mCurrentState.mPosition;
-                double dAbs = Math.abs(d11 - d10);
+                double friction = this.mCurrentState.mPosition;
+                double dAbs = Math.abs(friction - tension);
                 if (!this.mWithSpring && dAbs < this.mSplineMinDelta && SpringOverScroller.mRefreshTime != 0.0f) {
                     if (SpringOverScroller.DEBUG) {
                         Log.d(SpringOverScroller.TAG, this + " update end : deltaPosition < " + DELTA_POSITION_LOW);
@@ -773,9 +775,9 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
                     }
                     return false;
                 }
-                double d12 = this.mEndValue;
-                if ((d10 - d12) * (d11 - d12) <= 0.0d) {
-                    this.mCurrentState.mPosition = d12;
+                double position2 = this.mEndValue;
+                if ((tension - position2) * (friction - position2) <= 0.0d) {
+                    this.mCurrentState.mPosition = position2;
                     if (SpringOverScroller.DEBUG) {
                         Log.d(SpringOverScroller.TAG, this + " update end : reaching final " + this.mEndValue);
                     }
@@ -794,10 +796,10 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             return true;
         }
 
-        public void updateScroll(float f2) {
+        public void updateScroll(float fraction) {
             PhysicsState physicsState = this.mCurrentState;
-            int i2 = this.mScrollStart;
-            physicsState.mPosition = i2 + Math.round(f2 * (this.mScrollFinal - i2));
+            int position = this.mScrollStart;
+            physicsState.mPosition = position + Math.round(fraction * (this.mScrollFinal - position));
         }
     }
 
@@ -813,18 +815,18 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
         this.mIsUpdateTimeFromCallback = false;
         this.mCallback = new Choreographer.FrameCallback() {
             @Override
-            public void doFrame(long j2) {
+            public void doFrame(long currentComputeTimeFromCallback) {
                 ReboundOverScroller reboundOverScroller = SpringOverScroller.this.mScrollerX;
                 if (reboundOverScroller != null) {
-                    reboundOverScroller.updateComputeTimeFromCallback(j2);
+                    reboundOverScroller.updateComputeTimeFromCallback(currentComputeTimeFromCallback);
                 }
                 ReboundOverScroller reboundOverScroller2 = SpringOverScroller.this.mScrollerY;
                 if (reboundOverScroller2 != null) {
-                    reboundOverScroller2.updateComputeTimeFromCallback(j2);
+                    reboundOverScroller2.updateComputeTimeFromCallback(currentComputeTimeFromCallback);
                 }
                 SpringOverScroller springOverScroller = SpringOverScroller.this;
                 springOverScroller.mLastComputeTimeFromCallback = springOverScroller.mCurrentComputeTimeFromCallback;
-                SpringOverScroller.this.mCurrentComputeTimeFromCallback = j2;
+                SpringOverScroller.this.mCurrentComputeTimeFromCallback = currentComputeTimeFromCallback;
                 SpringOverScroller.this.mIsUpdateTimeFromCallback = true;
                 if (SpringOverScroller.this.mCancelCallback) {
                     return;
@@ -844,44 +846,44 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
         this.mFrameRateHelper = new COUlFrameRateScrollSceneHelper(false);
     }
 
-    private int increaseVelocityIfNeed(int i2) {
+    private int increaseVelocityIfNeed(int index) {
         if (!this.mEnableFlingSpeedIncrease) {
-            return i2;
+            return index;
         }
         long jCurrentTimeMillis = System.currentTimeMillis();
-        int i6 = this.mContinuousFlingCount;
-        if (i6 <= 0) {
-            if (i6 != 0) {
-                return i2;
+        int continuousFlingCount = this.mContinuousFlingCount;
+        if (continuousFlingCount <= 0) {
+            if (continuousFlingCount != 0) {
+                return index;
             }
-            this.mContinuousFlingCount = i6 + 1;
+            this.mContinuousFlingCount = continuousFlingCount + 1;
             this.mLastFlingTime = jCurrentTimeMillis;
-            return i2;
+            return index;
         }
-        if (jCurrentTimeMillis - this.mLastFlingTime > 500 || i2 < FLING_SPEED_INCREASE_VELOCITY_THRESHOLD) {
+        if (jCurrentTimeMillis - this.mLastFlingTime > FLING_SPEED_INCREASE_TIME_INTERVAL_THRESHOLD || index < FLING_SPEED_INCREASE_VELOCITY_THRESHOLD) {
             resetFlingSpeedValue();
-            return i2;
+            return index;
         }
         this.mLastFlingTime = jCurrentTimeMillis;
-        int i10 = i6 + 1;
-        this.mContinuousFlingCount = i10;
-        if (i10 <= 4) {
-            return i2;
+        int continuousFlingCount2 = continuousFlingCount + 1;
+        this.mContinuousFlingCount = continuousFlingCount2;
+        if (continuousFlingCount2 <= FLING_SPEED_INCREASE_COUNT_THRESHOLD) {
+            return index;
         }
-        float f2 = this.mLastFlingSpeedIncreaseRate * FLING_SPEED_INCREASE_RATE;
-        this.mLastFlingSpeedIncreaseRate = f2;
-        return Math.max(-70000, Math.min((int) (i2 * f2), FLING_SPEED_INCREASE_MAX_VELOCITY));
+        float lastFlingSpeedIncreaseRate = this.mLastFlingSpeedIncreaseRate * FLING_SPEED_INCREASE_RATE;
+        this.mLastFlingSpeedIncreaseRate = lastFlingSpeedIncreaseRate;
+        return Math.max(-70000, Math.min((int) (index * lastFlingSpeedIncreaseRate), FLING_SPEED_INCREASE_MAX_VELOCITY));
     }
 
     private void limitEdgeReachedVelocityIfNeed(ReboundOverScroller reboundOverScroller) {
-        if (!this.mEnableFlingSpeedIncrease || this.mContinuousFlingCount <= 4) {
+        if (!this.mEnableFlingSpeedIncrease || this.mContinuousFlingCount <= FLING_SPEED_INCREASE_COUNT_THRESHOLD) {
             return;
         }
         ReboundOverScroller.PhysicsState physicsState = reboundOverScroller.mCurrentState;
-        double d2 = physicsState.mVelocity;
-        if (d2 > 20000.0d) {
+        double positionD = physicsState.mVelocity;
+        if (positionD > FLING_SPEED_INCREASE_EDGE_REACHED_VELOCITY_THRESHOLD) {
             physicsState.mVelocity = 1000.0d;
-        } else if (d2 < -20000.0d) {
+        } else if (positionD < -FLING_SPEED_INCREASE_EDGE_REACHED_VELOCITY_THRESHOLD) {
             physicsState.mVelocity = -1000.0d;
         }
     }
@@ -892,12 +894,12 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
         this.mLastFlingSpeedIncreaseRate = 1.0f;
     }
 
-    private void setRefreshRateUnConvert(float f2) {
-        mRefreshTime = f2;
+    private void setRefreshRateUnConvert(float refreshTime) {
+        mRefreshTime = refreshTime;
     }
 
-    private static synchronized void setStaticSpringBackFriction(float f2) {
-        mSpringBackFriction = f2;
+    private static synchronized void setStaticSpringBackFriction(float springBackFriction) {
+        mSpringBackFriction = springBackFriction;
     }
 
     @Override
@@ -922,12 +924,12 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             this.mCancelCallback = this.mScrollerX.mCancelCallback && this.mScrollerY.mCancelCallback;
             return false;
         }
-        int i2 = this.mMode;
-        if (i2 == 0) {
+        int index = this.mMode;
+        if (index == 0) {
             long jCurrentAnimationTimeMillis = AnimationUtils.currentAnimationTimeMillis() - this.mScrollerX.mScrollStartTime;
-            int i6 = this.mScrollerX.mDuration;
-            if (jCurrentAnimationTimeMillis < i6) {
-                float interpolation = this.mInterpolator.getInterpolation(jCurrentAnimationTimeMillis / i6);
+            int count = this.mScrollerX.mDuration;
+            if (jCurrentAnimationTimeMillis < count) {
+                float interpolation = this.mInterpolator.getInterpolation(jCurrentAnimationTimeMillis / count);
                 this.mScrollerX.updateScroll(interpolation);
                 this.mScrollerY.updateScroll(interpolation);
             } else {
@@ -935,19 +937,19 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
                 this.mScrollerY.updateScroll(1.0f);
                 abortAnimation();
             }
-        } else if (i2 == 1 && !this.mScrollerX.update() && !this.mScrollerY.update()) {
+        } else if (index == 1 && !this.mScrollerX.update() && !this.mScrollerY.update()) {
             abortAnimation();
         }
         return true;
     }
 
-    public void enableFrameRate(boolean z6) {
-        this.mFrameRateHelper.enableFrameRate(z6);
+    public void enableFrameRate(boolean enabled) {
+        this.mFrameRateHelper.enableFrameRate(enabled);
     }
 
     @Override
-    public void fling(int i2, int i6, int i10, int i11, int i12, int i13, int i14, int i15, int i16, int i17) {
-        fling(i2, i6, i10, i11, i12, i13, i14, i15);
+    public void fling(int startX, int startY, int velocityX, int velocityY, int minX, int maxX, int minY, int maxY, int overX, int overY) {
+        fling(startX, startY, velocityX, velocityY, minX, maxX, minY, maxY);
     }
 
     @Override
@@ -1002,20 +1004,20 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
     }
 
     @Override
-    public boolean isScrollingInDirection(float f2, float f10) {
-        return !isFinished() && Math.signum(f2) == Math.signum((float) ((int) (this.mScrollerX.mEndValue - this.mScrollerX.mStartValue))) && Math.signum(f10) == Math.signum((float) ((int) (this.mScrollerY.mEndValue - this.mScrollerY.mStartValue)));
+    public boolean isScrollingInDirection(float fraction, float ratio) {
+        return !isFinished() && Math.signum(fraction) == Math.signum((float) ((int) (this.mScrollerX.mEndValue - this.mScrollerX.mStartValue))) && Math.signum(ratio) == Math.signum((float) ((int) (this.mScrollerY.mEndValue - this.mScrollerY.mStartValue)));
     }
 
     @Override
-    public void notifyHorizontalEdgeReached(int i2, int i6, int i10) {
-        this.mScrollerX.notifyEdgeReached(i2, i6, i10);
-        springBack(i2, 0, 0, i6, 0, 0);
+    public void notifyHorizontalEdgeReached(int index, int count, int value) {
+        this.mScrollerX.notifyEdgeReached(index, count, value);
+        springBack(index, 0, 0, count, 0, 0);
     }
 
     @Override
-    public void notifyVerticalEdgeReached(int i2, int i6, int i10) {
-        this.mScrollerY.notifyEdgeReached(i2, i6, i10);
-        springBack(0, i2, 0, 0, 0, i6);
+    public void notifyVerticalEdgeReached(int index, int count, int value) {
+        this.mScrollerY.notifyEdgeReached(index, count, value);
+        springBack(0, index, 0, 0, 0, count);
     }
 
     public void postChoreographerCallback() {
@@ -1033,47 +1035,47 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
     }
 
     @Override
-    public void setCOUIFriction(float f2) {
+    public void setCOUIFriction(float fraction) {
     }
 
     @Override
-    public void setCurrVelocityX(float f2) {
-        this.mScrollerX.mCurrentState.mVelocity = f2;
+    public void setCurrVelocityX(float velocity) {
+        this.mScrollerX.mCurrentState.mVelocity = velocity;
     }
 
     @Override
-    public void setCurrVelocityY(float f2) {
-        this.mScrollerY.mCurrentState.mVelocity = f2;
+    public void setCurrVelocityY(float velocity) {
+        this.mScrollerY.mCurrentState.mVelocity = velocity;
     }
 
-    public void setDebug(boolean z6) {
-        DEBUG = z6;
+    public void setDebug(boolean enabled) {
+        DEBUG = enabled;
     }
 
     @Override
-    public void setDurationRatio(float f2) {
+    public void setDurationRatio(float fraction) {
     }
 
-    public void setEnableFlingSpeedIncrease(boolean z6) {
-        if (this.mEnableFlingSpeedIncrease == z6) {
+    public void setEnableFlingSpeedIncrease(boolean enableFlingSpeedIncrease) {
+        if (this.mEnableFlingSpeedIncrease == enableFlingSpeedIncrease) {
             return;
         }
-        this.mEnableFlingSpeedIncrease = z6;
+        this.mEnableFlingSpeedIncrease = enableFlingSpeedIncrease;
         resetFlingSpeedValue();
     }
 
     @Override
-    public void setFinalX(int i2) {
+    public void setFinalX(int index) {
     }
 
     @Override
-    public void setFinalY(int i2) {
+    public void setFinalY(int index) {
     }
 
     @Override
-    public void setFlingFriction(float f2) {
-        this.mScrollerX.mFlingFriction = f2;
-        this.mScrollerY.mFlingFriction = f2;
+    public void setFlingFriction(float flingFriction) {
+        this.mScrollerX.mFlingFriction = flingFriction;
+        this.mScrollerY.mFlingFriction = flingFriction;
     }
 
     @Override
@@ -1086,39 +1088,39 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
     }
 
     @Override
-    public void setIsScrollView(boolean z6) {
-        this.mScrollerX.mIsScrollView = z6;
-        this.mScrollerY.mIsScrollView = z6;
+    public void setIsScrollView(boolean isScrollView) {
+        this.mScrollerX.mIsScrollView = isScrollView;
+        this.mScrollerY.mIsScrollView = isScrollView;
     }
 
-    public void setRefreshRate(float f2) {
-        mRefreshTime = Math.round(10000.0f / f2) / 10000.0f;
+    public void setRefreshRate(float fraction) {
+        mRefreshTime = Math.round(10000.0f / fraction) / 10000.0f;
     }
 
-    public void setSpringBackFriction(float f2) {
-        setStaticSpringBackFriction(f2);
+    public void setSpringBackFriction(float fraction) {
+        setStaticSpringBackFriction(fraction);
     }
 
-    public void setSpringBackTensionMultiple(float f2) {
-        this.mScrollerX.mSpringBackTensionMultiple = f2;
-        this.mScrollerY.mSpringBackTensionMultiple = f2;
-    }
-
-    @Override
-    public void setVelocityXRatio(float f2) {
+    public void setSpringBackTensionMultiple(float springBackTensionMultiple) {
+        this.mScrollerX.mSpringBackTensionMultiple = springBackTensionMultiple;
+        this.mScrollerY.mSpringBackTensionMultiple = springBackTensionMultiple;
     }
 
     @Override
-    public void setVelocityYRatio(float f2) {
+    public void setVelocityXRatio(float fraction) {
     }
 
     @Override
-    public boolean springBack(int i2, int i6, int i10, int i11, int i12, int i13) {
+    public void setVelocityYRatio(float fraction) {
+    }
+
+    @Override
+    public boolean springBack(int startX, int startY, int minX, int maxX, int minY, int maxY) {
         if (DEBUG) {
-            Log.d(TAG, "springBack startX = " + i2 + " startY = " + i6 + " minX = " + i10 + " minY = " + i12 + " maxY = " + i13, new Throwable());
+            Log.d(TAG, "springBack startX = " + startX + " startY = " + startY + " minX = " + minX + " minY = " + minY + " maxY = " + maxY, new Throwable());
         }
-        boolean zSpringBack = this.mScrollerX.springBack(i2, i10, i11, false);
-        boolean zSpringBack2 = this.mScrollerY.springBack(i6, i12, i13, false);
+        boolean zSpringBack = this.mScrollerX.springBack(startX, minX, maxX, false);
+        boolean zSpringBack2 = this.mScrollerY.springBack(startY, minY, maxY, false);
         if (zSpringBack || zSpringBack2) {
             this.mMode = 1;
         }
@@ -1126,8 +1128,8 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
     }
 
     @Override
-    public void startScroll(int i2, int i6, int i10, int i11) {
-        startScroll(i2, i6, i10, i11, SCROLL_DEFAULT_DURATION);
+    public void startScroll(int startX, int startY, int dx, int dy) {
+        startScroll(startX, startY, dx, dy, SCROLL_DEFAULT_DURATION);
     }
 
     public void triggerCallback() {
@@ -1139,30 +1141,30 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
     }
 
     @Override
-    public void fling(int i2, int i6, int i10, int i11, int i12, int i13, int i14, int i15) {
-        fling(i2, i6, i10, i11);
+    public void fling(int startX, int startY, int velocityX, int velocityY, int minX, int maxX, int minY, int maxY) {
+        fling(startX, startY, velocityX, velocityY);
     }
 
     @Override
-    public void startScroll(int i2, int i6, int i10, int i11, int i12) {
+    public void startScroll(int startX, int startY, int dx, int dy, int duration) {
         if (DEBUG) {
-            Log.d(TAG, "startScroll startX = " + i2 + " startY = " + i6 + " dx = " + i10 + " dy = " + i11 + " duration = " + i12, new Throwable());
+            Log.d(TAG, "startScroll startX = " + startX + " startY = " + startY + " dx = " + dx + " dy = " + dy + " duration = " + duration, new Throwable());
         }
         this.mMode = 0;
         long jCurrentAnimationTimeMillis = AnimationUtils.currentAnimationTimeMillis();
-        this.mScrollerX.startScroll(i2, i10, i12, jCurrentAnimationTimeMillis);
-        this.mScrollerY.startScroll(i6, i11, i12, jCurrentAnimationTimeMillis);
+        this.mScrollerX.startScroll(startX, dx, duration, jCurrentAnimationTimeMillis);
+        this.mScrollerY.startScroll(startY, dy, duration, jCurrentAnimationTimeMillis);
         this.mFrameRateHelper.setFrameRate(true);
     }
 
     @Override
-    public void fling(int i2, int i6, int i10, int i11) {
+    public void fling(int startX, int startY, int velocityX, int velocityY) {
         if (DEBUG) {
-            Log.d(TAG, "fling startX = " + i2 + " startY = " + i6 + " velocityX = " + i10 + " velocityY = " + i11, new Throwable());
+            Log.d(TAG, "fling startX = " + startX + " startY = " + startY + " velocityX = " + velocityX + " velocityY = " + velocityY, new Throwable());
         }
         this.mMode = 1;
-        this.mScrollerX.fling(i2, Integer.MIN_VALUE, Integer.MAX_VALUE, increaseVelocityIfNeed(i10), 0);
-        this.mScrollerY.fling(i6, Integer.MIN_VALUE, Integer.MAX_VALUE, increaseVelocityIfNeed(i11), 0);
+        this.mScrollerX.fling(startX, Integer.MIN_VALUE, Integer.MAX_VALUE, increaseVelocityIfNeed(velocityX), 0);
+        this.mScrollerY.fling(startY, Integer.MIN_VALUE, Integer.MAX_VALUE, increaseVelocityIfNeed(velocityY), 0);
         this.mFrameRateHelper.setFrameRate(true);
     }
 

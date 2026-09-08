@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.widget.ScrollView;
+
 import com.coui.appcompat.R;
 
 public class COUIScrollView extends ScrollView {

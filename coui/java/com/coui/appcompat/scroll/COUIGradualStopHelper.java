@@ -4,11 +4,13 @@ import android.content.Context;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.COUIRecyclerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.OrientationHelper;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.coui.appcompat.log.COUILog;
 
 
@@ -28,55 +30,55 @@ public class COUIGradualStopHelper {
         DEBUG = COUILog.LOG_DEBUG || COUILog.isLoggable(TAG, 3);
     }
 
-    private View findCenterView(RecyclerView.LayoutManager pVar, OrientationHelper nVar) {
-        int childCount = pVar.getChildCount();
-        View view = null;
+    private View findCenterView(RecyclerView.LayoutManager layoutManager, OrientationHelper orientationHelper) {
+        int childCount = layoutManager.getChildCount();
+        View closestChild = null;
         if (childCount == 0) {
             return null;
         }
-        int iN = nVar.getStartAfterPadding() + (nVar.getTotalSpace() / 2);
-        int i2 = Integer.MAX_VALUE;
-        for (int i6 = 0; i6 < childCount; i6++) {
-            View childAt = pVar.getChildAt(i6);
-            int iAbs = Math.abs((pVar.getDecoratedLeft(childAt) + (pVar.getDecoratedMeasuredWidth(childAt) / 2)) - iN);
-            if (iAbs < i2) {
-                view = childAt;
-                i2 = iAbs;
+        int center = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2);
+        int closestAbs = Integer.MAX_VALUE;
+        for (int i = 0; i < childCount; i++) {
+            View childAt = layoutManager.getChildAt(i);
+            int abs = Math.abs((layoutManager.getDecoratedLeft(childAt) + (layoutManager.getDecoratedMeasuredWidth(childAt) / 2)) - center);
+            if (abs < closestAbs) {
+                closestChild = childAt;
+                closestAbs = abs;
             }
         }
-        return view;
+        return closestChild;
     }
 
-    private int getDefaultItemCenterOffset(int i2) {
-        View viewFindViewByPosition;
-        int i6;
-        int i10;
+    private int getDefaultItemCenterOffset(int position) {
+        View viewByPosition;
+        int startMargin;
+        int endMargin;
         RecyclerView.LayoutManager layoutManager = getLayoutManager();
-        if (layoutManager == null || (viewFindViewByPosition = layoutManager.findViewByPosition(i2)) == null || !(viewFindViewByPosition.getLayoutParams() instanceof RecyclerView.LayoutParams)) {
+        if (layoutManager == null || (viewByPosition = layoutManager.findViewByPosition(position)) == null || !(viewByPosition.getLayoutParams() instanceof RecyclerView.LayoutParams)) {
             return 0;
         }
-        RecyclerView.LayoutParams qVar = (RecyclerView.LayoutParams) viewFindViewByPosition.getLayoutParams();
+        RecyclerView.LayoutParams layoutParams = (RecyclerView.LayoutParams) viewByPosition.getLayoutParams();
         if ((layoutManager instanceof LinearLayoutManager) && ((LinearLayoutManager) layoutManager).getOrientation() == 1) {
-            i6 = ((ViewGroup.MarginLayoutParams) qVar).topMargin;
-            i10 = ((ViewGroup.MarginLayoutParams) qVar).bottomMargin;
+            startMargin = ((ViewGroup.MarginLayoutParams) layoutParams).topMargin;
+            endMargin = ((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin;
         } else {
-            i6 = ((ViewGroup.MarginLayoutParams) qVar).leftMargin;
-            i10 = ((ViewGroup.MarginLayoutParams) qVar).rightMargin;
+            startMargin = ((ViewGroup.MarginLayoutParams) layoutParams).leftMargin;
+            endMargin = ((ViewGroup.MarginLayoutParams) layoutParams).rightMargin;
         }
-        return i6 - i10;
+        return startMargin - endMargin;
     }
 
-    private int getDefautDecoratedMeasurement(int i2) {
+    private int getDefautDecoratedMeasurement(int position) {
         int itemCount;
         View childAt;
         RecyclerView.LayoutManager layoutManager = getLayoutManager();
-        if (layoutManager == null || (itemCount = layoutManager.getItemCount()) <= 0 || i2 < 0 || i2 >= itemCount) {
+        if (layoutManager == null || (itemCount = layoutManager.getItemCount()) <= 0 || position < 0 || position >= itemCount) {
             return 0;
         }
-        View viewFindViewByPosition = layoutManager.findViewByPosition(i2);
+        View viewByPosition = layoutManager.findViewByPosition(position);
         OrientationHelper orientationHelper = getOrientationHelper(layoutManager);
-        if (viewFindViewByPosition != null) {
-            return orientationHelper.getDecoratedMeasurement(viewFindViewByPosition);
+        if (viewByPosition != null) {
+            return orientationHelper.getDecoratedMeasurement(viewByPosition);
         }
         if (layoutManager.getChildCount() <= 0 || (childAt = layoutManager.getChildAt(0)) == null) {
             return 0;
@@ -85,80 +87,80 @@ public class COUIGradualStopHelper {
     }
 
     private RecyclerView.LayoutManager getLayoutManager() {
-        RecyclerView.LayoutManager pVar = this.mLayoutManager;
-        if (pVar == null || pVar != this.mRecyclerView.getLayoutManager()) {
+        RecyclerView.LayoutManager layoutManager = this.mLayoutManager;
+        if (layoutManager == null || layoutManager != this.mRecyclerView.getLayoutManager()) {
             this.mLayoutManager = this.mRecyclerView.getLayoutManager();
         }
         return this.mLayoutManager;
     }
 
-    private OrientationHelper getOrientationHelper(RecyclerView.LayoutManager pVar) {
-        int orientation = pVar instanceof LinearLayoutManager ? ((LinearLayoutManager) pVar).getOrientation() : -1;
-        OrientationHelper nVar = this.mOrientationHelper;
-        if (nVar == null || this.mLastOrientation != orientation || nVar.getLayoutManager() != pVar) {
+    private OrientationHelper getOrientationHelper(RecyclerView.LayoutManager layoutManager) {
+        int orientation = layoutManager instanceof LinearLayoutManager ? ((LinearLayoutManager) layoutManager).getOrientation() : -1;
+        OrientationHelper helper = this.mOrientationHelper;
+        if (helper == null || this.mLastOrientation != orientation || helper.getLayoutManager() != layoutManager) {
             this.mLastOrientation = orientation;
-            this.mOrientationHelper = orientation == 1 ? OrientationHelper.createVerticalHelper(pVar) : OrientationHelper.createHorizontalHelper(pVar);
+            this.mOrientationHelper = orientation == 1 ? OrientationHelper.createVerticalHelper(layoutManager) : OrientationHelper.createHorizontalHelper(layoutManager);
         }
         return this.mOrientationHelper;
     }
 
     private boolean isRtlMode(Context context) {
-        COUIRecyclerView cOUIRecyclerView = this.mRecyclerView;
-        return cOUIRecyclerView != null ? ViewCompat.getLayoutDirection(cOUIRecyclerView) == 1 : context != null && context.getResources().getConfiguration().getLayoutDirection() == 1;
+        COUIRecyclerView recyclerView = this.mRecyclerView;
+        return recyclerView != null ? ViewCompat.getLayoutDirection(recyclerView) == 1 : context != null && context.getResources().getConfiguration().getLayoutDirection() == 1;
     }
 
-    private float iterateDisplacement(int i2, boolean z6, float f2, int i6, int i10) {
-        int iAbs = Math.abs(i6);
-        int i11 = 1;
-        int i12 = z6 ? 1 : -1;
+    private float iterateDisplacement(int startPos, boolean forward, float initialDisplacement, int distance, int itemCount) {
+        int absDistance = Math.abs(distance);
+        int step = 1;
+        int direction = forward ? 1 : -1;
         if (isRtlMode(this.mContext)) {
-            i12 = z6 ? -1 : 1;
+            direction = forward ? -1 : 1;
         }
-        float decoratedMeasurement = f2;
-        int i13 = 0;
-        int i14 = i2;
-        while (decoratedMeasurement < iAbs && i14 >= 0 && i14 < i10) {
-            int itemCenterOffset = getItemCenterOffset(i14);
-            float decoratedMeasurement2 = decoratedMeasurement + ((getDecoratedMeasurement(i14) - (i12 * itemCenterOffset)) / 2.0f);
-            boolean z10 = DEBUG;
-            if (z10) {
-                Log.d(TAG, "displacement:" + decoratedMeasurement2 + " nextPos:" + i14 + " offset:" + itemCenterOffset);
+        float displacement = initialDisplacement;
+        int iterations = 0;
+        int nextPos = startPos;
+        while (displacement < absDistance && nextPos >= 0 && nextPos < itemCount) {
+            int itemCenterOffset = getItemCenterOffset(nextPos);
+            float midDisplacement = displacement + ((getDecoratedMeasurement(nextPos) - (direction * itemCenterOffset)) / 2.0f);
+            boolean debug = DEBUG;
+            if (debug) {
+                Log.d(TAG, "displacement:" + midDisplacement + " nextPos:" + nextPos + " offset:" + itemCenterOffset);
             }
-            i14 = z6 ? i14 + 1 : i14 - 1;
-            i13 += i11;
-            if (i14 < 0 || i14 >= i10 || i13 > 1000) {
-                return i6;
+            nextPos = forward ? nextPos + 1 : nextPos - 1;
+            iterations += step;
+            if (nextPos < 0 || nextPos >= itemCount || iterations > MAX_ITERATE) {
+                return distance;
             }
-            int decoratedMeasurement3 = getDecoratedMeasurement(i14);
-            if (decoratedMeasurement3 == -1 || decoratedMeasurement3 < 0) {
-                return i6;
+            int nextItemWidth = getDecoratedMeasurement(nextPos);
+            if (nextItemWidth == -1 || nextItemWidth < 0) {
+                return distance;
             }
-            int itemCenterOffset2 = getItemCenterOffset(i14);
-            decoratedMeasurement = decoratedMeasurement2 + ((getDecoratedMeasurement(i14) + (i12 * itemCenterOffset2)) / 2.0f);
-            if (z10) {
-                Log.d(TAG, "displacement:" + decoratedMeasurement + " nextPos:" + i14 + " offset:" + itemCenterOffset2 + " nextItemWidth:" + decoratedMeasurement3);
+            int nextItemCenterOffset = getItemCenterOffset(nextPos);
+            displacement = midDisplacement + ((getDecoratedMeasurement(nextPos) + (direction * nextItemCenterOffset)) / 2.0f);
+            if (debug) {
+                Log.d(TAG, "displacement:" + displacement + " nextPos:" + nextPos + " offset:" + nextItemCenterOffset + " nextItemWidth:" + nextItemWidth);
             }
-            i11 = 1;
+            step = 1;
         }
-        return i12 * decoratedMeasurement;
+        return direction * displacement;
     }
 
-    public void attachToRecyclerView(COUIRecyclerView cOUIRecyclerView) {
-        this.mRecyclerView = cOUIRecyclerView;
-        this.mContext = cOUIRecyclerView.getContext();
+    public void attachToRecyclerView(COUIRecyclerView recyclerView) {
+        this.mRecyclerView = recyclerView;
+        this.mContext = recyclerView.getContext();
     }
 
     public View getCenterItemView() {
         RecyclerView.LayoutManager layoutManager = getLayoutManager();
         int childCount = layoutManager.getChildCount();
         OrientationHelper orientationHelper = getOrientationHelper(layoutManager);
-        float fN = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2.0f);
-        for (int i2 = 0; i2 < childCount; i2++) {
-            View childAt = layoutManager.getChildAt(i2);
+        float center = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2.0f);
+        for (int i = 0; i < childCount; i++) {
+            View childAt = layoutManager.getChildAt(i);
             if (childAt != null) {
-                int iG = orientationHelper.getDecoratedStart(childAt);
-                int iD = orientationHelper.getDecoratedEnd(childAt);
-                if (fN >= iG && fN <= iD) {
+                int start = orientationHelper.getDecoratedStart(childAt);
+                int end = orientationHelper.getDecoratedEnd(childAt);
+                if (center >= start && center <= end) {
                     return childAt;
                 }
             }
@@ -166,32 +168,32 @@ public class COUIGradualStopHelper {
         return null;
     }
 
-    public float getCenterToEdgeOffsetInVelocityDirection(int i2) {
+    public float getCenterToEdgeOffsetInVelocityDirection(int velocity) {
         int childCount;
         RecyclerView.LayoutManager layoutManager = getLayoutManager();
         if (layoutManager == null || (childCount = layoutManager.getChildCount()) == 0) {
             return 0.0f;
         }
         OrientationHelper orientationHelper = getOrientationHelper(layoutManager);
-        float fN = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2.0f);
-        for (int i6 = 0; i6 < childCount; i6++) {
-            View childAt = layoutManager.getChildAt(i6);
+        float center = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2.0f);
+        for (int i = 0; i < childCount; i++) {
+            View childAt = layoutManager.getChildAt(i);
             if (childAt != null) {
-                int iG = orientationHelper.getDecoratedStart(childAt);
-                int iD = orientationHelper.getDecoratedEnd(childAt);
-                float f2 = iG;
-                if (fN >= f2) {
-                    float f10 = iD;
-                    if (fN <= f10) {
-                        if (i2 > 0) {
-                            return f10 - fN;
+                int start = orientationHelper.getDecoratedStart(childAt);
+                int end = orientationHelper.getDecoratedEnd(childAt);
+                float startF = start;
+                if (center >= startF) {
+                    float endF = end;
+                    if (center <= endF) {
+                        if (velocity > 0) {
+                            return endF - center;
                         }
-                        if (i2 < 0) {
-                            return f2 - fN;
+                        if (velocity < 0) {
+                            return startF - center;
                         }
-                        float f11 = f2 - fN;
-                        float f12 = f10 - fN;
-                        return Math.abs(f11) <= Math.abs(f12) ? f11 : f12;
+                        float toStart = startF - center;
+                        float toEnd = endF - center;
+                        return Math.abs(toStart) <= Math.abs(toEnd) ? toStart : toEnd;
                     }
                 } else {
                     continue;
@@ -207,125 +209,125 @@ public class COUIGradualStopHelper {
     public float getCenterToItemCenterOffsetUnderCenter() {
         int childCount;
         RecyclerView.LayoutManager layoutManager = getLayoutManager();
-        float f2 = 0.0f;
+        float closestOffset = 0.0f;
         if (layoutManager == null || (childCount = layoutManager.getChildCount()) == 0) {
             return 0.0f;
         }
         OrientationHelper orientationHelper = getOrientationHelper(layoutManager);
-        float fN = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2.0f);
-        for (int i2 = 0; i2 < childCount; i2++) {
-            View childAt = layoutManager.getChildAt(i2);
+        float center = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2.0f);
+        for (int i = 0; i < childCount; i++) {
+            View childAt = layoutManager.getChildAt(i);
             if (childAt != null) {
-                int iG = orientationHelper.getDecoratedStart(childAt);
-                int iD = orientationHelper.getDecoratedEnd(childAt);
-                if (fN >= iG && fN <= iD) {
-                    return getItemViewCenter(childAt) - fN;
+                int start = orientationHelper.getDecoratedStart(childAt);
+                int end = orientationHelper.getDecoratedEnd(childAt);
+                if (center >= start && center <= end) {
+                    return getItemViewCenter(childAt) - center;
                 }
             }
         }
-        float f10 = Float.MAX_VALUE;
-        for (int i6 = 0; i6 < childCount; i6++) {
-            View childAt2 = layoutManager.getChildAt(i6);
-            if (childAt2 != null) {
-                float itemViewCenter = getItemViewCenter(childAt2) - fN;
-                float fAbs = Math.abs(itemViewCenter);
-                if (fAbs < f10) {
-                    f2 = itemViewCenter;
-                    f10 = fAbs;
+        float closestAbs = Float.MAX_VALUE;
+        for (int i = 0; i < childCount; i++) {
+            View childAt = layoutManager.getChildAt(i);
+            if (childAt != null) {
+                float offset = getItemViewCenter(childAt) - center;
+                float abs = Math.abs(offset);
+                if (abs < closestAbs) {
+                    closestOffset = offset;
+                    closestAbs = abs;
                 }
             }
         }
-        return f2;
+        return closestOffset;
     }
 
-    public float getCenterViewNextPositionCenter(View view, int i2, boolean z6) {
+    public float getCenterViewNextPositionCenter(View view, int position, boolean forward) {
         RecyclerView.LayoutManager layoutManager = getLayoutManager();
         if (layoutManager == null) {
             return 0.0f;
         }
         OrientationHelper orientationHelper = getOrientationHelper(layoutManager);
-        int iD = orientationHelper.getDecoratedEnd(view);
-        int iG = orientationHelper.getDecoratedStart(view);
-        int itemCenterOffset = getItemCenterOffset(i2);
-        int decoratedMeasurement = getDecoratedMeasurement(i2);
-        int i6 = z6 ? 1 : -1;
+        int end = orientationHelper.getDecoratedEnd(view);
+        int start = orientationHelper.getDecoratedStart(view);
+        int itemCenterOffset = getItemCenterOffset(position);
+        int decoratedMeasurement = getDecoratedMeasurement(position);
+        int direction = forward ? 1 : -1;
         if (isRtlMode(this.mContext)) {
-            i6 = z6 ? -1 : 1;
+            direction = forward ? -1 : 1;
         }
-        if (i6 != 1) {
-            iD = iG;
+        if (direction != 1) {
+            end = start;
         }
-        return iD + ((i6 * (decoratedMeasurement + (itemCenterOffset * i6))) / 2.0f);
+        return end + ((direction * (decoratedMeasurement + (itemCenterOffset * direction))) / 2.0f);
     }
 
-    public int getDecoratedMeasurement(int i2) {
+    public int getDecoratedMeasurement(int position) {
         if (getLayoutManager() == null) {
             return 0;
         }
         this.mRecyclerView.getAdapter();
-        return getDefautDecoratedMeasurement(i2);
+        return getDefautDecoratedMeasurement(position);
     }
 
-    public float getDisplacementToAlignCenter(int i2, int i6) {
-        float fAbs;
-        int position;
-        COUIGradualStopHelper cOUIGradualStopHelper = this;
+    public float getDisplacementToAlignCenter(int initialVelocity, int distance) {
+        float displacement;
+        int startPos;
+        COUIGradualStopHelper helper = this;
         if (!validation()) {
             return 0.0f;
         }
         RecyclerView.LayoutManager layoutManager = getLayoutManager();
-        OrientationHelper orientationHelper = cOUIGradualStopHelper.getOrientationHelper(layoutManager);
-        float fN = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2.0f);
-        int i10 = 0;
-        boolean z6 = true;
-        if (!cOUIGradualStopHelper.isRtlMode(cOUIGradualStopHelper.mContext) ? i2 <= 0 : i2 >= 0) {
-            z6 = false;
+        OrientationHelper orientationHelper = helper.getOrientationHelper(layoutManager);
+        float center = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2.0f);
+        int childIndex = 0;
+        boolean forward = true;
+        if (!helper.isRtlMode(helper.mContext) ? initialVelocity <= 0 : initialVelocity >= 0) {
+            forward = false;
         }
         int childCount = layoutManager.getChildCount();
         int itemCount = layoutManager.getItemCount();
         View centerItemView = getCenterItemView();
-        int position2 = centerItemView != null ? layoutManager.getPosition(centerItemView) : -1;
-        if (centerItemView == null || position2 == -1) {
-            fAbs = 0.0f;
-            position = 0;
+        int centerAdapterPosition = centerItemView != null ? layoutManager.getPosition(centerItemView) : -1;
+        if (centerItemView == null || centerAdapterPosition == -1) {
+            displacement = 0.0f;
+            startPos = 0;
         } else {
-            position = z6 ? position2 + 1 : position2 - 1;
-            if (position < 0 || position >= itemCount) {
-                float itemViewCenter = cOUIGradualStopHelper.getItemViewCenter(centerItemView) - fN;
-                return (((float) i2) * itemViewCenter <= 0.0f || Math.abs(itemViewCenter) <= ((float) Math.abs(i6))) ? i6 : itemViewCenter;
+            startPos = forward ? centerAdapterPosition + 1 : centerAdapterPosition - 1;
+            if (startPos < 0 || startPos >= itemCount) {
+                float itemViewCenter = helper.getItemViewCenter(centerItemView) - center;
+                return (((float) initialVelocity) * itemViewCenter <= 0.0f || Math.abs(itemViewCenter) <= ((float) Math.abs(distance))) ? distance : itemViewCenter;
             }
-            fAbs = Math.abs(cOUIGradualStopHelper.getCenterViewNextPositionCenter(centerItemView, position, z6) - fN);
+            displacement = Math.abs(helper.getCenterViewNextPositionCenter(centerItemView, startPos, forward) - center);
         }
-        if (fAbs == 0.0f) {
-            float f2 = Float.MAX_VALUE;
-            while (i10 < childCount) {
-                View childAt = layoutManager.getChildAt(i10);
+        if (displacement == 0.0f) {
+            float closestOffset = Float.MAX_VALUE;
+            while (childIndex < childCount) {
+                View childAt = layoutManager.getChildAt(childIndex);
                 if (childAt != null) {
-                    float itemViewCenter2 = cOUIGradualStopHelper.getItemViewCenter(childAt) - fN;
-                    if (i2 * itemViewCenter2 > 0.0f && Math.abs(itemViewCenter2) < Math.abs(f2)) {
-                        float fAbs2 = Math.abs(itemViewCenter2);
-                        position = layoutManager.getPosition(childAt);
-                        f2 = itemViewCenter2;
-                        fAbs = fAbs2;
+                    float itemViewCenter = helper.getItemViewCenter(childAt) - center;
+                    if (initialVelocity * itemViewCenter > 0.0f && Math.abs(itemViewCenter) < Math.abs(closestOffset)) {
+                        float abs = Math.abs(itemViewCenter);
+                        startPos = layoutManager.getPosition(childAt);
+                        closestOffset = itemViewCenter;
+                        displacement = abs;
                     }
                 }
-                i10++;
-                cOUIGradualStopHelper = this;
+                childIndex++;
+                helper = this;
             }
         }
-        float f10 = fAbs;
+        float finalDisplacement = displacement;
         if (DEBUG) {
-            Log.d(TAG, "initialVelocity:" + i2 + " distance:" + i6 + " centerAdapterPosition:" + position2 + " startPos:" + position + " displacement:" + f10 + " itemCount:" + itemCount);
+            Log.d(TAG, "initialVelocity:" + initialVelocity + " distance:" + distance + " centerAdapterPosition:" + centerAdapterPosition + " startPos:" + startPos + " displacement:" + finalDisplacement + " itemCount:" + itemCount);
         }
-        return iterateDisplacement(position, z6, f10, i6, itemCount);
+        return iterateDisplacement(startPos, forward, finalDisplacement, distance, itemCount);
     }
 
-    public int getItemCenterOffset(int i2) {
+    public int getItemCenterOffset(int position) {
         if (getLayoutManager() == null) {
             return 0;
         }
         this.mRecyclerView.getAdapter();
-        return getDefaultItemCenterOffset(i2);
+        return getDefaultItemCenterOffset(position);
     }
 
     public float getItemViewCenter(View view) {
@@ -339,25 +341,25 @@ public class COUIGradualStopHelper {
 
     public void trySnapToTargetExistingView() {
         OrientationHelper orientationHelper;
-        View viewFindCenterView;
+        View centerView;
         RecyclerView.LayoutManager layoutManager = getLayoutManager();
-        if (layoutManager == null || (viewFindCenterView = findCenterView(layoutManager, (orientationHelper = getOrientationHelper(layoutManager)))) == null) {
+        if (layoutManager == null || (centerView = findCenterView(layoutManager, (orientationHelper = getOrientationHelper(layoutManager)))) == null) {
             return;
         }
-        int iN = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2);
-        int itemCount = layoutManager.getItemCount() - 1;
-        if (layoutManager.getPosition(viewFindCenterView) == 0) {
-            iN = isRtlMode(this.mContext) ? orientationHelper.getEndAfterPadding() - (orientationHelper.getDecoratedMeasurement(viewFindCenterView) / 2) : orientationHelper.getStartAfterPadding() + (orientationHelper.getDecoratedMeasurement(viewFindCenterView) / 2);
+        int targetCenter = orientationHelper.getStartAfterPadding() + (orientationHelper.getTotalSpace() / 2);
+        int lastItem = layoutManager.getItemCount() - 1;
+        if (layoutManager.getPosition(centerView) == 0) {
+            targetCenter = isRtlMode(this.mContext) ? orientationHelper.getEndAfterPadding() - (orientationHelper.getDecoratedMeasurement(centerView) / 2) : orientationHelper.getStartAfterPadding() + (orientationHelper.getDecoratedMeasurement(centerView) / 2);
         }
-        if (layoutManager.getPosition(viewFindCenterView) == itemCount) {
-            iN = isRtlMode(this.mContext) ? orientationHelper.getStartAfterPadding() + (orientationHelper.getDecoratedMeasurement(viewFindCenterView) / 2) : orientationHelper.getEndAfterPadding() - (orientationHelper.getDecoratedMeasurement(viewFindCenterView) / 2);
+        if (layoutManager.getPosition(centerView) == lastItem) {
+            targetCenter = isRtlMode(this.mContext) ? orientationHelper.getStartAfterPadding() + (orientationHelper.getDecoratedMeasurement(centerView) / 2) : orientationHelper.getEndAfterPadding() - (orientationHelper.getDecoratedMeasurement(centerView) / 2);
         }
-        int iG = (orientationHelper.getDecoratedStart(viewFindCenterView) + (orientationHelper.getDecoratedMeasurement(viewFindCenterView) / 2)) - iN;
-        if (Math.abs(iG) > 1.0f) {
+        int delta = (orientationHelper.getDecoratedStart(centerView) + (orientationHelper.getDecoratedMeasurement(centerView) / 2)) - targetCenter;
+        if (Math.abs(delta) > 1.0f) {
             if ((layoutManager instanceof LinearLayoutManager) && ((LinearLayoutManager) layoutManager).getOrientation() == 1) {
-                this.mRecyclerView.smoothScrollBy(0, iG);
+                this.mRecyclerView.smoothScrollBy(0, delta);
             } else {
-                this.mRecyclerView.smoothScrollBy(iG, 0);
+                this.mRecyclerView.smoothScrollBy(delta, 0);
             }
         }
     }

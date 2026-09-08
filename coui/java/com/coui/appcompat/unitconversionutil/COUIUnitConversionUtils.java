@@ -2,8 +2,10 @@ package com.coui.appcompat.unitconversionutil;
 
 import android.content.Context;
 import android.util.Log;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.log.COUILog;
+
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -71,135 +73,135 @@ public class COUIUnitConversionUtils {
         this.mPetaByteSpeed = this.mContext.getResources().getString(R.string.petaByteSpeed);
     }
 
-    private String formatLocaleNumber(double d2, String str) {
-        return new DecimalFormat(str, new DecimalFormatSymbols(this.mContext.getResources().getConfiguration().locale)).format(d2);
+    private String formatLocaleNumber(double doubleValue, String str) {
+        return new DecimalFormat(str, new DecimalFormatSymbols(this.mContext.getResources().getConfiguration().locale)).format(doubleValue);
     }
 
-    private String formatNumber(double d2, String str, boolean z6) {
+    private String formatNumber(double doubleValue, String str, boolean flag) {
         DecimalFormat decimalFormat = new DecimalFormat(str, new DecimalFormatSymbols(Locale.CHINA));
-        if (z6) {
+        if (flag) {
             decimalFormat.setRoundingMode(RoundingMode.HALF_UP);
         } else {
             decimalFormat.setRoundingMode(RoundingMode.FLOOR);
         }
-        return decimalFormat.format(d2);
+        return decimalFormat.format(doubleValue);
     }
 
-    private String getChineseDownloadValue(long j2) {
-        if (0 <= j2 && j2 < 10000.0d) {
-            if (j2 == 0) {
-                j2++;
+    private String getChineseDownloadValue(long timestamp) {
+        if (0 <= timestamp && timestamp < 10000.0d) {
+            if (timestamp == 0) {
+                timestamp++;
             }
-            return j2 + " ";
+            return timestamp + " ";
         }
-        double d2 = j2;
-        if (10000.0d <= d2 && d2 < 100000.0d) {
-            double dDoubleValue = Double.valueOf(formatNumber(d2 / 10000.0d, ONEPOINT, true)).doubleValue();
-            int i2 = (int) dDoubleValue;
-            if (dDoubleValue == i2) {
-                return i2 + this.mMoreDownLoad;
+        double doubleValue_2 = timestamp;
+        if (10000.0d <= doubleValue_2 && doubleValue_2 < 100000.0d) {
+            double dDoubleValue = Double.valueOf(formatNumber(doubleValue_2 / 10000.0d, ONEPOINT, true)).doubleValue();
+            int index = (int) dDoubleValue;
+            if (dDoubleValue == index) {
+                return index + this.mMoreDownLoad;
             }
             return dDoubleValue + this.mMoreDownLoad;
         }
-        if (100000.0d <= d2 && d2 < MILLION) {
-            double dDoubleValue2 = Double.valueOf(formatNumber(d2 / 10000.0d, ONEPOINT, true)).doubleValue();
-            int i6 = (int) dDoubleValue2;
-            if (dDoubleValue2 == i6) {
-                return i6 + this.mMoreDownLoad;
+        if (100000.0d <= doubleValue_2 && doubleValue_2 < MILLION) {
+            double dDoubleValue2 = Double.valueOf(formatNumber(doubleValue_2 / 10000.0d, ONEPOINT, true)).doubleValue();
+            int index_2 = (int) dDoubleValue2;
+            if (dDoubleValue2 == index_2) {
+                return index_2 + this.mMoreDownLoad;
             }
             return dDoubleValue2 + this.mMoreDownLoad;
         }
-        if (MILLION <= d2 && d2 < 1.0E7d) {
-            return ((int) Double.valueOf(formatNumber(d2 / 10000.0d, TWOPOINT, true)).doubleValue()) + this.mMoreDownLoad;
+        if (MILLION <= doubleValue_2 && doubleValue_2 < 1.0E7d) {
+            return ((int) Double.valueOf(formatNumber(doubleValue_2 / 10000.0d, TWOPOINT, true)).doubleValue()) + this.mMoreDownLoad;
         }
-        if (1.0E7d <= d2 && d2 < 1.0E8d) {
-            return ((int) Double.valueOf(formatNumber(d2 / 10000.0d, TWOPOINT, true)).doubleValue()) + this.mMoreDownLoad;
+        if (1.0E7d <= doubleValue_2 && doubleValue_2 < 1.0E8d) {
+            return ((int) Double.valueOf(formatNumber(doubleValue_2 / 10000.0d, TWOPOINT, true)).doubleValue()) + this.mMoreDownLoad;
         }
-        if (d2 < 1.0E8d) {
+        if (doubleValue_2 < 1.0E8d) {
             throw new IllegalArgumentException("the value of the incoming is wrong");
         }
-        return formatNumber(Double.valueOf(formatNumber(d2 / 1.0E8d, SIXPOINT, true)).doubleValue(), ONEPOINT, false) + this.mMostDownLoad;
+        return formatNumber(Double.valueOf(formatNumber(doubleValue_2 / 1.0E8d, SIXPOINT, true)).doubleValue(), ONEPOINT, false) + this.mMostDownLoad;
     }
 
-    private String getChineseStripValue(long j2) {
-        if (0 <= j2 && j2 < 10000.0d) {
-            return j2 + " ";
+    private String getChineseStripValue(long timestamp) {
+        if (0 <= timestamp && timestamp < 10000.0d) {
+            return timestamp + " ";
         }
-        double d2 = j2;
-        if (10000.0d > d2 || d2 >= MILLION) {
-            if (MILLION > d2 || d2 >= 1.0E8d) {
+        double doubleValue_2 = timestamp;
+        if (10000.0d > doubleValue_2 || doubleValue_2 >= MILLION) {
+            if (MILLION > doubleValue_2 || doubleValue_2 >= 1.0E8d) {
                 throw new IllegalArgumentException("the value of the incoming is wrong");
             }
-            return formatNumber(d2 / 10000.0d, NOPOINT, true) + this.mMoreDownLoad;
+            return formatNumber(doubleValue_2 / 10000.0d, NOPOINT, true) + this.mMoreDownLoad;
         }
-        double dDoubleValue = Double.valueOf(formatNumber(d2 / 10000.0d, ONEPOINT, true)).doubleValue();
-        int i2 = (int) dDoubleValue;
-        if (dDoubleValue == i2) {
-            return i2 + this.mMoreDownLoad;
+        double dDoubleValue = Double.valueOf(formatNumber(doubleValue_2 / 10000.0d, ONEPOINT, true)).doubleValue();
+        int index = (int) dDoubleValue;
+        if (dDoubleValue == index) {
+            return index + this.mMoreDownLoad;
         }
         return dDoubleValue + this.mMoreDownLoad;
     }
 
-    private String getEnglishDownloadValue(long j2) {
-        if (0 <= j2 && j2 < 10000.0d) {
-            if (j2 == 0) {
-                j2++;
+    private String getEnglishDownloadValue(long timestamp) {
+        if (0 <= timestamp && timestamp < 10000.0d) {
+            if (timestamp == 0) {
+                timestamp++;
             }
-            return j2 + " ";
+            return timestamp + " ";
         }
-        double d2 = j2;
-        if (10000.0d <= d2 && d2 < 100000.0d) {
-            return ((int) (Double.valueOf(formatNumber(d2 / 10000.0d, ONEPOINT, true)).doubleValue() * TEN)) + this.mMoreDownLoad;
+        double doubleValue_2 = timestamp;
+        if (10000.0d <= doubleValue_2 && doubleValue_2 < 100000.0d) {
+            return ((int) (Double.valueOf(formatNumber(doubleValue_2 / 10000.0d, ONEPOINT, true)).doubleValue() * TEN)) + this.mMoreDownLoad;
         }
-        if (100000.0d <= d2 && d2 < MILLION) {
-            return ((int) (Double.valueOf(formatNumber(d2 / 10000.0d, ONEPOINT, true)).doubleValue() * TEN)) + this.mMoreDownLoad;
+        if (100000.0d <= doubleValue_2 && doubleValue_2 < MILLION) {
+            return ((int) (Double.valueOf(formatNumber(doubleValue_2 / 10000.0d, ONEPOINT, true)).doubleValue() * TEN)) + this.mMoreDownLoad;
         }
-        if (MILLION <= d2 && d2 < 1.0E7d) {
-            String number = formatNumber(d2 / 10000.0d, TWOPOINT, true);
+        if (MILLION <= doubleValue_2 && doubleValue_2 < 1.0E7d) {
+            String number = formatNumber(doubleValue_2 / 10000.0d, TWOPOINT, true);
             double dDoubleValue = Double.valueOf(number).doubleValue() / HUNDRED;
-            int i2 = (int) dDoubleValue;
-            if (Math.abs(dDoubleValue - ((double) i2)) < 1.0000000116860974E-7d) {
-                return i2 + this.mMostDownLoad;
+            int index = (int) dDoubleValue;
+            if (Math.abs(dDoubleValue - ((double) index)) < 1.0000000116860974E-7d) {
+                return index + this.mMostDownLoad;
             }
             return Double.valueOf(number) + this.mMostDownLoad;
         }
-        if (1.0E7d > d2 || d2 >= 1.0E8d) {
-            if (d2 < 1.0E8d) {
+        if (1.0E7d > doubleValue_2 || doubleValue_2 >= 1.0E8d) {
+            if (doubleValue_2 < 1.0E8d) {
                 throw new IllegalArgumentException("the value of the incoming is wrong");
             }
-            return ((int) (Double.valueOf(formatNumber(Double.valueOf(formatNumber(d2 / 1.0E8d, SIXPOINT, true)).doubleValue(), ONEPOINT, false)).doubleValue() * HUNDRED)) + this.mMostDownLoad;
+            return ((int) (Double.valueOf(formatNumber(Double.valueOf(formatNumber(doubleValue_2 / 1.0E8d, SIXPOINT, true)).doubleValue(), ONEPOINT, false)).doubleValue() * HUNDRED)) + this.mMostDownLoad;
         }
-        String number2 = formatNumber(d2 / 10000.0d, TWOPOINT, true);
+        String number2 = formatNumber(doubleValue_2 / 10000.0d, TWOPOINT, true);
         double dDoubleValue2 = Double.valueOf(number2).doubleValue() / HUNDRED;
-        int i6 = (int) dDoubleValue2;
-        if (Math.abs(dDoubleValue2 - ((double) i6)) < 1.0000000116860974E-7d) {
-            return i6 + this.mMostDownLoad;
+        int index_2 = (int) dDoubleValue2;
+        if (Math.abs(dDoubleValue2 - ((double) index_2)) < 1.0000000116860974E-7d) {
+            return index_2 + this.mMostDownLoad;
         }
         return Double.valueOf(number2) + this.mMostDownLoad;
     }
 
-    private String getEnglishStripValue(long j2) {
-        if (0 <= j2 && j2 < 10000.0d) {
-            return j2 + " ";
+    private String getEnglishStripValue(long timestamp) {
+        if (0 <= timestamp && timestamp < 10000.0d) {
+            return timestamp + " ";
         }
-        double d2 = j2;
-        if (10000.0d <= d2 && d2 < MILLION) {
-            return ((int) (Double.valueOf(formatNumber(d2 / 10000.0d, ONEPOINT, true)).doubleValue() * TEN)) + this.mMoreDownLoad;
+        double doubleValue_2 = timestamp;
+        if (10000.0d <= doubleValue_2 && doubleValue_2 < MILLION) {
+            return ((int) (Double.valueOf(formatNumber(doubleValue_2 / 10000.0d, ONEPOINT, true)).doubleValue() * TEN)) + this.mMoreDownLoad;
         }
-        if (MILLION > d2 || d2 >= 1.0E8d) {
+        if (MILLION > doubleValue_2 || doubleValue_2 >= 1.0E8d) {
             throw new IllegalArgumentException("the value of the incoming is wrong");
         }
-        return ((int) (Double.valueOf(formatNumber(d2 / 10000.0d, NOPOINT, true)).doubleValue() * TEN)) + this.mMoreDownLoad;
+        return ((int) (Double.valueOf(formatNumber(doubleValue_2 / 10000.0d, NOPOINT, true)).doubleValue() * TEN)) + this.mMoreDownLoad;
     }
 
-    private String getStringComposite(String str, String str2) {
+    private String getStringComposite(String str, String text) {
         if (COUI_DEBUG) {
             Log.d(TAG, "getStringComposite content:" + str + ",unit:" + str + ",mIfShowNormal:" + this.mIfShowNormal);
         }
         if (this.mIfShowNormal) {
-            return str + str2;
+            return str + text;
         }
-        return str2 + " " + str;
+        return text + " " + str;
     }
 
     private boolean isChinese() {
@@ -210,355 +212,355 @@ public class COUIUnitConversionUtils {
         return false;
     }
 
-    public String getDownLoadValue(long j2) {
-        return isChinese() ? getChineseDownloadValue(j2) : getEnglishDownloadValue(j2);
+    public String getDownLoadValue(long timestamp) {
+        return isChinese() ? getChineseDownloadValue(timestamp) : getEnglishDownloadValue(timestamp);
     }
 
-    public String getSpeedValue(long j2) {
-        if (0 <= j2) {
-            double d2 = j2;
-            if (d2 < THOUSAND) {
-                String number = formatNumber(d2, NOPOINT, true);
-                long j6 = Long.parseLong(number);
+    public String getSpeedValue(long timestamp) {
+        if (0 <= timestamp) {
+            double doubleValue_2 = timestamp;
+            if (doubleValue_2 < THOUSAND) {
+                String number = formatNumber(doubleValue_2, NOPOINT, true);
+                long timestamp_2 = Long.parseLong(number);
                 String localeNumber = formatLocaleNumber(Double.valueOf(number).doubleValue(), NOPOINT);
-                double d7 = j6;
-                if (THOUSAND <= d7 && d7 < SPECIAL) {
-                    return getUnitValue(j6);
+                double doubleValue_3 = timestamp_2;
+                if (THOUSAND <= doubleValue_3 && doubleValue_3 < SPECIAL) {
+                    return getUnitValue(timestamp_2);
                 }
                 return localeNumber + this.mByteSpeed;
             }
         }
-        double d10 = j2;
-        if (THOUSAND <= d10 && d10 < 1024000.0d) {
-            String number2 = formatNumber(d10 / SPECIAL, NOPOINT, true);
-            long j10 = Long.parseLong(number2) * 1024;
+        double doubleValue_4 = timestamp;
+        if (THOUSAND <= doubleValue_4 && doubleValue_4 < 1024000.0d) {
+            String number2 = formatNumber(doubleValue_4 / SPECIAL, NOPOINT, true);
+            long timestamp_3 = Long.parseLong(number2) * 1024;
             String localeNumber2 = formatLocaleNumber(Double.valueOf(number2).doubleValue(), NOPOINT);
-            double d11 = j10;
-            if (1024000.0d <= d11 && d11 < Math.pow(SPECIAL, 2.0d) * HUNDRED) {
-                return getUnitValue(j10);
+            double doubleValue_5 = timestamp_3;
+            if (1024000.0d <= doubleValue_5 && doubleValue_5 < Math.pow(SPECIAL, 2.0d) * HUNDRED) {
+                return getUnitValue(timestamp_3);
             }
             return localeNumber2 + this.mKiloByteSpeed;
         }
-        if (1024000.0d <= d10 && d10 < Math.pow(SPECIAL, 2.0d) * HUNDRED) {
-            String number3 = formatNumber(d10 / Math.pow(SPECIAL, 2.0d), ONEPOINT, true);
+        if (1024000.0d <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 2.0d) * HUNDRED) {
+            String number3 = formatNumber(doubleValue_4 / Math.pow(SPECIAL, 2.0d), ONEPOINT, true);
             long jDoubleValue = (long) (Double.valueOf(number3).doubleValue() * Math.pow(SPECIAL, 2.0d));
             String localeNumber3 = formatLocaleNumber(Double.valueOf(number3).doubleValue(), ONEPOINT);
-            double d12 = jDoubleValue;
-            if (Math.pow(SPECIAL, 2.0d) * HUNDRED <= d12 && d12 < Math.pow(SPECIAL, 2.0d) * THOUSAND) {
+            double doubleValue_6 = jDoubleValue;
+            if (Math.pow(SPECIAL, 2.0d) * HUNDRED <= doubleValue_6 && doubleValue_6 < Math.pow(SPECIAL, 2.0d) * THOUSAND) {
                 return getUnitValue(jDoubleValue);
             }
             return localeNumber3 + this.mMegaByteSpeed;
         }
-        if (Math.pow(SPECIAL, 2.0d) * HUNDRED <= d10 && d10 < Math.pow(SPECIAL, 2.0d) * THOUSAND) {
-            String number4 = formatNumber(d10 / Math.pow(SPECIAL, 2.0d), NOPOINT, true);
+        if (Math.pow(SPECIAL, 2.0d) * HUNDRED <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 2.0d) * THOUSAND) {
+            String number4 = formatNumber(doubleValue_4 / Math.pow(SPECIAL, 2.0d), NOPOINT, true);
             long jDoubleValue2 = (long) (Double.valueOf(number4).doubleValue() * Math.pow(SPECIAL, 2.0d));
             String localeNumber4 = formatLocaleNumber(Double.valueOf(number4).doubleValue(), NOPOINT);
-            double d13 = jDoubleValue2;
-            if (Math.pow(SPECIAL, 2.0d) * THOUSAND <= d13 && d13 < Math.pow(SPECIAL, 3.0d)) {
+            double doubleValue_7 = jDoubleValue2;
+            if (Math.pow(SPECIAL, 2.0d) * THOUSAND <= doubleValue_7 && doubleValue_7 < Math.pow(SPECIAL, 3.0d)) {
                 return getUnitValue(jDoubleValue2);
             }
             return localeNumber4 + this.mMegaByteSpeed;
         }
-        if (Math.pow(SPECIAL, 2.0d) * THOUSAND <= d10 && d10 < Math.pow(SPECIAL, 3.0d)) {
-            if (d10 > Math.pow(SPECIAL, 2.0d) * 1023.0d) {
+        if (Math.pow(SPECIAL, 2.0d) * THOUSAND <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 3.0d)) {
+            if (doubleValue_4 > Math.pow(SPECIAL, 2.0d) * 1023.0d) {
                 return getUnitValue((long) Math.pow(SPECIAL, 3.0d));
             }
             return this.mSpecialPoint + this.mGigaByteSpeed;
         }
-        if (Math.pow(SPECIAL, 3.0d) <= d10 && d10 < Math.pow(SPECIAL, 3.0d) * TEN) {
-            String number5 = formatNumber(d10 / Math.pow(SPECIAL, 3.0d), TWOPOINT, true);
+        if (Math.pow(SPECIAL, 3.0d) <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 3.0d) * TEN) {
+            String number5 = formatNumber(doubleValue_4 / Math.pow(SPECIAL, 3.0d), TWOPOINT, true);
             long jDoubleValue3 = (long) (Double.valueOf(number5).doubleValue() * Math.pow(SPECIAL, 3.0d));
             String localeNumber5 = formatLocaleNumber(Double.valueOf(number5).doubleValue(), TWOPOINT);
-            double d14 = jDoubleValue3;
-            if (Math.pow(SPECIAL, 3.0d) * TEN <= d14 && d14 < Math.pow(SPECIAL, 3.0d) * HUNDRED) {
+            double doubleValue_8 = jDoubleValue3;
+            if (Math.pow(SPECIAL, 3.0d) * TEN <= doubleValue_8 && doubleValue_8 < Math.pow(SPECIAL, 3.0d) * HUNDRED) {
                 return getUnitValue(jDoubleValue3);
             }
             return localeNumber5 + this.mGigaByteSpeed;
         }
-        if (Math.pow(SPECIAL, 3.0d) * TEN <= d10 && d10 < Math.pow(SPECIAL, 3.0d) * HUNDRED) {
-            String number6 = formatNumber(d10 / Math.pow(SPECIAL, 3.0d), ONEPOINT, true);
+        if (Math.pow(SPECIAL, 3.0d) * TEN <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 3.0d) * HUNDRED) {
+            String number6 = formatNumber(doubleValue_4 / Math.pow(SPECIAL, 3.0d), ONEPOINT, true);
             long jDoubleValue4 = (long) (Double.valueOf(number6).doubleValue() * Math.pow(SPECIAL, 3.0d));
             String localeNumber6 = formatLocaleNumber(Double.valueOf(number6).doubleValue(), ONEPOINT);
-            double d15 = jDoubleValue4;
-            if (Math.pow(SPECIAL, 3.0d) * HUNDRED <= d15 && d15 < Math.pow(SPECIAL, 3.0d) * THOUSAND) {
+            double doubleValue_9 = jDoubleValue4;
+            if (Math.pow(SPECIAL, 3.0d) * HUNDRED <= doubleValue_9 && doubleValue_9 < Math.pow(SPECIAL, 3.0d) * THOUSAND) {
                 return getUnitValue(jDoubleValue4);
             }
             return localeNumber6 + this.mGigaByteSpeed;
         }
-        if (Math.pow(SPECIAL, 3.0d) * HUNDRED <= d10 && d10 < Math.pow(SPECIAL, 3.0d) * THOUSAND) {
-            String number7 = formatNumber(d10 / Math.pow(SPECIAL, 3.0d), NOPOINT, true);
+        if (Math.pow(SPECIAL, 3.0d) * HUNDRED <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 3.0d) * THOUSAND) {
+            String number7 = formatNumber(doubleValue_4 / Math.pow(SPECIAL, 3.0d), NOPOINT, true);
             long jDoubleValue5 = (long) (Double.valueOf(number7).doubleValue() * Math.pow(SPECIAL, 3.0d));
             String localeNumber7 = formatLocaleNumber(Double.valueOf(number7).doubleValue(), NOPOINT);
-            double d16 = jDoubleValue5;
-            if (Math.pow(SPECIAL, 3.0d) * THOUSAND <= d16 && d16 < Math.pow(SPECIAL, 4.0d)) {
+            double doubleValue_10 = jDoubleValue5;
+            if (Math.pow(SPECIAL, 3.0d) * THOUSAND <= doubleValue_10 && doubleValue_10 < Math.pow(SPECIAL, 4.0d)) {
                 return getUnitValue(jDoubleValue5);
             }
             return localeNumber7 + this.mGigaByteSpeed;
         }
-        if (Math.pow(SPECIAL, 3.0d) * THOUSAND <= d10 && d10 < Math.pow(SPECIAL, 4.0d)) {
-            if (d10 > Math.pow(SPECIAL, 3.0d) * 1023.0d) {
+        if (Math.pow(SPECIAL, 3.0d) * THOUSAND <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 4.0d)) {
+            if (doubleValue_4 > Math.pow(SPECIAL, 3.0d) * 1023.0d) {
                 return getUnitValue((long) Math.pow(SPECIAL, 4.0d));
             }
             return this.mSpecialPoint + this.mTeraByteSpeed;
         }
-        if (Math.pow(SPECIAL, 4.0d) <= d10 && d10 < Math.pow(SPECIAL, 4.0d) * TEN) {
-            String number8 = formatNumber(d10 / Math.pow(SPECIAL, 4.0d), TWOPOINT, true);
+        if (Math.pow(SPECIAL, 4.0d) <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 4.0d) * TEN) {
+            String number8 = formatNumber(doubleValue_4 / Math.pow(SPECIAL, 4.0d), TWOPOINT, true);
             long jDoubleValue6 = (long) (Double.valueOf(number8).doubleValue() * Math.pow(SPECIAL, 4.0d));
             String localeNumber8 = formatLocaleNumber(Double.valueOf(number8).doubleValue(), TWOPOINT);
-            double d17 = jDoubleValue6;
-            if (Math.pow(SPECIAL, 4.0d) * TEN <= d17 && d17 < Math.pow(SPECIAL, 4.0d) * HUNDRED) {
+            double doubleValue_11 = jDoubleValue6;
+            if (Math.pow(SPECIAL, 4.0d) * TEN <= doubleValue_11 && doubleValue_11 < Math.pow(SPECIAL, 4.0d) * HUNDRED) {
                 return getUnitValue(jDoubleValue6);
             }
             return localeNumber8 + this.mTeraByteSpeed;
         }
-        if (Math.pow(SPECIAL, 4.0d) * TEN <= d10 && d10 < Math.pow(SPECIAL, 4.0d) * HUNDRED) {
-            String number9 = formatNumber(d10 / Math.pow(SPECIAL, 4.0d), ONEPOINT, true);
+        if (Math.pow(SPECIAL, 4.0d) * TEN <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 4.0d) * HUNDRED) {
+            String number9 = formatNumber(doubleValue_4 / Math.pow(SPECIAL, 4.0d), ONEPOINT, true);
             long jDoubleValue7 = (long) (Double.valueOf(number9).doubleValue() * Math.pow(SPECIAL, 4.0d));
             String localeNumber9 = formatLocaleNumber(Double.valueOf(number9).doubleValue(), ONEPOINT);
-            double d18 = jDoubleValue7;
-            if (Math.pow(SPECIAL, 4.0d) * HUNDRED <= d18 && d18 < Math.pow(SPECIAL, 4.0d) * THOUSAND) {
+            double doubleValue_12 = jDoubleValue7;
+            if (Math.pow(SPECIAL, 4.0d) * HUNDRED <= doubleValue_12 && doubleValue_12 < Math.pow(SPECIAL, 4.0d) * THOUSAND) {
                 return getUnitValue(jDoubleValue7);
             }
             return localeNumber9 + this.mTeraByteSpeed;
         }
-        if (Math.pow(SPECIAL, 4.0d) * HUNDRED <= d10 && d10 < Math.pow(SPECIAL, 4.0d) * THOUSAND) {
-            String number10 = formatNumber(d10 / Math.pow(SPECIAL, 4.0d), NOPOINT, true);
+        if (Math.pow(SPECIAL, 4.0d) * HUNDRED <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 4.0d) * THOUSAND) {
+            String number10 = formatNumber(doubleValue_4 / Math.pow(SPECIAL, 4.0d), NOPOINT, true);
             long jDoubleValue8 = (long) (Double.valueOf(number10).doubleValue() * Math.pow(SPECIAL, 4.0d));
-            double d19 = jDoubleValue8;
-            if (Math.pow(SPECIAL, 4.0d) * THOUSAND <= d19 && d19 < Math.pow(SPECIAL, 5.0d)) {
+            double doubleValue_13 = jDoubleValue8;
+            if (Math.pow(SPECIAL, 4.0d) * THOUSAND <= doubleValue_13 && doubleValue_13 < Math.pow(SPECIAL, 5.0d)) {
                 return getUnitValue(jDoubleValue8);
             }
             return number10 + this.mTeraByteSpeed;
         }
-        if (Math.pow(SPECIAL, 4.0d) * THOUSAND <= d10 && d10 < Math.pow(SPECIAL, 5.0d)) {
-            if (d10 > Math.pow(SPECIAL, 4.0d) * 1023.0d) {
+        if (Math.pow(SPECIAL, 4.0d) * THOUSAND <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 5.0d)) {
+            if (doubleValue_4 > Math.pow(SPECIAL, 4.0d) * 1023.0d) {
                 return getUnitValue((long) Math.pow(SPECIAL, 5.0d));
             }
             return this.mSpecialPoint + this.mPetaByteSpeed;
         }
-        if (Math.pow(SPECIAL, 5.0d) <= d10 && d10 < Math.pow(SPECIAL, 5.0d) * TEN) {
-            String number11 = formatNumber(d10 / Math.pow(SPECIAL, 5.0d), TWOPOINT, true);
+        if (Math.pow(SPECIAL, 5.0d) <= doubleValue_4 && doubleValue_4 < Math.pow(SPECIAL, 5.0d) * TEN) {
+            String number11 = formatNumber(doubleValue_4 / Math.pow(SPECIAL, 5.0d), TWOPOINT, true);
             long jDoubleValue9 = (long) (Double.valueOf(number11).doubleValue() * Math.pow(SPECIAL, 5.0d));
             String localeNumber10 = formatLocaleNumber(Double.valueOf(number11).doubleValue(), TWOPOINT);
-            double d20 = jDoubleValue9;
-            if (Math.pow(SPECIAL, 5.0d) * TEN <= d20 && d20 < Math.pow(SPECIAL, 5.0d) * HUNDRED) {
+            double doubleValue_14 = jDoubleValue9;
+            if (Math.pow(SPECIAL, 5.0d) * TEN <= doubleValue_14 && doubleValue_14 < Math.pow(SPECIAL, 5.0d) * HUNDRED) {
                 return getUnitValue(jDoubleValue9);
             }
             return localeNumber10 + this.mPetaByteSpeed;
         }
-        if (Math.pow(SPECIAL, 5.0d) * TEN > d10 || d10 >= Math.pow(SPECIAL, 5.0d) * HUNDRED) {
-            if (Math.pow(SPECIAL, 5.0d) * HUNDRED > d10 || d10 >= Math.pow(SPECIAL, 5.0d) * THOUSAND) {
+        if (Math.pow(SPECIAL, 5.0d) * TEN > doubleValue_4 || doubleValue_4 >= Math.pow(SPECIAL, 5.0d) * HUNDRED) {
+            if (Math.pow(SPECIAL, 5.0d) * HUNDRED > doubleValue_4 || doubleValue_4 >= Math.pow(SPECIAL, 5.0d) * THOUSAND) {
                 throw new IllegalArgumentException("the value of the incoming is wrong");
             }
-            return formatLocaleNumber(d10 / Math.pow(SPECIAL, 5.0d), NOPOINT) + this.mPetaByteSpeed;
+            return formatLocaleNumber(doubleValue_4 / Math.pow(SPECIAL, 5.0d), NOPOINT) + this.mPetaByteSpeed;
         }
-        String number12 = formatNumber(d10 / Math.pow(SPECIAL, 5.0d), ONEPOINT, true);
+        String number12 = formatNumber(doubleValue_4 / Math.pow(SPECIAL, 5.0d), ONEPOINT, true);
         long jDoubleValue10 = (long) (Double.valueOf(number12).doubleValue() * Math.pow(SPECIAL, 5.0d));
         String localeNumber11 = formatLocaleNumber(Double.valueOf(number12).doubleValue(), ONEPOINT);
-        double d21 = jDoubleValue10;
-        if (Math.pow(SPECIAL, 5.0d) * HUNDRED <= d21 && d21 < Math.pow(SPECIAL, 5.0d) * THOUSAND) {
+        double doubleValue_15 = jDoubleValue10;
+        if (Math.pow(SPECIAL, 5.0d) * HUNDRED <= doubleValue_15 && doubleValue_15 < Math.pow(SPECIAL, 5.0d) * THOUSAND) {
             return getUnitValue(jDoubleValue10);
         }
         return localeNumber11 + this.mPetaByteSpeed;
     }
 
-    public String getStripValue(long j2) {
-        return isChinese() ? getChineseStripValue(j2) : getEnglishStripValue(j2);
+    public String getStripValue(long timestamp) {
+        return isChinese() ? getChineseStripValue(timestamp) : getEnglishStripValue(timestamp);
     }
 
-    public String getTransformUnitValue(long j2, double d2) {
-        double d6 = j2;
-        if (0 <= j2 && d6 < THOUSAND) {
-            String number = formatNumber(d6, NOPOINT, true);
-            long j6 = Long.parseLong(number);
+    public String getTransformUnitValue(long timestamp, double doubleValue_2) {
+        double doubleValue_3 = timestamp;
+        if (0 <= timestamp && doubleValue_3 < THOUSAND) {
+            String number = formatNumber(doubleValue_3, NOPOINT, true);
+            long timestamp_2 = Long.parseLong(number);
             String localeNumber = formatLocaleNumber(Double.valueOf(number).doubleValue(), NOPOINT);
-            double d7 = j6;
-            if (THOUSAND <= d7 && d7 < SPECIAL) {
-                return getUnitValue(j6);
+            double doubleValue_4 = timestamp_2;
+            if (THOUSAND <= doubleValue_4 && doubleValue_4 < SPECIAL) {
+                return getUnitValue(timestamp_2);
             }
             return getStringComposite(localeNumber, this.mByteShort);
         }
-        if (THOUSAND <= d6 && d6 < 1024000.0d) {
-            String number2 = formatNumber(d6 / d2, NOPOINT, true);
-            long j10 = Long.parseLong(number2) * ((long) d2);
+        if (THOUSAND <= doubleValue_3 && doubleValue_3 < 1024000.0d) {
+            String number2 = formatNumber(doubleValue_3 / doubleValue_2, NOPOINT, true);
+            long timestamp_3 = Long.parseLong(number2) * ((long) doubleValue_2);
             String localeNumber2 = formatLocaleNumber(Double.valueOf(number2).doubleValue(), NOPOINT);
-            double d8 = j10;
-            if (1024000.0d <= d8 && d8 < Math.pow(SPECIAL, 2.0d) * HUNDRED) {
-                return getTransformUnitValue(j10, d2);
+            double doubleValue_5 = timestamp_3;
+            if (1024000.0d <= doubleValue_5 && doubleValue_5 < Math.pow(SPECIAL, 2.0d) * HUNDRED) {
+                return getTransformUnitValue(timestamp_3, doubleValue_2);
             }
             return getStringComposite(localeNumber2, this.mKiloByteShort);
         }
-        if (1024000.0d <= d6 && d6 < Math.pow(SPECIAL, 2.0d) * HUNDRED) {
-            String number3 = formatNumber(d6 / Math.pow(d2, 2.0d), ONEPOINT, true);
-            long jDoubleValue = (long) (Double.valueOf(number3).doubleValue() * Math.pow(d2, 2.0d));
+        if (1024000.0d <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 2.0d) * HUNDRED) {
+            String number3 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 2.0d), ONEPOINT, true);
+            long jDoubleValue = (long) (Double.valueOf(number3).doubleValue() * Math.pow(doubleValue_2, 2.0d));
             String localeNumber3 = formatLocaleNumber(Double.valueOf(number3).doubleValue(), ONEPOINT);
-            double d10 = jDoubleValue;
-            if (Math.pow(SPECIAL, 2.0d) * HUNDRED <= d10 && d10 < Math.pow(SPECIAL, 2.0d) * THOUSAND) {
-                return getTransformUnitValue(jDoubleValue, d2);
+            double doubleValue_6 = jDoubleValue;
+            if (Math.pow(SPECIAL, 2.0d) * HUNDRED <= doubleValue_6 && doubleValue_6 < Math.pow(SPECIAL, 2.0d) * THOUSAND) {
+                return getTransformUnitValue(jDoubleValue, doubleValue_2);
             }
             return getStringComposite(localeNumber3, this.mMegaByteShort);
         }
-        if (Math.pow(SPECIAL, 2.0d) * HUNDRED <= d6 && d6 < Math.pow(SPECIAL, 2.0d) * THOUSAND) {
-            String number4 = formatNumber(d6 / Math.pow(d2, 2.0d), NOPOINT, true);
-            long jDoubleValue2 = (long) (Double.valueOf(number4).doubleValue() * Math.pow(d2, 2.0d));
+        if (Math.pow(SPECIAL, 2.0d) * HUNDRED <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 2.0d) * THOUSAND) {
+            String number4 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 2.0d), NOPOINT, true);
+            long jDoubleValue2 = (long) (Double.valueOf(number4).doubleValue() * Math.pow(doubleValue_2, 2.0d));
             String localeNumber4 = formatLocaleNumber(Double.valueOf(number4).doubleValue(), NOPOINT);
-            double d11 = jDoubleValue2;
-            if (Math.pow(SPECIAL, 2.0d) * THOUSAND <= d11 && d11 < Math.pow(SPECIAL, 3.0d)) {
-                return getTransformUnitValue(jDoubleValue2, d2);
+            double doubleValue_7 = jDoubleValue2;
+            if (Math.pow(SPECIAL, 2.0d) * THOUSAND <= doubleValue_7 && doubleValue_7 < Math.pow(SPECIAL, 3.0d)) {
+                return getTransformUnitValue(jDoubleValue2, doubleValue_2);
             }
             return getStringComposite(localeNumber4, this.mMegaByteShort);
         }
-        if (Math.pow(SPECIAL, 2.0d) * THOUSAND <= d6 && d6 < Math.pow(SPECIAL, 3.0d)) {
-            if (d2 == THOUSAND) {
-                String number5 = formatNumber(d6 / Math.pow(d2, 3.0d), TWOPOINT, true);
+        if (Math.pow(SPECIAL, 2.0d) * THOUSAND <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 3.0d)) {
+            if (doubleValue_2 == THOUSAND) {
+                String number5 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 3.0d), TWOPOINT, true);
                 return getStringComposite(formatLocaleNumber(Double.valueOf(number5).doubleValue(), TWOPOINT), this.mGigaByteShort);
             }
-            if (d2 != SPECIAL) {
+            if (doubleValue_2 != SPECIAL) {
                 return null;
             }
-            if (d6 > Math.pow(SPECIAL, 2.0d) * 1023.0d) {
+            if (doubleValue_3 > Math.pow(SPECIAL, 2.0d) * 1023.0d) {
                 return getUnitValue((long) Math.pow(SPECIAL, 3.0d));
             }
             return getStringComposite(this.mSpecialPoint, this.mGigaByteShort);
         }
-        if (Math.pow(SPECIAL, 3.0d) <= d6 && d6 < Math.pow(SPECIAL, 3.0d) * TEN) {
-            String number6 = formatNumber(d6 / Math.pow(d2, 3.0d), TWOPOINT, true);
-            long jDoubleValue3 = (long) (Double.valueOf(number6).doubleValue() * Math.pow(d2, 3.0d));
+        if (Math.pow(SPECIAL, 3.0d) <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 3.0d) * TEN) {
+            String number6 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 3.0d), TWOPOINT, true);
+            long jDoubleValue3 = (long) (Double.valueOf(number6).doubleValue() * Math.pow(doubleValue_2, 3.0d));
             String localeNumber5 = formatLocaleNumber(Double.valueOf(number6).doubleValue(), TWOPOINT);
-            double d12 = jDoubleValue3;
-            if (Math.pow(SPECIAL, 3.0d) * TEN <= d12 && d12 < Math.pow(SPECIAL, 3.0d) * HUNDRED) {
-                return getTransformUnitValue(jDoubleValue3, d2);
+            double doubleValue_8 = jDoubleValue3;
+            if (Math.pow(SPECIAL, 3.0d) * TEN <= doubleValue_8 && doubleValue_8 < Math.pow(SPECIAL, 3.0d) * HUNDRED) {
+                return getTransformUnitValue(jDoubleValue3, doubleValue_2);
             }
             return getStringComposite(localeNumber5, this.mGigaByteShort);
         }
-        if (Math.pow(SPECIAL, 3.0d) * TEN <= d6 && d6 < Math.pow(SPECIAL, 3.0d) * HUNDRED) {
-            String number7 = formatNumber(d6 / Math.pow(d2, 3.0d), ONEPOINT, true);
-            long jDoubleValue4 = (long) (Double.valueOf(number7).doubleValue() * Math.pow(d2, 3.0d));
+        if (Math.pow(SPECIAL, 3.0d) * TEN <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 3.0d) * HUNDRED) {
+            String number7 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 3.0d), ONEPOINT, true);
+            long jDoubleValue4 = (long) (Double.valueOf(number7).doubleValue() * Math.pow(doubleValue_2, 3.0d));
             String localeNumber6 = formatLocaleNumber(Double.valueOf(number7).doubleValue(), ONEPOINT);
-            double d13 = jDoubleValue4;
-            if (Math.pow(SPECIAL, 3.0d) * HUNDRED <= d13 && d13 < Math.pow(SPECIAL, 3.0d) * THOUSAND) {
-                return getTransformUnitValue(jDoubleValue4, d2);
+            double doubleValue_9 = jDoubleValue4;
+            if (Math.pow(SPECIAL, 3.0d) * HUNDRED <= doubleValue_9 && doubleValue_9 < Math.pow(SPECIAL, 3.0d) * THOUSAND) {
+                return getTransformUnitValue(jDoubleValue4, doubleValue_2);
             }
             return getStringComposite(localeNumber6, this.mGigaByteShort);
         }
-        if (Math.pow(SPECIAL, 3.0d) * HUNDRED <= d6 && d6 < Math.pow(SPECIAL, 3.0d) * THOUSAND) {
-            String number8 = formatNumber(d6 / Math.pow(d2, 3.0d), NOPOINT, true);
-            long jDoubleValue5 = (long) (Double.valueOf(number8).doubleValue() * Math.pow(d2, 3.0d));
+        if (Math.pow(SPECIAL, 3.0d) * HUNDRED <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 3.0d) * THOUSAND) {
+            String number8 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 3.0d), NOPOINT, true);
+            long jDoubleValue5 = (long) (Double.valueOf(number8).doubleValue() * Math.pow(doubleValue_2, 3.0d));
             String localeNumber7 = formatLocaleNumber(Double.valueOf(number8).doubleValue(), NOPOINT);
-            double d14 = jDoubleValue5;
-            if (Math.pow(SPECIAL, 3.0d) * THOUSAND <= d14 && d14 < Math.pow(SPECIAL, 4.0d)) {
-                return getTransformUnitValue(jDoubleValue5, d2);
+            double doubleValue_10 = jDoubleValue5;
+            if (Math.pow(SPECIAL, 3.0d) * THOUSAND <= doubleValue_10 && doubleValue_10 < Math.pow(SPECIAL, 4.0d)) {
+                return getTransformUnitValue(jDoubleValue5, doubleValue_2);
             }
             return getStringComposite(localeNumber7, this.mGigaByteShort);
         }
-        if (Math.pow(SPECIAL, 3.0d) * THOUSAND <= d6 && d6 < Math.pow(SPECIAL, 4.0d)) {
-            if (d2 == THOUSAND) {
-                String number9 = formatNumber(d6 / Math.pow(d2, 4.0d), TWOPOINT, true);
+        if (Math.pow(SPECIAL, 3.0d) * THOUSAND <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 4.0d)) {
+            if (doubleValue_2 == THOUSAND) {
+                String number9 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 4.0d), TWOPOINT, true);
                 return getStringComposite(formatLocaleNumber(Double.valueOf(number9).doubleValue(), TWOPOINT), this.mTeraByteShort);
             }
-            if (d2 != SPECIAL) {
+            if (doubleValue_2 != SPECIAL) {
                 return null;
             }
-            if (d6 > Math.pow(SPECIAL, 3.0d) * 1023.0d) {
+            if (doubleValue_3 > Math.pow(SPECIAL, 3.0d) * 1023.0d) {
                 return getUnitValue((long) Math.pow(SPECIAL, 4.0d));
             }
             return getStringComposite(this.mSpecialPoint, this.mTeraByteShort);
         }
-        if (Math.pow(SPECIAL, 4.0d) <= d6 && d6 < Math.pow(SPECIAL, 4.0d) * TEN) {
-            String number10 = formatNumber(d6 / Math.pow(d2, 4.0d), TWOPOINT, true);
-            long jDoubleValue6 = (long) (Double.valueOf(number10).doubleValue() * Math.pow(d2, 4.0d));
+        if (Math.pow(SPECIAL, 4.0d) <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 4.0d) * TEN) {
+            String number10 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 4.0d), TWOPOINT, true);
+            long jDoubleValue6 = (long) (Double.valueOf(number10).doubleValue() * Math.pow(doubleValue_2, 4.0d));
             String localeNumber8 = formatLocaleNumber(Double.valueOf(number10).doubleValue(), TWOPOINT);
-            double d15 = jDoubleValue6;
-            if (Math.pow(SPECIAL, 4.0d) * TEN <= d15 && d15 < Math.pow(SPECIAL, 4.0d) * HUNDRED) {
-                return getTransformUnitValue(jDoubleValue6, d2);
+            double doubleValue_11 = jDoubleValue6;
+            if (Math.pow(SPECIAL, 4.0d) * TEN <= doubleValue_11 && doubleValue_11 < Math.pow(SPECIAL, 4.0d) * HUNDRED) {
+                return getTransformUnitValue(jDoubleValue6, doubleValue_2);
             }
             return getStringComposite(localeNumber8, this.mTeraByteShort);
         }
-        if (Math.pow(SPECIAL, 4.0d) * TEN <= d6 && d6 < Math.pow(SPECIAL, 4.0d) * HUNDRED) {
-            String number11 = formatNumber(d6 / Math.pow(d2, 4.0d), ONEPOINT, true);
-            long jDoubleValue7 = (long) (Double.valueOf(number11).doubleValue() * Math.pow(d2, 4.0d));
+        if (Math.pow(SPECIAL, 4.0d) * TEN <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 4.0d) * HUNDRED) {
+            String number11 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 4.0d), ONEPOINT, true);
+            long jDoubleValue7 = (long) (Double.valueOf(number11).doubleValue() * Math.pow(doubleValue_2, 4.0d));
             String localeNumber9 = formatLocaleNumber(Double.valueOf(number11).doubleValue(), ONEPOINT);
-            double d16 = jDoubleValue7;
-            if (Math.pow(SPECIAL, 4.0d) * HUNDRED <= d16 && d16 < Math.pow(SPECIAL, 4.0d) * THOUSAND) {
-                return getTransformUnitValue(jDoubleValue7, d2);
+            double doubleValue_12 = jDoubleValue7;
+            if (Math.pow(SPECIAL, 4.0d) * HUNDRED <= doubleValue_12 && doubleValue_12 < Math.pow(SPECIAL, 4.0d) * THOUSAND) {
+                return getTransformUnitValue(jDoubleValue7, doubleValue_2);
             }
             return getStringComposite(localeNumber9, this.mTeraByteShort);
         }
-        if (Math.pow(SPECIAL, 4.0d) * HUNDRED <= d6 && d6 < Math.pow(SPECIAL, 4.0d) * THOUSAND) {
-            String number12 = formatNumber(d6 / Math.pow(d2, 4.0d), NOPOINT, true);
-            long jDoubleValue8 = (long) (Double.valueOf(number12).doubleValue() * Math.pow(d2, 4.0d));
+        if (Math.pow(SPECIAL, 4.0d) * HUNDRED <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 4.0d) * THOUSAND) {
+            String number12 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 4.0d), NOPOINT, true);
+            long jDoubleValue8 = (long) (Double.valueOf(number12).doubleValue() * Math.pow(doubleValue_2, 4.0d));
             String localeNumber10 = formatLocaleNumber(Double.valueOf(number12).doubleValue(), NOPOINT);
-            double d17 = jDoubleValue8;
-            if (Math.pow(SPECIAL, 4.0d) * THOUSAND <= d17 && d17 < Math.pow(SPECIAL, 5.0d)) {
-                return getTransformUnitValue(jDoubleValue8, d2);
+            double doubleValue_13 = jDoubleValue8;
+            if (Math.pow(SPECIAL, 4.0d) * THOUSAND <= doubleValue_13 && doubleValue_13 < Math.pow(SPECIAL, 5.0d)) {
+                return getTransformUnitValue(jDoubleValue8, doubleValue_2);
             }
             return getStringComposite(localeNumber10, this.mTeraByteShort);
         }
-        if (Math.pow(SPECIAL, 4.0d) * THOUSAND <= d6 && d6 < Math.pow(SPECIAL, 5.0d)) {
-            if (d2 == THOUSAND) {
-                String number13 = formatNumber(d6 / Math.pow(d2, 5.0d), TWOPOINT, true);
+        if (Math.pow(SPECIAL, 4.0d) * THOUSAND <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 5.0d)) {
+            if (doubleValue_2 == THOUSAND) {
+                String number13 = formatNumber(doubleValue_3 / Math.pow(doubleValue_2, 5.0d), TWOPOINT, true);
                 return getStringComposite(formatLocaleNumber(Double.valueOf(number13).doubleValue(), TWOPOINT), this.mPetaByteShort);
             }
-            if (d2 != SPECIAL) {
+            if (doubleValue_2 != SPECIAL) {
                 return null;
             }
-            if (d6 > Math.pow(SPECIAL, 4.0d) * 1023.0d) {
+            if (doubleValue_3 > Math.pow(SPECIAL, 4.0d) * 1023.0d) {
                 return getUnitValue((long) Math.pow(SPECIAL, 5.0d));
             }
             return getStringComposite(this.mSpecialPoint, this.mPetaByteShort);
         }
-        if (Math.pow(SPECIAL, 5.0d) <= d6 && d6 < Math.pow(SPECIAL, 5.0d) * TEN) {
-            String number14 = formatNumber(d6 / Math.pow(SPECIAL, 5.0d), TWOPOINT, true);
+        if (Math.pow(SPECIAL, 5.0d) <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 5.0d) * TEN) {
+            String number14 = formatNumber(doubleValue_3 / Math.pow(SPECIAL, 5.0d), TWOPOINT, true);
             long jDoubleValue9 = (long) (Double.valueOf(number14).doubleValue() * Math.pow(SPECIAL, 5.0d));
             String localeNumber11 = formatLocaleNumber(Double.valueOf(number14).doubleValue(), TWOPOINT);
-            double d18 = jDoubleValue9;
-            if (Math.pow(SPECIAL, 5.0d) * TEN <= d18 && d18 < Math.pow(SPECIAL, 5.0d) * HUNDRED) {
+            double doubleValue_14 = jDoubleValue9;
+            if (Math.pow(SPECIAL, 5.0d) * TEN <= doubleValue_14 && doubleValue_14 < Math.pow(SPECIAL, 5.0d) * HUNDRED) {
                 return getUnitValue(jDoubleValue9);
             }
             return getStringComposite(localeNumber11, this.mPetaByteShort);
         }
-        if (Math.pow(SPECIAL, 5.0d) * TEN > d6 || d6 >= Math.pow(SPECIAL, 5.0d) * HUNDRED) {
-            if (Math.pow(SPECIAL, 5.0d) * HUNDRED <= d6 && d6 < Math.pow(SPECIAL, 5.0d) * THOUSAND) {
-                return getStringComposite(formatLocaleNumber(d6 / Math.pow(SPECIAL, 5.0d), NOPOINT), this.mPetaByteShort);
+        if (Math.pow(SPECIAL, 5.0d) * TEN > doubleValue_3 || doubleValue_3 >= Math.pow(SPECIAL, 5.0d) * HUNDRED) {
+            if (Math.pow(SPECIAL, 5.0d) * HUNDRED <= doubleValue_3 && doubleValue_3 < Math.pow(SPECIAL, 5.0d) * THOUSAND) {
+                return getStringComposite(formatLocaleNumber(doubleValue_3 / Math.pow(SPECIAL, 5.0d), NOPOINT), this.mPetaByteShort);
             }
             throw new IllegalArgumentException("the value of the incoming is wrong");
         }
-        String number15 = formatNumber(d6 / Math.pow(SPECIAL, 5.0d), ONEPOINT, true);
+        String number15 = formatNumber(doubleValue_3 / Math.pow(SPECIAL, 5.0d), ONEPOINT, true);
         long jDoubleValue10 = (long) (Double.valueOf(number15).doubleValue() * Math.pow(SPECIAL, 5.0d));
         String localeNumber12 = formatLocaleNumber(Double.valueOf(number15).doubleValue(), ONEPOINT);
-        double d19 = jDoubleValue10;
-        if (Math.pow(SPECIAL, 5.0d) * HUNDRED <= d19 && d19 < Math.pow(SPECIAL, 5.0d) * THOUSAND) {
+        double doubleValue_15 = jDoubleValue10;
+        if (Math.pow(SPECIAL, 5.0d) * HUNDRED <= doubleValue_15 && doubleValue_15 < Math.pow(SPECIAL, 5.0d) * THOUSAND) {
             return getUnitValue(jDoubleValue10);
         }
         return getStringComposite(localeNumber12, this.mPetaByteShort);
     }
 
-    public String getUnitThousandValue(long j2) {
-        return getTransformUnitValue(j2, THOUSAND);
+    public String getUnitThousandValue(long timestamp) {
+        return getTransformUnitValue(timestamp, THOUSAND);
     }
 
-    public String getUnitValue(long j2) {
-        return getTransformUnitValue(j2, SPECIAL);
+    public String getUnitValue(long timestamp) {
+        return getTransformUnitValue(timestamp, SPECIAL);
     }
 
-    public String getDownLoadValue(long j2, Locale locale) {
+    public String getDownLoadValue(long timestamp, Locale locale) {
         String country = locale != null ? locale.getCountry() : null;
         if (country != null && (country.equalsIgnoreCase("CN") || country.equalsIgnoreCase("TW") || country.equalsIgnoreCase("HK"))) {
-            return getChineseDownloadValue(j2);
+            return getChineseDownloadValue(timestamp);
         }
         if (country != null) {
-            return getEnglishDownloadValue(j2);
+            return getEnglishDownloadValue(timestamp);
         }
         return null;
     }
 
-    public String getStripValue(long j2, Locale locale) {
+    public String getStripValue(long timestamp, Locale locale) {
         String country = locale != null ? locale.getCountry() : null;
         if (country != null && (country.equalsIgnoreCase("CN") || country.equalsIgnoreCase("TW") || country.equalsIgnoreCase("HK"))) {
-            return getChineseStripValue(j2);
+            return getChineseStripValue(timestamp);
         }
         if (country != null) {
-            return getEnglishStripValue(j2);
+            return getEnglishStripValue(timestamp);
         }
         return null;
     }

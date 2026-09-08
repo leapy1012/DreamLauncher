@@ -7,14 +7,17 @@ import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ViewGroup;
+
 import androidx.appcompat.view.menu.ActionMenuItemView;
 import androidx.appcompat.view.menu.MenuItemImpl;
 import androidx.appcompat.widget.TooltipCompat;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.accessibilityutil.COUIAccessibilityUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.state.COUIMaskRippleDrawable;
 import com.coui.appcompat.textviewcompatutil.COUITextViewCompatUtil;
+
 import java.lang.reflect.Field;
 
 
@@ -43,13 +46,13 @@ public class COUIActionMenuItemView extends ActionMenuItemView {
         COUIDarkModeUtil.setForceDarkAllow(this, false);
     }
 
-    private void setReflectField(Class cls, Object obj, String str, Object obj2) {
+    private void setReflectField(Class cls, Object obj, String str, Object reflectField) {
         try {
             Field declaredField = cls.getDeclaredField(str);
             declaredField.setAccessible(true);
-            declaredField.set(obj, obj2);
-        } catch (Exception e2) {
-            Log.e(TAG, "setReflectField error: " + e2.getMessage());
+            declaredField.set(obj, reflectField);
+        } catch (Exception e) {
+            Log.e(TAG, "setReflectField error: " + e.getMessage());
         }
     }
 
@@ -59,8 +62,8 @@ public class COUIActionMenuItemView extends ActionMenuItemView {
     }
 
     @Override
-    public void initialize(MenuItemImpl menuItemImpl, int i2) {
-        super.initialize(menuItemImpl, i2);
+    public void initialize(MenuItemImpl menuItemImpl, int index) {
+        super.initialize(menuItemImpl, index);
         this.mIsText = menuItemImpl.getIcon() == null;
         ViewGroup.LayoutParams layoutParams = getLayoutParams();
         if (this.mIsText) {
@@ -69,13 +72,13 @@ public class COUIActionMenuItemView extends ActionMenuItemView {
         } else {
             setReflectField(ActionMenuItemView.class, this, "mMinWidth", Integer.valueOf(this.mIconMenuMinWidth));
             configMenuIconBackground();
-            int i6 = this.mPaddingHorizontal;
-            int i10 = this.mPaddingVertical;
-            setPadding(i6, i10, i6, i10);
+            int index_2 = this.mPaddingHorizontal;
+            int index_3 = this.mPaddingVertical;
+            setPadding(index_2, index_3, index_2, index_3);
         }
-        boolean z6 = this.mIsText;
-        layoutParams.height = z6 ? -2 : -1;
-        if (!z6 && (layoutParams instanceof ViewGroup.MarginLayoutParams)) {
+        boolean flag = this.mIsText;
+        layoutParams.height = flag ? -2 : -1;
+        if (!flag && (layoutParams instanceof ViewGroup.MarginLayoutParams)) {
             ((ViewGroup.MarginLayoutParams) layoutParams).setMarginEnd(this.mMarginEnd);
         }
         setLayoutParams(layoutParams);
@@ -117,10 +120,10 @@ public class COUIActionMenuItemView extends ActionMenuItemView {
         TooltipCompat.setTooltipText(this, null);
     }
 
-    public void setItemWithGap(boolean z6) {
+    public void setItemWithGap(boolean itemWithGap) {
         ViewGroup.LayoutParams layoutParams = getLayoutParams();
         if (!this.mIsText && (layoutParams instanceof ViewGroup.MarginLayoutParams)) {
-            if (z6) {
+            if (itemWithGap) {
                 ((ViewGroup.MarginLayoutParams) layoutParams).setMarginEnd(this.mMarginEnd);
             } else {
                 ((ViewGroup.MarginLayoutParams) layoutParams).setMarginEnd(0);
@@ -139,8 +142,8 @@ public class COUIActionMenuItemView extends ActionMenuItemView {
         this(context, attributeSet, 0);
     }
 
-    public COUIActionMenuItemView(Context context, AttributeSet attributeSet, int i2) {
-        super(context, attributeSet, i2);
+    public COUIActionMenuItemView(Context context, AttributeSet attributeSet, int index) {
+        super(context, attributeSet, index);
         this.mPaddingHorizontal = context.getResources().getDimensionPixelSize(R.dimen.coui_toolbar_menu_bg_padding_horizontal);
         this.mPaddingVertical = context.getResources().getDimensionPixelSize(R.dimen.coui_toolbar_menu_bg_padding_vertical);
         this.mTextPaddingHorizontal = context.getResources().getDimensionPixelSize(R.dimen.coui_toolbar_text_menu_bg_padding_horizontal);

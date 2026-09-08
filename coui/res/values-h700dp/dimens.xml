@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Leapy added 2026-08-04: MTK D960 reports h710dp at runtime. Match OPPO's
+<?xml version="1.0" encoding="utf-8"?><!-- Leapy added 2026-08-04: MTK D960 reports h710dp at runtime. Match OPPO's
      normal phone COUI dialog message heights through resource selection, not
      dialog implementation changes. -->
 <resources>

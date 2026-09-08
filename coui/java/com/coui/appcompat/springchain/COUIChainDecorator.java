@@ -3,9 +3,8 @@ package com.coui.appcompat.springchain;
 import android.annotation.SuppressLint;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.View;
 import android.view.ViewGroup;
-import com.coui.appcompat.springchain.COUIGridSpringChain;
+
 import com.coui.appcompat.springchain.api.ICheckViewEdge;
 import com.coui.appcompat.uiutil.UIUtil;
 
@@ -77,8 +76,8 @@ public final class COUIChainDecorator {
                 }
                 return direction != COUIGridSpringChain.BACK_TO_TOP
                         ? direction != COUIGridSpringChain.BACK_TO_BOTTOM
-                                ? translation
-                                : Math.min(translation, 0.0f)
+                          ? translation
+                          : Math.min(translation, 0.0f)
                         : Math.max(translation, 0.0f);
             }
         };
@@ -131,7 +130,7 @@ public final class COUIChainDecorator {
     }
 
     @SuppressLint({"ClickableViewAccessibility"})
-    public final void initEdgeCheck(final ViewGroup scrollView, final ViewGroup container, boolean z6) {
+    public final void initEdgeCheck(final ViewGroup scrollView, final ViewGroup container, boolean flag) {
         Objects.requireNonNull(scrollView, "scrollView");
         Objects.requireNonNull(container, "container");
         this.checkEdge = new ICheckViewEdge() {
@@ -150,7 +149,7 @@ public final class COUIChainDecorator {
                 return scrollView.getScrollY() <= 0;
             }
         };
-        if (z6) {
+        if (flag) {
             scrollView.setOnTouchListener((view, event) -> {
                 onEdgeSpringEvent(Objects.requireNonNull(event, "event"));
                 return false;

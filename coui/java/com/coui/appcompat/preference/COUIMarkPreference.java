@@ -52,7 +52,7 @@ public class COUIMarkPreference extends CheckBoxPreference implements COUICardSu
     }
 
     public COUIMarkPreference(Context context, AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                              int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         mMarkStyle = TAIL_MARK;
         mShowDivider = true;

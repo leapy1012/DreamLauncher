@@ -1,6 +1,7 @@
 package com.coui.component.responsiveui.proxy;
 
 import android.content.Context;
+
 import com.coui.component.responsiveui.IResponsiveUI;
 import com.coui.component.responsiveui.layoutgrid.ILayoutGrid;
 import com.coui.component.responsiveui.layoutgrid.LayoutGridSystem;

@@ -31,7 +31,7 @@ public final class COUIAsyncSoundUtil {
     }
 
     public static void play(Context context, int soundResId, float leftVolume, float rightVolume,
-            int priority, int loop, float rate) {
+                            int priority, int loop, float rate) {
         COUIAsyncSoundUtil instance = sInstance;
         if (instance == null || instance.mSoundPool == null || !querySoundEffectsEnabled(context)) {
             return;

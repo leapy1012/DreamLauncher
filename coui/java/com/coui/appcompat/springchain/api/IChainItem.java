@@ -14,23 +14,23 @@ public interface IChainItem {
 
     boolean getSkipSpringChainCalc();
 
-    void setItemHeight(int i2);
+    void setItemHeight(int height);
 
-    void setItemSize(int i2, int i6);
+    void setItemSize(int width, int height);
 
-    void setItemWidth(int i2);
+    void setItemWidth(int width);
 
-    void setItemX(int i2);
+    void setItemX(int x);
 
-    void setItemXY(int i2, int i6);
+    void setItemXY(int x, int y);
 
-    void setItemY(int i2);
+    void setItemY(int y);
 
     void setProxyView(View view);
 
-    void setSkipSpringChainCalc(boolean z6);
+    void setSkipSpringChainCalc(boolean skip);
 
-    void updateSpringX(float f2);
+    void updateSpringX(float x);
 
-    void updateSpringY(float f2);
+    void updateSpringY(float y);
 }

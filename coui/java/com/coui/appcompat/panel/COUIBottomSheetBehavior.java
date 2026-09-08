@@ -23,6 +23,7 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowInsets;
 import android.view.animation.PathInterpolator;
+
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
@@ -32,17 +33,12 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.core.view.accessibility.AccessibilityViewCommand;
 import androidx.customview.view.AbsSavedState;
 import androidx.dynamicanimation.animation.FloatValueHolder;
+
 import com.coui.appcompat.animation.COUIOutEaseInterpolator;
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
 import com.coui.appcompat.log.COUILog;
-import com.coui.appcompat.panel.COUIViewDragHelper;
-import com.oplus.physicsengine.engine.AnimationListener;
-import com.oplus.physicsengine.engine.AnimationUpdateListener;
-import com.oplus.physicsengine.engine.BaseBehavior;
-import com.oplus.physicsengine.engine.DragBehavior;
-import com.oplus.physicsengine.engine.PhysicalAnimator;
 import com.coui.appcompat.uiutil.UIUtil;
 import com.coui.appcompat.version.COUIVersionUtil;
 import com.coui.appcompat.view.MaterialResource;
@@ -50,6 +46,12 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.shape.MaterialShapeDrawable;
 import com.google.android.material.shape.ShapeAppearanceModel;
 import com.oplus.flexiblewindow.FlexibleWindowManager;
+import com.oplus.physicsengine.engine.AnimationListener;
+import com.oplus.physicsengine.engine.AnimationUpdateListener;
+import com.oplus.physicsengine.engine.BaseBehavior;
+import com.oplus.physicsengine.engine.DragBehavior;
+import com.oplus.physicsengine.engine.PhysicalAnimator;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
@@ -194,9 +196,9 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     WeakReference<V> viewRef;
 
     public static abstract class COUIBottomSheetCallback {
-        public abstract void onSlide(View view, float f2);
+        public abstract void onSlide(View view, float slideOffset);
 
-        public abstract void onStateChanged(View view, int i2);
+        public abstract void onStateChanged(View view, int newState);
     }
 
     public interface OnNestedScrollingChild {
@@ -204,13 +206,13 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
     public interface OnPanelHeightChangeAnimListener {
-        default void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z6, float f2) {
+        default void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean canceled, float value) {
         }
 
         default void onAnimationStart() {
         }
 
-        default void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float f2, float f10) {
+        default void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float value, float velocity) {
         }
     }
 
@@ -225,8 +227,8 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     public static class SavedState extends AbsSavedState {
         public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.ClassLoaderCreator<SavedState>() {
             @Override
-            public SavedState[] newArray(int i2) {
-                return new SavedState[i2];
+            public SavedState[] newArray(int size) {
+                return new SavedState[size];
             }
 
 
@@ -251,8 +253,8 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         }
 
         @Override
-        public void writeToParcel(Parcel parcel, int i2) {
-            super.writeToParcel(parcel, i2);
+        public void writeToParcel(Parcel parcel, int flags) {
+            super.writeToParcel(parcel, flags);
             parcel.writeInt(this.state);
             parcel.writeInt(this.peekHeight);
             parcel.writeInt(this.fitToContents ? 1 : 0);
@@ -279,9 +281,9 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         }
 
         @Deprecated
-        public SavedState(Parcelable parcelable, int i2) {
+        public SavedState(Parcelable parcelable, int state) {
             super(parcelable);
-            this.state = i2;
+            this.state = state;
         }
     }
 
@@ -296,19 +298,19 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
 
     public COUIBottomSheetBehavior(Context context, AttributeSet attributeSet) {
         super(context, attributeSet);
-        int i2;
-        this.saveFlags = 0;
+        int peekHeightValue;
+        this.saveFlags = SAVE_NONE;
         this.fitToContents = true;
         this.updateImportantForAccessibilityOnSiblings = false;
         this.halfExpandedRatio = 0.5f;
         this.elevation = -1.0f;
         this.draggable = true;
-        this.state = 4;
-        this.mPressDownState = 4;
+        this.state = STATE_COLLAPSED;
+        this.mPressDownState = STATE_COLLAPSED;
         this.mYVelocity = 0.0f;
         this.mLayoutAtMaxHeight = true;
         this.mLastOrientation = -1;
-        this.mShakeHandMovingDirection = 0;
+        this.mShakeHandMovingDirection = SHAKE_HAND_MOVING_DIRECTION_DEFAULT;
         this.mViewHeightType = 0;
         this.mParentRect = new Rect();
         this.mLayoutRect = new Rect();
@@ -316,8 +318,8 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.callbacks = new ArrayList<>();
         this.mLastOffsetInFling = 0;
         this.alphaRadio = 0.0f;
-        this.mDragFrequency = 16.0f;
-        this.mDragDampingRatio = 0.6f;
+        this.mDragFrequency = DEFAULT_PHYSICS_FREQUENCY;
+        this.mDragDampingRatio = DEFAULT_PHYSICS_DAMPING_RATIO;
         this.mPhysicsEnable = false;
         this.mDragChild = null;
         this.mIsInTinyScreen = false;
@@ -335,18 +337,18 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
             }
 
             @Override
-            public int clampViewPositionHorizontal(View view, int i6, int i10) {
+            public int clampViewPositionHorizontal(View view, int left, int dx) {
                 return view.getLeft();
             }
 
             @Override
-            public int clampViewPositionVertical(View view, int i6, int i10) {
+            public int clampViewPositionVertical(View view, int top, int dy) {
                 if (COUIBottomSheetBehavior.this.mPullUpListener != null) {
                     COUIBottomSheetBehavior.this.mPullUpListener.onDraggingPanel();
                 }
                 COUIBottomSheetBehavior cOUIBottomSheetBehavior = COUIBottomSheetBehavior.this;
-                int iOnDragging = 0;
-                if (cOUIBottomSheetBehavior.state == 1) {
+                int pullOffset = 0;
+                if (cOUIBottomSheetBehavior.state == STATE_DRAGGING) {
                     if (cOUIBottomSheetBehavior.isPanelHeightChangeAnimRunning()) {
                         COUIBottomSheetBehavior.this.mPanelHeightChangeAnim.cancel();
                     }
@@ -357,26 +359,26 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
                         }
                         if (COUIBottomSheetBehavior.this.mPullUpListener != null && COUIBottomSheetBehavior.this.getExpandedOffset() > 0) {
                             COUIBottomSheetBehavior.this.mIsIgnoreExpandedOffsetChange = true;
-                            if (i10 < 0) {
-                                i10 = Math.max(i10, (view.getMeasuredHeight() - COUIBottomSheetBehavior.this.mPanelPaddingBottom) - COUIBottomSheetBehavior.this.mDialogMaxHeight);
+                            if (dy < 0) {
+                                dy = Math.max(dy, (view.getMeasuredHeight() - COUIBottomSheetBehavior.this.mPanelPaddingBottom) - COUIBottomSheetBehavior.this.mDialogMaxHeight);
                             }
-                            if (i10 != 0) {
-                                iOnDragging = COUIBottomSheetBehavior.this.mPullUpListener.onDragging(i10, COUIBottomSheetBehavior.this.getExpandedOffset());
+                            if (dy != 0) {
+                                pullOffset = COUIBottomSheetBehavior.this.mPullUpListener.onDragging(dy, COUIBottomSheetBehavior.this.getExpandedOffset());
                             }
                         }
                     } else {
-                        int top = view.getTop();
+                        int currentTop = view.getTop();
                         if (COUIBottomSheetBehavior.this.mPhysicsEnable) {
-                            COUIBottomSheetBehavior.this.dragToNewTop(view, top + i10);
+                            COUIBottomSheetBehavior.this.dragToNewTop(view, currentTop + dy);
                         } else if (COUIBottomSheetBehavior.this.getYVelocity() > 10000.0f) {
-                            i6 = ((int) ((i10 * 0.5f) + 0.5f)) + top;
+                            top = ((int) ((dy * 0.5f) + 0.5f)) + currentTop;
                         }
                     }
                 }
                 COUIBottomSheetBehavior.this.calculatePanelOutsideAlpha(view);
-                int expandedOffset = COUIBottomSheetBehavior.this.getExpandedOffset() - iOnDragging;
+                int expandedOffset = COUIBottomSheetBehavior.this.getExpandedOffset() - pullOffset;
                 COUIBottomSheetBehavior cOUIBottomSheetBehavior2 = COUIBottomSheetBehavior.this;
-                return androidx.core.math.MathUtils.clamp(i6, expandedOffset, cOUIBottomSheetBehavior2.hideable ? cOUIBottomSheetBehavior2.parentHeight : cOUIBottomSheetBehavior2.collapsedOffset);
+                return androidx.core.math.MathUtils.clamp(top, expandedOffset, cOUIBottomSheetBehavior2.hideable ? cOUIBottomSheetBehavior2.parentHeight : cOUIBottomSheetBehavior2.collapsedOffset);
             }
 
             @Override
@@ -386,25 +388,25 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
             }
 
             @Override
-            public void onViewDragStateChanged(int i6) {
-                if (i6 == 1 && COUIBottomSheetBehavior.this.draggable) {
-                    COUIBottomSheetBehavior.this.setStateInternal(1);
+            public void onViewDragStateChanged(int state) {
+                if (state == 1 && COUIBottomSheetBehavior.this.draggable) {
+                    COUIBottomSheetBehavior.this.setStateInternal(STATE_DRAGGING);
                 }
             }
 
             @Override
-            public void onViewPositionChanged(View view, int i6, int i10, int i11, int i12) {
-                COUIBottomSheetBehavior.this.dispatchOnSlide(i10);
+            public void onViewPositionChanged(View view, int left, int top, int dx, int dy) {
+                COUIBottomSheetBehavior.this.dispatchOnSlide(top);
             }
 
             @Override
-            public void onViewReleased(View view, float f2, float f10) {
-                int i6;
+            public void onViewReleased(View view, float xvel, float yvel) {
+                int top;
                 if (COUIBottomSheetBehavior.this.mPhysicsEnable && COUIBottomSheetBehavior.this.mDragBehavior.isDragging()) {
                     COUIBottomSheetBehavior.this.mDragBehavior.endDrag(0.0f);
                     COUIBottomSheetBehavior.this.mDragChild = null;
                 }
-                boolean z6 = false;
+                boolean settled = false;
                 COUIBottomSheetBehavior.this.mIsIgnoreExpandedOffsetChange = false;
                 if (COUIBottomSheetBehavior.this.mPullUpListener != null) {
                     COUIBottomSheetBehavior.this.mPullUpListener.onReleasedDrag();
@@ -415,46 +417,46 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
                         return;
                     }
                 }
-                int i10 = 6;
-                if (f10 < 0.0f) {
+                int targetState = 6;
+                if (yvel < 0.0f) {
                     if (COUIBottomSheetBehavior.this.fitToContents) {
-                        i6 = COUIBottomSheetBehavior.this.fitToContentsOffset;
+                        top = COUIBottomSheetBehavior.this.fitToContentsOffset;
                     } else {
-                        int top = view.getTop();
+                        int currentTop = view.getTop();
                         COUIBottomSheetBehavior cOUIBottomSheetBehavior2 = COUIBottomSheetBehavior.this;
-                        int i11 = cOUIBottomSheetBehavior2.halfExpandedOffset;
-                        if (top > i11) {
-                            i6 = i11;
+                        int halfExpanded = cOUIBottomSheetBehavior2.halfExpandedOffset;
+                        if (currentTop > halfExpanded) {
+                            top = halfExpanded;
                         } else {
-                            i6 = cOUIBottomSheetBehavior2.expandedOffset;
+                            top = cOUIBottomSheetBehavior2.expandedOffset;
                         }
                     }
-                    i10 = 3;
+                    targetState = 3;
                 } else {
                     COUIBottomSheetBehavior cOUIBottomSheetBehavior3 = COUIBottomSheetBehavior.this;
-                    if (cOUIBottomSheetBehavior3.hideable && cOUIBottomSheetBehavior3.shouldHide(view, f10)) {
+                    if (cOUIBottomSheetBehavior3.hideable && cOUIBottomSheetBehavior3.shouldHide(view, yvel)) {
                         COUIPanelDragListener cOUIPanelDragListener = COUIBottomSheetBehavior.this.mCOUIPanelDragListener;
                         if (cOUIPanelDragListener != null && cOUIPanelDragListener.onDragWhileEditing()) {
                             COUIBottomSheetBehavior cOUIBottomSheetBehavior4 = COUIBottomSheetBehavior.this;
-                            int i12 = cOUIBottomSheetBehavior4.fitToContentsOffset;
+                            int fitOffset = cOUIBottomSheetBehavior4.fitToContentsOffset;
                             cOUIBottomSheetBehavior4.mCanHideKeyboard = false;
-                            i6 = i12;
-                            i10 = 3;
-                        } else if ((Math.abs(f2) < Math.abs(f10) && f10 > 500.0f) || releasedLow(view)) {
+                            top = fitOffset;
+                            targetState = 3;
+                        } else if ((Math.abs(xvel) < Math.abs(yvel) && yvel > 500.0f) || releasedLow(view)) {
                             COUIBottomSheetBehavior cOUIBottomSheetBehavior5 = COUIBottomSheetBehavior.this;
-                            int i13 = cOUIBottomSheetBehavior5.parentRootViewHeight;
+                            int parentHeight = cOUIBottomSheetBehavior5.parentRootViewHeight;
                             cOUIBottomSheetBehavior5.mCanHideKeyboard = true;
-                            i6 = i13;
-                            i10 = 5;
+                            top = parentHeight;
+                            targetState = 5;
                         } else if (COUIBottomSheetBehavior.this.fitToContents) {
-                            i6 = COUIBottomSheetBehavior.this.fitToContentsOffset;
-                            i10 = 3;
+                            top = COUIBottomSheetBehavior.this.fitToContentsOffset;
+                            targetState = 3;
                         } else if (Math.abs(view.getTop() - COUIBottomSheetBehavior.this.expandedOffset) < Math.abs(view.getTop() - COUIBottomSheetBehavior.this.halfExpandedOffset)) {
-                            i6 = COUIBottomSheetBehavior.this.expandedOffset;
-                            i10 = 3;
+                            top = COUIBottomSheetBehavior.this.expandedOffset;
+                            targetState = 3;
                         } else {
-                            i6 = COUIBottomSheetBehavior.this.halfExpandedOffset;
-                            i10 = 3;
+                            top = COUIBottomSheetBehavior.this.halfExpandedOffset;
+                            targetState = 3;
                         }
                         // Leapy modified 2026-07-30: BEGIN preserve the decoded
                         // OPPO release branch's hidden state.
@@ -468,61 +470,61 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
                         // must retain STATE_HIDDEN so the dialog callback runs.
                         // Leapy end 2026-07-30: restore the original branch
                         // semantics instead of the decompiler's merged write.
-                    } else if (f10 == 0.0f || Math.abs(f2) > Math.abs(f10)) {
+                    } else if (yvel == 0.0f || Math.abs(xvel) > Math.abs(yvel)) {
                         int top2 = view.getTop();
                         if (!COUIBottomSheetBehavior.this.fitToContents) {
                             COUIBottomSheetBehavior cOUIBottomSheetBehavior6 = COUIBottomSheetBehavior.this;
-                            int i14 = cOUIBottomSheetBehavior6.halfExpandedOffset;
-                            if (top2 < i14) {
+                            int halfExpanded = cOUIBottomSheetBehavior6.halfExpandedOffset;
+                            if (top2 < halfExpanded) {
                                 if (top2 < Math.abs(top2 - cOUIBottomSheetBehavior6.collapsedOffset)) {
-                                    i6 = COUIBottomSheetBehavior.this.expandedOffset;
-                                    i10 = 3;
+                                    top = COUIBottomSheetBehavior.this.expandedOffset;
+                                    targetState = 3;
                                 } else {
-                                    i6 = COUIBottomSheetBehavior.this.halfExpandedOffset;
+                                    top = COUIBottomSheetBehavior.this.halfExpandedOffset;
                                 }
-                            } else if (Math.abs(top2 - i14) < Math.abs(top2 - COUIBottomSheetBehavior.this.collapsedOffset)) {
-                                i6 = COUIBottomSheetBehavior.this.halfExpandedOffset;
+                            } else if (Math.abs(top2 - halfExpanded) < Math.abs(top2 - COUIBottomSheetBehavior.this.collapsedOffset)) {
+                                top = COUIBottomSheetBehavior.this.halfExpandedOffset;
                             } else {
-                                i6 = COUIBottomSheetBehavior.this.collapsedOffset;
-                                i10 = 4;
+                                top = COUIBottomSheetBehavior.this.collapsedOffset;
+                                targetState = 4;
                             }
                         } else if (Math.abs(top2 - COUIBottomSheetBehavior.this.fitToContentsOffset) < Math.abs(top2 - COUIBottomSheetBehavior.this.collapsedOffset)) {
-                            i6 = COUIBottomSheetBehavior.this.fitToContentsOffset;
-                            i10 = 3;
+                            top = COUIBottomSheetBehavior.this.fitToContentsOffset;
+                            targetState = 3;
                         } else {
-                            i6 = COUIBottomSheetBehavior.this.collapsedOffset;
-                            i10 = 4;
+                            top = COUIBottomSheetBehavior.this.collapsedOffset;
+                            targetState = 4;
                         }
                     } else {
                         if (COUIBottomSheetBehavior.this.fitToContents) {
                             COUIBottomSheetBehavior cOUIBottomSheetBehavior7 = COUIBottomSheetBehavior.this;
                             COUIPanelDragListener cOUIPanelDragListener2 = cOUIBottomSheetBehavior7.mCOUIPanelDragListener;
                             if (cOUIPanelDragListener2 == null) {
-                                i6 = cOUIBottomSheetBehavior7.collapsedOffset;
-                                i10 = 4;
+                                top = cOUIBottomSheetBehavior7.collapsedOffset;
+                                targetState = 4;
                             } else if (cOUIPanelDragListener2.onDragWhileEditing()) {
-                                i6 = COUIBottomSheetBehavior.this.fitToContentsOffset;
-                                i10 = 3;
+                                top = COUIBottomSheetBehavior.this.fitToContentsOffset;
+                                targetState = 3;
                             } else {
-                                i6 = COUIBottomSheetBehavior.this.parentRootViewHeight;
-                                i10 = 5;
+                                top = COUIBottomSheetBehavior.this.parentRootViewHeight;
+                                targetState = 5;
                             }
                         } else {
                             int top3 = view.getTop();
                             COUIBottomSheetBehavior cOUIBottomSheetBehavior8 = COUIBottomSheetBehavior.this;
-                            int i15 = cOUIBottomSheetBehavior8.halfExpandedOffset;
-                            if (top3 > i15 && top3 < cOUIBottomSheetBehavior8.collapsedOffset) {
-                                z6 = true;
+                            int halfExpanded = cOUIBottomSheetBehavior8.halfExpandedOffset;
+                            if (top3 > halfExpanded && top3 < cOUIBottomSheetBehavior8.collapsedOffset) {
+                                settled = true;
                             }
-                            if (cOUIBottomSheetBehavior8.mPressDownState == 6 && z6) {
-                                i6 = cOUIBottomSheetBehavior8.collapsedOffset;
-                                i10 = 4;
-                            } else if (Math.abs(top3 - i15) < Math.abs(top3 - COUIBottomSheetBehavior.this.collapsedOffset)) {
-                                i6 = COUIBottomSheetBehavior.this.halfExpandedOffset;
-                                i10 = 6;
+                            if (cOUIBottomSheetBehavior8.mPressDownState == STATE_HALF_EXPANDED && settled) {
+                                top = cOUIBottomSheetBehavior8.collapsedOffset;
+                                targetState = 4;
+                            } else if (Math.abs(top3 - halfExpanded) < Math.abs(top3 - COUIBottomSheetBehavior.this.collapsedOffset)) {
+                                top = COUIBottomSheetBehavior.this.halfExpandedOffset;
+                                targetState = 6;
                             } else {
-                                i6 = COUIBottomSheetBehavior.this.collapsedOffset;
-                                i10 = 4;
+                                top = COUIBottomSheetBehavior.this.collapsedOffset;
+                                targetState = 4;
                             }
                         }
                         // Leapy modified 2026-07-30: BEGIN restore the exact
@@ -540,17 +542,17 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
                         // states after their target coordinates are selected.
                     }
                 }
-                COUIBottomSheetBehavior.this.startSettlingAnimation(view, i10, i6, true);
+                COUIBottomSheetBehavior.this.startSettlingAnimation(view, targetState, top, true);
             }
 
             @Override
-            public boolean tryCaptureView(View view, int i6) {
+            public boolean tryCaptureView(View view, int pointerId) {
                 COUIBottomSheetBehavior cOUIBottomSheetBehavior = COUIBottomSheetBehavior.this;
-                int i10 = cOUIBottomSheetBehavior.state;
-                if (i10 == 1 || cOUIBottomSheetBehavior.touchingScrollingChild) {
+                int targetState = cOUIBottomSheetBehavior.state;
+                if (targetState == 1 || cOUIBottomSheetBehavior.touchingScrollingChild) {
                     return false;
                 }
-                if (i10 == 3 && cOUIBottomSheetBehavior.activePointerId == i6) {
+                if (targetState == 3 && cOUIBottomSheetBehavior.activePointerId == pointerId) {
                     WeakReference<View> weakReference = cOUIBottomSheetBehavior.nestedScrollingChildRef;
                     View view2 = weakReference != null ? weakReference.get() : null;
                     if (view2 != null && view2.canScrollVertically(-1)) {
@@ -564,21 +566,21 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.mContext = context;
         TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, com.google.android.material.R.styleable.BottomSheetBehavior_Layout);
         this.shapeThemingEnabled = typedArrayObtainStyledAttributes.hasValue(com.google.android.material.R.styleable.BottomSheetBehavior_Layout_shapeAppearance);
-        int i6 = com.google.android.material.R.styleable.BottomSheetBehavior_Layout_backgroundTint;
-        boolean zHasValue = typedArrayObtainStyledAttributes.hasValue(i6);
+        int top = com.google.android.material.R.styleable.BottomSheetBehavior_Layout_backgroundTint;
+        boolean zHasValue = typedArrayObtainStyledAttributes.hasValue(top);
         if (zHasValue) {
-            createMaterialShapeDrawable(context, attributeSet, zHasValue, MaterialResource.getColorStateList(context, typedArrayObtainStyledAttributes, i6));
+            createMaterialShapeDrawable(context, attributeSet, zHasValue, MaterialResource.getColorStateList(context, typedArrayObtainStyledAttributes, top));
         } else {
             createMaterialShapeDrawable(context, attributeSet, zHasValue);
         }
         createShapeValueAnimator();
         this.elevation = typedArrayObtainStyledAttributes.getDimension(com.google.android.material.R.styleable.BottomSheetBehavior_Layout_android_elevation, -1.0f);
-        int i10 = com.google.android.material.R.styleable.BottomSheetBehavior_Layout_behavior_peekHeight;
-        TypedValue typedValuePeekValue = typedArrayObtainStyledAttributes.peekValue(i10);
-        if (typedValuePeekValue == null || (i2 = typedValuePeekValue.data) != -1) {
-            setPanelPeekHeight(typedArrayObtainStyledAttributes.getDimensionPixelSize(i10, -1));
+        int targetState = com.google.android.material.R.styleable.BottomSheetBehavior_Layout_behavior_peekHeight;
+        TypedValue typedValuePeekValue = typedArrayObtainStyledAttributes.peekValue(targetState);
+        if (typedValuePeekValue == null || (peekHeightValue = typedValuePeekValue.data) != -1) {
+            setPanelPeekHeight(typedArrayObtainStyledAttributes.getDimensionPixelSize(targetState, -1));
         } else {
-            setPanelPeekHeight(i2);
+            setPanelPeekHeight(peekHeightValue);
         }
         setHideable(typedArrayObtainStyledAttributes.getBoolean(com.google.android.material.R.styleable.BottomSheetBehavior_Layout_behavior_hideable, false));
         setGestureInsetBottomIgnored(typedArrayObtainStyledAttributes.getBoolean(com.google.android.material.R.styleable.BottomSheetBehavior_Layout_gestureInsetBottomIgnored, false));
@@ -587,10 +589,10 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         setDraggable(typedArrayObtainStyledAttributes.getBoolean(com.google.android.material.R.styleable.BottomSheetBehavior_Layout_behavior_draggable, true));
         setSaveFlags(typedArrayObtainStyledAttributes.getInt(com.google.android.material.R.styleable.BottomSheetBehavior_Layout_behavior_saveFlags, -1));
         setHalfExpandedRatio(typedArrayObtainStyledAttributes.getFloat(com.google.android.material.R.styleable.BottomSheetBehavior_Layout_behavior_halfExpandedRatio, 0.5f));
-        int i11 = com.google.android.material.R.styleable.BottomSheetBehavior_Layout_behavior_expandedOffset;
-        TypedValue typedValuePeekValue2 = typedArrayObtainStyledAttributes.peekValue(i11);
+        int halfExpanded = com.google.android.material.R.styleable.BottomSheetBehavior_Layout_behavior_expandedOffset;
+        TypedValue typedValuePeekValue2 = typedArrayObtainStyledAttributes.peekValue(halfExpanded);
         if (typedValuePeekValue2 == null || typedValuePeekValue2.type != 16) {
-            setExpandedOffset(typedArrayObtainStyledAttributes.getDimensionPixelOffset(i11, 0));
+            setExpandedOffset(typedArrayObtainStyledAttributes.getDimensionPixelOffset(halfExpanded, 0));
         } else {
             setExpandedOffset(typedValuePeekValue2.data);
         }
@@ -599,11 +601,11 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.mCanHideKeyboard = false;
     }
 
-    private void addAccessibilityActionForState(V v6, AccessibilityNodeInfoCompat.AccessibilityActionCompat action, final int i2) {
-        ViewCompat.replaceAccessibilityAction(v6, action, null, new AccessibilityViewCommand() {
+    private void addAccessibilityActionForState(V child, AccessibilityNodeInfoCompat.AccessibilityActionCompat action, final int state) {
+        ViewCompat.replaceAccessibilityAction(child, action, null, new AccessibilityViewCommand() {
             @Override
             public boolean perform(View view, AccessibilityViewCommand.CommandArguments arguments) {
-                COUIBottomSheetBehavior.this.setPanelState(i2);
+                COUIBottomSheetBehavior.this.setPanelState(state);
                 return true;
             }
         });
@@ -649,38 +651,38 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
     private void checkOrientationChange() {
-        int i2 = this.mContext.getResources().getConfiguration().orientation;
-        int i6 = this.mLastOrientation;
-        if (i6 != -1 && i6 != i2 && this.mStartHeightChangeAnim) {
+        int orientation = this.mContext.getResources().getConfiguration().orientation;
+        int top = this.mLastOrientation;
+        if (top != -1 && top != orientation && this.mStartHeightChangeAnim) {
             this.mStartHeightChangeAnim = false;
         }
-        this.mLastOrientation = i2;
+        this.mLastOrientation = orientation;
     }
 
-    private void createMaterialShapeDrawable(Context context, AttributeSet attributeSet, boolean z6) {
-        createMaterialShapeDrawable(context, attributeSet, z6, null);
+    private void createMaterialShapeDrawable(Context context, AttributeSet attributeSet, boolean withBackground) {
+        createMaterialShapeDrawable(context, attributeSet, withBackground, null);
     }
 
     private void createPanelHeightChangeAnim() {
         FloatValueHolder dVar = new FloatValueHolder(0.0f);
         COUISpringForce cOUISpringForce = new COUISpringForce();
         this.mPanelHeightSpringForce = cOUISpringForce;
-        cOUISpringForce.setBounce(0.0f);
+        cOUISpringForce.setBounce(SETTLE_ANIM_SPRING_BOUNCE);
         COUISpringAnimation spring = new COUISpringAnimation(dVar).setSpring(this.mPanelHeightSpringForce);
         this.mPanelHeightChangeAnim = spring;
         spring.addUpdateListener(new COUIDynamicAnimation.OnAnimationUpdateListener() {
             @Override
-            public void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float f2, float f10) {
+            public void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float value, float velocity) {
                 if (COUIBottomSheetBehavior.this.mViewHeightType == 0) {
-                    COUIBottomSheetBehavior.this.panelHeightVerticalMoving(f2);
+                    COUIBottomSheetBehavior.this.panelHeightVerticalMoving(value);
                 } else {
-                    COUIBottomSheetBehavior.this.panelHeightAdaptive(cOUIDynamicAnimation, f2, f10);
+                    COUIBottomSheetBehavior.this.panelHeightAdaptive(cOUIDynamicAnimation, value, velocity);
                 }
             }
         });
         this.mPanelHeightChangeAnim.addEndListener(new COUIDynamicAnimation.OnAnimationEndListener() {
             @Override
-            public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z6, float f2, float f10) {
+            public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean canceled, float value, float velocity) {
                 if (COUIBottomSheetBehavior.this.mViewHeightType == 0) {
                     COUIBottomSheetBehavior cOUIBottomSheetBehavior = COUIBottomSheetBehavior.this;
                     cOUIBottomSheetBehavior.setStateInternal(cOUIBottomSheetBehavior.mSettleTargetState);
@@ -688,7 +690,7 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
                     return;
                 }
                 if (COUIBottomSheetBehavior.this.mPanelHeightChangeAnimListener != null) {
-                    COUIBottomSheetBehavior.this.mPanelHeightChangeAnimListener.onAnimationEnd(cOUIDynamicAnimation, z6, f10);
+                    COUIBottomSheetBehavior.this.mPanelHeightChangeAnimListener.onAnimationEnd(cOUIDynamicAnimation, canceled, velocity);
                 }
                 // Leapy modified 2026-07-24: BEGIN restore decoded OPPO adaptive-height animation cleanup.
                 COUIBottomSheetBehavior.this.mViewHeightType = 0;
@@ -707,7 +709,7 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     private void createShapeValueAnimator() {
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
         this.interpolatorAnimator = valueAnimatorOfFloat;
-        valueAnimatorOfFloat.setDuration(500L);
+        valueAnimatorOfFloat.setDuration(CORNER_ANIMATION_DURATION);
         this.interpolatorAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -720,9 +722,9 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
 
-    public void dragToNewTop(View view, float f2) {
+    public void dragToNewTop(View view, float newTop) {
         if (this.mDragBehavior.isDragging()) {
-            this.mDragBehavior.dragTo(f2);
+            this.mDragBehavior.dragTo(newTop);
             return;
         }
         this.mDragChild = view;
@@ -732,8 +734,8 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.mDragCurrentValue = top;
     }
 
-    public static <V extends View> COUIBottomSheetBehavior<V> from(V v6) {
-        ViewGroup.LayoutParams layoutParams = v6.getLayoutParams();
+    public static <V extends View> COUIBottomSheetBehavior<V> from(V view) {
+        ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
         if (!(layoutParams instanceof CoordinatorLayout.LayoutParams)) {
             throw new IllegalArgumentException("The view is not a child of CoordinatorLayout");
         }
@@ -744,9 +746,9 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         throw new IllegalArgumentException("The view is not associated with COUIBottomSheetBehavior");
     }
 
-    private Rect getLayoutRect(CoordinatorLayout coordinatorLayout, View view, int i2) {
-        CoordinatorLayout.LayoutParams fVar = (CoordinatorLayout.LayoutParams) view.getLayoutParams();
-        this.mParentRect.set(coordinatorLayout.getPaddingLeft() + ((ViewGroup.MarginLayoutParams) fVar).leftMargin, coordinatorLayout.getPaddingTop() + ((ViewGroup.MarginLayoutParams) fVar).topMargin, (coordinatorLayout.getWidth() - coordinatorLayout.getPaddingRight()) - ((ViewGroup.MarginLayoutParams) fVar).rightMargin, (coordinatorLayout.getHeight() - coordinatorLayout.getPaddingBottom()) - ((ViewGroup.MarginLayoutParams) fVar).bottomMargin);
+    private Rect getLayoutRect(CoordinatorLayout coordinatorLayout, View view, int layoutDirection) {
+        CoordinatorLayout.LayoutParams lp = (CoordinatorLayout.LayoutParams) view.getLayoutParams();
+        this.mParentRect.set(coordinatorLayout.getPaddingLeft() + ((ViewGroup.MarginLayoutParams) lp).leftMargin, coordinatorLayout.getPaddingTop() + ((ViewGroup.MarginLayoutParams) lp).topMargin, (coordinatorLayout.getWidth() - coordinatorLayout.getPaddingRight()) - ((ViewGroup.MarginLayoutParams) lp).rightMargin, (coordinatorLayout.getHeight() - coordinatorLayout.getPaddingBottom()) - ((ViewGroup.MarginLayoutParams) lp).bottomMargin);
         WindowInsetsCompat lastWindowInsets = coordinatorLayout.getLastWindowInsets();
         if (lastWindowInsets != null && ViewCompat.getFitsSystemWindows(coordinatorLayout) && !ViewCompat.getFitsSystemWindows(view)) {
             Insets systemBarInsets = lastWindowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -755,7 +757,7 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
             this.mParentRect.right -= systemBarInsets.right;
             this.mParentRect.bottom -= systemBarInsets.bottom;
         }
-        GravityCompat.apply(resolveGravity(fVar.gravity), view.getMeasuredWidth(), view.getMeasuredHeight(), this.mParentRect, this.mLayoutRect, i2);
+        GravityCompat.apply(resolveGravity(lp.gravity), view.getMeasuredWidth(), view.getMeasuredHeight(), this.mParentRect, this.mLayoutRect, layoutDirection);
         return this.mLayoutRect;
     }
 
@@ -770,17 +772,17 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         return 0;
     }
 
-    private int getTargetTopForState(int i2) {
-        if (i2 == 3) {
+    private int getTargetTopForState(int state) {
+        if (state == 3) {
             return getExpandedOffset();
         }
-        if (i2 == 4) {
+        if (state == 4) {
             return this.collapsedOffset;
         }
-        if (i2 == 5) {
+        if (state == 5) {
             return this.parentRootViewHeight;
         }
-        if (i2 != 6) {
+        if (state != 6) {
             return -1;
         }
         return this.halfExpandedOffset;
@@ -790,8 +792,8 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         if (viewGroup == null) {
             return null;
         }
-        for (int i2 = 0; i2 < viewGroup.getChildCount(); i2++) {
-            View childAt = viewGroup.getChildAt(i2);
+        for (int i = 0; i < viewGroup.getChildCount(); i++) {
+            View childAt = viewGroup.getChildAt(i);
             if ((childAt instanceof COUIPanelContentLayout) && childAt.getVisibility() == 0) {
                 return childAt;
             }
@@ -799,11 +801,11 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         return null;
     }
 
-    private int getWantTop(V v6, int i2) {
+    private int getWantTop(V child, int state) {
         float ratio;
         boolean hasAnchor;
-        if (v6 instanceof COUIPanelPercentFrameLayout) {
-            COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = (COUIPanelPercentFrameLayout) v6;
+        if (child instanceof COUIPanelPercentFrameLayout) {
+            COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = (COUIPanelPercentFrameLayout) child;
             ratio = cOUIPanelPercentFrameLayout.getRatio();
             hasAnchor = cOUIPanelPercentFrameLayout.getHasAnchor();
         } else {
@@ -811,11 +813,11 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
             hasAnchor = false;
         }
         if (!this.mIsIgnoreExpandedOffsetChange) {
-            int marginBottom = getMarginBottom(v6);
+            int marginBottom = getMarginBottom(child);
             if (hasAnchor) {
                 this.fitToContentsOffset = 0;
             } else {
-                this.fitToContentsOffset = (int) Math.max(0.0f, ((this.parentHeight - marginBottom) / ratio) - ((i2 - this.mPanelPaddingBottom) / ratio));
+                this.fitToContentsOffset = (int) Math.max(0.0f, ((this.parentHeight - marginBottom) / ratio) - ((state - this.mPanelPaddingBottom) / ratio));
             }
             if (this.mIsHandlePanel) {
                 this.expandedOffset = this.fitToContentsOffset;
@@ -842,18 +844,18 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         View decorView = activityContextToActivity.getWindow().getDecorView();
         int[] iArr = new int[2];
         decorView.getLocationInWindow(iArr);
-        int i2 = iArr[1];
+        int top = iArr[1];
         decorView.getLocationOnScreen(iArr);
-        return activityContextToActivity.isInMultiWindowMode() && iArr[1] == i2;
+        return activityContextToActivity.isInMultiWindowMode() && iArr[1] == top;
     }
 
-    private boolean isClickedOnBar(View view, int i2, int i6) {
+    private boolean isClickedOnBar(View view, int x, int y) {
         View viewFindViewById;
         if (!(view instanceof COUIPanelPercentFrameLayout) || (viewFindViewById = view.findViewById(com.coui.appcompat.R.id.panel_drag_bar)) == null) {
             return false;
         }
         viewFindViewById.getHitRect(this.mBarRect);
-        return this.mBarRect.contains(i2, i6);
+        return this.mBarRect.contains(x, y);
     }
 
     private boolean isImeVisible(View view) {
@@ -871,7 +873,7 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
 
     private boolean isInFreeFormModeWindowMode() {
         Activity activityContextToActivity = UIUtil.contextToActivity(this.mContext);
-        return activityContextToActivity != null && COUIVersionUtil.checkOPlusViewSubSDK(34, 12) && FlexibleWindowManager.getInstance().getFlexibleWindowState(activityContextToActivity) == 1;
+        return activityContextToActivity != null && COUIVersionUtil.checkOPlusViewSubSDK(SDK_VERSION_FOR_FLEXIBLE, SDK_SUB_VERSION_FOR_FLEXIBLE) && FlexibleWindowManager.getInstance().getFlexibleWindowState(activityContextToActivity) == 1;
     }
 
     private boolean isPanelCenterDisplay() {
@@ -879,28 +881,28 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
 
-    public void panelHeightAdaptive(COUIDynamicAnimation cOUIDynamicAnimation, float f2, float f10) {
+    public void panelHeightAdaptive(COUIDynamicAnimation cOUIDynamicAnimation, float value, float velocity) {
         WeakReference<V> weakReference = this.viewRef;
         if (weakReference == null || weakReference.get() == null) {
             return;
         }
         int distance = Math.abs(this.mCurTop - this.mWantTop);
-        float fAbs = Math.abs((f2 - this.mCurTop) / (distance == 0 ? 1 : distance));
+        float fAbs = Math.abs((value - this.mCurTop) / (distance == 0 ? 1 : distance));
         OnPanelHeightChangeAnimListener onPanelHeightChangeAnimListener = this.mPanelHeightChangeAnimListener;
         if (onPanelHeightChangeAnimListener != null) {
-            onPanelHeightChangeAnimListener.onAnimationUpdate(cOUIDynamicAnimation, fAbs, f10);
+            onPanelHeightChangeAnimListener.onAnimationUpdate(cOUIDynamicAnimation, fAbs, velocity);
         }
-        int i2 = (int) f2;
-        int top = i2 - this.viewRef.get().getTop();
-        if (top != 0) {
-            ViewCompat.offsetTopAndBottom(this.viewRef.get(), top);
+        int animatedTop = (int) value;
+        int dy = animatedTop - this.viewRef.get().getTop();
+        if (dy != 0) {
+            ViewCompat.offsetTopAndBottom(this.viewRef.get(), dy);
             if (isPanelCenterDisplay()) {
-                int i6 = this.mViewHeightType;
-                if (i6 == 3) {
-                    setOutlineBottomOffset(Math.abs(getExpandedOffset() - i2) * (-2));
+                int viewHeightType = this.mViewHeightType;
+                if (viewHeightType == 3) {
+                    setOutlineBottomOffset(Math.abs(getExpandedOffset() - animatedTop) * (-2));
                     this.viewRef.get().invalidateOutline();
-                } else if (i6 == 4) {
-                    setOutlineBottomOffset(Math.abs(i2 - this.mWantTop) * (-2));
+                } else if (viewHeightType == 4) {
+                    setOutlineBottomOffset(Math.abs(animatedTop - this.mWantTop) * (-2));
                     this.viewRef.get().invalidateOutline();
                 }
             }
@@ -955,28 +957,28 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         }
     }
 
-    private int resolveGravity(int i2) {
-        if ((i2 & 7) == 0) {
-            i2 |= 8388611;
+    private int resolveGravity(int gravity) {
+        if ((gravity & 7) == 0) {
+            gravity |= 8388611;
         }
-        return (i2 & 112) == 0 ? i2 | 48 : i2;
+        return (gravity & 112) == 0 ? gravity | 48 : gravity;
     }
 
     private void restoreOptionalState(SavedState savedState) {
-        int i2 = this.saveFlags;
-        if (i2 == 0) {
+        int flags = this.saveFlags;
+        if (flags == 0) {
             return;
         }
-        if (i2 == -1 || (i2 & 1) == 1) {
+        if (flags == -1 || (flags & 1) == 1) {
             this.peekHeight = savedState.peekHeight;
         }
-        if (i2 == -1 || (i2 & 2) == 2) {
+        if (flags == -1 || (flags & 2) == 2) {
             this.fitToContents = savedState.fitToContents;
         }
-        if (i2 == -1 || (i2 & 4) == 4) {
+        if (flags == -1 || (flags & 4) == 4) {
             this.hideable = savedState.hideable;
         }
-        if (i2 == -1 || (i2 & 8) == 8) {
+        if (flags == -1 || (flags & 8) == 8) {
             this.skipCollapsed = savedState.skipCollapsed;
         }
     }
@@ -1003,21 +1005,21 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
 
-    public void setOutlineBottomOffset(int i2) {
+    public void setOutlineBottomOffset(int offset) {
         WeakReference<V> weakReference = this.viewRef;
         if (weakReference == null || !(weakReference.get() instanceof COUIPanelPercentFrameLayout)) {
             return;
         }
-        ((COUIPanelPercentFrameLayout) this.viewRef.get()).setOutlineBottomOffset(i2);
+        ((COUIPanelPercentFrameLayout) this.viewRef.get()).setOutlineBottomOffset(offset);
     }
 
-    private void setShakeHandMovingDirection(float f2) {
-        if (f2 > 100.0f) {
-            this.mShakeHandMovingDirection = 2;
-        } else if (f2 < -100.0f) {
-            this.mShakeHandMovingDirection = 1;
+    private void setShakeHandMovingDirection(float dy) {
+        if (dy > 100.0f) {
+            this.mShakeHandMovingDirection = SHAKE_HAND_MOVING_DIRECTION_DOWN;
+        } else if (dy < -100.0f) {
+            this.mShakeHandMovingDirection = SHAKE_HAND_MOVING_DIRECTION_UP;
         } else {
-            this.mShakeHandMovingDirection = 0;
+            this.mShakeHandMovingDirection = SHAKE_HAND_MOVING_DIRECTION_DEFAULT;
         }
     }
 
@@ -1029,38 +1031,38 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.peekHeight += rootWindowInsets.getSystemGestureInsets().bottom;
     }
 
-    private void settleToStatePendingLayout(final int i2) {
-        final V v6 = this.viewRef.get();
-        if (v6 == null) {
+    private void settleToStatePendingLayout(final int state) {
+        final V child = this.viewRef.get();
+        if (child == null) {
             return;
         }
-        ViewParent parent = v6.getParent();
-        if (parent != null && parent.isLayoutRequested() && ViewCompat.isLaidOut(v6)) {
-            v6.post(new Runnable() {
+        ViewParent parent = child.getParent();
+        if (parent != null && parent.isLayoutRequested() && ViewCompat.isLaidOut(child)) {
+            child.post(new Runnable() {
                 @Override
                 public void run() {
-                    COUIBottomSheetBehavior.this.settleToState(v6, i2);
+                    COUIBottomSheetBehavior.this.settleToState(child, state);
                 }
             });
         } else {
-            settleToState(v6, i2);
+            settleToState(child, state);
         }
     }
 
-    private void startHeightChangeAnimation(int i2, int i6) {
+    private void startHeightChangeAnimation(int from, int to) {
         OnPanelHeightChangeAnimListener onPanelHeightChangeAnimListener = this.mPanelHeightChangeAnimListener;
         if (onPanelHeightChangeAnimListener != null) {
             onPanelHeightChangeAnimListener.onAnimationStart();
         }
         // Leapy removed 2026-07-24: BEGIN remove non-OPPO animation-token capture.
         // Leapy end 2026-07-24: the decoded implementation starts the spring without token gating.
-        this.mPanelHeightChangeAnim.setStartValue(i2);
-        this.mPanelHeightChangeAnim.animateToFinalPosition(i6);
+        this.mPanelHeightChangeAnim.setStartValue(from);
+        this.mPanelHeightChangeAnim.animateToFinalPosition(to);
     }
 
-    private void startPanelTranslateAnimation(final View view, int i2, int i6, float f2, PathInterpolator pathInterpolator) {
-        ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(i2, i6);
-        valueAnimatorOfFloat.setDuration((long) f2);
+    private void startPanelTranslateAnimation(final View view, int from, int to, float duration, PathInterpolator pathInterpolator) {
+        ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(from, to);
+        valueAnimatorOfFloat.setDuration((long) duration);
         valueAnimatorOfFloat.setInterpolator(pathInterpolator);
         valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -1078,7 +1080,7 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
             @Override
             public void onAnimationEnd(Animator animator) {
                 super.onAnimationEnd(animator);
-                COUIBottomSheetBehavior.this.setStateInternal(5);
+                COUIBottomSheetBehavior.this.setStateInternal(STATE_HIDDEN);
             }
         });
         this.mLastOffsetInFling = view.getTop();
@@ -1087,41 +1089,41 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
     private void updateAccessibilityActions() {
-        V v6;
+        V child;
         WeakReference<V> weakReference = this.viewRef;
-        if (weakReference == null || (v6 = weakReference.get()) == null) {
+        if (weakReference == null || (child = weakReference.get()) == null) {
             return;
         }
-        ViewCompat.removeAccessibilityAction(v6, 524288);
-        ViewCompat.removeAccessibilityAction(v6, 262144);
-        ViewCompat.removeAccessibilityAction(v6, 1048576);
-        if (this.hideable && this.state != 5) {
-            addAccessibilityActionForState(v6, AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_DISMISS, 5);
+        ViewCompat.removeAccessibilityAction(child, 524288);
+        ViewCompat.removeAccessibilityAction(child, 262144);
+        ViewCompat.removeAccessibilityAction(child, 1048576);
+        if (this.hideable && this.state != STATE_HIDDEN) {
+            addAccessibilityActionForState(child, AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_DISMISS, STATE_HIDDEN);
         }
-        int i2 = this.state;
-        if (i2 == 3) {
-            addAccessibilityActionForState(v6, AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_COLLAPSE, this.fitToContents ? 4 : 6);
+        int currentState = this.state;
+        if (currentState == 3) {
+            addAccessibilityActionForState(child, AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_COLLAPSE, this.fitToContents ? STATE_COLLAPSED : STATE_HALF_EXPANDED);
             return;
         }
-        if (i2 == 4) {
-            addAccessibilityActionForState(v6, AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_EXPAND, this.fitToContents ? 3 : 6);
+        if (currentState == 4) {
+            addAccessibilityActionForState(child, AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_EXPAND, this.fitToContents ? STATE_EXPANDED : STATE_HALF_EXPANDED);
         } else {
-            if (i2 != 6) {
+            if (currentState != 6) {
                 return;
             }
-            addAccessibilityActionForState(v6, AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_COLLAPSE, 4);
-            addAccessibilityActionForState(v6, AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_EXPAND, 3);
+            addAccessibilityActionForState(child, AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_COLLAPSE, STATE_COLLAPSED);
+            addAccessibilityActionForState(child, AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_EXPAND, STATE_EXPANDED);
         }
     }
 
-    private void updateDrawableForTargetState(int i2) {
+    private void updateDrawableForTargetState(int state) {
         ValueAnimator valueAnimator;
-        if (i2 == 2) {
+        if (state == 2) {
             return;
         }
-        boolean z6 = i2 == 3;
-        if (this.isShapeExpanded != z6) {
-            this.isShapeExpanded = z6;
+        boolean settled = state == 3;
+        if (this.isShapeExpanded != settled) {
+            this.isShapeExpanded = settled;
             if (this.materialShapeDrawable == null || (valueAnimator = this.interpolatorAnimator) == null) {
                 return;
             }
@@ -1129,13 +1131,13 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
                 this.interpolatorAnimator.reverse();
                 return;
             }
-            float f2 = z6 ? 0.0f : 1.0f;
-            this.interpolatorAnimator.setFloatValues(1.0f - f2, f2);
+            float xvel = settled ? 0.0f : 1.0f;
+            this.interpolatorAnimator.setFloatValues(1.0f - xvel, xvel);
             this.interpolatorAnimator.start();
         }
     }
 
-    private void updateImportantForAccessibility(boolean z6) {
+    private void updateImportantForAccessibility(boolean expanded) {
         Map<View, Integer> map;
         WeakReference<V> weakReference = this.viewRef;
         if (weakReference == null) {
@@ -1145,17 +1147,17 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         if (parent instanceof CoordinatorLayout) {
             CoordinatorLayout coordinatorLayout = (CoordinatorLayout) parent;
             int childCount = coordinatorLayout.getChildCount();
-            if (z6) {
+            if (expanded) {
                 if (this.importantForAccessibilityMap != null) {
                     return;
                 } else {
                     this.importantForAccessibilityMap = new HashMap(childCount);
                 }
             }
-            for (int i2 = 0; i2 < childCount; i2++) {
-                View childAt = coordinatorLayout.getChildAt(i2);
+            for (int i = 0; i < childCount; i++) {
+                View childAt = coordinatorLayout.getChildAt(i);
                 if (childAt != this.viewRef.get()) {
-                    if (z6) {
+                    if (expanded) {
                         this.importantForAccessibilityMap.put(childAt, Integer.valueOf(childAt.getImportantForAccessibility()));
                         if (this.updateImportantForAccessibilityOnSiblings) {
                             ViewCompat.setImportantForAccessibility(childAt, 4);
@@ -1165,7 +1167,7 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
                     }
                 }
             }
-            if (z6) {
+            if (expanded) {
                 return;
             }
             this.importantForAccessibilityMap = null;
@@ -1179,14 +1181,14 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.callbacks.add(cOUIBottomSheetCallback);
     }
 
-    public void applyPhysics(float f2, float f10) {
-        if (f2 == Float.MIN_VALUE || f10 == Float.MIN_VALUE) {
+    public void applyPhysics(float frequency, float dampingRatio) {
+        if (frequency == Float.MIN_VALUE || dampingRatio == Float.MIN_VALUE) {
             this.mPhysicsEnable = false;
             return;
         }
         this.mPhysicsEnable = true;
-        this.mDragFrequency = f2;
-        this.mDragDampingRatio = f10;
+        this.mDragFrequency = frequency;
+        this.mDragDampingRatio = dampingRatio;
         this.mPhysicalAnimator = PhysicalAnimator.create(this.mContext);
         this.mDragValueHolder = new com.oplus.physicsengine.engine.FloatValueHolder(0.0f);
         DragBehavior dragBehavior = new DragBehavior().withProperty(this.mDragValueHolder);
@@ -1201,26 +1203,24 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.interpolatorAnimator = null;
     }
 
-    public void dispatchOnSlide(int i2) {
-        float f2;
-        float expandedOffset;
-        V v6 = this.viewRef.get();
-        if (v6 == null || this.callbacks.isEmpty()) {
+    public void dispatchOnSlide(int top) {
+        float slideOffsetNumerator;
+        float slideOffsetDenominator;
+        V child = this.viewRef.get();
+        if (child == null || this.callbacks.isEmpty()) {
             return;
         }
-        int i6 = this.collapsedOffset;
-        if (i2 > i6 || i6 == getExpandedOffset()) {
-            int i10 = this.collapsedOffset;
-            f2 = i10 - i2;
-            expandedOffset = this.parentHeight - i10;
+        int collapsedOffset = this.collapsedOffset;
+        if (top > collapsedOffset || collapsedOffset == getExpandedOffset()) {
+            slideOffsetNumerator = collapsedOffset - top;
+            slideOffsetDenominator = this.parentHeight - collapsedOffset;
         } else {
-            int i11 = this.collapsedOffset;
-            f2 = i11 - i2;
-            expandedOffset = i11 - getExpandedOffset();
+            slideOffsetNumerator = collapsedOffset - top;
+            slideOffsetDenominator = collapsedOffset - getExpandedOffset();
         }
-        float f10 = f2 / expandedOffset;
-        for (int i12 = 0; i12 < this.callbacks.size(); i12++) {
-            this.callbacks.get(i12).onSlide(v6, f10);
+        float slideOffset = slideOffsetNumerator / slideOffsetDenominator;
+        for (int i = 0; i < this.callbacks.size(); i++) {
+            this.callbacks.get(i).onSlide(child, slideOffset);
         }
     }
 
@@ -1235,8 +1235,8 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         }
         ViewGroup viewGroup = (ViewGroup) view;
         int childCount = viewGroup.getChildCount();
-        for (int i2 = 0; i2 < childCount; i2++) {
-            View viewFindScrollingChild = findScrollingChild(viewGroup.getChildAt(i2));
+        for (int i = 0; i < childCount; i++) {
+            View viewFindScrollingChild = findScrollingChild(viewGroup.getChildAt(i));
             if (viewFindScrollingChild != null) {
                 return viewFindScrollingChild;
             }
@@ -1244,30 +1244,30 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         return null;
     }
 
-    public void forceSetPanelState(int i2) {
+    public void forceSetPanelState(int state) {
         WeakReference<V> weakReference;
         int targetTopForState;
-        if (isPanelHeightChangeAnimRunning() && this.mPanelHeightChangeAnim != null && (targetTopForState = getTargetTopForState(i2)) != -1) {
-            this.mSettleTargetState = i2;
+        if (isPanelHeightChangeAnimRunning() && this.mPanelHeightChangeAnim != null && (targetTopForState = getTargetTopForState(state)) != -1) {
+            this.mSettleTargetState = state;
             this.mPanelHeightChangeAnim.animateToFinalPosition(targetTopForState);
             // Leapy removed 2026-07-24: BEGIN remove non-reference duplicate target-state assignment.
             // Leapy end 2026-07-24: the running spring is governed by mSettleTargetState.
-            updateDrawableForTargetState(i2);
+            updateDrawableForTargetState(state);
             return;
         }
-        if (this.state == 2 && (weakReference = this.viewRef) != null && weakReference.get() != null) {
+        if (this.state == STATE_SETTLING && (weakReference = this.viewRef) != null && weakReference.get() != null) {
             int top = this.viewRef.get().getTop();
             if (top <= getExpandedOffset()) {
-                this.state = 3;
+                this.state = STATE_EXPANDED;
             } else if (top >= this.collapsedOffset) {
-                this.state = 4;
+                this.state = STATE_COLLAPSED;
             } else if (Math.abs(top - this.halfExpandedOffset) < Math.abs(top - getExpandedOffset())) {
                 this.state = 6;
             } else {
-                this.state = 3;
+                this.state = STATE_EXPANDED;
             }
         }
-        setPanelState(i2);
+        setPanelState(state);
     }
 
     public COUIPanelDragListener getCOUIPanelDragListener() {
@@ -1310,7 +1310,7 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
     public int getTargetState() {
-        return (this.state == 2 || isPanelHeightChangeAnimRunning()) ? this.mSettleTargetState : this.state;
+        return (this.state == STATE_SETTLING || isPanelHeightChangeAnimRunning()) ? this.mSettleTargetState : this.state;
     }
 
     public boolean isCanHideKeyboard() {
@@ -1366,8 +1366,8 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
     @Override
-    public void onAttachedToLayoutParams(CoordinatorLayout.LayoutParams fVar) {
-        super.onAttachedToLayoutParams(fVar);
+    public void onAttachedToLayoutParams(CoordinatorLayout.LayoutParams params) {
+        super.onAttachedToLayoutParams(params);
         this.viewRef = null;
         this.viewDragHelper = null;
     }
@@ -1380,9 +1380,9 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
     @Override
-    public boolean onInterceptTouchEvent(CoordinatorLayout coordinatorLayout, V v6, MotionEvent motionEvent) {
+    public boolean onInterceptTouchEvent(CoordinatorLayout coordinatorLayout, V child, MotionEvent motionEvent) {
         COUIViewDragHelper cOUIViewDragHelper;
-        if (!v6.isShown() || !this.draggable) {
+        if (!child.isShown() || !this.draggable) {
             this.ignoreEvents = true;
             return false;
         }
@@ -1398,14 +1398,14 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.velocityTracker.addMovement(motionEvent);
         if (actionMasked == 0) {
             this.initialX = (int) motionEvent.getX();
-            int y6 = (int) motionEvent.getY();
-            this.initialY = y6;
-            if (!this.mGlobalDrag && !isClickedOnBar(v6, this.initialX, y6)) {
+            int y = (int) motionEvent.getY();
+            this.initialY = y;
+            if (!this.mGlobalDrag && !isClickedOnBar(child, this.initialX, y)) {
                 this.ignoreEvents = true;
                 return false;
             }
             this.ignoreEvents = false;
-            if (this.state != 2) {
+            if (this.state != STATE_SETTLING) {
                 OnNestedScrollingChild onNestedScrollingChild = this.mOnNestedScrollingChild;
                 if (onNestedScrollingChild != null && (this.nestedScrollingChildRef == null || onNestedScrollingChild.getNestedScrollingChild() != this.nestedScrollingChildRef.get())) {
                     this.nestedScrollingChildRef = new WeakReference<>(this.mOnNestedScrollingChild.getNestedScrollingChild());
@@ -1417,7 +1417,7 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
                     this.touchingScrollingChild = true;
                 }
             }
-            this.ignoreEvents = this.activePointerId == -1 && !coordinatorLayout.isPointInChildBounds(v6, this.initialX, this.initialY);
+            this.ignoreEvents = this.activePointerId == -1 && !coordinatorLayout.isPointInChildBounds(child, this.initialX, this.initialY);
         } else if (actionMasked == 1) {
             COUIPanelPullUpListener cOUIPanelPullUpListener = this.mPullUpListener;
             if (cOUIPanelPullUpListener != null) {
@@ -1440,62 +1440,62 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
     @Override
-    public boolean onLayoutChild(CoordinatorLayout coordinatorLayout, V v6, int i2) {
+    public boolean onLayoutChild(CoordinatorLayout coordinatorLayout, V child, int layoutDirection) {
         boolean hasAnchor;
         MaterialShapeDrawable gVar;
         // Leapy removed 2026-07-24: BEGIN remove the non-OPPO early return during STATE_HIDDEN settling.
         // Leapy end 2026-07-24: decoded COUI always completes the normal layout path while a hide spring runs.
-        if (ViewCompat.getFitsSystemWindows(coordinatorLayout) && !ViewCompat.getFitsSystemWindows(v6)) {
-            v6.setFitsSystemWindows(true);
+        if (ViewCompat.getFitsSystemWindows(coordinatorLayout) && !ViewCompat.getFitsSystemWindows(child)) {
+            child.setFitsSystemWindows(true);
         }
         float ratio = 1.0f;
         if (this.viewRef == null) {
             this.peekHeightMin = coordinatorLayout.getResources().getDimensionPixelSize(com.google.android.material.R.dimen.design_bottom_sheet_peek_height_min);
             this.mDialogMaxHeight = this.mContext.getResources().getDimensionPixelOffset(com.coui.appcompat.R.dimen.coui_panel_max_height);
             setSystemGestureInsets(coordinatorLayout);
-            this.viewRef = new WeakReference<>(v6);
+            this.viewRef = new WeakReference<>(child);
             if (this.shapeThemingEnabled && (gVar = this.materialShapeDrawable) != null) {
-                ViewCompat.setBackground(v6, gVar);
+                ViewCompat.setBackground(child, gVar);
             }
             MaterialShapeDrawable gVar2 = this.materialShapeDrawable;
             if (gVar2 != null) {
                 float fT = this.elevation;
                 if (fT == -1.0f) {
-                    fT = (int) ViewCompat.getElevation(v6);
+                    fT = (int) ViewCompat.getElevation(child);
                 }
                 gVar2.setElevation(fT);
-                boolean z6 = this.state == 3;
-                this.isShapeExpanded = z6;
-                this.materialShapeDrawable.setInterpolation(z6 ? 0.0f : 1.0f);
+                boolean settled = this.state == 3;
+                this.isShapeExpanded = settled;
+                this.materialShapeDrawable.setInterpolation(settled ? 0.0f : 1.0f);
             }
             updateAccessibilityActions();
-            if (ViewCompat.getImportantForAccessibility(v6) == 0) {
-                ViewCompat.setImportantForAccessibility(v6, 1);
+            if (ViewCompat.getImportantForAccessibility(child) == 0) {
+                ViewCompat.setImportantForAccessibility(child, 1);
             }
         }
         if (this.viewDragHelper == null) {
             this.viewDragHelper = COUIViewDragHelper.create(coordinatorLayout, this.dragCallback);
         }
-        int top = v6.getTop();
-        int i6 = this.mViewHeightType;
-        if (i6 == 1 || i6 == 3) {
-            getLayoutRect(coordinatorLayout, v6, i2);
+        int savedTop = child.getTop();
+        int viewHeightType = this.mViewHeightType;
+        if (viewHeightType == 1 || viewHeightType == 3) {
+            getLayoutRect(coordinatorLayout, child, layoutDirection);
             Rect rect = this.mLayoutRect;
-            v6.layout(rect.left, rect.top, rect.right, this.mLayoutBottom);
-            View viewFindViewById = v6.findViewById(com.coui.appcompat.R.id.coui_panel_content_layout);
+            child.layout(rect.left, rect.top, rect.right, this.mLayoutBottom);
+            View viewFindViewById = child.findViewById(com.coui.appcompat.R.id.coui_panel_content_layout);
             if (viewFindViewById != null) {
-                if (viewFindViewById.getParent() == v6) {
-                    setNormalPanelViewBottom(v6, viewFindViewById);
+                if (viewFindViewById.getParent() == child) {
+                    setNormalPanelViewBottom(child, viewFindViewById);
                 } else {
-                    setFragmentPanelViewBottom(v6);
+                    setFragmentPanelViewBottom(child);
                 }
             }
         } else {
-            coordinatorLayout.onLayoutChild(v6, i2);
+            coordinatorLayout.onLayoutChild(child, layoutDirection);
         }
         this.parentWidth = coordinatorLayout.getWidth();
         this.parentHeight = coordinatorLayout.getHeight();
-        if (ifInTopOfMultiWindowMode() && isImeVisible(v6)) {
+        if (ifInTopOfMultiWindowMode() && isImeVisible(child)) {
             this.parentRootViewHeight = Math.max(this.parentRootViewHeight, UIUtil.getScreenHeightMetrics(this.mContext));
         } else {
             this.parentRootViewHeight = coordinatorLayout.getRootView().getHeight();
@@ -1504,19 +1504,19 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         if (DEBUG) {
             Log.d(TAG, "onLayoutChild: parentHeight=" + this.parentHeight + " parentRootViewHeight=" + this.parentRootViewHeight + " marginTop=" + this.parentMarginTop);
         }
-        if (v6 instanceof COUIPanelPercentFrameLayout) {
-            COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = (COUIPanelPercentFrameLayout) v6;
+        if (child instanceof COUIPanelPercentFrameLayout) {
+            COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = (COUIPanelPercentFrameLayout) child;
             ratio = cOUIPanelPercentFrameLayout.getRatio();
             hasAnchor = cOUIPanelPercentFrameLayout.getHasAnchor();
         } else {
             hasAnchor = false;
         }
         if (!this.mIsIgnoreExpandedOffsetChange) {
-            int marginBottom = getMarginBottom(v6);
+            int marginBottom = getMarginBottom(child);
             if (hasAnchor) {
                 this.fitToContentsOffset = 0;
             } else {
-                this.fitToContentsOffset = (int) Math.max(0.0f, ((this.parentHeight - marginBottom) / ratio) - ((v6.getHeight() - this.mPanelPaddingBottom) / ratio));
+                this.fitToContentsOffset = (int) Math.max(0.0f, ((this.parentHeight - marginBottom) / ratio) - ((child.getHeight() - this.mPanelPaddingBottom) / ratio));
             }
             if (this.mIsHandlePanel) {
                 this.expandedOffset = this.fitToContentsOffset;
@@ -1528,46 +1528,46 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.mIsIgnoreExpandedOffsetChange = false;
         calculateHalfExpandedOffset();
         calculateCollapsedOffset();
-        int i10 = this.state;
-        if (i10 == 3) {
-            int i11 = this.mViewHeightType;
-            if (i11 == 1) {
-                ViewCompat.offsetTopAndBottom(v6, isPanelHeightChangeAnimRunning() ? this.mCurTop : getExpandedOffset());
-            } else if (i11 == 2) {
-                ViewCompat.offsetTopAndBottom(v6, this.mCurTop);
-            } else if (i11 == 3) {
-                ViewCompat.offsetTopAndBottom(v6, isPanelHeightChangeAnimRunning() ? this.mCurTop : getExpandedOffset());
+        int targetState = this.state;
+        if (targetState == 3) {
+            int halfExpanded = this.mViewHeightType;
+            if (halfExpanded == 1) {
+                ViewCompat.offsetTopAndBottom(child, isPanelHeightChangeAnimRunning() ? this.mCurTop : getExpandedOffset());
+            } else if (halfExpanded == 2) {
+                ViewCompat.offsetTopAndBottom(child, this.mCurTop);
+            } else if (halfExpanded == 3) {
+                ViewCompat.offsetTopAndBottom(child, isPanelHeightChangeAnimRunning() ? this.mCurTop : getExpandedOffset());
                 if (isPanelHeightChangeAnimRunning()) {
                     setOutlineBottomOffset(Math.abs(getExpandedOffset() - this.mCurTop) * (-2));
-                    v6.invalidateOutline();
+                    child.invalidateOutline();
                 }
-            } else if (i11 != 4) {
-                ViewCompat.offsetTopAndBottom(v6, getExpandedOffset());
+            } else if (halfExpanded != 4) {
+                ViewCompat.offsetTopAndBottom(child, getExpandedOffset());
             } else {
-                ViewCompat.offsetTopAndBottom(v6, this.mCurTop);
+                ViewCompat.offsetTopAndBottom(child, this.mCurTop);
                 setOutlineBottomOffset(Math.abs(this.mWantTop - this.mCurTop) * (-2));
-                v6.invalidateOutline();
+                child.invalidateOutline();
             }
-        } else if (i10 == 6) {
-            ViewCompat.offsetTopAndBottom(v6, this.halfExpandedOffset);
-        } else if (this.hideable && i10 == 5) {
-            ViewCompat.offsetTopAndBottom(v6, this.parentHeight);
-        } else if (i10 == 4) {
-            ViewCompat.offsetTopAndBottom(v6, this.collapsedOffset);
-        } else if (i10 == 1 || i10 == 2) {
-            ViewCompat.offsetTopAndBottom(v6, top - v6.getTop());
+        } else if (targetState == 6) {
+            ViewCompat.offsetTopAndBottom(child, this.halfExpandedOffset);
+        } else if (this.hideable && targetState == 5) {
+            ViewCompat.offsetTopAndBottom(child, this.parentHeight);
+        } else if (targetState == 4) {
+            ViewCompat.offsetTopAndBottom(child, this.collapsedOffset);
+        } else if (targetState == 1 || targetState == 2) {
+            ViewCompat.offsetTopAndBottom(child, savedTop - child.getTop());
         }
         if (DEBUG) {
-            Log.e(TAG, "behavior parentHeight: " + this.parentHeight + " marginBottom: " + getMarginBottom(v6) + "\n mDesignBottomSheetFrameLayout.getRatio()" + ratio + " fitToContentsOffset: " + this.fitToContentsOffset + " H: " + v6.getMeasuredHeight() + "\n Y: " + v6.getY() + " getExpandedOffset" + getExpandedOffset());
+            Log.e(TAG, "behavior parentHeight: " + this.parentHeight + " marginBottom: " + getMarginBottom(child) + "\n mDesignBottomSheetFrameLayout.getRatio()" + ratio + " fitToContentsOffset: " + this.fitToContentsOffset + " H: " + child.getMeasuredHeight() + "\n Y: " + child.getY() + " getExpandedOffset" + getExpandedOffset());
         }
-        this.nestedScrollingChildRef = new WeakReference<>(findScrollingChild(v6));
+        this.nestedScrollingChildRef = new WeakReference<>(findScrollingChild(child));
         return true;
     }
 
     @Override
-    public boolean onMeasureChild(CoordinatorLayout coordinatorLayout, V v6, int i2, int i6, int i10, int i11) {
-        boolean zOnMeasureChild = super.onMeasureChild(coordinatorLayout, v6, i2, i6, View.MeasureSpec.makeMeasureSpec(View.MeasureSpec.getSize(i10) + v6.getPaddingBottom(), View.MeasureSpec.getMode(i10)), i11);
-        int measuredHeight = v6.getMeasuredHeight();
+    public boolean onMeasureChild(CoordinatorLayout coordinatorLayout, V child, int parentWidthMeasureSpec, int widthUsed, int parentHeightMeasureSpec, int heightUsed) {
+        boolean zOnMeasureChild = super.onMeasureChild(coordinatorLayout, child, parentWidthMeasureSpec, widthUsed, View.MeasureSpec.makeMeasureSpec(View.MeasureSpec.getSize(parentHeightMeasureSpec) + child.getPaddingBottom(), View.MeasureSpec.getMode(parentHeightMeasureSpec)), heightUsed);
+        int measuredHeight = child.getMeasuredHeight();
         // Leapy modified 2026-07-30: BEGIN keep the decoded OPPO height animation state
         // separate from the drag-to-hidden settling state.
         if (!this.mStartHeightChangeAnim || getState() != STATE_EXPANDED
@@ -1578,13 +1578,13 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
             if (this.mPanelHeightChangeAnim == null) {
                 createPanelHeightChangeAnim();
             }
-            this.mPanelHeightSpringForce.setResponse(0.4f);
+            this.mPanelHeightSpringForce.setResponse(SETTLE_ANIM_SPRING_RESPONSE);
             setOutlineBottomOffset(0);
-            this.mCurTop = v6.getTop();
-            this.mWantTop = getWantTop(v6, measuredHeight);
-            int i12 = this.mLastMeasureHeight;
-            if (measuredHeight < i12) {
-                this.mLayoutBottom = i12;
+            this.mCurTop = child.getTop();
+            this.mWantTop = getWantTop(child, measuredHeight);
+            int fitOffset = this.mLastMeasureHeight;
+            if (measuredHeight < fitOffset) {
+                this.mLayoutBottom = fitOffset;
                 if (isPanelCenterDisplay()) {
                     this.mViewHeightType = 3;
                 } else {
@@ -1592,7 +1592,7 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
                 }
                 this.mPanelHeightChangeAnim.setStartValue(this.mCurTop);
                 this.mPanelHeightChangeAnim.animateToFinalPosition(this.mWantTop);
-            } else if (measuredHeight > i12) {
+            } else if (measuredHeight > fitOffset) {
                 if (isPanelCenterDisplay()) {
                     this.mViewHeightType = 4;
                 } else {
@@ -1609,206 +1609,206 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
     @Override
-    public boolean onNestedPreFling(CoordinatorLayout coordinatorLayout, V v6, View view, float f2, float f10) {
+    public boolean onNestedPreFling(CoordinatorLayout coordinatorLayout, V child, View view, float velocityX, float velocityY) {
         WeakReference<View> weakReference;
-        this.mYVelocity = -f10;
+        this.mYVelocity = -velocityY;
         if (this.mIsNestedScrollingCheckEnabled || (weakReference = this.nestedScrollingChildRef) == null || view != weakReference.get()) {
             return false;
         }
-        return this.state != 3 || super.onNestedPreFling(coordinatorLayout, v6, view, f2, f10);
+        return this.state != 3 || super.onNestedPreFling(coordinatorLayout, child, view, velocityX, velocityY);
     }
 
     @Override
-    public void onNestedPreScroll(CoordinatorLayout coordinatorLayout, V v6, View view, int i2, int i6, int[] iArr, int i10) {
-        if (i10 == 1 || this.mIsNestedScrollingCheckEnabled) {
+    public void onNestedPreScroll(CoordinatorLayout coordinatorLayout, V child, View view, int dx, int dy, int[] iArr, int type) {
+        if (type == 1 || this.mIsNestedScrollingCheckEnabled) {
             return;
         }
         WeakReference<View> weakReference = this.nestedScrollingChildRef;
         if (view != (weakReference != null ? weakReference.get() : null)) {
             return;
         }
-        int top = v6.getTop();
-        int i11 = top - i6;
-        if (i6 > 0) {
-            if (i11 < getExpandedOffset()) {
+        int top = child.getTop();
+        int halfExpanded = top - dy;
+        if (dy > 0) {
+            if (halfExpanded < getExpandedOffset()) {
                 iArr[1] = top - getExpandedOffset();
-                calculatePanelOutsideAlpha(v6);
+                calculatePanelOutsideAlpha(child);
                 if (this.mPhysicsEnable) {
-                    dragToNewTop(v6, getExpandedOffset());
+                    dragToNewTop(child, getExpandedOffset());
                 } else {
-                    ViewCompat.offsetTopAndBottom(v6, -iArr[1]);
+                    ViewCompat.offsetTopAndBottom(child, -iArr[1]);
                 }
                 setStateInternal(3);
             } else {
                 if (!this.draggable) {
                     return;
                 }
-                calculatePanelOutsideAlpha(v6);
-                iArr[1] = i6;
+                calculatePanelOutsideAlpha(child);
+                iArr[1] = dy;
                 if (this.mPhysicsEnable) {
-                    dragToNewTop(v6, i11);
+                    dragToNewTop(child, halfExpanded);
                 } else {
-                    ViewCompat.offsetTopAndBottom(v6, -i6);
+                    ViewCompat.offsetTopAndBottom(child, -dy);
                 }
-                setStateInternal(1);
+                setStateInternal(STATE_DRAGGING);
             }
-        } else if (i6 < 0 && !view.canScrollVertically(-1)) {
-            if (i11 > this.collapsedOffset && !this.hideable) {
-                calculatePanelOutsideAlpha(v6);
-                int i12 = this.collapsedOffset;
-                int i13 = top - i12;
-                iArr[1] = i13;
+        } else if (dy < 0 && !view.canScrollVertically(-1)) {
+            if (halfExpanded > this.collapsedOffset && !this.hideable) {
+                calculatePanelOutsideAlpha(child);
+                int fitOffset = this.collapsedOffset;
+                int parentHeight = top - fitOffset;
+                iArr[1] = parentHeight;
                 if (this.mPhysicsEnable) {
-                    dragToNewTop(v6, i12);
+                    dragToNewTop(child, fitOffset);
                 } else {
-                    ViewCompat.offsetTopAndBottom(v6, -i13);
+                    ViewCompat.offsetTopAndBottom(child, -parentHeight);
                 }
                 setStateInternal(4);
             } else {
                 if (!this.draggable) {
                     return;
                 }
-                iArr[1] = i6;
-                if (i6 < -100) {
-                    i6 = (int) (i6 * 0.5f);
+                iArr[1] = dy;
+                if (dy < -100) {
+                    dy = (int) (dy * 0.5f);
                 }
-                calculatePanelOutsideAlpha(v6);
+                calculatePanelOutsideAlpha(child);
                 if (this.mPhysicsEnable) {
-                    dragToNewTop(v6, i11);
+                    dragToNewTop(child, halfExpanded);
                 } else {
-                    ViewCompat.offsetTopAndBottom(v6, -i6);
+                    ViewCompat.offsetTopAndBottom(child, -dy);
                 }
-                setStateInternal(1);
+                setStateInternal(STATE_DRAGGING);
             }
         }
         if (!this.mPhysicsEnable) {
-            dispatchOnSlide(v6.getTop());
+            dispatchOnSlide(child.getTop());
         }
-        this.lastNestedScrollDy = i6;
+        this.lastNestedScrollDy = dy;
         this.nestedScrolled = true;
     }
 
     @Override
-    public void onNestedScroll(CoordinatorLayout coordinatorLayout, V v6, View view, int i2, int i6, int i10, int i11, int i12, int[] iArr) {
+    public void onNestedScroll(CoordinatorLayout coordinatorLayout, V child, View view, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type, int[] iArr) {
     }
 
     @Override
-    public void onRestoreInstanceState(CoordinatorLayout coordinatorLayout, V v6, Parcelable parcelable) {
+    public void onRestoreInstanceState(CoordinatorLayout coordinatorLayout, V child, Parcelable parcelable) {
         SavedState savedState = (SavedState) parcelable;
-        super.onRestoreInstanceState(coordinatorLayout, v6, savedState.getSuperState());
+        super.onRestoreInstanceState(coordinatorLayout, child, savedState.getSuperState());
         restoreOptionalState(savedState);
-        int i2 = savedState.state;
-        if (i2 == 1 || i2 == 2) {
-            this.state = 4;
+        int saved = savedState.state;
+        if (saved == 1 || saved == 2) {
+            this.state = STATE_COLLAPSED;
         } else {
-            this.state = i2;
+            this.state = saved;
         }
     }
 
     @Override
-    public Parcelable onSaveInstanceState(CoordinatorLayout coordinatorLayout, V v6) {
-        return new SavedState(super.onSaveInstanceState(coordinatorLayout, v6), (COUIBottomSheetBehavior<?>) this);
+    public Parcelable onSaveInstanceState(CoordinatorLayout coordinatorLayout, V child) {
+        return new SavedState(super.onSaveInstanceState(coordinatorLayout, child), (COUIBottomSheetBehavior<?>) this);
     }
 
     @Override
-    public boolean onStartNestedScroll(CoordinatorLayout coordinatorLayout, V v6, View view, View view2, int i2, int i6) {
+    public boolean onStartNestedScroll(CoordinatorLayout coordinatorLayout, V child, View view, View view2, int axes, int type) {
         this.lastNestedScrollDy = 0;
         this.nestedScrolled = false;
-        return (i2 & 2) != 0;
+        return (axes & 2) != 0;
     }
 
     @Override
-    public void onStopNestedScroll(CoordinatorLayout coordinatorLayout, V v6, View view, int i2) {
-        int i6;
+    public void onStopNestedScroll(CoordinatorLayout coordinatorLayout, V child, View view, int type) {
+        int top;
         if (this.mPhysicsEnable && this.mDragBehavior.isDragging()) {
             this.mDragBehavior.endDrag(0.0f);
             this.mDragChild = null;
         }
-        int i10 = 3;
-        if (v6.getTop() == getExpandedOffset()) {
+        int targetState = 3;
+        if (child.getTop() == getExpandedOffset()) {
             setStateInternal(3);
             return;
         }
         WeakReference<View> weakReference = this.nestedScrollingChildRef;
         if (weakReference != null && view == weakReference.get() && this.nestedScrolled) {
             if (this.lastNestedScrollDy <= 0) {
-                if (this.hideable && shouldHide(v6, getYVelocity())) {
+                if (this.hideable && shouldHide(child, getYVelocity())) {
                     COUIPanelDragListener cOUIPanelDragListener = this.mCOUIPanelDragListener;
                     if (cOUIPanelDragListener == null || !cOUIPanelDragListener.onDragWhileEditing()) {
-                        i6 = this.parentRootViewHeight;
+                        top = this.parentRootViewHeight;
                         this.mCanHideKeyboard = true;
-                        i10 = 5;
+                        targetState = 5;
                     } else {
-                        i6 = this.fitToContentsOffset;
+                        top = this.fitToContentsOffset;
                         this.mCanHideKeyboard = false;
                     }
                 } else if (this.lastNestedScrollDy == 0) {
-                    int top = v6.getTop();
+                    int currentTop = child.getTop();
                     if (!this.fitToContents) {
-                        int i11 = this.halfExpandedOffset;
-                        if (top < i11) {
-                            if (top < Math.abs(top - this.collapsedOffset)) {
-                                i6 = this.expandedOffset;
+                        int halfExpanded = this.halfExpandedOffset;
+                        if (currentTop < halfExpanded) {
+                            if (currentTop < Math.abs(currentTop - this.collapsedOffset)) {
+                                top = this.expandedOffset;
                             } else {
-                                i6 = this.halfExpandedOffset;
+                                top = this.halfExpandedOffset;
                             }
-                        } else if (Math.abs(top - i11) < Math.abs(top - this.collapsedOffset)) {
-                            i6 = this.halfExpandedOffset;
+                        } else if (Math.abs(currentTop - halfExpanded) < Math.abs(currentTop - this.collapsedOffset)) {
+                            top = this.halfExpandedOffset;
                         } else {
-                            i6 = this.collapsedOffset;
-                            i10 = 4;
+                            top = this.collapsedOffset;
+                            targetState = 4;
                         }
-                        i10 = 6;
-                    } else if (Math.abs(top - this.fitToContentsOffset) < Math.abs(top - this.collapsedOffset)) {
-                        i6 = this.fitToContentsOffset;
+                        targetState = 6;
+                    } else if (Math.abs(currentTop - this.fitToContentsOffset) < Math.abs(currentTop - this.collapsedOffset)) {
+                        top = this.fitToContentsOffset;
                     } else {
-                        i6 = this.collapsedOffset;
-                        i10 = 4;
+                        top = this.collapsedOffset;
+                        targetState = 4;
                     }
                 } else {
                     if (this.fitToContents) {
                         COUIPanelDragListener cOUIPanelDragListener2 = this.mCOUIPanelDragListener;
                         if (cOUIPanelDragListener2 == null) {
-                            i6 = this.collapsedOffset;
+                            top = this.collapsedOffset;
                         } else if (cOUIPanelDragListener2.onDragWhileEditing()) {
-                            i6 = this.fitToContentsOffset;
+                            top = this.fitToContentsOffset;
                         } else {
-                            i6 = this.parentRootViewHeight;
-                            i10 = 5;
+                            top = this.parentRootViewHeight;
+                            targetState = 5;
                         }
                     } else {
-                        int top2 = v6.getTop();
-                        int i12 = this.halfExpandedOffset;
-                        boolean z6 = top2 > i12 && top2 < this.collapsedOffset;
-                        if (!(this.mPressDownState == 6 && z6) && Math.abs(top2 - i12) < Math.abs(top2 - this.collapsedOffset)) {
-                            i6 = this.halfExpandedOffset;
-                            i10 = 6;
+                        int top2 = child.getTop();
+                        int fitOffset = this.halfExpandedOffset;
+                        boolean settled = top2 > fitOffset && top2 < this.collapsedOffset;
+                        if (!(this.mPressDownState == 6 && settled) && Math.abs(top2 - fitOffset) < Math.abs(top2 - this.collapsedOffset)) {
+                            top = this.halfExpandedOffset;
+                            targetState = 6;
                         } else {
-                            i6 = this.collapsedOffset;
+                            top = this.collapsedOffset;
                         }
                     }
-                    i10 = 4;
+                    targetState = 4;
                 }
             } else if (this.fitToContents) {
-                i6 = this.fitToContentsOffset;
+                top = this.fitToContentsOffset;
             } else {
-                int top3 = v6.getTop();
-                int i13 = this.halfExpandedOffset;
-                if (top3 > i13) {
-                    i10 = 6;
-                    i6 = i13;
+                int top3 = child.getTop();
+                int parentHeight = this.halfExpandedOffset;
+                if (top3 > parentHeight) {
+                    targetState = 6;
+                    top = parentHeight;
                 } else {
-                    i6 = this.expandedOffset;
+                    top = this.expandedOffset;
                 }
             }
-            startSettlingAnimation(v6, i10, i6, false);
+            startSettlingAnimation(child, targetState, top, false);
             this.nestedScrolled = false;
         }
     }
 
     @Override
-    public boolean onTouchEvent(CoordinatorLayout coordinatorLayout, V v6, MotionEvent motionEvent) {
-        if (!v6.isShown()) {
+    public boolean onTouchEvent(CoordinatorLayout coordinatorLayout, V child, MotionEvent motionEvent) {
+        if (!child.isShown()) {
             return false;
         }
         int actionMasked = motionEvent.getActionMasked();
@@ -1833,7 +1833,7 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.velocityTracker.addMovement(motionEvent);
         this.mYVelocity = getYVelocity();
         if (actionMasked == 2 && !this.ignoreEvents && this.viewDragHelper != null && Math.abs(this.initialY - motionEvent.getY()) > this.viewDragHelper.getTouchSlop()) {
-            this.viewDragHelper.captureChildView(v6, motionEvent.getPointerId(UIUtil.getAdjustmentPointerIndex(motionEvent, motionEvent.getActionIndex())));
+            this.viewDragHelper.captureChildView(child, motionEvent.getPointerId(UIUtil.getAdjustmentPointerIndex(motionEvent, motionEvent.getActionIndex())));
         }
         return !this.ignoreEvents;
     }
@@ -1853,29 +1853,29 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         }
     }
 
-    public void setCanHideKeyboard(boolean z6) {
-        this.mCanHideKeyboard = z6;
+    public void setCanHideKeyboard(boolean settled) {
+        this.mCanHideKeyboard = settled;
     }
 
     @Override
-    public void setDraggable(boolean z6) {
-        this.draggable = z6;
+    public void setDraggable(boolean draggable) {
+        this.draggable = draggable;
     }
 
     @Override
-    public void setExpandedOffset(int i2) {
-        if (i2 < 0) {
+    public void setExpandedOffset(int offset) {
+        if (offset < 0) {
             throw new IllegalArgumentException("offset must be greater than or equal to 0");
         }
-        this.expandedOffset = i2;
+        this.expandedOffset = offset;
     }
 
     @Override
-    public void setFitToContents(boolean z6) {
-        if (this.fitToContents == z6) {
+    public void setFitToContents(boolean fitToContents) {
+        if (this.fitToContents == fitToContents) {
             return;
         }
-        this.fitToContents = z6;
+        this.fitToContents = fitToContents;
         if (this.viewRef != null) {
             calculateCollapsedOffset();
         }
@@ -1884,65 +1884,65 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
     @Override
-    public void setGestureInsetBottomIgnored(boolean z6) {
-        this.gestureInsetBottomIgnored = z6;
+    public void setGestureInsetBottomIgnored(boolean gestureInsetBottomIgnored) {
+        this.gestureInsetBottomIgnored = gestureInsetBottomIgnored;
     }
 
-    public void setGlobalDrag(boolean z6) {
-        this.mGlobalDrag = z6;
+    public void setGlobalDrag(boolean settled) {
+        this.mGlobalDrag = settled;
     }
 
-    public void setHalfExpandOffsetUseParentRootViewHeight(boolean z6) {
-        this.mHalfExpandOffsetUseParentRootViewHeight = z6;
+    public void setHalfExpandOffsetUseParentRootViewHeight(boolean settled) {
+        this.mHalfExpandOffsetUseParentRootViewHeight = settled;
     }
 
     @Override
-    public void setHalfExpandedRatio(float f2) {
-        if (f2 <= 0.0f || f2 >= 1.0f) {
+    public void setHalfExpandedRatio(float ratio) {
+        if (ratio <= 0.0f || ratio >= 1.0f) {
             throw new IllegalArgumentException("ratio must be a float value between 0 and 1");
         }
-        this.halfExpandedRatio = f2;
+        this.halfExpandedRatio = ratio;
         if (this.viewRef != null) {
             calculateHalfExpandedOffset();
         }
     }
 
-    public void setHeightChangeAnim(boolean z6) {
+    public void setHeightChangeAnim(boolean settled) {
         WeakReference<V> weakReference;
         // Leapy modified 2026-07-24: BEGIN match decoded OPPO height-change state handling.
-        this.mStartHeightChangeAnim = z6;
+        this.mStartHeightChangeAnim = settled;
         // Leapy end 2026-07-24: no synthetic generation token is used by the reference implementation.
-        if (z6 && isPanelCenterDisplay() && (weakReference = this.viewRef) != null && (weakReference.get() instanceof COUIPanelPercentFrameLayout)) {
+        if (settled && isPanelCenterDisplay() && (weakReference = this.viewRef) != null && (weakReference.get() instanceof COUIPanelPercentFrameLayout)) {
             ((COUIPanelPercentFrameLayout) this.viewRef.get()).prepareForOutlineProvider();
         }
     }
 
     @Override
     @SuppressLint({"WrongConstant"})
-    public void setHideable(boolean z6) {
-        if (this.hideable != z6) {
-            this.hideable = z6;
-            if (!z6 && this.state == 5) {
+    public void setHideable(boolean hideable) {
+        if (this.hideable != hideable) {
+            this.hideable = hideable;
+            if (!hideable && this.state == STATE_HIDDEN) {
                 setPanelState(4);
             }
             updateAccessibilityActions();
         }
     }
 
-    public void setIsHandlePanel(boolean z6) {
-        this.mIsHandlePanel = z6;
+    public void setIsHandlePanel(boolean settled) {
+        this.mIsHandlePanel = settled;
     }
 
-    public void setIsInTinyScreen(boolean z6) {
-        this.mIsInTinyScreen = z6;
+    public void setIsInTinyScreen(boolean settled) {
+        this.mIsInTinyScreen = settled;
     }
 
-    public void setIsNestedScrollingCheckEnabled(boolean z6) {
-        this.mIsNestedScrollingCheckEnabled = z6;
+    public void setIsNestedScrollingCheckEnabled(boolean settled) {
+        this.mIsNestedScrollingCheckEnabled = settled;
     }
 
-    public void setLayoutAtMaxHeight(boolean z6) {
-        this.mLayoutAtMaxHeight = z6;
+    public void setLayoutAtMaxHeight(boolean settled) {
+        this.mLayoutAtMaxHeight = settled;
     }
 
     public void setOnNestedScrollingChild(OnNestedScrollingChild onNestedScrollingChild) {
@@ -1957,28 +1957,28 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.mCOUIPanelDragListener = cOUIPanelDragListener;
     }
 
-    public void setPanelPaddingBottom(int i2) {
-        this.mPanelPaddingBottom = i2;
+    public void setPanelPaddingBottom(int paddingBottom) {
+        this.mPanelPaddingBottom = paddingBottom;
     }
 
-    public void setPanelPeekHeight(int i2) {
-        setPanelPeekHeight(i2, false);
+    public void setPanelPeekHeight(int peekHeight) {
+        setPanelPeekHeight(peekHeight, false);
     }
 
-    public void setPanelSkipCollapsed(boolean z6) {
-        this.skipCollapsed = z6;
+    public void setPanelSkipCollapsed(boolean settled) {
+        this.skipCollapsed = settled;
     }
 
-    public void setPanelState(int i2) {
-        if (i2 == this.state) {
+    public void setPanelState(int state) {
+        if (state == this.state) {
             return;
         }
         if (this.viewRef != null) {
-            settleToStatePendingLayout(i2);
+            settleToStatePendingLayout(state);
             return;
         }
-        if (i2 == 4 || i2 == 3 || i2 == 6 || (this.hideable && i2 == 5)) {
-            this.state = i2;
+        if (state == 4 || state == 3 || state == 6 || (this.hideable && state == 5)) {
+            this.state = state;
         }
     }
 
@@ -1991,82 +1991,82 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
     }
 
     @Override
-    public void setSaveFlags(int i2) {
-        this.saveFlags = i2;
+    public void setSaveFlags(int flags) {
+        this.saveFlags = flags;
     }
 
-    public void setStateInternal(int i2) {
-        V v6;
-        if (this.state == i2) {
+    public void setStateInternal(int state) {
+        V child;
+        if (this.state == state) {
             return;
         }
-        this.state = i2;
+        this.state = state;
         WeakReference<V> weakReference = this.viewRef;
-        if (weakReference == null || (v6 = weakReference.get()) == null) {
+        if (weakReference == null || (child = weakReference.get()) == null) {
             return;
         }
-        if (i2 == 3) {
+        if (state == 3) {
             updateImportantForAccessibility(true);
-        } else if (i2 == 6 || i2 == 5 || i2 == 4) {
+        } else if (state == 6 || state == 5 || state == 4) {
             updateImportantForAccessibility(false);
         }
-        updateDrawableForTargetState(i2);
-        for (int i6 = 0; i6 < this.callbacks.size(); i6++) {
-            this.callbacks.get(i6).onStateChanged(v6, i2);
+        updateDrawableForTargetState(state);
+        for (int top = 0; top < this.callbacks.size(); top++) {
+            this.callbacks.get(top).onStateChanged(child, state);
         }
         updateAccessibilityActions();
     }
 
-    public void setUpdateImportantForAccessibilityOnSiblings(boolean z6) {
-        this.updateImportantForAccessibilityOnSiblings = z6;
+    public void setUpdateImportantForAccessibilityOnSiblings(boolean update) {
+        this.updateImportantForAccessibilityOnSiblings = update;
     }
 
-    public void settleToState(View view, int i2) {
+    public void settleToState(View view, int state) {
         int expandedOffset;
-        int i6;
-        if (i2 == 4) {
+        int top;
+        if (state == 4) {
             expandedOffset = this.collapsedOffset;
-        } else if (i2 == 6) {
+        } else if (state == 6) {
             expandedOffset = this.halfExpandedOffset;
-            if (this.fitToContents && expandedOffset <= (i6 = this.fitToContentsOffset)) {
-                i2 = 3;
-                expandedOffset = i6;
+            if (this.fitToContents && expandedOffset <= (top = this.fitToContentsOffset)) {
+                state = 3;
+                expandedOffset = top;
             }
-        } else if (i2 == 3) {
+        } else if (state == 3) {
             expandedOffset = getExpandedOffset();
         } else {
-            if (!this.hideable || i2 != 5) {
-                throw new IllegalArgumentException("Illegal state argument: " + i2);
+            if (!this.hideable || state != 5) {
+                throw new IllegalArgumentException("Illegal state argument: " + state);
             }
             expandedOffset = this.parentRootViewHeight;
         }
-        startSettlingAnimation(view, i2, expandedOffset, false);
+        startSettlingAnimation(view, state, expandedOffset, false);
     }
 
-    public boolean shouldHide(View view, float f2) {
+    public boolean shouldHide(View view, float yvel) {
         if (this.skipCollapsed) {
             return true;
         }
         if (view.getTop() < this.collapsedOffset) {
             return false;
         }
-        return Math.abs((((float) view.getTop()) + (f2 * 0.1f)) - ((float) this.collapsedOffset)) / ((float) calculatePeekHeight()) > 0.5f;
+        return Math.abs((((float) view.getTop()) + (yvel * HIDE_FRICTION)) - ((float) this.collapsedOffset)) / ((float) calculatePeekHeight()) > HIDE_THRESHOLD;
     }
 
-    public void startSettleRunnable(View view, int i2, int i6) {
+    public void startSettleRunnable(View view, int state, int top) {
         if (this.mPanelHeightChangeAnim == null) {
             createPanelHeightChangeAnim();
         }
-        if (i2 == 5) {
-            float top = this.parentHeight - view.getTop();
-            float f2 = this.parentHeight;
-            float f10 = 0.0f;
-            if (top > 0.0f && f2 != 0.0f) {
-                f10 = top / f2;
+        if (state == 5) {
+            float remainingDistance = this.parentHeight - view.getTop();
+            float parentHeight = this.parentHeight;
+            float responseFactor = 0.0f;
+            if (remainingDistance > 0.0f && parentHeight != 0.0f) {
+                responseFactor = remainingDistance / parentHeight;
             }
-            this.mPanelHeightSpringForce.setResponse(0.18f + (0.19f * f10));
+            this.mPanelHeightSpringForce.setResponse(0.18f + (0.19f * responseFactor));
         } else {
-            this.mPanelHeightSpringForce.setResponse(0.4f);
+            this.mPanelHeightSpringForce.setResponse(SETTLE_ANIM_SPRING_RESPONSE);
         }
         if (this.mPanelHeightChangeAnim.isRunning()) {
             // Leapy modified 2026-07-30: BEGIN match decoded OPPO running-spring behavior.
@@ -2074,11 +2074,11 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
             // The shared spring's end listener reads mSettleTargetState. While it
             // is already running, OPPO only replaces that logical target and lets
             // the existing animation complete; it does not restart the spring.
-            this.mSettleTargetState = i2;
+            this.mSettleTargetState = state;
             // Leapy end 2026-07-30: preserve decoded OPPO spring ownership.
             return;
         }
-        this.mSettleTargetState = i2;
+        this.mSettleTargetState = state;
         COUIViewDragHelper cOUIViewDragHelper = this.viewDragHelper;
         if (cOUIViewDragHelper == null || cOUIViewDragHelper.getCapturedView() == null || this.viewDragHelper.getViewDragState() != 2) {
             setStateInternal(this.mSettleTargetState);
@@ -2089,31 +2089,31 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.mStartTopValue = top2;
         this.mPanelHeightChangeAnim.setStartValue(top2);
         this.mPanelHeightChangeAnim.setStartVelocity(this.mYVelocity);
-        this.mPanelHeightChangeAnim.animateToFinalPosition(i6);
+        this.mPanelHeightChangeAnim.animateToFinalPosition(top);
     }
 
-    public void startSettlingAnimation(View view, int i2, int i6, boolean z6) {
-        if ((z6 && getState() == 1) ? this.viewDragHelper.settleCapturedViewAt(view.getLeft(), i6) : this.viewDragHelper.smoothSlideViewTo(view, view.getLeft(), i6)) {
+    public void startSettlingAnimation(View view, int state, int top, boolean settleImmediately) {
+        if ((settleImmediately && getState() == 1) ? this.viewDragHelper.settleCapturedViewAt(view.getLeft(), top) : this.viewDragHelper.smoothSlideViewTo(view, view.getLeft(), top)) {
             setStateInternal(2);
-            updateDrawableForTargetState(i2);
+            updateDrawableForTargetState(state);
             getYVelocity();
             if (!this.mIsInTinyScreen) {
-                if (i2 == 5 && isImeVisible(view) && isInFreeFormModeWindowMode()) {
-                    i6 += UIUtil.getScreenHeightMetrics(this.mContext);
+                if (state == 5 && isImeVisible(view) && isInFreeFormModeWindowMode()) {
+                    top += UIUtil.getScreenHeightMetrics(this.mContext);
                 }
-                startSettleRunnable(view, i2, i6);
-            } else if (i2 == 5) {
+                startSettleRunnable(view, state, top);
+            } else if (state == 5) {
                 startPanelTranslateAnimation(view, 0, this.mContext.getResources().getDimensionPixelOffset(com.coui.appcompat.R.dimen.coui_panel_max_height_tiny_screen), DEFAULT_TRANSLATE_HIDING_ANIMATOR_DURATION, new COUIOutEaseInterpolator());
             } else {
-                startSettleRunnable(view, i2, i6);
+                startSettleRunnable(view, state, top);
             }
             // Leapy removed 2026-07-24: BEGIN remove non-reference duplicate hide-target bookkeeping.
             // Leapy end 2026-07-24: STATE_HIDDEN completion is dispatched from mSettleTargetState.
         } else {
-            setStateInternal(i2);
+            setStateInternal(state);
         }
         PullUpToDismissPanelListener pullUpToDismissPanelListener = this.mPullUpToDismissPanelListener;
-        if (pullUpToDismissPanelListener == null || i2 != 5) {
+        if (pullUpToDismissPanelListener == null || state != 5) {
             return;
         }
         pullUpToDismissPanelListener.onPullUpDismiss();
@@ -2127,13 +2127,13 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         this.mPanelHeightChangeAnim.cancel();
     }
 
-    private void createMaterialShapeDrawable(Context context, AttributeSet attributeSet, boolean z6, ColorStateList colorStateList) {
+    private void createMaterialShapeDrawable(Context context, AttributeSet attributeSet, boolean withBackground, ColorStateList colorStateList) {
         if (this.shapeThemingEnabled) {
             this.shapeAppearanceModelDefault = ShapeAppearanceModel.builder(context, attributeSet, com.google.android.material.R.attr.bottomSheetStyle, DEF_STYLE_RES).build();
             MaterialShapeDrawable gVar = new MaterialShapeDrawable(this.shapeAppearanceModelDefault);
             this.materialShapeDrawable = gVar;
             gVar.initializeElevationOverlay(context);
-            if (z6 && colorStateList != null) {
+            if (withBackground && colorStateList != null) {
                 this.materialShapeDrawable.setFillColor(colorStateList);
                 return;
             }
@@ -2143,30 +2143,30 @@ public class COUIBottomSheetBehavior<V extends View> extends BottomSheetBehavior
         }
     }
 
-    private void setPanelPeekHeight(int i2, boolean z6) {
-        V v6;
-        if (i2 == -1) {
+    private void setPanelPeekHeight(int peekHeight, boolean animate) {
+        V child;
+        if (peekHeight == -1) {
             if (this.peekHeightAuto) {
                 return;
             } else {
                 this.peekHeightAuto = true;
             }
         } else {
-            if (!this.peekHeightAuto && this.peekHeight == i2) {
+            if (!this.peekHeightAuto && this.peekHeight == peekHeight) {
                 return;
             }
             this.peekHeightAuto = false;
-            this.peekHeight = Math.max(0, i2);
+            this.peekHeight = Math.max(0, peekHeight);
         }
         if (this.viewRef != null) {
             calculateCollapsedOffset();
-            if (this.state != 4 || (v6 = this.viewRef.get()) == null) {
+            if (this.state != 4 || (child = this.viewRef.get()) == null) {
                 return;
             }
-            if (z6) {
+            if (animate) {
                 settleToStatePendingLayout(this.state);
             } else {
-                v6.requestLayout();
+                child.requestLayout();
             }
         }
     }

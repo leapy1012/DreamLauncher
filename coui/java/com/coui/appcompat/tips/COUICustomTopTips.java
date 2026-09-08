@@ -126,19 +126,23 @@ public abstract class COUICustomTopTips extends COUICardView {
             return mShow ? mAnimatorShowListener : mAnimatorDismissListener;
         }
 
-        @Override public void onAnimationStart(Animator animation) {
+        @Override
+        public void onAnimationStart(Animator animation) {
             if (listener() != null) listener().onAnimationStart(animation);
         }
 
-        @Override public void onAnimationEnd(Animator animation) {
+        @Override
+        public void onAnimationEnd(Animator animation) {
             if (listener() != null) listener().onAnimationEnd(animation);
         }
 
-        @Override public void onAnimationCancel(Animator animation) {
+        @Override
+        public void onAnimationCancel(Animator animation) {
             if (listener() != null) listener().onAnimationCancel(animation);
         }
 
-        @Override public void onAnimationRepeat(Animator animation) {
+        @Override
+        public void onAnimationRepeat(Animator animation) {
             if (listener() != null) listener().onAnimationRepeat(animation);
         }
     }

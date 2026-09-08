@@ -17,9 +17,14 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
 import androidx.appcompat.widget.TooltipCompat;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.viewpager.widget.ViewPager;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.accessibilityutil.COUIAccessibilityUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.hapticfeedback.COUIHapticFeedbackConstants;
@@ -28,10 +33,6 @@ import com.coui.appcompat.reddot.COUIHintRedDotMemento;
 import com.coui.appcompat.state.COUIMaskEffectDrawable;
 import com.coui.appcompat.state.COUIStateEffectDrawable;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
-import androidx.core.content.res.ResourcesCompat;
-import com.coui.appcompat.R;
-import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
-import com.coui.appcompat.R;
 
 
 public class COUITabView extends LinearLayout {
@@ -66,8 +67,8 @@ public class COUITabView extends LinearLayout {
         this.mNoticeWithNumberDescriptionId = R.plurals.red_dot_with_number_description;
     }
 
-    private float approximateLineWidth(Layout layout, int i2, float f2) {
-        return layout.getLineWidth(i2) * (f2 / layout.getPaint().getTextSize());
+    private float approximateLineWidth(Layout layout, int index, float value) {
+        return layout.getLineWidth(index) * (value / layout.getPaint().getTextSize());
     }
 
     private void configStateEffectBackground() {
@@ -121,9 +122,9 @@ public class COUITabView extends LinearLayout {
             }
             imageView.setContentDescription(contentDescription);
         }
-        boolean z6 = !TextUtils.isEmpty(text);
+        boolean isEmpty_2 = !TextUtils.isEmpty(text);
         if (textView != null) {
-            if (z6) {
+            if (isEmpty_2) {
                 CharSequence text2 = textView.getText();
                 textView.setText(text);
                 textView.setVisibility(0);
@@ -152,7 +153,7 @@ public class COUITabView extends LinearLayout {
         }
         if (imageView != null) {
             ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) imageView.getLayoutParams();
-            if (z6 && imageView.getVisibility() == 0) {
+            if (isEmpty_2 && imageView.getVisibility() == 0) {
                 iDpToPx = dpToPx(8);
             }
             if (iDpToPx != marginLayoutParams.bottomMargin) {
@@ -160,11 +161,11 @@ public class COUITabView extends LinearLayout {
                 imageView.requestLayout();
             }
         }
-        TooltipCompat.setTooltipText(this, z6 ? null : contentDescription);
+        TooltipCompat.setTooltipText(this, isEmpty_2 ? null : contentDescription);
     }
 
-    public int dpToPx(int i2) {
-        return Math.round(getResources().getDisplayMetrics().density * i2);
+    public int dpToPx(int index) {
+        return Math.round(getResources().getDisplayMetrics().density * index);
     }
 
     public COUIHintRedDot getHintRedDot() {
@@ -224,9 +225,9 @@ public class COUITabView extends LinearLayout {
     }
 
     @Override
-    public void onSizeChanged(int i2, int i6, int i10, int i11) {
-        super.onSizeChanged(i2, i6, i10, i11);
-        this.mTabRect.set(0.0f, 0.0f, i2, i6);
+    public void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        this.mTabRect.set(0.0f, 0.0f, w, h);
     }
 
     @Override
@@ -290,29 +291,29 @@ public class COUITabView extends LinearLayout {
     }
 
     @Override
-    public void setEnabled(boolean z6) {
-        super.setEnabled(z6);
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
         TextView textView = this.mTextFrame;
         if (textView != null) {
-            textView.setEnabled(z6);
+            textView.setEnabled(enabled);
         }
         ImageView imageView = this.mIconView;
         if (imageView != null) {
-            imageView.setEnabled(z6);
+            imageView.setEnabled(enabled);
         }
         View view = this.mCustomView;
         if (view != null) {
-            view.setEnabled(z6);
+            view.setEnabled(enabled);
         }
     }
 
     @Override
-    public void setSelected(boolean z6) {
+    public void setSelected(boolean selected) {
         TextView textView;
-        boolean z10 = isSelected() != z6;
-        super.setSelected(z6);
-        if (z10 && (textView = this.mTextFrame) != null) {
-            if (z6) {
+        boolean flag = isSelected() != selected;
+        super.setSelected(selected);
+        if (flag && (textView = this.mTextFrame) != null) {
+            if (selected) {
                 textView.setTypeface(this.mCOUITabLayout.mSelectedTypeface);
             } else {
                 textView.setTypeface(this.mCOUITabLayout.mNormalTypeface);
@@ -320,19 +321,19 @@ public class COUITabView extends LinearLayout {
         }
         TextView textView2 = this.mTextFrame;
         if (textView2 != null) {
-            COUIDarkModeUtil.setForceDarkAllow(textView2, !z6);
+            COUIDarkModeUtil.setForceDarkAllow(textView2, !selected);
         }
         TextView textView3 = this.mTextFrame;
         if (textView3 != null) {
-            textView3.setSelected(z6);
+            textView3.setSelected(selected);
         }
         ImageView imageView = this.mIconView;
         if (imageView != null) {
-            imageView.setSelected(z6);
+            imageView.setSelected(selected);
         }
         View view = this.mCustomView;
         if (view != null) {
-            view.setSelected(z6);
+            view.setSelected(selected);
         }
     }
 
@@ -347,7 +348,7 @@ public class COUITabView extends LinearLayout {
         COUITab cOUITab = this.mTab;
         COUIHintRedDotMemento cOUIHintRedDotMementoSaveMemento = null;
         View customView = cOUITab != null ? cOUITab.getCustomView() : null;
-        boolean z6 = false;
+        boolean flag = false;
         if (customView != null) {
             ViewParent parent = customView.getParent();
             if (parent != this) {
@@ -430,9 +431,9 @@ public class COUITabView extends LinearLayout {
             }
         }
         if (cOUITab != null && cOUITab.isSelected()) {
-            z6 = true;
+            flag = true;
         }
-        setSelected(z6);
+        setSelected(flag);
     }
 }
 

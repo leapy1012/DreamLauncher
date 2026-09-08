@@ -33,7 +33,7 @@ public class COUICardListHelper {
     private static boolean isSupportCard(PreferenceGroup group, Preference preference) {
         return group instanceof PreferenceScreen
                 ? preference instanceof COUICardSupportInterface
-                && ((COUICardSupportInterface) preference).isSupportCardUse()
+                  && ((COUICardSupportInterface) preference).isSupportCardUse()
                 : !(preference instanceof PreferenceCategory);
     }
 

@@ -18,16 +18,19 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowInsets;
+
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.core.view.accessibility.AccessibilityViewCommand;
 import androidx.customview.view.AbsSavedState;
 import androidx.customview.widget.ViewDragHelper;
+
 import com.coui.appcompat.view.MaterialResource;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.shape.MaterialShapeDrawable;
 import com.google.android.material.shape.ShapeAppearanceModel;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
@@ -209,7 +212,7 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
         this.halfExpandedRatio = 0.5f;
         this.elevation = -1.0f;
         this.draggable = true;
-        this.state = 4;
+        this.state = STATE_COLLAPSED;
         this.callbacks = new ArrayList<>();
         this.dragCallback = new ViewDragHelper.Callback() {
             private boolean releasedLow(View view) {
@@ -227,7 +230,7 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
             public int clampViewPositionVertical(View view, int top, int dy) {
                 int pullUpOffset;
                 int currentState;
-                if (COUIGuideBehavior.this.mPullUpListener == null || ((currentState = COUIGuideBehavior.this.state) != 3 && (currentState != 1 || view.getTop() > COUIGuideBehavior.this.getExpandedOffset()))) {
+                if (COUIGuideBehavior.this.mPullUpListener == null || ((currentState = COUIGuideBehavior.this.state) != STATE_EXPANDED && (currentState != STATE_DRAGGING || view.getTop() > COUIGuideBehavior.this.getExpandedOffset()))) {
                     pullUpOffset = 0;
                 } else {
                     COUIGuideBehavior.this.mIsIgnoreExpandedOffsetChange = true;
@@ -246,8 +249,8 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
 
             @Override
             public void onViewDragStateChanged(int state) {
-                if (state == 1 && COUIGuideBehavior.this.draggable) {
-                    COUIGuideBehavior.this.setStateInternal(1);
+                if (state == STATE_DRAGGING && COUIGuideBehavior.this.draggable) {
+                    COUIGuideBehavior.this.setStateInternal(STATE_DRAGGING);
                 }
             }
 
@@ -352,13 +355,13 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
                 }
                 if (currentState == 3 && behavior.activePointerId == pointerId) {
                     WeakReference<View> weakReference = behavior.nestedScrollingChildRef;
-                    View view2 = weakReference != null ? weakReference.get() : null;
-                    if (view2 != null && view2.canScrollVertically(-1)) {
+                    View nestedChild = weakReference != null ? weakReference.get() : null;
+                    if (nestedChild != null && nestedChild.canScrollVertically(-1)) {
                         return false;
                     }
                 }
-                WeakReference<V> weakReference2 = COUIGuideBehavior.this.viewRef;
-                return weakReference2 != null && weakReference2.get() == view;
+                WeakReference<V> sheetRef = COUIGuideBehavior.this.viewRef;
+                return sheetRef != null && sheetRef.get() == view;
             }
         };
     }
@@ -397,7 +400,7 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
     private void createShapeValueAnimator() {
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
         this.interpolatorAnimator = valueAnimatorOfFloat;
-        valueAnimatorOfFloat.setDuration(500L);
+        valueAnimatorOfFloat.setDuration(CORNER_ANIMATION_DURATION);
         this.interpolatorAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -771,9 +774,9 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
         if (Math.abs(this.initialY - motionEvent.getY()) > Math.abs(this.initialX - motionEvent.getX()) * 2.0f && this.viewDragHelper != null && Math.abs(this.initialY - motionEvent.getY()) > this.viewDragHelper.getTouchSlop()) {
             return true;
         }
-        WeakReference<View> weakReference2 = this.nestedScrollingChildRef;
-        View view2 = weakReference2 != null ? weakReference2.get() : null;
-        return (actionMasked != 2 || view2 == null || this.ignoreEvents || this.state == 1 || coordinatorLayout.isPointInChildBounds(view2, (int) motionEvent.getX(), (int) motionEvent.getY()) || this.viewDragHelper == null || Math.abs(((float) this.initialY) - motionEvent.getY()) <= ((float) this.viewDragHelper.getTouchSlop())) ? false : true;
+        WeakReference<View> nestedChildRef = this.nestedScrollingChildRef;
+        View nestedChild = nestedChildRef != null ? nestedChildRef.get() : null;
+        return (actionMasked != 2 || nestedChild == null || this.ignoreEvents || this.state == STATE_DRAGGING || coordinatorLayout.isPointInChildBounds(nestedChild, (int) motionEvent.getX(), (int) motionEvent.getY()) || this.viewDragHelper == null || Math.abs(((float) this.initialY) - motionEvent.getY()) <= ((float) this.viewDragHelper.getTouchSlop())) ? false : true;
     }
 
     @Override
@@ -1000,7 +1003,7 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
             return false;
         }
         int actionMasked = motionEvent.getActionMasked();
-        if (this.state == 1 && actionMasked == 0) {
+        if (this.state == STATE_DRAGGING && actionMasked == 0) {
             return true;
         }
         ViewDragHelper dragHelper = this.viewDragHelper;
@@ -1247,7 +1250,7 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
         this.halfExpandedRatio = 0.5f;
         this.elevation = -1.0f;
         this.draggable = true;
-        this.state = 4;
+        this.state = STATE_COLLAPSED;
         this.callbacks = new ArrayList<>();
         this.dragCallback = new ViewDragHelper.Callback() {
             private boolean releasedLow(View view) {
@@ -1265,7 +1268,7 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
             public int clampViewPositionVertical(View view, int top, int dy) {
                 int pullUpOffset;
                 int currentState;
-                if (COUIGuideBehavior.this.mPullUpListener == null || ((currentState = COUIGuideBehavior.this.state) != 3 && (currentState != 1 || view.getTop() > COUIGuideBehavior.this.getExpandedOffset()))) {
+                if (COUIGuideBehavior.this.mPullUpListener == null || ((currentState = COUIGuideBehavior.this.state) != STATE_EXPANDED && (currentState != STATE_DRAGGING || view.getTop() > COUIGuideBehavior.this.getExpandedOffset()))) {
                     pullUpOffset = 0;
                 } else {
                     COUIGuideBehavior.this.mIsIgnoreExpandedOffsetChange = true;
@@ -1284,8 +1287,8 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
 
             @Override
             public void onViewDragStateChanged(int state) {
-                if (state == 1 && COUIGuideBehavior.this.draggable) {
-                    COUIGuideBehavior.this.setStateInternal(1);
+                if (state == STATE_DRAGGING && COUIGuideBehavior.this.draggable) {
+                    COUIGuideBehavior.this.setStateInternal(STATE_DRAGGING);
                 }
             }
 
@@ -1390,13 +1393,13 @@ public class COUIGuideBehavior<V extends View> extends BottomSheetBehavior<V> {
                 }
                 if (currentState == 3 && behavior.activePointerId == pointerId) {
                     WeakReference<View> weakReference = behavior.nestedScrollingChildRef;
-                    View view2 = weakReference != null ? weakReference.get() : null;
-                    if (view2 != null && view2.canScrollVertically(-1)) {
+                    View nestedChild = weakReference != null ? weakReference.get() : null;
+                    if (nestedChild != null && nestedChild.canScrollVertically(-1)) {
                         return false;
                     }
                 }
-                WeakReference<V> weakReference2 = COUIGuideBehavior.this.viewRef;
-                return weakReference2 != null && weakReference2.get() == view;
+                WeakReference<V> sheetRef = COUIGuideBehavior.this.viewRef;
+                return sheetRef != null && sheetRef.get() == view;
             }
         };
         TypedArray attributes = context.obtainStyledAttributes(attributeSet, com.google.android.material.R.styleable.BottomSheetBehavior_Layout);

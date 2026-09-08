@@ -62,7 +62,7 @@ public class COUIBottomAlertDialogAdjustUtil {
     }
 
     private static void setFirstLayoutListener(final Window window,
-            final OnFirstLayoutListener listener) {
+                                               final OnFirstLayoutListener listener) {
         if (listener == null) {
             return;
         }
@@ -126,7 +126,7 @@ public class COUIBottomAlertDialogAdjustUtil {
     }
 
     private static void updateWindowLocation(Window window, View anchorView, Point point,
-            Point extraOffset) {
+                                             Point extraOffset) {
         Point position;
         if (anchorView == null && point != null) {
             offsetWindowTo(window, point.x, point.y);
@@ -176,7 +176,7 @@ public class COUIBottomAlertDialogAdjustUtil {
     }
 
     public static void adjustToFree(final Window window, final View anchorView, final Point point,
-            final Point extraOffset) {
+                                    final Point extraOffset) {
         if (window == null) {
             return;
         }
@@ -200,7 +200,7 @@ public class COUIBottomAlertDialogAdjustUtil {
                 parentPanel.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
                     @Override
                     public void onLayoutChange(View view, int left, int top, int right, int bottom,
-                            int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                                               int oldLeft, int oldTop, int oldRight, int oldBottom) {
                         updateWindowLocation(window, anchorView, point, extraOffset);
                         parentPanel.removeOnLayoutChangeListener(this);
                         window.getDecorView().setVisibility(View.VISIBLE);

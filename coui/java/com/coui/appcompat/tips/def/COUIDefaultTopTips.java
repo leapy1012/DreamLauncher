@@ -30,7 +30,8 @@ public class COUIDefaultTopTips extends COUICustomTopTips implements IDefaultTop
 
     public IDefaultTopTips generateView() {
         COUIDefaultTopTipsView view = new COUIDefaultTopTipsView(getContext());
-        view.setOnLinesChangedListener(lines -> { });
+        view.setOnLinesChangedListener(lines -> {
+        });
         view.setLayoutParams(new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
         setContentView(view);
         return view;
@@ -55,15 +56,58 @@ public class COUIDefaultTopTips extends COUICustomTopTips implements IDefaultTop
                 COUIContextUtil.getAttrColor(getContext(), R.attr.couiColorContainer4)));
     }
 
-    @Override public void setCloseBtnListener(View.OnClickListener listener) { mDefaultTopTips.setCloseBtnListener(listener); }
-    @Override public void setCloseDrawable(Drawable drawable) { mDefaultTopTips.setCloseDrawable(drawable); }
-    @Override public void setNegativeButton(CharSequence text) { mDefaultTopTips.setNegativeButton(text); }
-    @Override public void setNegativeButtonColor(int color) { mDefaultTopTips.setNegativeButtonColor(color); }
-    @Override public void setNegativeButtonListener(View.OnClickListener listener) { mDefaultTopTips.setNegativeButtonListener(listener); }
-    @Override public void setPositiveButton(CharSequence text) { mDefaultTopTips.setPositiveButton(text); }
-    @Override public void setPositiveButtonColor(int color) { mDefaultTopTips.setPositiveButtonColor(color); }
-    @Override public void setPositiveButtonListener(View.OnClickListener listener) { mDefaultTopTips.setPositiveButtonListener(listener); }
-    @Override public void setStartIcon(Drawable drawable) { mDefaultTopTips.setStartIcon(drawable); }
-    @Override public void setTipsText(CharSequence text) { mDefaultTopTips.setTipsText(text); }
-    @Override public void setTipsTextColor(int color) { mDefaultTopTips.setTipsTextColor(color); }
+    @Override
+    public void setCloseBtnListener(View.OnClickListener listener) {
+        mDefaultTopTips.setCloseBtnListener(listener);
+    }
+
+    @Override
+    public void setCloseDrawable(Drawable drawable) {
+        mDefaultTopTips.setCloseDrawable(drawable);
+    }
+
+    @Override
+    public void setNegativeButton(CharSequence text) {
+        mDefaultTopTips.setNegativeButton(text);
+    }
+
+    @Override
+    public void setNegativeButtonColor(int color) {
+        mDefaultTopTips.setNegativeButtonColor(color);
+    }
+
+    @Override
+    public void setNegativeButtonListener(View.OnClickListener listener) {
+        mDefaultTopTips.setNegativeButtonListener(listener);
+    }
+
+    @Override
+    public void setPositiveButton(CharSequence text) {
+        mDefaultTopTips.setPositiveButton(text);
+    }
+
+    @Override
+    public void setPositiveButtonColor(int color) {
+        mDefaultTopTips.setPositiveButtonColor(color);
+    }
+
+    @Override
+    public void setPositiveButtonListener(View.OnClickListener listener) {
+        mDefaultTopTips.setPositiveButtonListener(listener);
+    }
+
+    @Override
+    public void setStartIcon(Drawable drawable) {
+        mDefaultTopTips.setStartIcon(drawable);
+    }
+
+    @Override
+    public void setTipsText(CharSequence text) {
+        mDefaultTopTips.setTipsText(text);
+    }
+
+    @Override
+    public void setTipsTextColor(int color) {
+        mDefaultTopTips.setTipsTextColor(color);
+    }
 }

@@ -27,21 +27,23 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
+
 import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIEaseInterpolator;
 import com.coui.appcompat.animation.COUIInEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.vibrateutil.VibrateUtils;
-import com.coui.appcompat.R;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
-/* JADX INFO: loaded from: classes11.dex */
 public class COUILockPatternView extends View {
     public static final long ALPHA_DELAY = 166;
     public static final long ALPHA_DURATION = 167;
@@ -108,34 +110,34 @@ public class COUILockPatternView extends View {
         private final int column;
         private final int row;
 
-        private Cell(int i2, int i3) {
-            checkRange(i2, i3);
-            this.row = i2;
-            this.column = i3;
+        private Cell(int row, int column) {
+            checkRange(row, column);
+            this.row = row;
+            this.column = column;
         }
 
-        private static void checkRange(int i2, int i3) {
-            if (i2 < 0 || i2 > 2) {
+        private static void checkRange(int row, int column) {
+            if (row < 0 || row > 2) {
                 throw new IllegalArgumentException("row must be in range 0-2");
             }
-            if (i3 < 0 || i3 > 2) {
+            if (column < 0 || column > 2) {
                 throw new IllegalArgumentException("column must be in range 0-2");
             }
         }
 
         private static Cell[][] createCells() {
             Cell[][] cellArr = (Cell[][]) Array.newInstance((Class<?>) Cell.class, 3, 3);
-            for (int i2 = 0; i2 < 3; i2++) {
-                for (int i3 = 0; i3 < 3; i3++) {
-                    cellArr[i2][i3] = new Cell(i2, i3);
+            for (int row = 0; row < 3; row++) {
+                for (int column = 0; column < 3; column++) {
+                    cellArr[row][column] = new Cell(row, column);
                 }
             }
             return cellArr;
         }
 
-        public static Cell of(int i2, int i3) {
-            checkRange(i2, i3);
-            return sCells[i2][i3];
+        public static Cell of(int row, int column) {
+            checkRange(row, column);
+            return sCells[row][column];
         }
 
         public int getColumn() {
@@ -172,18 +174,18 @@ public class COUILockPatternView extends View {
             this.cellDrawListener = onCellDrawListener;
         }
 
-        public void setCellNumberAlpha(float f2) {
-            this.alpha = f2;
+        public void setCellNumberAlpha(float alpha) {
+            this.alpha = alpha;
             this.cellDrawListener.drawCell();
         }
 
-        public void setCellNumberTranslateX(int i2) {
-            this.translationX = i2;
+        public void setCellNumberTranslateX(int translationX) {
+            this.translationX = translationX;
             this.cellDrawListener.drawCell();
         }
 
-        public void setCellNumberTranslateY(int i2) {
-            this.translationY = i2;
+        public void setCellNumberTranslateY(int translationY) {
+            this.translationY = translationY;
             this.cellDrawListener.drawCell();
         }
     }
@@ -226,81 +228,81 @@ public class COUILockPatternView extends View {
             super(view);
             this.mTempRect = new Rect();
             this.mItems = new SparseArray<>();
-            for (int i2 = 1; i2 < 10; i2++) {
-                this.mItems.put(i2, new VirtualViewContainer(getTextForVirtualView(i2)));
+            for (int virtualViewId = 1; virtualViewId < 10; virtualViewId++) {
+                this.mItems.put(virtualViewId, new VirtualViewContainer(getTextForVirtualView(virtualViewId)));
             }
         }
 
-        private Rect getBoundsForVirtualView(int i2) {
-            int i3 = i2 - 1;
+        private Rect getBoundsForVirtualView(int virtualViewId) {
+            int cellIndex = virtualViewId - 1;
             Rect rect = this.mTempRect;
-            int i4 = i3 / 3;
-            float centerXForColumn = COUILockPatternView.this.getCenterXForColumn(i3 % 3);
-            float centerYForRow = COUILockPatternView.this.getCenterYForRow(i4);
-            float f2 = COUILockPatternView.this.mSquareHeight * COUILockPatternView.this.mHitFactor * 0.5f;
-            float f3 = COUILockPatternView.this.mSquareWidth * COUILockPatternView.this.mHitFactor * 0.5f;
-            rect.left = (int) (centerXForColumn - f3);
-            rect.right = (int) (centerXForColumn + f3);
-            rect.top = (int) (centerYForRow - f2);
-            rect.bottom = (int) (centerYForRow + f2);
+            int row = cellIndex / 3;
+            float centerXForColumn = COUILockPatternView.this.getCenterXForColumn(cellIndex % 3);
+            float centerYForRow = COUILockPatternView.this.getCenterYForRow(row);
+            float halfHeight = COUILockPatternView.this.mSquareHeight * COUILockPatternView.this.mHitFactor * 0.5f;
+            float halfWidth = COUILockPatternView.this.mSquareWidth * COUILockPatternView.this.mHitFactor * 0.5f;
+            rect.left = (int) (centerXForColumn - halfWidth);
+            rect.right = (int) (centerXForColumn + halfWidth);
+            rect.top = (int) (centerYForRow - halfHeight);
+            rect.bottom = (int) (centerYForRow + halfHeight);
             return rect;
         }
 
-        private CharSequence getTextForVirtualView(int i2) {
-            return COUILockPatternView.this.getResources().getString(R.string.lockscreen_access_pattern_cell_added_verbose, String.valueOf(i2));
+        private CharSequence getTextForVirtualView(int virtualViewId) {
+            return COUILockPatternView.this.getResources().getString(R.string.lockscreen_access_pattern_cell_added_verbose, String.valueOf(virtualViewId));
         }
 
-        private int getVirtualViewIdForHit(float f2, float f3) {
+        private int getVirtualViewIdForHit(float x, float y) {
             int columnHit;
-            int rowHit = COUILockPatternView.this.getRowHit(f3);
-            if (rowHit < 0 || (columnHit = COUILockPatternView.this.getColumnHit(f2)) < 0) {
+            int rowHit = COUILockPatternView.this.getRowHit(y);
+            if (rowHit < 0 || (columnHit = COUILockPatternView.this.getColumnHit(x)) < 0) {
                 return Integer.MIN_VALUE;
             }
-            boolean z2 = COUILockPatternView.this.mPatternDrawLookup[rowHit][columnHit];
-            int i2 = (rowHit * 3) + columnHit + 1;
-            if (z2) {
-                return i2;
+            boolean partOfPattern = COUILockPatternView.this.mPatternDrawLookup[rowHit][columnHit];
+            int virtualViewId = (rowHit * 3) + columnHit + 1;
+            if (partOfPattern) {
+                return virtualViewId;
             }
             return Integer.MIN_VALUE;
         }
 
-        private boolean isClickable(int i2) {
-            if (i2 == Integer.MIN_VALUE || i2 == Integer.MAX_VALUE) {
+        private boolean isClickable(int virtualViewId) {
+            if (virtualViewId == Integer.MIN_VALUE || virtualViewId == Integer.MAX_VALUE) {
                 return false;
             }
-            int i3 = i2 - 1;
-            return !COUILockPatternView.this.mPatternDrawLookup[i3 / 3][i3 % 3];
+            int cellIndex = virtualViewId - 1;
+            return !COUILockPatternView.this.mPatternDrawLookup[cellIndex / 3][cellIndex % 3];
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public int getVirtualViewAt(float f2, float f3) {
-            return getVirtualViewIdForHit(f2, f3);
+        @Override
+        public int getVirtualViewAt(float x, float y) {
+            return getVirtualViewIdForHit(x, y);
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
+        @Override
         public void getVisibleVirtualViews(List<Integer> list) {
             if (COUILockPatternView.this.mPatternInProgress) {
-                for (int i2 = 1; i2 < 10; i2++) {
-                    list.add(Integer.valueOf(i2));
+                for (int virtualViewId = 1; virtualViewId < 10; virtualViewId++) {
+                    list.add(Integer.valueOf(virtualViewId));
                 }
             }
         }
 
-        public boolean onItemClicked(int i2) {
-            invalidateVirtualView(i2);
-            sendEventForVirtualView(i2, 1);
+        public boolean onItemClicked(int virtualViewId) {
+            invalidateVirtualView(virtualViewId);
+            sendEventForVirtualView(virtualViewId, 1);
             return true;
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public boolean onPerformActionForVirtualView(int i2, int i3, Bundle bundle) {
-            if (i3 != 16) {
+        @Override
+        public boolean onPerformActionForVirtualView(int virtualViewId, int action, Bundle bundle) {
+            if (action != 16) {
                 return false;
             }
-            return onItemClicked(i2);
+            return onItemClicked(virtualViewId);
         }
 
-        @Override // androidx.core.view.AccessibilityDelegateCompat
+        @Override
         public void onPopulateAccessibilityEvent(View view, AccessibilityEvent accessibilityEvent) {
             super.onPopulateAccessibilityEvent(view, accessibilityEvent);
             if (COUILockPatternView.this.mPatternInProgress) {
@@ -309,26 +311,26 @@ public class COUILockPatternView extends View {
             accessibilityEvent.setContentDescription(COUILockPatternView.this.getContext().getText(R.string.lockscreen_access_pattern_area));
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public void onPopulateEventForVirtualView(int i2, AccessibilityEvent accessibilityEvent) {
-            VirtualViewContainer virtualViewContainer = this.mItems.get(i2);
+        @Override
+        public void onPopulateEventForVirtualView(int virtualViewId, AccessibilityEvent accessibilityEvent) {
+            VirtualViewContainer virtualViewContainer = this.mItems.get(virtualViewId);
             if (virtualViewContainer != null) {
                 accessibilityEvent.getText().add(virtualViewContainer.description);
             }
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public void onPopulateNodeForVirtualView(int i2, @NonNull AccessibilityNodeInfoCompat accessibilityNodeInfoCompat) {
-            accessibilityNodeInfoCompat.setText(getTextForVirtualView(i2));
-            accessibilityNodeInfoCompat.setContentDescription(getTextForVirtualView(i2));
+        @Override
+        public void onPopulateNodeForVirtualView(int virtualViewId, @NonNull AccessibilityNodeInfoCompat accessibilityNodeInfoCompat) {
+            accessibilityNodeInfoCompat.setText(getTextForVirtualView(virtualViewId));
+            accessibilityNodeInfoCompat.setContentDescription(getTextForVirtualView(virtualViewId));
             if (COUILockPatternView.this.mPatternInProgress) {
                 accessibilityNodeInfoCompat.setFocusable(true);
-                if (isClickable(i2)) {
+                if (isClickable(virtualViewId)) {
                     accessibilityNodeInfoCompat.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK);
-                    accessibilityNodeInfoCompat.setClickable(isClickable(i2));
+                    accessibilityNodeInfoCompat.setClickable(isClickable(virtualViewId));
                 }
             }
-            accessibilityNodeInfoCompat.setBoundsInParent(getBoundsForVirtualView(i2));
+            accessibilityNodeInfoCompat.setBoundsInParent(getBoundsForVirtualView(virtualViewId));
         }
     }
 
@@ -345,16 +347,16 @@ public class COUILockPatternView extends View {
         notifyCellAdded();
     }
 
-    private float calculateLastSegmentAlpha(float f2, float f3, float f4, float f5) {
-        float f6 = f2 - f4;
-        float f7 = f3 - f5;
-        return Math.min(1.0f, Math.max(0.0f, ((((float) Math.sqrt((f6 * f6) + (f7 * f7))) / this.mSquareWidth) - 0.3f) * 4.0f));
+    private float calculateLastSegmentAlpha(float x, float y, float lastX, float lastY) {
+        float dx = x - lastX;
+        float dy = y - lastY;
+        return Math.min(1.0f, Math.max(0.0f, ((((float) Math.sqrt((dx * dx) + (dy * dy))) / this.mSquareWidth) - 0.3f) * 4.0f));
     }
 
     private void cancelLineAnimations() {
-        for (int i2 = 0; i2 < 3; i2++) {
-            for (int i3 = 0; i3 < 3; i3++) {
-                CellState cellState = this.mCellStates[i2][i3];
+        for (int row = 0; row < 3; row++) {
+            for (int column = 0; column < 3; column++) {
+                CellState cellState = this.mCellStates[row][column];
                 ValueAnimator valueAnimator = cellState.lineAnimator;
                 if (valueAnimator != null) {
                     valueAnimator.cancel();
@@ -365,25 +367,25 @@ public class COUILockPatternView extends View {
         }
     }
 
-    private Cell checkForNewHit(float f2, float f3) {
+    private Cell checkForNewHit(float x, float y) {
         int columnHit;
-        int rowHit = getRowHit(f3);
-        if (rowHit >= 0 && (columnHit = getColumnHit(f2)) >= 0 && !this.mPatternDrawLookup[rowHit][columnHit]) {
+        int rowHit = getRowHit(y);
+        if (rowHit >= 0 && (columnHit = getColumnHit(x)) >= 0 && !this.mPatternDrawLookup[rowHit][columnHit]) {
             return Cell.of(rowHit, columnHit);
         }
         return null;
     }
 
     private void clearPatternDrawLookup() {
-        for (int i2 = 0; i2 < 3; i2++) {
-            for (int i3 = 0; i3 < 3; i3++) {
-                this.mPatternDrawLookup[i2][i3] = false;
+        for (int row = 0; row < 3; row++) {
+            for (int column = 0; column < 3; column++) {
+                this.mPatternDrawLookup[row][column] = false;
             }
         }
     }
 
-    private Cell detectAndAddHit(float f2, float f3) {
-        Cell cellCheckForNewHit = checkForNewHit(f2, f3);
+    private Cell detectAndAddHit(float x, float y) {
+        Cell cellCheckForNewHit = checkForNewHit(x, y);
         Cell cellOf = null;
         if (cellCheckForNewHit == null) {
             return null;
@@ -391,17 +393,17 @@ public class COUILockPatternView extends View {
         ArrayList<Cell> arrayList = this.mPattern;
         if (!arrayList.isEmpty()) {
             Cell cell = arrayList.get(arrayList.size() - 1);
-            int i2 = cellCheckForNewHit.row - cell.row;
-            int i3 = cellCheckForNewHit.column - cell.column;
-            int i4 = cell.row;
-            int i5 = cell.column;
-            if (Math.abs(i2) == 2 && Math.abs(i3) != 1) {
-                i4 = cell.row + (i2 > 0 ? 1 : -1);
+            int rowDelta = cellCheckForNewHit.row - cell.row;
+            int columnDelta = cellCheckForNewHit.column - cell.column;
+            int fillRow = cell.row;
+            int fillColumn = cell.column;
+            if (Math.abs(rowDelta) == 2 && Math.abs(columnDelta) != 1) {
+                fillRow = cell.row + (rowDelta > 0 ? 1 : -1);
             }
-            if (Math.abs(i3) == 2 && Math.abs(i2) != 1) {
-                i5 = cell.column + (i3 <= 0 ? -1 : 1);
+            if (Math.abs(columnDelta) == 2 && Math.abs(rowDelta) != 1) {
+                fillColumn = cell.column + (columnDelta <= 0 ? -1 : 1);
             }
-            cellOf = Cell.of(i4, i5);
+            cellOf = Cell.of(fillRow, fillColumn);
         }
         if (cellOf != null && !this.mPatternDrawLookup[cellOf.row][cellOf.column]) {
             addCellToPattern(cellOf);
@@ -413,66 +415,63 @@ public class COUILockPatternView extends View {
         return cellCheckForNewHit;
     }
 
-    private void drawCircle(Canvas canvas, float f2, float f3, float f4, boolean z2, float f5) {
+    private void drawCircle(Canvas canvas, float centerX, float centerY, float radius, boolean partOfPattern, float alpha) {
         this.mPaint.setColor(this.mRegularColor);
-        this.mPaint.setAlpha((int) (f5 * 255.0f));
-        canvas.drawCircle(f2, f3, f4, this.mPaint);
+        this.mPaint.setAlpha((int) (alpha * MAX_ALPHA));
+        canvas.drawCircle(centerX, centerY, radius, this.mPaint);
     }
 
-    private void drawCircleDrawable(Canvas canvas, float f2, float f3, float f4, float f5, float f6, float f7) {
+    private void drawCircleDrawable(Canvas canvas, float centerX, float centerY, float innerScale, float innerAlpha, float outerScale, float outerAlpha) {
         canvas.save();
         int intrinsicWidth = this.mInnerDrawable.getIntrinsicWidth();
-        float f8 = intrinsicWidth / 2;
-        int i2 = (int) (f2 - f8);
-        int i3 = (int) (f3 - f8);
-        canvas.scale(f4, f4, f2, f3);
+        float halfInner = intrinsicWidth / 2;
+        int left = (int) (centerX - halfInner);
+        int top = (int) (centerY - halfInner);
+        canvas.scale(innerScale, innerScale, centerX, centerY);
         this.mInnerDrawable.setTint(getCurrentColor(true));
-        this.mInnerDrawable.setBounds(i2, i3, i2 + intrinsicWidth, intrinsicWidth + i3);
-        this.mInnerDrawable.setAlpha((int) (f5 * 255.0f));
+        this.mInnerDrawable.setBounds(left, top, left + intrinsicWidth, intrinsicWidth + top);
+        this.mInnerDrawable.setAlpha((int) (innerAlpha * MAX_ALPHA));
         this.mInnerDrawable.draw(canvas);
         canvas.restore();
         canvas.save();
         int intrinsicWidth2 = this.mOuterDrawable.getIntrinsicWidth();
-        float f9 = intrinsicWidth2 / 2;
-        int i4 = (int) (f2 - f9);
-        int i5 = (int) (f3 - f9);
-        canvas.scale(f6, f6, f2, f3);
+        float halfOuter = intrinsicWidth2 / 2;
+        int outerLeft = (int) (centerX - halfOuter);
+        int outerTop = (int) (centerY - halfOuter);
+        canvas.scale(outerScale, outerScale, centerX, centerY);
         this.mOuterDrawable.setTint(getCurrentColor(true));
-        this.mOuterDrawable.setBounds(i4, i5, i4 + intrinsicWidth2, intrinsicWidth2 + i5);
-        this.mOuterDrawable.setAlpha((int) (f7 * 255.0f));
+        this.mOuterDrawable.setBounds(outerLeft, outerTop, outerLeft + intrinsicWidth2, intrinsicWidth2 + outerTop);
+        this.mOuterDrawable.setAlpha((int) (outerAlpha * MAX_ALPHA));
         this.mOuterDrawable.draw(canvas);
         canvas.restore();
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public float getCenterXForColumn(int i2) {
+    public float getCenterXForColumn(int column) {
         float paddingLeft = getPaddingLeft();
-        float f2 = this.mSquareWidth;
-        return paddingLeft + (i2 * f2) + (f2 / 2.0f);
+        float squareWidth = this.mSquareWidth;
+        return paddingLeft + (column * squareWidth) + (squareWidth / 2.0f);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public float getCenterYForRow(int i2) {
+    public float getCenterYForRow(int row) {
         float paddingTop = getPaddingTop();
-        float f2 = this.mSquareHeight;
-        return paddingTop + (i2 * f2) + (f2 / 2.0f);
+        float squareHeight = this.mSquareHeight;
+        return paddingTop + (row * squareHeight) + (squareHeight / 2.0f);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public int getColumnHit(float f2) {
-        float f3 = this.mSquareWidth;
-        float f4 = this.mHitFactor * f3;
-        float paddingLeft = getPaddingLeft() + ((f3 - f4) / 2.0f);
-        for (int i2 = 0; i2 < 3; i2++) {
-            float f5 = (i2 * f3) + paddingLeft;
-            if (f2 >= f5 && f2 <= f5 + f4) {
-                return i2;
+    public int getColumnHit(float x) {
+        float squareWidth = this.mSquareWidth;
+        float hitSize = this.mHitFactor * squareWidth;
+        float paddingLeft = getPaddingLeft() + ((squareWidth - hitSize) / 2.0f);
+        for (int column = 0; column < 3; column++) {
+            float left = (column * squareWidth) + paddingLeft;
+            if (x >= left && x <= left + hitSize) {
+                return column;
             }
         }
         return -1;
     }
 
-    private int getCurrentColor(boolean z2) {
+    private int getCurrentColor(boolean partOfPattern) {
         DisplayMode displayMode = this.mPatternDisplayMode;
         if (displayMode == DisplayMode.Wrong || displayMode == DisplayMode.FingerprintNoMatch) {
             return this.mErrorColor;
@@ -480,21 +479,20 @@ public class COUILockPatternView extends View {
         if (displayMode == DisplayMode.Correct || displayMode == DisplayMode.Animate || displayMode == DisplayMode.FingerprintMatch) {
             return this.mSuccessColor;
         }
-        if (!z2 || this.mInStealthMode || this.mPatternInProgress) {
+        if (!partOfPattern || this.mInStealthMode || this.mPatternInProgress) {
             return this.mRegularColor;
         }
         throw new IllegalStateException("unknown display mode " + this.mPatternDisplayMode);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public int getRowHit(float f2) {
-        float f3 = this.mSquareHeight;
-        float f4 = this.mHitFactor * f3;
-        float paddingTop = getPaddingTop() + ((f3 - f4) / 2.0f);
-        for (int i2 = 0; i2 < 3; i2++) {
-            float f5 = (i2 * f3) + paddingTop;
-            if (f2 >= f5 && f2 <= f5 + f4) {
-                return i2;
+    public int getRowHit(float y) {
+        float squareHeight = this.mSquareHeight;
+        float hitSize = this.mHitFactor * squareHeight;
+        float paddingTop = getPaddingTop() + ((squareHeight - hitSize) / 2.0f);
+        for (int row = 0; row < 3; row++) {
+            float top = (row * squareHeight) + paddingTop;
+            if (y >= top && y <= top + hitSize) {
+                return row;
             }
         }
         return -1;
@@ -503,9 +501,9 @@ public class COUILockPatternView extends View {
     private void handleActionDown(MotionEvent motionEvent) {
         this.mPathAlpha = 1.0f;
         resetPattern();
-        float x2 = motionEvent.getX();
-        float y2 = motionEvent.getY();
-        Cell cellDetectAndAddHit = detectAndAddHit(x2, y2);
+        float x = motionEvent.getX();
+        float y = motionEvent.getY();
+        Cell cellDetectAndAddHit = detectAndAddHit(x, y);
         if (cellDetectAndAddHit != null) {
             setPatternInProgress(true);
             this.mPatternDisplayMode = DisplayMode.Correct;
@@ -517,59 +515,59 @@ public class COUILockPatternView extends View {
         if (cellDetectAndAddHit != null) {
             float centerXForColumn = getCenterXForColumn(cellDetectAndAddHit.column);
             float centerYForRow = getCenterYForRow(cellDetectAndAddHit.row);
-            float f2 = this.mSquareWidth / 2.0f;
-            float f3 = this.mSquareHeight / 2.0f;
-            invalidate((int) (centerXForColumn - f2), (int) (centerYForRow - f3), (int) (centerXForColumn + f2), (int) (centerYForRow + f3));
+            float halfWidth = this.mSquareWidth / 2.0f;
+            float halfHeight = this.mSquareHeight / 2.0f;
+            invalidate((int) (centerXForColumn - halfWidth), (int) (centerYForRow - halfHeight), (int) (centerXForColumn + halfWidth), (int) (centerYForRow + halfHeight));
         }
-        this.mInProgressX = x2;
-        this.mInProgressY = y2;
+        this.mInProgressX = x;
+        this.mInProgressY = y;
     }
 
     private void handleActionMove(MotionEvent motionEvent) {
-        float f2 = this.mPathWidth;
+        float pathWidth = this.mPathWidth;
         int historySize = motionEvent.getHistorySize();
         this.mTmpInvalidateRect.setEmpty();
-        int i2 = 0;
-        boolean z2 = false;
-        while (i2 < historySize + 1) {
-            float historicalX = i2 < historySize ? motionEvent.getHistoricalX(i2) : motionEvent.getX();
-            float historicalY = i2 < historySize ? motionEvent.getHistoricalY(i2) : motionEvent.getY();
+        int index = 0;
+        boolean partOfPattern = false;
+        while (index < historySize + 1) {
+            float historicalX = index < historySize ? motionEvent.getHistoricalX(index) : motionEvent.getX();
+            float historicalY = index < historySize ? motionEvent.getHistoricalY(index) : motionEvent.getY();
             Cell cellDetectAndAddHit = detectAndAddHit(historicalX, historicalY);
             int size = this.mPattern.size();
             if (cellDetectAndAddHit != null && size == 1) {
                 setPatternInProgress(true);
                 notifyPatternStarted();
             }
-            float fAbs = Math.abs(historicalX - this.mInProgressX);
-            float fAbs2 = Math.abs(historicalY - this.mInProgressY);
-            if (fAbs > 0.0f || fAbs2 > 0.0f) {
-                z2 = true;
+            float absDx = Math.abs(historicalX - this.mInProgressX);
+            float absDy = Math.abs(historicalY - this.mInProgressY);
+            if (absDx > 0.0f || absDy > 0.0f) {
+                partOfPattern = true;
             }
             if (this.mPatternInProgress && size > 0) {
                 Cell cell = this.mPattern.get(size - 1);
                 float centerXForColumn = getCenterXForColumn(cell.column);
                 float centerYForRow = getCenterYForRow(cell.row);
-                float fMin = Math.min(centerXForColumn, historicalX) - f2;
-                float fMax = Math.max(centerXForColumn, historicalX) + f2;
-                float fMin2 = Math.min(centerYForRow, historicalY) - f2;
-                float fMax2 = Math.max(centerYForRow, historicalY) + f2;
+                float left = Math.min(centerXForColumn, historicalX) - pathWidth;
+                float right = Math.max(centerXForColumn, historicalX) + pathWidth;
+                float top = Math.min(centerYForRow, historicalY) - pathWidth;
+                float bottom = Math.max(centerYForRow, historicalY) + pathWidth;
                 if (cellDetectAndAddHit != null) {
-                    float f3 = this.mSquareWidth * 0.5f;
-                    float f4 = this.mSquareHeight * 0.5f;
-                    float centerXForColumn2 = getCenterXForColumn(cellDetectAndAddHit.column);
-                    float centerYForRow2 = getCenterYForRow(cellDetectAndAddHit.row);
-                    fMin = Math.min(centerXForColumn2 - f3, fMin);
-                    fMax = Math.max(centerXForColumn2 + f3, fMax);
-                    fMin2 = Math.min(centerYForRow2 - f4, fMin2);
-                    fMax2 = Math.max(centerYForRow2 + f4, fMax2);
+                    float halfWidth = this.mSquareWidth * 0.5f;
+                    float halfHeight = this.mSquareHeight * 0.5f;
+                    float hitCenterX = getCenterXForColumn(cellDetectAndAddHit.column);
+                    float hitCenterY = getCenterYForRow(cellDetectAndAddHit.row);
+                    left = Math.min(hitCenterX - halfWidth, left);
+                    right = Math.max(hitCenterX + halfWidth, right);
+                    top = Math.min(hitCenterY - halfHeight, top);
+                    bottom = Math.max(hitCenterY + halfHeight, bottom);
                 }
-                this.mTmpInvalidateRect.union(Math.round(fMin), Math.round(fMin2), Math.round(fMax), Math.round(fMax2));
+                this.mTmpInvalidateRect.union(Math.round(left), Math.round(top), Math.round(right), Math.round(bottom));
             }
-            i2++;
+            index++;
         }
         this.mInProgressX = motionEvent.getX();
         this.mInProgressY = motionEvent.getY();
-        if (z2) {
+        if (partOfPattern) {
             this.mInvalidate.union(this.mTmpInvalidateRect);
             invalidate(this.mInvalidate);
             this.mInvalidate.set(this.mTmpInvalidateRect);
@@ -586,18 +584,20 @@ public class COUILockPatternView extends View {
         invalidate();
     }
 
-    private void initCellAnim(CellState cellState, List<Animator> list, int i2) {
+    private void initCellAnim(CellState cellState, List<Animator> list, int animIndex) {
         cellState.setCellNumberAlpha(0.0f);
         cellState.setCellNumberTranslateY(this.mMaxTranslateY);
-        ObjectAnimator objectAnimatorOfFloat = ObjectAnimator.ofFloat(cellState, "cellNumberAlpha", 0.0f, Color.alpha(this.mRegularColor) / 255.0f);
-        long j2 = ((long) i2) * 16;
-        objectAnimatorOfFloat.setStartDelay(166 + j2);
-        objectAnimatorOfFloat.setDuration(167L);
+        ObjectAnimator objectAnimatorOfFloat = ObjectAnimator.ofFloat(cellState, "cellNumberAlpha", 0.0f,
+                Color.alpha(this.mRegularColor) / MAX_ALPHA);
+        long alphaDelay = ALPHA_DELAY + (((long) animIndex) * ALPHA_OFFSET);
+        long translateDelay = ((long) animIndex) * TRANSLATE_Y_OFFSET;
+        objectAnimatorOfFloat.setStartDelay(alphaDelay);
+        objectAnimatorOfFloat.setDuration(ALPHA_DURATION);
         objectAnimatorOfFloat.setInterpolator(this.mAlphaInterpolator);
         list.add(objectAnimatorOfFloat);
         ObjectAnimator objectAnimatorOfInt = ObjectAnimator.ofInt(cellState, "cellNumberTranslateY", this.mMaxTranslateY, 0);
-        objectAnimatorOfInt.setStartDelay(j2);
-        objectAnimatorOfInt.setDuration(500L);
+        objectAnimatorOfInt.setStartDelay(translateDelay);
+        objectAnimatorOfInt.setDuration(TRANSLATE_Y_DURATION);
         objectAnimatorOfInt.setInterpolator(this.mTranslateYInterpolator);
         list.add(objectAnimatorOfInt);
     }
@@ -652,7 +652,6 @@ public class COUILockPatternView extends View {
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
     public void resetPattern() {
         this.mPattern.clear();
         clearPatternDrawLookup();
@@ -660,18 +659,18 @@ public class COUILockPatternView extends View {
         invalidate();
     }
 
-    private int resolveMeasured(int i2, int i3) {
-        int size = View.MeasureSpec.getSize(i2);
-        int mode = View.MeasureSpec.getMode(i2);
-        return mode != Integer.MIN_VALUE ? mode != 0 ? size : i3 : Math.max(size, i3);
+    private int resolveMeasured(int measureSpec, int desired) {
+        int size = View.MeasureSpec.getSize(measureSpec);
+        int mode = View.MeasureSpec.getMode(measureSpec);
+        return mode != Integer.MIN_VALUE ? mode != 0 ? size : desired : Math.max(size, desired);
     }
 
-    private void sendAccessEvent(int i2) {
-        announceForAccessibility(this.mContext.getString(i2));
+    private void sendAccessEvent(int resId) {
+        announceForAccessibility(this.mContext.getString(resId));
     }
 
-    private void setPatternInProgress(boolean z2) {
-        this.mPatternInProgress = z2;
+    private void setPatternInProgress(boolean inProgress) {
+        this.mPatternInProgress = inProgress;
         this.mExploreByTouchHelper.invalidateRoot();
     }
 
@@ -685,12 +684,12 @@ public class COUILockPatternView extends View {
     private void startFingerprintNoMatchAnimator() {
         ValueAnimator valueAnimatorOfPropertyValuesHolder = ValueAnimator.ofPropertyValuesHolder(PropertyValuesHolder.ofKeyframe("pathAlpha", Keyframe.ofFloat(0.0f, 1.0f), Keyframe.ofFloat(0.2f, 0.35f), Keyframe.ofFloat(0.4f, 1.0f), Keyframe.ofFloat(0.6f, 0.15f), Keyframe.ofFloat(0.8f, 0.5f), Keyframe.ofFloat(1.0f, 0.0f)));
         valueAnimatorOfPropertyValuesHolder.setDuration(1000L);
-        valueAnimatorOfPropertyValuesHolder.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUILockPatternView.3
-            @Override // android.animation.ValueAnimator.AnimatorUpdateListener
+        valueAnimatorOfPropertyValuesHolder.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                for (int i2 = 0; i2 < 3; i2++) {
-                    for (int i3 = 0; i3 < 3; i3++) {
-                        CellState cellState = COUILockPatternView.this.mCellStates[i2][i3];
+                for (int row = 0; row < 3; row++) {
+                    for (int column = 0; column < 3; column++) {
+                        CellState cellState = COUILockPatternView.this.mCellStates[row][column];
                         float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
                         cellState.innerCircleAlpha = fFloatValue;
                         cellState.needDrawCircle = fFloatValue <= 0.1f;
@@ -706,8 +705,8 @@ public class COUILockPatternView extends View {
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
         valueAnimatorOfFloat.setInterpolator(new COUIEaseInterpolator());
         valueAnimatorOfFloat.setDuration(230L);
-        valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUILockPatternView.9
-            @Override // android.animation.ValueAnimator.AnimatorUpdateListener
+        valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 cellState.innerCircleAlpha = ((Float) valueAnimator.getAnimatedValue()).floatValue();
             }
@@ -715,21 +714,21 @@ public class COUILockPatternView extends View {
         valueAnimatorOfFloat.start();
     }
 
-    private void startLineEndAnimation(final CellState cellState, final float f2, final float f3, final float f4, final float f5) {
+    private void startLineEndAnimation(final CellState cellState, final float startX, final float startY, final float endX, final float endY) {
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
-        valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUILockPatternView.5
-            @Override // android.animation.ValueAnimator.AnimatorUpdateListener
+        valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-                CellState cellState2 = cellState;
-                float f6 = 1.0f - fFloatValue;
-                cellState2.lineEndX = (f2 * f6) + (f4 * fFloatValue);
-                cellState2.lineEndY = (f6 * f3) + (fFloatValue * f5);
+                CellState state = cellState;
+                float remaining = 1.0f - fFloatValue;
+                state.lineEndX = (startX * remaining) + (endX * fFloatValue);
+                state.lineEndY = (remaining * startY) + (fFloatValue * endY);
                 COUILockPatternView.this.invalidate();
             }
         });
-        valueAnimatorOfFloat.addListener(new AnimatorListenerAdapter() { // from class: com.coui.appcompat.lockview.COUILockPatternView.6
-            @Override // android.animation.AnimatorListenerAdapter, android.animation.Animator.AnimatorListener
+        valueAnimatorOfFloat.addListener(new AnimatorListenerAdapter() {
+            @Override
             public void onAnimationEnd(Animator animator) {
                 cellState.lineAnimator = null;
             }
@@ -745,16 +744,16 @@ public class COUILockPatternView extends View {
         animatorSet.setDuration(460L);
         animatorSet.setInterpolator(new COUIInEaseInterpolator());
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(1.0f, 7.0f);
-        valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUILockPatternView.7
-            @Override // android.animation.ValueAnimator.AnimatorUpdateListener
+        valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 cellState.outerCircleScale = ((Float) valueAnimator.getAnimatedValue()).floatValue();
                 COUILockPatternView.this.invalidate();
             }
         });
         ValueAnimator valueAnimatorOfPropertyValuesHolder = ValueAnimator.ofPropertyValuesHolder(PropertyValuesHolder.ofKeyframe("alpha", Keyframe.ofFloat(0.0f, 0.0f), Keyframe.ofFloat(0.5f, this.mOuterCircleMaxAlpha), Keyframe.ofFloat(1.0f, 0.0f)));
-        valueAnimatorOfPropertyValuesHolder.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUILockPatternView.8
-            @Override // android.animation.ValueAnimator.AnimatorUpdateListener
+        valueAnimatorOfPropertyValuesHolder.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 cellState.outerCircleAlpha = ((Float) valueAnimator.getAnimatedValue()).floatValue();
                 COUILockPatternView.this.invalidate();
@@ -768,8 +767,8 @@ public class COUILockPatternView extends View {
         ValueAnimator valueAnimatorOfPropertyValuesHolder = ValueAnimator.ofPropertyValuesHolder(PropertyValuesHolder.ofKeyframe("pathAlpha", Keyframe.ofFloat(0.0f, 1.0f), Keyframe.ofFloat(0.2f, 0.35f), Keyframe.ofFloat(0.4f, 1.0f), Keyframe.ofFloat(0.6f, 0.15f), Keyframe.ofFloat(0.8f, 0.5f), Keyframe.ofFloat(1.0f, 0.0f)));
         this.mWrongAnimator = valueAnimatorOfPropertyValuesHolder;
         valueAnimatorOfPropertyValuesHolder.setDuration(1000L);
-        this.mWrongAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUILockPatternView.2
-            @Override // android.animation.ValueAnimator.AnimatorUpdateListener
+        this.mWrongAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 COUILockPatternView.this.mPathAlpha = ((Float) valueAnimator.getAnimatedValue()).floatValue();
                 for (Cell cell : COUILockPatternView.this.mPattern) {
@@ -784,14 +783,14 @@ public class COUILockPatternView extends View {
     }
 
     @Deprecated
-    public void clearPattern(boolean z2) {
+    public void clearPattern(boolean partOfPattern) {
     }
 
     public void disableInput() {
         this.mInputEnabled = false;
     }
 
-    @Override // android.view.View
+    @Override
     public boolean dispatchHoverEvent(MotionEvent motionEvent) {
         return this.mExploreByTouchHelper.dispatchHoverEvent(motionEvent) | super.dispatchHoverEvent(motionEvent);
     }
@@ -807,9 +806,9 @@ public class COUILockPatternView extends View {
     public AnimatorSet getEnterAnim() {
         AnimatorSet animatorSet = new AnimatorSet();
         ArrayList arrayList = new ArrayList();
-        for (int i2 = 0; i2 < 3; i2++) {
-            for (int i3 = 0; i3 < 3; i3++) {
-                initCellAnim(this.mCellStates[i2][i3], arrayList, (i2 * 3) + i3);
+        for (int row = 0; row < 3; row++) {
+            for (int column = 0; column < 3; column++) {
+                initCellAnim(this.mCellStates[row][column], arrayList, (row * 3) + column);
             }
         }
         animatorSet.playTogether(arrayList);
@@ -823,7 +822,7 @@ public class COUILockPatternView extends View {
 
     @Deprecated
     public Animator getSuccessAnimator() {
-        return ValueAnimator.ofInt(255, 0);
+        return ValueAnimator.ofInt((int) MAX_ALPHA, 0);
     }
 
     public boolean isInStealthMode() {
@@ -838,7 +837,7 @@ public class COUILockPatternView extends View {
         return this.mEnableHapticFeedback;
     }
 
-    @Override // android.view.View
+    @Override
     public void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         ValueAnimator valueAnimator = this.mWrongAnimator;
@@ -849,29 +848,29 @@ public class COUILockPatternView extends View {
         }
     }
 
-    @Override // android.view.View
+    @Override
     public void onDraw(Canvas canvas) {
         ArrayList<Cell> arrayList = this.mPattern;
         int size = arrayList.size();
         boolean[][] zArr = this.mPatternDrawLookup;
         if (this.mPatternDisplayMode == DisplayMode.Animate) {
-            int i2 = (int) (SystemClock.elapsedRealtime() - this.mAnimatingPeriodStart) % ((size + 1) * MILLIS_PER_CIRCLE_ANIMATING);
-            int i3 = i2 / MILLIS_PER_CIRCLE_ANIMATING;
+            int elapsed = (int) (SystemClock.elapsedRealtime() - this.mAnimatingPeriodStart) % ((size + 1) * MILLIS_PER_CIRCLE_ANIMATING);
+            int numCircles = elapsed / MILLIS_PER_CIRCLE_ANIMATING;
             clearPatternDrawLookup();
-            for (int i4 = 0; i4 < i3; i4++) {
-                Cell cell = arrayList.get(i4);
+            for (int index = 0; index < numCircles; index++) {
+                Cell cell = arrayList.get(index);
                 zArr[cell.getRow()][cell.getColumn()] = true;
             }
-            if (i3 > 0 && i3 < size) {
-                float f2 = (i2 % MILLIS_PER_CIRCLE_ANIMATING) / 700.0f;
-                Cell cell2 = arrayList.get(i3 - 1);
-                float centerXForColumn = getCenterXForColumn(cell2.column);
-                float centerYForRow = getCenterYForRow(cell2.row);
-                Cell cell3 = arrayList.get(i3);
-                float f3 = (getCenterXForColumn(cell3.column) - centerXForColumn) * f2;
-                float f4 = f2 * (getCenterYForRow(cell3.row) - centerYForRow);
-                this.mInProgressX = centerXForColumn + f3;
-                this.mInProgressY = centerYForRow + f4;
+            if (numCircles > 0 && numCircles < size) {
+                float x = (elapsed % MILLIS_PER_CIRCLE_ANIMATING) / (float) MILLIS_PER_CIRCLE_ANIMATING;
+                Cell cell = arrayList.get(numCircles - 1);
+                float centerXForColumn = getCenterXForColumn(cell.column);
+                float centerYForRow = getCenterYForRow(cell.row);
+                Cell nextCell = arrayList.get(numCircles);
+                float y = (getCenterXForColumn(nextCell.column) - centerXForColumn) * x;
+                float centerX = x * (getCenterYForRow(nextCell.row) - centerYForRow);
+                this.mInProgressX = centerXForColumn + y;
+                this.mInProgressY = centerYForRow + centerX;
             }
             invalidate();
         }
@@ -879,57 +878,57 @@ public class COUILockPatternView extends View {
         path.rewind();
         if (!this.mInStealthMode) {
             this.mPathPaint.setColor(getCurrentColor(true));
-            this.mPathPaint.setAlpha((int) (this.mPathAlpha * 255.0f));
-            float centerXForColumn2 = 0.0f;
-            float centerYForRow2 = 0.0f;
-            boolean z2 = false;
-            for (int i5 = 0; i5 < size; i5++) {
-                Cell cell4 = arrayList.get(i5);
-                if (!zArr[cell4.row][cell4.column]) {
+            this.mPathPaint.setAlpha((int) (this.mPathAlpha * MAX_ALPHA));
+            float hitCenterX = 0.0f;
+            float hitCenterY = 0.0f;
+            boolean partOfPattern = false;
+            for (int index = 0; index < size; index++) {
+                Cell cell = arrayList.get(index);
+                if (!zArr[cell.row][cell.column]) {
                     break;
                 }
-                centerXForColumn2 = getCenterXForColumn(cell4.column);
-                centerYForRow2 = getCenterYForRow(cell4.row);
-                if (i5 == 0) {
+                hitCenterX = getCenterXForColumn(cell.column);
+                hitCenterY = getCenterYForRow(cell.row);
+                if (index == 0) {
                     path.rewind();
-                    path.moveTo(centerXForColumn2, centerYForRow2);
+                    path.moveTo(hitCenterX, hitCenterY);
                 } else {
-                    CellState cellState = this.mCellStates[cell4.row][cell4.column];
-                    float f5 = cellState.lineEndX;
-                    float f6 = cellState.lineEndY;
-                    if (f5 != Float.MIN_VALUE && f6 != Float.MIN_VALUE) {
-                        path.lineTo(f5, f6);
+                    CellState cellState = this.mCellStates[cell.row][cell.column];
+                    float x = cellState.lineEndX;
+                    float y = cellState.lineEndY;
+                    if (x != Float.MIN_VALUE && y != Float.MIN_VALUE) {
+                        path.lineTo(x, y);
                     } else {
-                        path.lineTo(centerXForColumn2, centerYForRow2);
+                        path.lineTo(hitCenterX, hitCenterY);
                     }
                 }
-                z2 = true;
+                partOfPattern = true;
             }
-            if ((this.mPatternInProgress || this.mPatternDisplayMode == DisplayMode.Animate) && z2) {
-                path.moveTo(centerXForColumn2, centerYForRow2);
+            if ((this.mPatternInProgress || this.mPatternDisplayMode == DisplayMode.Animate) && partOfPattern) {
+                path.moveTo(hitCenterX, hitCenterY);
                 path.lineTo(this.mInProgressX, this.mInProgressY);
             }
             canvas.drawPath(path, this.mPathPaint);
         }
-        for (int i6 = 0; i6 < 3; i6++) {
-            float centerYForRow3 = getCenterYForRow(i6);
-            for (int i7 = 0; i7 < 3; i7++) {
-                CellState cellState2 = this.mCellStates[i6][i7];
-                float centerXForColumn3 = getCenterXForColumn(i7);
-                float f7 = cellState2.translationY;
-                float f8 = cellState2.translationX;
-                boolean z3 = zArr[i6][i7];
-                if (z3 || this.mPatternDisplayMode == DisplayMode.FingerprintNoMatch) {
-                    drawCircleDrawable(canvas, ((int) centerXForColumn3) + f8, ((int) centerYForRow3) + f7, cellState2.innerCircleScale, cellState2.innerCircleAlpha, cellState2.outerCircleScale, cellState2.outerCircleAlpha);
+        for (int row = 0; row < 3; row++) {
+            float hitCenterY = getCenterYForRow(row);
+            for (int column = 0; column < 3; column++) {
+                CellState cellState = this.mCellStates[row][column];
+                float hitCenterX = getCenterXForColumn(column);
+                float translationY = cellState.translationY;
+                float translationX = cellState.translationX;
+                boolean partOfPattern = zArr[row][column];
+                if (partOfPattern || this.mPatternDisplayMode == DisplayMode.FingerprintNoMatch) {
+                    drawCircleDrawable(canvas, ((int) hitCenterX) + translationX, ((int) hitCenterY) + translationY, cellState.innerCircleScale, cellState.innerCircleAlpha, cellState.outerCircleScale, cellState.outerCircleAlpha);
                 }
-                if (cellState2.needDrawCircle) {
-                    drawCircle(canvas, ((int) centerXForColumn3) + f8, ((int) centerYForRow3) + f7, cellState2.radius, z3, cellState2.alpha);
+                if (cellState.needDrawCircle) {
+                    drawCircle(canvas, ((int) hitCenterX) + translationX, ((int) hitCenterY) + translationY, cellState.radius, partOfPattern, cellState.alpha);
                 }
             }
         }
     }
 
-    @Override // android.view.View
+    @Override
     public boolean onHoverEvent(MotionEvent motionEvent) {
         if (this.mAccessibilityManagerService.isTouchExplorationEnabled()) {
             int action = motionEvent.getAction();
@@ -946,22 +945,22 @@ public class COUILockPatternView extends View {
         return super.onHoverEvent(motionEvent);
     }
 
-    @Override // android.view.View
-    public void onMeasure(int i2, int i3) {
-        int mode = View.MeasureSpec.getMode(i2);
-        int size = View.MeasureSpec.getSize(i2);
-        int mode2 = View.MeasureSpec.getMode(i3);
-        int size2 = View.MeasureSpec.getSize(i3);
+    @Override
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int mode = View.MeasureSpec.getMode(widthMeasureSpec);
+        int size = View.MeasureSpec.getSize(widthMeasureSpec);
+        int heightMode = View.MeasureSpec.getMode(heightMeasureSpec);
+        int heightSize = View.MeasureSpec.getSize(heightMeasureSpec);
         if (mode == Integer.MIN_VALUE) {
             size = this.mDefaultWidth;
         }
-        if (mode2 == Integer.MIN_VALUE) {
-            size2 = this.mDefaultHeight;
+        if (heightMode == Integer.MIN_VALUE) {
+            heightSize = this.mDefaultHeight;
         }
-        setMeasuredDimension(size, size2);
+        setMeasuredDimension(size, heightSize);
     }
 
-    @Override // android.view.View
+    @Override
     public void onRestoreInstanceState(Parcelable parcelable) {
         SavedState savedState = (SavedState) parcelable;
         super.onRestoreInstanceState(savedState.getSuperState());
@@ -972,19 +971,19 @@ public class COUILockPatternView extends View {
         this.mEnableHapticFeedback = savedState.isTactileFeedbackEnabled();
     }
 
-    @Override // android.view.View
+    @Override
     public Parcelable onSaveInstanceState() {
         return new SavedState(super.onSaveInstanceState(), COUILockPatternUtils.patternToString(this.mPattern), this.mPatternDisplayMode.ordinal(), this.mInputEnabled, this.mInStealthMode, this.mEnableHapticFeedback);
     }
 
-    @Override // android.view.View
-    public void onSizeChanged(int i2, int i3, int i4, int i5) {
-        this.mSquareWidth = ((i2 - getPaddingLeft()) - getPaddingRight()) / 3.0f;
-        this.mSquareHeight = ((i3 - getPaddingTop()) - getPaddingBottom()) / 3.0f;
+    @Override
+    public void onSizeChanged(int w, int h, int oldw, int oldh) {
+        this.mSquareWidth = ((w - getPaddingLeft()) - getPaddingRight()) / 3.0f;
+        this.mSquareHeight = ((h - getPaddingTop()) - getPaddingBottom()) / 3.0f;
         this.mExploreByTouchHelper.invalidateRoot();
     }
 
-    @Override // android.view.View
+    @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
         if (!this.mInputEnabled || !isEnabled()) {
             return false;
@@ -1039,28 +1038,28 @@ public class COUILockPatternView extends View {
         setDisplayMode(displayMode, true);
     }
 
-    public void setErrorColor(int i2) {
-        this.mErrorColor = i2;
+    public void setErrorColor(int color) {
+        this.mErrorColor = color;
     }
 
-    public void setInStealthMode(boolean z2) {
-        this.mInStealthMode = z2;
+    public void setInStealthMode(boolean inStealthMode) {
+        this.mInStealthMode = inStealthMode;
     }
 
-    public void setLockPassword(boolean z2) {
-        this.mIsSetPassword = z2;
+    public void setLockPassword(boolean isSetPassword) {
+        this.mIsSetPassword = isSetPassword;
     }
 
     public void setOnPatternListener(OnPatternListener onPatternListener) {
         this.mOnPatternListener = onPatternListener;
     }
 
-    public void setOuterCircleMaxAlpha(int i2) {
-        this.mOuterCircleMaxAlpha = i2;
+    public void setOuterCircleMaxAlpha(int alpha) {
+        this.mOuterCircleMaxAlpha = alpha;
     }
 
-    public void setPathColor(int i2) {
-        this.mPathPaint.setColor(i2);
+    public void setPathColor(int color) {
+        this.mPathPaint.setColor(color);
     }
 
     public void setPattern(DisplayMode displayMode, List<Cell> list) {
@@ -1073,34 +1072,32 @@ public class COUILockPatternView extends View {
         setDisplayMode(displayMode);
     }
 
-    public void setRegularColor(int i2) {
-        this.mRegularColor = i2;
+    public void setRegularColor(int color) {
+        this.mRegularColor = color;
     }
 
-    public void setSuccessColor(int i2) {
-        this.mSuccessColor = i2;
+    public void setSuccessColor(int color) {
+        this.mSuccessColor = color;
     }
 
     @Deprecated
     public void setSuccessFinger() {
     }
 
-    public void setTactileFeedbackEnabled(boolean z2) {
-        this.mEnableHapticFeedback = z2;
+    public void setTactileFeedbackEnabled(boolean enabled) {
+        this.mEnableHapticFeedback = enabled;
     }
 
     public static class SavedState extends View.BaseSavedState {
-        public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.Creator<SavedState>() { // from class: com.coui.appcompat.lockview.COUILockPatternView.SavedState.1
-            /* JADX WARN: Can't rename method to resolve collision */
-            @Override // android.os.Parcelable.Creator
+        public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.Creator<SavedState>() {
+            @Override
             public SavedState createFromParcel(Parcel parcel) {
                 return new SavedState(parcel);
             }
 
-            /* JADX WARN: Can't rename method to resolve collision */
-            @Override // android.os.Parcelable.Creator
-            public SavedState[] newArray(int i2) {
-                return new SavedState[i2];
+            @Override
+            public SavedState[] newArray(int size) {
+                return new SavedState[size];
             }
         };
         private final int mDisplayMode;
@@ -1129,9 +1126,9 @@ public class COUILockPatternView extends View {
             return this.mTactileFeedbackEnabled;
         }
 
-        @Override // android.view.View.BaseSavedState, android.view.AbsSavedState, android.os.Parcelable
-        public void writeToParcel(Parcel parcel, int i2) {
-            super.writeToParcel(parcel, i2);
+        @Override
+        public void writeToParcel(Parcel parcel, int row) {
+            super.writeToParcel(parcel, row);
             parcel.writeString(this.mSerializedPattern);
             parcel.writeInt(this.mDisplayMode);
             parcel.writeValue(Boolean.valueOf(this.mInputEnabled));
@@ -1139,13 +1136,13 @@ public class COUILockPatternView extends View {
             parcel.writeValue(Boolean.valueOf(this.mTactileFeedbackEnabled));
         }
 
-        private SavedState(Parcelable parcelable, String str, int i2, boolean z2, boolean z3, boolean z4) {
+        private SavedState(Parcelable parcelable, String str, int row, boolean inputEnabled, boolean inStealthMode, boolean partOfPattern) {
             super(parcelable);
             this.mSerializedPattern = str;
-            this.mDisplayMode = i2;
-            this.mInputEnabled = z2;
-            this.mInStealthMode = z3;
-            this.mTactileFeedbackEnabled = z4;
+            this.mDisplayMode = row;
+            this.mInputEnabled = inputEnabled;
+            this.mInStealthMode = inStealthMode;
+            this.mTactileFeedbackEnabled = partOfPattern;
         }
 
         private SavedState(Parcel parcel) {
@@ -1182,8 +1179,8 @@ public class COUILockPatternView extends View {
         this.mIsSetPassword = false;
         this.mAlphaInterpolator = new COUIEaseInterpolator();
         this.mTranslateYInterpolator = new COUIInEaseInterpolator();
-        this.mWongAnimatorListener = new AnimatorListenerAdapter() { // from class: com.coui.appcompat.lockview.COUILockPatternView.4
-            @Override // android.animation.AnimatorListenerAdapter, android.animation.Animator.AnimatorListener
+        this.mWongAnimatorListener = new AnimatorListenerAdapter() {
+            @Override
             public void onAnimationEnd(Animator animator) {
                 COUILockPatternView.this.resetPattern();
                 if (COUILockPatternView.this.mWrongAnimator != null) {
@@ -1218,22 +1215,22 @@ public class COUILockPatternView extends View {
         paint.setDither(true);
         this.mMaxTranslateY = getResources().getDimensionPixelSize(R.dimen.color_lock_pattern_view_max_translate_y);
         this.mCellStates = (CellState[][]) Array.newInstance((Class<?>) CellState.class, 3, 3);
-        for (int i2 = 0; i2 < 3; i2++) {
-            for (int i3 = 0; i3 < 3; i3++) {
-                this.mCellStates[i2][i3] = new CellState();
-                CellState cellState = this.mCellStates[i2][i3];
+        for (int index = 0; index < 3; index++) {
+            for (int column = 0; column < 3; column++) {
+                this.mCellStates[index][column] = new CellState();
+                CellState cellState = this.mCellStates[index][column];
                 cellState.radius = dimensionPixelSize2 / 2;
-                cellState.row = i2;
-                cellState.col = i3;
-                cellState.alpha = Color.alpha(this.mRegularColor) / 255.0f;
-                CellState cellState2 = this.mCellStates[i2][i3];
-                cellState2.innerCircleAlpha = 0.0f;
-                cellState2.innerCircleScale = 1.0f;
-                cellState2.outerCircleAlpha = 0.0f;
-                cellState2.outerCircleScale = 1.0f;
-                cellState2.needDrawCircle = true;
-                cellState2.setCellDrawListener(new OnCellDrawListener() { // from class: com.coui.appcompat.lockview.COUILockPatternView.1
-                    @Override // com.coui.appcompat.lockview.COUILockPatternView.OnCellDrawListener
+                cellState.row = index;
+                cellState.col = column;
+                cellState.alpha = Color.alpha(this.mRegularColor) / MAX_ALPHA;
+                CellState state = this.mCellStates[index][column];
+                state.innerCircleAlpha = 0.0f;
+                state.innerCircleScale = 1.0f;
+                state.outerCircleAlpha = 0.0f;
+                state.outerCircleScale = 1.0f;
+                state.needDrawCircle = true;
+                state.setCellDrawListener(new OnCellDrawListener() {
+                    @Override
                     public void drawCell() {
                         COUILockPatternView.this.invalidate();
                     }
@@ -1263,7 +1260,7 @@ public class COUILockPatternView extends View {
         }
     }
 
-    public void setDisplayMode(DisplayMode displayMode, boolean z2) {
+    public void setDisplayMode(DisplayMode displayMode, boolean partOfPattern) {
         this.mPatternDisplayMode = displayMode;
         if (displayMode == DisplayMode.Animate) {
             if (this.mPattern.size() == 0) {
@@ -1276,7 +1273,7 @@ public class COUILockPatternView extends View {
             clearPatternDrawLookup();
         }
         if (displayMode == DisplayMode.Wrong) {
-            if (z2 && this.mPattern.size() > 1) {
+            if (partOfPattern && this.mPattern.size() > 1) {
                 performWrongModeFeedback();
             }
             startWrongAnimator();

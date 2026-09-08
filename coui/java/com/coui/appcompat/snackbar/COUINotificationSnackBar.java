@@ -1,7 +1,5 @@
 package com.coui.appcompat.snackbar;
 
-import com.coui.appcompat.R;
-
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
@@ -24,15 +22,17 @@ import android.view.ViewOutlineProvider;
 import android.view.animation.PathInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.button.COUIButton;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.roundcorner.RoundCornerUtil;
-import com.coui.appcompat.snackbar.COUISnackBar;
 import com.coui.appcompat.uiutil.ShadowUtils;
 import com.oplus.graphics.OplusOutline;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -91,19 +91,19 @@ public class COUINotificationSnackBar extends COUISnackBar {
         return Math.abs(translationY) > ((float) (getMeasuredWidth() / 8)) && translationY > 0.0f;
     }
 
-    private ObjectAnimator createTranslationAnimation(View view, float f2, Property<View, Float> property) {
-        return ObjectAnimator.ofFloat(view, property, f2);
+    private ObjectAnimator createTranslationAnimation(View view, float value, Property<View, Float> property) {
+        return ObjectAnimator.ofFloat(view, property, value);
     }
 
-    private COUISpringAnimation getViewSpringTranslationAnimator(View view, float f2, COUIDynamicAnimation.ViewProperty viewProperty) {
-        COUISpringAnimation cOUISpringAnimation = new COUISpringAnimation(view, viewProperty, f2);
+    private COUISpringAnimation getViewSpringTranslationAnimator(View view, float value, COUIDynamicAnimation.ViewProperty viewProperty) {
+        COUISpringAnimation cOUISpringAnimation = new COUISpringAnimation(view, viewProperty, value);
         cOUISpringAnimation.getSpring().setBounce(0.0f);
         cOUISpringAnimation.getSpring().setResponse(0.35f);
         return cOUISpringAnimation;
     }
 
-    private Animator getViewTranslationAnimator(View view, float f2, int i2, Property<View, Float> property) {
-        ObjectAnimator objectAnimatorCreateTranslationAnimation = createTranslationAnimation(view, f2, property);
+    private Animator getViewTranslationAnimator(View view, float value, int index, Property<View, Float> property) {
+        ObjectAnimator objectAnimatorCreateTranslationAnimation = createTranslationAnimation(view, value, property);
         objectAnimatorCreateTranslationAnimation.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationCancel(Animator animator) {
@@ -122,7 +122,7 @@ public class COUINotificationSnackBar extends COUISnackBar {
             public void onAnimationStart(Animator animator) {
             }
         });
-        objectAnimatorCreateTranslationAnimation.setDuration(i2);
+        objectAnimatorCreateTranslationAnimation.setDuration(index);
         objectAnimatorCreateTranslationAnimation.setInterpolator(MOVE_EASE_INTERPOLATOR);
         return objectAnimatorCreateTranslationAnimation;
     }
@@ -157,8 +157,8 @@ public class COUINotificationSnackBar extends COUISnackBar {
         }
     }
 
-    public static COUINotificationSnackBar make(View view, String str, String str2, int i2) {
-        return make(view.getContext(), view, str, str2, i2);
+    public static COUINotificationSnackBar make(View view, String str, String text, int index) {
+        return make(view.getContext(), view, str, text, index);
     }
 
     private void setButtonText(String str) {
@@ -203,12 +203,12 @@ public class COUINotificationSnackBar extends COUISnackBar {
     private void startDismissAnimationX() {
         float translationX = getTranslationX();
         int measuredWidth = ((this.mScreenWidth - getMeasuredWidth()) / 2) + getMeasuredWidth();
-        float f2 = measuredWidth;
-        int iAbs = (int) ((f2 - Math.abs(translationX)) / SLIDING_SPEED);
+        float value = measuredWidth;
+        int iAbs = (int) ((value - Math.abs(translationX)) / SLIDING_SPEED);
         if (translationX < 0.0f) {
-            f2 = -measuredWidth;
+            value = -measuredWidth;
         }
-        ((ObjectAnimator) getViewTranslationAnimator(this, f2, iAbs, View.TRANSLATION_X)).start();
+        ((ObjectAnimator) getViewTranslationAnimator(this, value, iAbs, View.TRANSLATION_X)).start();
     }
 
     private void startDismissAnimationY() {
@@ -262,13 +262,13 @@ public class COUINotificationSnackBar extends COUISnackBar {
         TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISnackBar, 0, 0);
         try {
             try {
-                int i2 = R.styleable.COUISnackBar_defaultSnackBarContentText;
-                if (typedArrayObtainStyledAttributes.getString(i2) != null) {
-                    setContentText(typedArrayObtainStyledAttributes.getString(i2));
+                int index = R.styleable.COUISnackBar_defaultSnackBarContentText;
+                if (typedArrayObtainStyledAttributes.getString(index) != null) {
+                    setContentText(typedArrayObtainStyledAttributes.getString(index));
                     setDuration(typedArrayObtainStyledAttributes.getInt(R.styleable.COUISnackBar_snackBarDisappearTime, 0));
                 }
-            } catch (Exception e2) {
-                Log.e(TAG, "Failure setting COUINotificationSnackBar " + e2.getMessage());
+            } catch (Exception e) {
+                Log.e(TAG, "Failure setting COUINotificationSnackBar " + e.getMessage());
             }
             this.mIsSupportSmoothRoundCorner = RoundCornerUtil.isVersionSupport();
             ViewOutlineProvider viewOutlineProvider = new ViewOutlineProvider() {
@@ -313,9 +313,9 @@ public class COUINotificationSnackBar extends COUISnackBar {
     }
 
     @Override
-    public void onLayout(boolean z6, int i2, int i6, int i10, int i11) {
+    public void onLayout(boolean changed, int left, int top, int right, int bottom) {
         this.isAdjustLayout = false;
-        super.onLayout(z6, i2, i6, i10, i11);
+        super.onLayout(changed, left, top, right, bottom);
     }
 
     @Override
@@ -369,20 +369,20 @@ public class COUINotificationSnackBar extends COUISnackBar {
         this.mCloseIvClickListener = onClickListener;
     }
 
-    public void setNotificationIcon(Drawable drawable, int i2) {
+    public void setNotificationIcon(Drawable drawable, int notificationIcon) {
         ImageView imageView = this.mNotificationIcon;
         if (imageView == null || drawable == null) {
             return;
         }
         ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
-        if (i2 == 0) {
-            int i6 = this.mSquareImageWidth;
-            layoutParams.width = i6;
-            layoutParams.height = i6;
-        } else if (i2 == 1) {
+        if (notificationIcon == 0) {
+            int index = this.mSquareImageWidth;
+            layoutParams.width = index;
+            layoutParams.height = index;
+        } else if (notificationIcon == 1) {
             layoutParams.width = this.mVerticalImageWidth;
             layoutParams.height = this.mVerticalImageHeight;
-        } else if (i2 == 2) {
+        } else if (notificationIcon == 2) {
             layoutParams.width = this.mHorizontalImageWidth;
             layoutParams.height = this.mHorizontalImageHeight;
         }
@@ -403,19 +403,19 @@ public class COUINotificationSnackBar extends COUISnackBar {
         super(context, attributeSet);
     }
 
-    public static COUINotificationSnackBar make(Context context, View view, String str, String str2, int i2) {
-        return make(context, view, str, str2, i2, context.getResources().getDimensionPixelSize(R.dimen.coui_snack_bar_margin_bottom));
+    public static COUINotificationSnackBar make(Context context, View view, String str, String text, int index) {
+        return make(context, view, str, text, index, context.getResources().getDimensionPixelSize(R.dimen.coui_snack_bar_margin_bottom));
     }
 
-    public static COUINotificationSnackBar make(View view, String str, String str2, int i2, int i6) {
-        return make(view.getContext(), view, str, str2, i2, i6);
+    public static COUINotificationSnackBar make(View view, String str, String text, int index, int index_2) {
+        return make(view.getContext(), view, str, text, index, index_2);
     }
 
-    public static COUINotificationSnackBar make(Context context, View view, String str, String str2, int i2, int i6) {
+    public static COUINotificationSnackBar make(Context context, View view, String str, String text_2, int index, int index_2) {
         ViewGroup viewGroupFindSuitableParent = COUISnackBar.findSuitableParent(view);
         if (viewGroupFindSuitableParent != null) {
-            if (!TextUtils.isEmpty(str) && !TextUtils.isEmpty(str2)) {
-                int iMin = Math.min(Math.max(i2, MIN_DURATION), MAX_DURATION);
+            if (!TextUtils.isEmpty(str) && !TextUtils.isEmpty(text_2)) {
+                int iMin = Math.min(Math.max(index, MIN_DURATION), MAX_DURATION);
                 TypedValue typedValue = new TypedValue();
                 if (!context.getTheme().resolveAttribute(R.attr.couiColorSurfaceTop, typedValue, true) || !context.getTheme().resolveAttribute(R.attr.couiColorPrimaryNeutral, typedValue, true)) {
                     context = new ContextThemeWrapper(context, R.style.Theme_COUI_Main);
@@ -424,18 +424,18 @@ public class COUINotificationSnackBar extends COUISnackBar {
                 cOUINotificationSnackBar.setContentText(str);
                 cOUINotificationSnackBar.setDuration(iMin);
                 cOUINotificationSnackBar.setParent(viewGroupFindSuitableParent);
-                cOUINotificationSnackBar.setButtonText(str2);
+                cOUINotificationSnackBar.setButtonText(text_2);
                 cOUINotificationSnackBar.setCloseIcon();
                 ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) cOUINotificationSnackBar.getLayoutParams();
-                marginLayoutParams.bottomMargin = i6;
-                cOUINotificationSnackBar.setTranslationY(cOUINotificationSnackBar.getHeight() + i6);
-                boolean z6 = false;
-                for (int i10 = 0; i10 < viewGroupFindSuitableParent.getChildCount(); i10++) {
-                    if (viewGroupFindSuitableParent.getChildAt(i10) instanceof COUISnackBar) {
-                        z6 = viewGroupFindSuitableParent.getChildAt(i10).getVisibility() != 8;
+                marginLayoutParams.bottomMargin = index_2;
+                cOUINotificationSnackBar.setTranslationY(cOUINotificationSnackBar.getHeight() + index_2);
+                boolean flag = false;
+                for (int index_3 = 0; index_3 < viewGroupFindSuitableParent.getChildCount(); index_3++) {
+                    if (viewGroupFindSuitableParent.getChildAt(index_3) instanceof COUISnackBar) {
+                        flag = viewGroupFindSuitableParent.getChildAt(index_3).getVisibility() != 8;
                     }
                 }
-                if (!z6) {
+                if (!flag) {
                     viewGroupFindSuitableParent.addView(cOUINotificationSnackBar, marginLayoutParams);
                 }
                 return cOUINotificationSnackBar;
@@ -446,7 +446,7 @@ public class COUINotificationSnackBar extends COUISnackBar {
     }
 
     @SuppressLint({"UseCompatLoadingForDrawables"})
-    public void setNotificationIcon(int i2, int i6) {
-        setNotificationIcon(getResources().getDrawable(i2, getContext().getTheme()), i6);
+    public void setNotificationIcon(int index, int index_2) {
+        setNotificationIcon(getResources().getDrawable(index, getContext().getTheme()), index_2);
     }
 }

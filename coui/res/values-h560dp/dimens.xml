@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Leapy added 2026-08-03: Restore the decoded OPPO COUI dialog height
+<?xml version="1.0" encoding="utf-8"?><!-- Leapy added 2026-08-03: Restore the decoded OPPO COUI dialog height
      qualifier. Without it, phone displays inherit the 80dp base message cap
      and long notices are unnecessarily clipped into a scrolling viewport. -->
 <resources>

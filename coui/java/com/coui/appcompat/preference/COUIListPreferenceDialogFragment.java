@@ -2,7 +2,6 @@ package com.coui.appcompat.preference;
 
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.graphics.Point;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -116,7 +115,7 @@ public class COUIListPreferenceDialogFragment extends ListPreferenceDialogFragme
                 return view;
             }
         };
-        mBuilder = new COUIAlertDialogBuilder(requireContext(), R.style.COUIAlertDialog_BottomAssignment)
+        mBuilder = new COUIAlertDialogBuilder(requireContext(), R.style.COUIAlertDialog_List_Bottom)
                 .setTitle(mDialogTitle)
                 .setMessage(mDialogMessage)
                 .setNegativeButton(R.string.dialog_cancel, null)
@@ -127,16 +126,9 @@ public class COUIListPreferenceDialogFragment extends ListPreferenceDialogFragme
                     dialog.dismiss();
                 });
 
-        if (!mIfFollowHand) {
-            return mBuilder.create();
-        }
-        Point point = new Point();
-        View preferenceView = null;
-        if (mPreference != null) {
-            preferenceView = mPreference.getPreferenceView();
-            point = mPreference.getLastTouchPoint();
-        }
-        return preferenceView == null ? mBuilder.create() : mBuilder.create(preferenceView, point);
+        // Always use the standard bottom list sheet. Follow-hand free-form
+        // placement lets long lists paint under title / Cancel.
+        return mBuilder.create();
     }
 
     @Override

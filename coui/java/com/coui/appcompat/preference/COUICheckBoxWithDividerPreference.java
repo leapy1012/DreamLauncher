@@ -153,7 +153,10 @@ public class COUICheckBoxWithDividerPreference extends CheckBoxPreference implem
             }
             mMainLayout.setClickable(isSelectable());
         }
-        mCheckBoxLayout = (LinearLayout) holder.itemView.findViewById(R.id.checkbox_layout);
+        // Leapy fixed 2026-08-27: Layout uses check_box_layout; checkbox_layout is a
+        // different id (privacy checkbox). Wrong lookup left mCheckBoxLayout null so
+        // Messages DND rows never toggled from the checkbox strip.
+        mCheckBoxLayout = (LinearLayout) holder.itemView.findViewById(R.id.check_box_layout);
         if (mCheckBoxLayout != null) {
             mCheckBoxLayout.setOnClickListener(new View.OnClickListener() {
                 @Override

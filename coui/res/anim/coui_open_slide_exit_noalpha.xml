@@ -8,6 +8,6 @@
         android:fillBefore="false"
         android:fillEnabled="true"
         android:fromXDelta="0.0%"
-        android:interpolator="@anim/coui_open_slide_exit_translate_interpolator"
+        android:interpolator="@interpolator/coui_open_slide_exit_translate_interpolator"
         android:toXDelta="-29.999996%" />
 </set>

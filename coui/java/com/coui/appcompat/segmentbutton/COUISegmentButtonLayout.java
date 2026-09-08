@@ -1,13 +1,5 @@
 package com.coui.appcompat.segmentbutton;
 
-import androidx.core.view.AccessibilityDelegateCompat;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
-import androidx.core.widget.TextViewCompat;
-import androidx.dynamicanimation.animation.FloatValueHolder;
-
-import com.coui.appcompat.R;
-
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -37,8 +29,13 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.view.AccessibilityDelegateCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.core.widget.TextViewCompat;
+import androidx.dynamicanimation.animation.FloatValueHolder;
 
-
+import com.coui.appcompat.R;
 import com.coui.appcompat.accessibilityutil.COUIAccessibilityUtil;
 import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
@@ -60,13 +57,11 @@ import com.coui.appcompat.uiutil.UIUtil;
 import com.coui.component.responsiveui.ResponsiveUIModel;
 import com.coui.component.responsiveui.layoutgrid.MarginType;
 import com.oplus.graphics.OplusPathAdapter;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-
-
-
 
 
 /**
@@ -169,14 +164,14 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         int mIndex;
         int mLength;
 
-        IndexLengthPair(int i5, int i6) {
-            this.mIndex = i5;
-            this.mLength = i6;
+        IndexLengthPair(int index, int length) {
+            this.mIndex = index;
+            this.mLength = length;
         }
     }
 
     public interface OnSelectedSegmentChangeListener {
-        void onSelectedSegmentChange(int i5, int i6, float f5);
+        void onSelectedSegmentChange(int fromIndex, int toIndex, float progress);
     }
 
     public interface SegmentButtonDrawDelegate {
@@ -233,7 +228,7 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
                     SegmentButtonTextColorChangeHelper.this.mSegment.setTextColor(((Integer) SegmentButtonTextColorChangeHelper.this.mColorEvaluator.evaluate(SegmentButtonTextColorChangeHelper.this.mCurrentFraction, Integer.valueOf(COUISegmentButtonLayout.this.mUnselectedTextColor), Integer.valueOf(COUISegmentButtonLayout.this.mSelectedTextColor))).intValue());
                 }
             });
-            valueAnimatorOfFloat.setDuration(300L);
+            valueAnimatorOfFloat.setDuration(COLOR_ANIMATOR_TIME);
             valueAnimatorOfFloat.setInterpolator(new COUIMoveEaseInterpolator());
             valueAnimatorOfFloat2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -242,12 +237,12 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
                     SegmentButtonTextColorChangeHelper.this.mSegment.setTextColor(((Integer) SegmentButtonTextColorChangeHelper.this.mColorEvaluator.evaluate(SegmentButtonTextColorChangeHelper.this.mCurrentFraction, Integer.valueOf(COUISegmentButtonLayout.this.mUnselectedTextColor), Integer.valueOf(COUISegmentButtonLayout.this.mSelectedTextColor))).intValue());
                 }
             });
-            valueAnimatorOfFloat2.setDuration(300L);
+            valueAnimatorOfFloat2.setDuration(COLOR_ANIMATOR_TIME);
             valueAnimatorOfFloat2.setInterpolator(new COUIMoveEaseInterpolator());
         }
 
-        public void startAnimation(boolean z5) {
-            if (z5) {
+        public void startAnimation(boolean forward) {
+            if (forward) {
                 this.mTextColorUnSelectAnimator.cancel();
                 this.mTextColorSelectAnimator.setCurrentFraction(this.mCurrentFraction);
                 this.mTextColorSelectAnimator.start();
@@ -280,8 +275,8 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
             return this.mSmoothType;
         }
 
-        void updatePath(RectF rectF, float f5) {
-            COUIShapePath.getRoundRectPath(COUISegmentButtonLayout.this.mBackgroundPath, rectF, f5);
+        void updatePath(RectF rectF, float bounds) {
+            COUIShapePath.getRoundRectPath(COUISegmentButtonLayout.this.mBackgroundPath, rectF, bounds);
         }
     }
 
@@ -293,26 +288,26 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         this(context, null);
     }
 
-    private void animateIndicatorToPosition(int i5) {
+    private void animateIndicatorToPosition(int index) {
         COUISpringAnimation cOUISpringAnimation = this.mSpringAnimationRubber;
         if (cOUISpringAnimation != null && cOUISpringAnimation.isRunning()) {
             this.mSpringAnimationRubber.cancel();
         }
-        TextView segmentAt = getSegmentAt(i5);
+        TextView segmentAt = getSegmentAt(index);
         if (segmentAt == null) {
-            COUILog.w(TAG, i5 + "out of range of segment button layout");
+            COUILog.w(TAG, index + "out of range of segment button layout");
             return;
         }
         float left = segmentAt.getLeft();
         float right = segmentAt.getRight();
-        float f5 = (left + right) / 2.0f;
-        float f6 = right - left;
+        float indicatorCenterLastX = (left + right) / 2.0f;
+        float value = right - left;
         ensureSpringAnimation();
         this.mSpringAnimationPos.setStartValue(this.mIndicatorCenterX);
-        this.mSpringAnimationPos.animateToFinalPosition(f5);
-        this.mIndicatorCenterLastX = f5;
+        this.mSpringAnimationPos.animateToFinalPosition(indicatorCenterLastX);
+        this.mIndicatorCenterLastX = indicatorCenterLastX;
         this.mSpringAnimationWidth.setStartValue(this.mIndicatorWidth);
-        this.mSpringAnimationWidth.animateToFinalPosition(f6);
+        this.mSpringAnimationWidth.animateToFinalPosition(value);
     }
 
     private void attemptClaimDrag() {
@@ -321,15 +316,15 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         }
     }
 
-    private void calculateChildrenWidths(float f5) {
+    private void calculateChildrenWidths(float value) {
         int size = this.mButtons.size();
         if (size == 0) {
             return;
         }
         ArrayList arrayList = new ArrayList();
-        int i5 = 0;
-        for (int i6 = 0; i6 < size; i6++) {
-            arrayList.add(new IndexLengthPair(i6, getSegmentTextWidth(this.mButtons.get(i6))));
+        int index_2 = 0;
+        for (int index = 0; index < size; index++) {
+            arrayList.add(new IndexLengthPair(index, getSegmentTextWidth(this.mButtons.get(index))));
         }
         Collections.sort(arrayList, new Comparator<IndexLengthPair>() {
             @Override
@@ -337,72 +332,72 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
                 return Integer.compare(indexLengthPair.mLength, indexLengthPair2.mLength);
             }
         });
-        float f6 = f5 / size;
+        float value_2 = value / size;
         float[] fArr = new float[size];
-        int i7 = 0;
-        float f7 = f6;
-        int i8 = -1;
+        int index_3 = 0;
+        float value_3 = value_2;
+        int index_4 = -1;
         while (true) {
-            if (i7 >= size) {
+            if (index_3 >= size) {
                 break;
             }
-            float f8 = ((IndexLengthPair) arrayList.get(i7)).mLength;
-            if (f8 < f7) {
-                fArr[((IndexLengthPair) arrayList.get(i7)).mIndex] = f8;
-                f5 -= f8;
-                i7++;
-            } else if (i8 == i7) {
-                while (i7 < size) {
-                    fArr[((IndexLengthPair) arrayList.get(i7)).mIndex] = f7;
-                    i7++;
+            float value_4 = ((IndexLengthPair) arrayList.get(index_3)).mLength;
+            if (value_4 < value_3) {
+                fArr[((IndexLengthPair) arrayList.get(index_3)).mIndex] = value_4;
+                value -= value_4;
+                index_3++;
+            } else if (index_4 == index_3) {
+                while (index_3 < size) {
+                    fArr[((IndexLengthPair) arrayList.get(index_3)).mIndex] = value_3;
+                    index_3++;
                 }
-                f5 = 0.0f;
+                value = 0.0f;
             } else {
-                f7 = f5 / (size - i7);
-                i8 = i7;
+                value_3 = value / (size - index_3);
+                index_4 = index_3;
             }
         }
-        if (i8 == -1) {
+        if (index_4 == -1) {
             this.mChildWidths.clear();
-            while (i5 < size) {
-                this.mChildWidths.add(Integer.valueOf(Math.round(f6)));
-                i5++;
+            while (index_2 < size) {
+                this.mChildWidths.add(Integer.valueOf(Math.round(value_2)));
+                index_2++;
             }
             return;
         }
-        if (f5 > 0.0f) {
-            int i9 = 0;
+        if (value > 0.0f) {
+            int index_5 = 0;
             while (true) {
-                int i10 = size - 1;
-                if (i9 >= i10) {
+                int index_6 = size - 1;
+                if (index_5 >= index_6) {
                     break;
                 }
-                int i11 = ((IndexLengthPair) arrayList.get(i9)).mIndex;
-                fArr[i11] = fArr[i11] + (f5 / i10);
-                i9++;
+                int index_7 = ((IndexLengthPair) arrayList.get(index_5)).mIndex;
+                fArr[index_7] = fArr[index_7] + (value / index_6);
+                index_5++;
             }
         }
         this.mChildWidths.clear();
-        while (i5 < size) {
-            this.mChildWidths.add(Integer.valueOf(Math.round(fArr[i5])));
-            i5++;
+        while (index_2 < size) {
+            this.mChildWidths.add(Integer.valueOf(Math.round(fArr[index_2])));
+            index_2++;
         }
     }
 
-    private float calculateDynamicWidthParam(float f5, float f6, float f7, float f8, float f9) {
-        if (f5 <= 0.0f || f6 <= 0.0f) {
-            return f7;
+    private float calculateDynamicWidthParam(float value, float value_2, float value_3, float value_4, float value_5) {
+        if (value <= 0.0f || value_2 <= 0.0f) {
+            return value_3;
         }
-        return Math.max(0.0f, Math.min(1.0f, f7 - ((f7 - f8) * ((float) Math.pow(Math.abs(f5 - f6) / Math.max(f5, f6), f9)))));
+        return Math.max(0.0f, Math.min(1.0f, value_3 - ((value_3 - value_4) * ((float) Math.pow(Math.abs(value - value_2) / Math.max(value, value_2), value_5)))));
     }
 
-    private static double[] calculateRubberBand(double d5, double d6, double[] dArr) {
+    private static double[] calculateRubberBand(double doubleValue, double doubleValue_2, double[] dArr) {
         double[] dArr2 = new double[dArr.length];
-        for (int i5 = 0; i5 < dArr.length; i5++) {
-            if (d6 == 0.0d || d5 == 0.0d) {
-                dArr2[i5] = 0.0d;
+        for (int index = 0; index < dArr.length; index++) {
+            if (doubleValue_2 == 0.0d || doubleValue == 0.0d) {
+                dArr2[index] = 0.0d;
             } else {
-                dArr2[i5] = (1.0d - (1.0d / (((Math.abs(dArr[i5]) * d5) / d6) + 1.0d))) * d6 * Math.signum(dArr[i5]);
+                dArr2[index] = (1.0d - (1.0d / (((Math.abs(dArr[index]) * doubleValue) / doubleValue_2) + 1.0d))) * doubleValue_2 * Math.signum(dArr[index]);
             }
         }
         return dArr2;
@@ -430,17 +425,17 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         this.mBackgroundPath.addRoundRect(this.mIndicatorRectF, drawableRadius, drawableRadius, Path.Direction.CCW);
         canvas.clipPath(this.mBackgroundPath, Region.Op.DIFFERENCE);
         RectF rectF = this.mShadowRectF;
-        RectF rectF2 = this.mIndicatorRectF;
-        rectF.left = rectF2.left;
-        rectF.right = rectF2.right;
-        rectF.top = rectF2.top + this.mIndicatorShadowOffset;
+        RectF rectF_2 = this.mIndicatorRectF;
+        rectF.left = rectF_2.left;
+        rectF.right = rectF_2.right;
+        rectF.top = rectF_2.top + this.mIndicatorShadowOffset;
         rectF.bottom = this.mTmpRectF.bottom;
         if (this.mIsNightMode) {
             this.mShadowGradientPaint.setStyle(Paint.Style.FILL);
             this.mShadowGradientPaint.setShader(null);
             this.mShadowGradientPaint.setColor(this.mShadowColor);
         } else {
-            RadialGradient radialGradient = new RadialGradient(rectF2.centerX(), this.mIndicatorRectF.centerY(), this.mShadowRectF.width() / 2.0f, this.mShadowGradientColors, this.mShadowGradientStops, Shader.TileMode.CLAMP);
+            RadialGradient radialGradient = new RadialGradient(rectF_2.centerX(), this.mIndicatorRectF.centerY(), this.mShadowRectF.width() / 2.0f, this.mShadowGradientColors, this.mShadowGradientStops, Shader.TileMode.CLAMP);
             this.mShadowGradientPaint.setStyle(Paint.Style.FILL);
             this.mShadowGradientPaint.setShader(radialGradient);
         }
@@ -485,8 +480,8 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
                 }
 
                 @Override
-                public void onScaleUpdate(float f5) {
-                    COUISegmentButtonLayout.this.mIndicatorScale = f5;
+                public void onScaleUpdate(float indicatorScale) {
+                    COUISegmentButtonLayout.this.mIndicatorScale = indicatorScale;
                     COUISegmentButtonLayout.this.updateIndicatorRect();
                 }
             });
@@ -496,70 +491,70 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
     private void ensureSpringAnimation() {
         if (this.mSpringAnimationPos == null) {
             COUISpringForce cOUISpringForce = new COUISpringForce();
-            cOUISpringForce.setBounce(0.0f);
+            cOUISpringForce.setBounce(DEFAULT_SPRING_BOUNCE);
             cOUISpringForce.setResponse(this.mResponse);
             COUISpringAnimation cOUISpringAnimation = new COUISpringAnimation(new FloatValueHolder(this.mIndicatorCenterX));
             this.mSpringAnimationPos = cOUISpringAnimation;
             cOUISpringAnimation.setSpring(cOUISpringForce);
             this.mSpringAnimationPos.addUpdateListener(new COUIDynamicAnimation.OnAnimationUpdateListener() {
                 @Override
-                public final void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float f5, float f6) {
+                public final void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float value, float value_2) {
                     COUISegmentButtonLayout.this.lambda$ensureSpringAnimation$0(
-                            cOUIDynamicAnimation, f5, f6);
+                            cOUIDynamicAnimation, value, value_2);
                 }
             });
             this.mSpringAnimationPos.addEndListener(new COUIDynamicAnimation.OnAnimationEndListener() {
                 @Override
-                public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z5, float f5, float f6) {
+                public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean flag, float value, float value_2) {
                     COUISegmentButtonLayout.this.mEnableRubberEffect = true;
                 }
             });
         }
         if (this.mSpringAnimationWidth == null) {
             COUISpringForce cOUISpringForce2 = new COUISpringForce();
-            cOUISpringForce2.setBounce(0.0f);
+            cOUISpringForce2.setBounce(DEFAULT_SPRING_BOUNCE);
             cOUISpringForce2.setResponse(this.mResponse);
             COUISpringAnimation cOUISpringAnimation2 = new COUISpringAnimation(new FloatValueHolder(this.mIndicatorWidth));
             this.mSpringAnimationWidth = cOUISpringAnimation2;
             cOUISpringAnimation2.setSpring(cOUISpringForce2);
             this.mSpringAnimationWidth.addUpdateListener(new COUIDynamicAnimation.OnAnimationUpdateListener() {
                 @Override
-                public final void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float f5, float f6) {
+                public final void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float value, float value_2) {
                     COUISegmentButtonLayout.this.lambda$ensureSpringAnimation$1(
-                            cOUIDynamicAnimation, f5, f6);
+                            cOUIDynamicAnimation, value, value_2);
                 }
             });
         }
         if (this.mSpringAnimationRubber == null) {
             COUISpringForce cOUISpringForce3 = new COUISpringForce();
-            cOUISpringForce3.setBounce(0.0f);
+            cOUISpringForce3.setBounce(DEFAULT_SPRING_BOUNCE);
             cOUISpringForce3.setResponse(this.mResponse);
             COUISpringAnimation cOUISpringAnimation3 = new COUISpringAnimation(new FloatValueHolder(this.mIndicatorCenterX));
             this.mSpringAnimationRubber = cOUISpringAnimation3;
             cOUISpringAnimation3.setSpring(cOUISpringForce3);
             this.mSpringAnimationRubber.addUpdateListener(new COUIDynamicAnimation.OnAnimationUpdateListener() {
                 @Override
-                public final void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float f5, float f6) {
+                public final void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float value, float value_2) {
                     COUISegmentButtonLayout.this.lambda$ensureSpringAnimation$2(
-                            cOUIDynamicAnimation, f5, f6);
+                            cOUIDynamicAnimation, value, value_2);
                 }
             });
         }
         ensureIndicatorScaleAnimation();
     }
 
-    private void executeScaleAnimatorAt(boolean z5, int i5) {
-        if (i5 < 0 || i5 >= this.mPressScaleHelper.size()) {
+    private void executeScaleAnimatorAt(boolean flag, int index) {
+        if (index < 0 || index >= this.mPressScaleHelper.size()) {
             return;
         }
-        this.mPressScaleHelper.get(i5).executeFeedbackAnimator(z5);
+        this.mPressScaleHelper.get(index).executeFeedbackAnimator(flag);
     }
 
-    private void executeTextColorChangeAnimatorAt(boolean z5, int i5) {
-        if (i5 < 0 || i5 >= this.mTextColorChangeHelper.size()) {
+    private void executeTextColorChangeAnimatorAt(boolean flag, int index) {
+        if (index < 0 || index >= this.mTextColorChangeHelper.size()) {
             return;
         }
-        this.mTextColorChangeHelper.get(i5).startAnimation(z5);
+        this.mTextColorChangeHelper.get(index).startAnimation(flag);
     }
 
     private float getDrawableRadius(RectF rectF) {
@@ -570,11 +565,11 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         return isSmallPadding() ? this.mSegmentExtraWidthSmall : this.mSegmentExtraWidth;
     }
 
-    private float getEffectiveTranslationBounceForShortToLong(float f5, float f6) {
-        if (!isSmallPadding() || f5 <= 0.0f || f6 <= 0.0f) {
+    private float getEffectiveTranslationBounceForShortToLong(float value, float value_2) {
+        if (!isSmallPadding() || value <= 0.0f || value_2 <= 0.0f) {
             return 0.1f;
         }
-        return calculateDynamicWidthParam(f5, f6, 0.1f, POS_SPRING_BOUNCE_MIN, 1.0f);
+        return calculateDynamicWidthParam(value, value_2, POS_SPRING_BOUNCE, POS_SPRING_BOUNCE_MIN, 1.0f);
     }
 
     private float getPositionChangeProgress() {
@@ -582,21 +577,21 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         if (size <= 1) {
             return 0.0f;
         }
-        float f5 = this.mIndicatorCenterX;
+        float value = this.mIndicatorCenterX;
         float left = (this.mButtons.get(0).getLeft() + this.mButtons.get(0).getRight()) / 2.0f;
-        int i5 = 1;
-        float f6 = left;
-        while (i5 < size) {
-            float left2 = (this.mButtons.get(i5).getLeft() + this.mButtons.get(i5).getRight()) / 2.0f;
-            float fMin = Math.min(f6, left2);
-            float fMax = Math.max(f6, left2);
-            if (f5 >= fMin && f5 <= fMax) {
-                return (i5 - 1) + Math.max(0.0f, Math.min(1.0f, left2 != f6 ? (f5 - f6) / (left2 - f6) : 0.0f));
+        int index = 1;
+        float value_2 = left;
+        while (index < size) {
+            float left2 = (this.mButtons.get(index).getLeft() + this.mButtons.get(index).getRight()) / 2.0f;
+            float fMin = Math.min(value_2, left2);
+            float fMax = Math.max(value_2, left2);
+            if (value >= fMin && value <= fMax) {
+                return (index - 1) + Math.max(0.0f, Math.min(1.0f, left2 != value_2 ? (value - value_2) / (left2 - value_2) : 0.0f));
             }
-            i5++;
-            f6 = left2;
+            index++;
+            value_2 = left2;
         }
-        if (Math.abs(f5 - left) <= Math.abs(f5 - f6)) {
+        if (Math.abs(value - left) <= Math.abs(value - value_2)) {
             return 0.0f;
         }
         return size - 1;
@@ -606,7 +601,7 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         int screenWidthMetrics = UIUtil.getScreenWidthMetrics(getContext());
         int screenHeightMetrics = UIUtil.getScreenHeightMetrics(getContext());
         this.mResponsiveUIModel.rebuild(screenWidthMetrics, screenHeightMetrics).chooseMargin(MarginType.MARGIN_SMALL);
-        return COUIResponsiveUtils.isLargeScreen(getContext(), screenWidthMetrics, screenHeightMetrics) ? this.mResponsiveUIModel.calculateGridWidth(8) : COUIResponsiveUtils.isMediumScreen(getContext(), screenWidthMetrics, screenHeightMetrics) ? this.mResponsiveUIModel.calculateGridWidth(6) : this.mResponsiveUIModel.calculateGridWidth(4);
+        return COUIResponsiveUtils.isLargeScreen(getContext(), screenWidthMetrics, screenHeightMetrics) ? this.mResponsiveUIModel.calculateGridWidth(GRID_NUMBER_LARGE) : COUIResponsiveUtils.isMediumScreen(getContext(), screenWidthMetrics, screenHeightMetrics) ? this.mResponsiveUIModel.calculateGridWidth(GRID_NUMBER_MEDIUM) : this.mResponsiveUIModel.calculateGridWidth(GRID_NUMBER_SMALL);
     }
 
     private int getSegmentTextWidth(TextView textView) {
@@ -618,9 +613,9 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
     }
 
     private int getSelectedIndexFromX(MotionEvent motionEvent) {
-        for (int i5 = 0; i5 < this.mButtons.size(); i5++) {
-            if (isInsideView(this.mButtons.get(i5), motionEvent.getX())) {
-                return i5;
+        for (int index = 0; index < this.mButtons.size(); index++) {
+            if (isInsideView(this.mButtons.get(index), motionEvent.getX())) {
+                return index;
             }
         }
         return -1;
@@ -631,14 +626,14 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         this.mIsDragging = false;
     }
 
-    private void handleRubberBandEffect(float f5) {
+    private void handleRubberBandEffect(float value) {
         if (this.mEnableRubberEffect) {
-            this.mLastX = f5;
+            this.mLastX = value;
             this.mEnableRubberEffect = false;
         }
-        float f6 = f5 - this.mLastX;
-        if (f6 != 0.0f) {
-            double[] dArrCalculateRubberBand = calculateRubberBand(this.mOverStiffness, this.mOverDistance, new double[]{f6});
+        float value_2 = value - this.mLastX;
+        if (value_2 != 0.0f) {
+            double[] dArrCalculateRubberBand = calculateRubberBand(this.mOverStiffness, this.mOverDistance, new double[]{value_2});
             ensureSpringAnimation();
             this.mSpringAnimationRubber.setStartValue(this.mIndicatorCenterX);
             this.mSpringAnimationRubber.animateToFinalPosition(this.mIndicatorCenterLastX + ((float) dArrCalculateRubberBand[0]));
@@ -679,18 +674,18 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         }
     }
 
-    private void initializeSegmentButton(final TextView textView, final int i5, String str) {
+    private void initializeSegmentButton(final TextView textView, final int index, String str) {
         textView.setGravity(17);
         textView.setTextAlignment(4);
         textView.setIncludeFontPadding(false);
         textView.setMaxLines(1);
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        int i6 = this.mSegmentPaddingHorizontal;
-        ViewCompat.setPaddingRelative(textView, i6, 0, i6, 0);
+        int index_2 = this.mSegmentPaddingHorizontal;
+        ViewCompat.setPaddingRelative(textView, index_2, 0, index_2, 0);
         textView.setClickable(true);
         textView.setFocusable(true);
         textView.setMinWidth(this.mSegmentMinWidth);
-        if (i5 == this.mSelectedPosition) {
+        if (index == this.mSelectedPosition) {
             textView.setSelected(true);
         }
         ViewCompat.setAccessibilityDelegate(textView, new AccessibilityDelegateCompat() {
@@ -698,7 +693,7 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
             public void onInitializeAccessibilityNodeInfo(View view, AccessibilityNodeInfoCompat dVar) {
                 super.onInitializeAccessibilityNodeInfo(view, dVar);
                 dVar.setClassName(COUIAccessibilityUtil.BUTTON_CLASS_NAME);
-                dVar.setCollectionItemInfo(AccessibilityNodeInfoCompat.CollectionItemInfoCompat.obtain(0, 1, i5, 1, false, textView.isSelected()));
+                dVar.setCollectionItemInfo(AccessibilityNodeInfoCompat.CollectionItemInfoCompat.obtain(0, 1, index, 1, false, textView.isSelected()));
                 if (!textView.isSelected()) {
                     dVar.setStateDescription(COUISegmentButtonLayout.this.getContext().getResources().getString(R.string.coui_accessibility_unselected));
                 } else {
@@ -708,9 +703,9 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
             }
 
             @Override
-            public boolean performAccessibilityAction(View view, int i7, Bundle bundle) {
-                if (i7 != AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK.getId()) {
-                    return super.performAccessibilityAction(view, i7, bundle);
+            public boolean performAccessibilityAction(View view, int index_3, Bundle bundle) {
+                if (index_3 != AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK.getId()) {
+                    return super.performAccessibilityAction(view, index_3, bundle);
                 }
                 COUISegmentButtonLayout.this.selectSegmentAt(textView);
                 return true;
@@ -720,15 +715,15 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         this.mPressScaleHelper.add(new COUIPressFeedbackHelper(textView));
         this.mTextColorChangeHelper.add(new SegmentButtonTextColorChangeHelper(textView));
         textView.setText(str);
-        refreshSegmentTextConfig(textView, i5);
+        refreshSegmentTextConfig(textView, index);
     }
 
-    private boolean isInsideView(View view, float f5) {
+    private boolean isInsideView(View view, float value) {
         if (view == null || view.getVisibility() == 8) {
             return false;
         }
-        float f6 = this.mIsDragging ? this.mSwitchDistance : 0.0f;
-        return f5 >= ((float) view.getLeft()) + f6 && f5 <= ((float) view.getRight()) - f6;
+        float value_2 = this.mIsDragging ? this.mSwitchDistance : 0.0f;
+        return value >= ((float) view.getLeft()) + value_2 && value <= ((float) view.getRight()) - value_2;
     }
 
     private boolean isSmallPadding() {
@@ -737,8 +732,8 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
     }
 
 
-    public void lambda$ensureSpringAnimation$0(COUIDynamicAnimation cOUIDynamicAnimation, float f5, float f6) {
-        this.mIndicatorCenterX = f5;
+    public void lambda$ensureSpringAnimation$0(COUIDynamicAnimation cOUIDynamicAnimation, float value, float value_2) {
+        this.mIndicatorCenterX = value;
         updateIndicatorRect();
         if (this.mOnSelectedSegmentChangeListener != null) {
             this.mOnSelectedSegmentChangeListener.onSelectedSegmentChange(this.mLastSelectedPosition, this.mSelectedPosition, getPositionChangeProgress());
@@ -746,8 +741,8 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
     }
 
 
-    public void lambda$ensureSpringAnimation$1(COUIDynamicAnimation cOUIDynamicAnimation, float f5, float f6) {
-        this.mIndicatorWidth = f5;
+    public void lambda$ensureSpringAnimation$1(COUIDynamicAnimation cOUIDynamicAnimation, float value, float value_2) {
+        this.mIndicatorWidth = value;
         if (COUI_DEBUG) {
             COUILog.d(TAG, "update width: " + this.mIndicatorWidth);
         }
@@ -755,13 +750,13 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
     }
 
 
-    public void lambda$ensureSpringAnimation$2(COUIDynamicAnimation cOUIDynamicAnimation, float f5, float f6) {
-        this.mIndicatorCenterX = f5;
+    public void lambda$ensureSpringAnimation$2(COUIDynamicAnimation cOUIDynamicAnimation, float value, float value_2) {
+        this.mIndicatorCenterX = value;
         updateIndicatorRect();
     }
 
-    private void loadAttr(Context context, AttributeSet attributeSet, int i5, int i6) {
-        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISegmentButtonLayout, i5, i6);
+    private void loadAttr(Context context, AttributeSet attributeSet, int index, int index_2) {
+        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISegmentButtonLayout, index, index_2);
         this.mUnselectedTextColor = typedArrayObtainStyledAttributes.getColor(R.styleable.COUISegmentButtonLayout_UnSelectedTextColor, COUIContextUtil.getAttrColor(context, R.attr.couiColorLabelPrimary));
         this.mSelectedTextColor = typedArrayObtainStyledAttributes.getColor(R.styleable.COUISegmentButtonLayout_selectedTextColor, COUIContextUtil.getAttrColor(context, R.attr.couiColorLabelPrimary));
         this.mCustomTextSizePx = typedArrayObtainStyledAttributes.getDimensionPixelSize(R.styleable.COUISegmentButtonLayout_segmentButtonTextSize, 0);
@@ -781,8 +776,8 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         }
     }
 
-    private void refreshSegmentTextConfig(TextView textView, int i5) {
-        if (textView == null || i5 < 0 || i5 > this.mButtons.size()) {
+    private void refreshSegmentTextConfig(TextView textView, int index) {
+        if (textView == null || index < 0 || index > this.mButtons.size()) {
             return;
         }
         TextViewCompat.setTextAppearance(textView, R.style.couiTextButtonM);
@@ -792,7 +787,7 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         if (this.mEnableTextScale) {
             COUIChangeTextUtil.adaptFontSize(textView, 4);
         }
-        if (i5 == this.mSelectedPosition) {
+        if (index == this.mSelectedPosition) {
             textView.setTextColor(this.mSelectedTextColor);
         } else {
             textView.setTextColor(this.mUnselectedTextColor);
@@ -842,22 +837,22 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         this.mIndicatorWidth = this.mIndicatorRectF.width();
     }
 
-    private void resetRubberBandEffect(int i5) {
-        if (getSegmentAt(i5) != null) {
+    private void resetRubberBandEffect(int index) {
+        if (getSegmentAt(index) != null) {
             this.mSpringAnimationRubber.setStartValue(this.mIndicatorCenterX);
-            this.mSpringAnimationRubber.animateToFinalPosition((getSegmentAt(i5).getLeft() + getSegmentAt(i5).getRight()) / 2.0f);
+            this.mSpringAnimationRubber.animateToFinalPosition((getSegmentAt(index).getLeft() + getSegmentAt(index).getRight()) / 2.0f);
         } else {
-            COUILog.w(TAG, i5 + " out of range of segment button layout");
+            COUILog.w(TAG, index + " out of range of segment button layout");
         }
     }
 
     private void resetTouchEffect() {
         ensureSpringAnimation();
-        int i5 = this.mLastTouchPosition;
-        if (i5 < 0) {
-            i5 = this.mSelectedPosition;
+        int index = this.mLastTouchPosition;
+        if (index < 0) {
+            index = this.mSelectedPosition;
         }
-        executeScaleAnimatorAt(false, i5);
+        executeScaleAnimatorAt(false, index);
         if (this.mIsDragging) {
             this.mIndicatorScaleHelper.executeFeedbackAnimator(false);
             if (this.mSpringAnimationPos.isRunning()) {
@@ -867,30 +862,30 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         }
     }
 
-    private void setSelectedAt(int i5, boolean z5) {
-        if (i5 < 0 || i5 >= this.mButtons.size()) {
+    private void setSelectedAt(int index, boolean flag) {
+        if (index < 0 || index >= this.mButtons.size()) {
             return;
         }
-        TextView textView = this.mButtons.get(i5);
-        textView.setSelected(z5);
-        textView.setTextColor(z5 ? this.mSelectedTextColor : this.mUnselectedTextColor);
+        TextView textView = this.mButtons.get(index);
+        textView.setSelected(flag);
+        textView.setTextColor(flag ? this.mSelectedTextColor : this.mUnselectedTextColor);
     }
 
 
     public void updateIndicatorRect() {
         RectF rectF = this.mIndicatorRectF;
-        float f5 = this.mIndicatorCenterX;
-        float f6 = this.mIndicatorScale;
-        float f7 = this.mIndicatorWidth;
-        rectF.left = f5 - ((f6 * f7) / 2.0f);
-        rectF.right = f5 + ((f6 * f7) / 2.0f);
-        float f8 = this.mIndicatorCenterY;
-        float f9 = this.mIndicatorHeight;
-        rectF.top = f8 - ((f6 * f9) / 2.0f);
-        rectF.bottom = f8 + ((f9 * f6) / 2.0f);
-        this.mOverDistance = (int) (((1.0f - f6) * f7) / 2.0f);
-        int i5 = this.mSelectedPosition;
-        if (i5 == 0 || i5 == this.mButtons.size() - 1) {
+        float value = this.mIndicatorCenterX;
+        float value_2 = this.mIndicatorScale;
+        float value_3 = this.mIndicatorWidth;
+        rectF.left = value - ((value_2 * value_3) / 2.0f);
+        rectF.right = value + ((value_2 * value_3) / 2.0f);
+        float value_4 = this.mIndicatorCenterY;
+        float value_5 = this.mIndicatorHeight;
+        rectF.top = value_4 - ((value_2 * value_5) / 2.0f);
+        rectF.bottom = value_4 + ((value_5 * value_2) / 2.0f);
+        this.mOverDistance = (int) (((1.0f - value_2) * value_3) / 2.0f);
+        int index = this.mSelectedPosition;
+        if (index == 0 || index == this.mButtons.size() - 1) {
             this.mOverDistance += getPaddingStart();
         } else {
             this.mOverDistance += this.mSwitchDistance;
@@ -905,7 +900,7 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
     }
 
     @Override
-    public void addView(View view, int i5, ViewGroup.LayoutParams layoutParams) {
+    public void addView(View view, int index, ViewGroup.LayoutParams layoutParams) {
         if (!(view instanceof TextView)) {
             COUILog.e(TAG, "Child views must be of type TextView.");
             return;
@@ -942,9 +937,9 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
             ensureSpringAnimation();
             executeScaleAnimatorAt(true, this.mTouchPosition);
             if (!this.mIsDragging) {
-                boolean z5 = this.mSelectedPosition == this.mTouchPosition;
-                this.mIsDragging = z5;
-                if (z5) {
+                boolean isDragging = this.mSelectedPosition == this.mTouchPosition;
+                this.mIsDragging = isDragging;
+                if (isDragging) {
                     this.mLastX = motionEvent.getX();
                     this.mIndicatorCenterLastX = this.mIndicatorCenterX;
                     this.mIndicatorScaleHelper.executeFeedbackAnimator(true);
@@ -953,9 +948,9 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         } else if (actionMasked == 1) {
             resetTouchEffect();
             this.mIsDragging = false;
-            int i5 = this.mTouchPosition;
-            if (i5 != this.mSelectedPosition && i5 >= 0) {
-                selectSegmentAt(i5);
+            int index = this.mTouchPosition;
+            if (index != this.mSelectedPosition && index >= 0) {
+                selectSegmentAt(index);
             }
         } else if (actionMasked != 2) {
             if (actionMasked == 3) {
@@ -965,9 +960,9 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
             if (Math.abs(motionEvent.getX() - this.mLastX) > this.mTouchSlop) {
                 attemptClaimDrag();
             }
-            int i6 = this.mTouchPosition;
-            if (i6 != this.mSelectedPosition && i6 >= 0) {
-                selectSegmentAt(i6);
+            int index_2 = this.mTouchPosition;
+            if (index_2 != this.mSelectedPosition && index_2 >= 0) {
+                selectSegmentAt(index_2);
                 performHapticFeedback();
                 executeScaleAnimatorAt(false, this.mLastSelectedPosition);
                 executeScaleAnimatorAt(true, this.mSelectedPosition);
@@ -975,23 +970,23 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
                 handleRubberBandEffect(motionEvent.getX());
             }
         } else {
-            int i7 = this.mTouchPosition;
-            int i8 = this.mLastTouchPosition;
-            if (i7 != i8) {
-                if (i8 < 0) {
-                    i8 = this.mLastSelectedPosition;
+            int index_3 = this.mTouchPosition;
+            int index_4 = this.mLastTouchPosition;
+            if (index_3 != index_4) {
+                if (index_4 < 0) {
+                    index_4 = this.mLastSelectedPosition;
                 }
-                executeScaleAnimatorAt(false, i8);
+                executeScaleAnimatorAt(false, index_4);
             }
         }
         return super.dispatchTouchEvent(motionEvent);
     }
 
-    public TextView getSegmentAt(int i5) {
-        if (i5 < 0 || i5 >= getSegmentCount()) {
+    public TextView getSegmentAt(int index) {
+        if (index < 0 || index >= getSegmentCount()) {
             return null;
         }
-        return this.mButtons.get(i5);
+        return this.mButtons.get(index);
     }
 
     public int getSegmentCount() {
@@ -1035,9 +1030,9 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
             this.mIndicatorPaint.setColor(this.mIndicatorColor);
             drawIndicator(canvas, Boolean.FALSE, this.mIndicatorPaint);
         } else {
-            for (Paint paint2 : customIndicatorPaint) {
-                if (paint2 != null) {
-                    drawIndicator(canvas, Boolean.FALSE, paint2);
+            for (Paint paint_2 : customIndicatorPaint) {
+                if (paint_2 != null) {
+                    drawIndicator(canvas, Boolean.FALSE, paint_2);
                 }
             }
         }
@@ -1052,8 +1047,8 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
     }
 
     @Override
-    protected void onLayout(boolean z5, int i5, int i6, int i7, int i8) {
-        super.onLayout(z5, i5, i6, i7, i8);
+    protected void onLayout(boolean changed, int left, int top, int right_2, int bottom_2) {
+        super.onLayout(changed, left, top, right_2, bottom_2);
         this.mTmpRect.right = getWidth();
         this.mTmpRect.bottom = getHeight();
         this.mTmpRectF.set(this.mTmpRect);
@@ -1064,70 +1059,70 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
     }
 
     @Override
-    protected void onMeasure(int i5, int i6) {
-        int mode = View.MeasureSpec.getMode(i5);
-        int size = View.MeasureSpec.getSize(i5);
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int mode = View.MeasureSpec.getMode(widthMeasureSpec);
+        int size = View.MeasureSpec.getSize(widthMeasureSpec);
         this.mChildWidths.clear();
-        int i7 = 0;
+        int index_3 = 0;
         if (size > 0) {
-            int i8 = 0;
-            for (int i9 = 0; i9 < getChildCount(); i9++) {
-                View childAt = getChildAt(i9);
+            int index_4 = 0;
+            for (int index = 0; index < getChildCount(); index++) {
+                View childAt = getChildAt(index);
                 if (childAt instanceof TextView) {
                     ViewGroup.LayoutParams layoutParams = childAt.getLayoutParams();
                     int segmentTextWidth = getSegmentTextWidth((TextView) childAt);
                     layoutParams.width = segmentTextWidth;
                     this.mChildWidths.add(Integer.valueOf(segmentTextWidth));
-                    i8 += layoutParams.width;
+                    index_4 += layoutParams.width;
                 }
             }
-            int paddingStart = i8 + getPaddingStart() + getPaddingEnd();
+            int paddingStart = index_4 + getPaddingStart() + getPaddingEnd();
             if (mode == 1073741824) {
                 if (this.mIsResponsiveWidthEnabled) {
                     size = Math.min(getResponsiveWidth(), size);
                 }
                 calculateChildrenWidths((size - getPaddingStart()) - getPaddingEnd());
-                while (i7 < getChildCount()) {
-                    getChildAt(i7).getLayoutParams().width = this.mChildWidths.get(i7).intValue();
-                    i7++;
+                while (index_3 < getChildCount()) {
+                    getChildAt(index_3).getLayoutParams().width = this.mChildWidths.get(index_3).intValue();
+                    index_3++;
                 }
             } else if (paddingStart > size) {
                 calculateChildrenWidths((size - getPaddingStart()) - getPaddingEnd());
-                while (i7 < getChildCount()) {
-                    getChildAt(i7).getLayoutParams().width = this.mChildWidths.get(i7).intValue();
-                    i7++;
+                while (index_3 < getChildCount()) {
+                    getChildAt(index_3).getLayoutParams().width = this.mChildWidths.get(index_3).intValue();
+                    index_3++;
                 }
             } else {
                 size = paddingStart;
             }
         } else {
-            for (int i10 = 0; i10 < getChildCount(); i10++) {
-                getChildAt(i10).getLayoutParams().width = 0;
+            for (int index_2 = 0; index_2 < getChildCount(); index_2++) {
+                getChildAt(index_2).getLayoutParams().width = 0;
             }
         }
-        super.onMeasure(i5, i6);
-        setMeasuredDimension(size, View.MeasureSpec.getSize(i6));
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        setMeasuredDimension(size, View.MeasureSpec.getSize(heightMeasureSpec));
     }
 
     @Override
-    public void onPageScrollStateChanged(int i5) {
+    public void onPageScrollStateChanged(int state) {
     }
 
     @Override
-    public void onPageScrolled(int i5, float f5, int i6) {
+    public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
     }
 
     @Override
-    public void onPageSelected(int i5) {
-        if (i5 < 0 || i5 >= this.mButtons.size() || i5 == this.mSelectedPosition) {
+    public void onPageSelected(int position) {
+        if (position < 0 || position >= this.mButtons.size() || position == this.mSelectedPosition) {
             return;
         }
-        selectSegmentAt(i5);
+        selectSegmentAt(position);
     }
 
     @Override
-    protected void onSizeChanged(int i5, int i6, int i7, int i8) {
-        super.onSizeChanged(i5, i6, i7, i8);
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
         this.mIsSizeChanged = true;
     }
 
@@ -1157,35 +1152,35 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
     }
 
     public void refresh() {
-        int i5;
-        int i6;
+        int index_2;
+        int index_3;
         String resourceTypeName = getContext().getResources().getResourceTypeName(this.mStyleAttr);
         if (TextUtils.equals(resourceTypeName, "attr")) {
-            i5 = this.mStyleAttr;
-            i6 = 0;
+            index_2 = this.mStyleAttr;
+            index_3 = 0;
         } else if (TextUtils.equals(resourceTypeName, "style")) {
-            i6 = this.mStyleAttr;
-            i5 = 0;
+            index_3 = this.mStyleAttr;
+            index_2 = 0;
         } else {
-            i5 = 0;
-            i6 = 0;
+            index_2 = 0;
+            index_3 = 0;
         }
-        loadAttr(getContext(), null, i5, i6);
+        loadAttr(getContext(), null, index_2, index_3);
         updateShadowGradientColors();
         this.mIsNightMode = COUIDarkModeUtil.isNightMode(getContext());
-        for (int i7 = 0; i7 < this.mButtons.size(); i7++) {
-            refreshSegmentTextConfig(this.mButtons.get(i7), i7);
+        for (int index = 0; index < this.mButtons.size(); index++) {
+            refreshSegmentTextConfig(this.mButtons.get(index), index);
         }
     }
 
-    public void selectSegmentAt(int i5) {
-        int i6;
-        if (i5 < 0 || i5 >= this.mButtons.size() || i5 == (i6 = this.mSelectedPosition)) {
+    public void selectSegmentAt(int index) {
+        int lastSelectedPosition;
+        if (index < 0 || index >= this.mButtons.size() || index == (lastSelectedPosition = this.mSelectedPosition)) {
             return;
         }
-        this.mLastSelectedPosition = i6;
-        this.mSelectedPosition = i5;
-        setSelectedAt(i5, true);
+        this.mLastSelectedPosition = lastSelectedPosition;
+        this.mSelectedPosition = index;
+        setSelectedAt(index, true);
         setSelectedAt(this.mLastSelectedPosition, false);
         if (this.mSelectedTextColor != this.mUnselectedTextColor) {
             executeTextColorChangeAnimatorAt(true, this.mSelectedPosition);
@@ -1195,15 +1190,15 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
     }
 
     @Override
-    public void setEnabled(boolean z5) {
-        if (isEnabled() != z5 && !z5) {
+    public void setEnabled(boolean enabled) {
+        if (isEnabled() != enabled && !enabled) {
             handleActionCancel();
         }
-        super.setEnabled(z5);
+        super.setEnabled(enabled);
     }
 
-    public void setIndicatorResponse(float f5) {
-        this.mResponse = f5;
+    public void setIndicatorResponse(float indicatorResponse) {
+        this.mResponse = indicatorResponse;
         this.mSpringAnimationRubber = null;
         this.mSpringAnimationPos = null;
         this.mIndicatorScaleHelper = null;
@@ -1214,8 +1209,8 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         this.mOnSelectedSegmentChangeListener = onSelectedSegmentChangeListener;
     }
 
-    public void setResponsiveWidthEnabled(boolean z5) {
-        this.mIsResponsiveWidthEnabled = z5;
+    public void setResponsiveWidthEnabled(boolean responsiveWidthEnabled) {
+        this.mIsResponsiveWidthEnabled = responsiveWidthEnabled;
         requestLayout();
     }
 
@@ -1229,48 +1224,48 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         }
         this.mSegmentStrings = strArr;
         removeAllViews();
-        for (int i5 = 0; i5 < this.mSegmentStrings.length; i5++) {
+        for (int index = 0; index < this.mSegmentStrings.length; index++) {
             TextView textView = new TextView(getContext());
-            textView.setText(strArr[i5]);
+            textView.setText(strArr[index]);
             addView(textView, new ViewGroup.LayoutParams(-2, -1));
         }
     }
 
-    public void setSegmentSelectedTextColor(int i5) {
+    public void setSegmentSelectedTextColor(int segmentSelectedTextColor) {
         if (this.mButtons.isEmpty()) {
             COUILog.e(TAG, "Cannot set text color: COUISegmentButtonLayout has no children.");
         } else {
-            this.mSelectedTextColor = i5;
+            this.mSelectedTextColor = segmentSelectedTextColor;
             this.mButtons.get(this.mSelectedPosition).setTextColor(this.mSelectedTextColor);
         }
     }
 
-    public void setSegmentTextAt(String str, int i5) {
-        TextView segmentAt = getSegmentAt(i5);
+    public void setSegmentTextAt(String str, int segmentTextAt) {
+        TextView segmentAt = getSegmentAt(segmentTextAt);
         if (segmentAt != null) {
             segmentAt.setText(str);
             this.mIsSizeChanged = true;
             requestLayout();
         } else {
-            COUILog.w(TAG, "Segment at index " + i5 + "does not exist");
+            COUILog.w(TAG, "Segment at index " + segmentTextAt + "does not exist");
         }
     }
 
-    public void setSegmentTextSize(float f5) {
-        setSegmentTextSize(2, f5);
+    public void setSegmentTextSize(float segmentTextSize) {
+        setSegmentTextSize(2, segmentTextSize);
     }
 
-    public void setSegmentUnselectedTextColor(int i5) {
-        this.mUnselectedTextColor = i5;
-        for (int i6 = 0; i6 < this.mButtons.size(); i6++) {
-            if (i6 != this.mSelectedPosition) {
-                this.mButtons.get(i6).setTextColor(this.mUnselectedTextColor);
+    public void setSegmentUnselectedTextColor(int segmentUnselectedTextColor) {
+        this.mUnselectedTextColor = segmentUnselectedTextColor;
+        for (int index = 0; index < this.mButtons.size(); index++) {
+            if (index != this.mSelectedPosition) {
+                this.mButtons.get(index).setTextColor(this.mUnselectedTextColor);
             }
         }
     }
 
-    public void setTextScaleEnabled(boolean z5) {
-        this.mEnableTextScale = z5;
+    public void setTextScaleEnabled(boolean textScaleEnabled) {
+        this.mEnableTextScale = textScaleEnabled;
         requestLayout();
     }
 
@@ -1278,27 +1273,27 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
         this(context, attributeSet, R.attr.couiSegmentButtonStyle);
     }
 
-    public void setSegmentTextSize(int i5, float f5) {
-        if (f5 == this.mTextPaint.getTextSize()) {
+    public void setSegmentTextSize(int width, float height) {
+        if (height == this.mTextPaint.getTextSize()) {
             return;
         }
-        this.mCustomTextSizePx = TypedValue.applyDimension(i5, f5, getResources().getDisplayMetrics());
-        for (int i6 = 0; i6 < this.mButtons.size(); i6++) {
-            this.mButtons.get(i6).setTextSize(i5, f5);
+        this.mCustomTextSizePx = TypedValue.applyDimension(width, height, getResources().getDisplayMetrics());
+        for (int index = 0; index < this.mButtons.size(); index++) {
+            this.mButtons.get(index).setTextSize(width, height);
             if (this.mEnableTextScale) {
-                COUIChangeTextUtil.adaptFontSize(this.mButtons.get(i6), 4);
+                COUIChangeTextUtil.adaptFontSize(this.mButtons.get(index), 4);
             }
         }
         refreshTextPaint();
         this.mIsSizeChanged = true;
     }
 
-    public COUISegmentButtonLayout(Context context, AttributeSet attributeSet, int i5) {
-        this(context, attributeSet, i5, R.style.SegmentButton);
+    public COUISegmentButtonLayout(Context context, AttributeSet attributeSet, int index) {
+        this(context, attributeSet, index, R.style.SegmentButton);
     }
 
-    public COUISegmentButtonLayout(Context context, AttributeSet attributeSet, int i5, int i6) {
-        super(context, attributeSet, i5, i6);
+    public COUISegmentButtonLayout(Context context, AttributeSet attributeSet, int index, int index_2) {
+        super(context, attributeSet, index, index_2);
         this.mContainerPaint = new Paint(1);
         this.mIndicatorPaint = new Paint(1);
         this.mShadowGradientPaint = new Paint(1);
@@ -1340,12 +1335,12 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
             this.mStyleAttr = attributeSet.getStyleAttribute();
         }
         if (this.mStyleAttr == 0) {
-            this.mStyleAttr = i5;
+            this.mStyleAttr = index;
         }
-        this.mStyleRes = i6;
-        loadAttr(context, attributeSet, i5, i6);
+        this.mStyleRes = index_2;
+        loadAttr(context, attributeSet, index, index_2);
         this.mSegmentMinWidth = getResources().getDimensionPixelOffset(R.dimen.coui_segment_min_width);
-        this.mOverStiffness = 0.12f;
+        this.mOverStiffness = DEFAULT_OVER_STIFFNESS;
         this.mOverDistance = getResources().getDimensionPixelOffset(R.dimen.coui_segment_over_distance);
         this.mSwitchDistance = getResources().getDimensionPixelOffset(R.dimen.coui_segment_switch_distance);
         this.mSegmentPaddingHorizontal = getResources().getDimensionPixelOffset(R.dimen.coui_segment_btn_padding_horizontal);

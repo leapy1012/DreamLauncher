@@ -1,14 +1,16 @@
 package com.coui.appcompat.statement;
 
-import com.coui.appcompat.R;
-
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
 import androidx.constraintlayout.widget.ConstraintLayout;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.checkbox.COUICheckBox;
+
 import kotlin.jvm.internal.Intrinsics;
 
 

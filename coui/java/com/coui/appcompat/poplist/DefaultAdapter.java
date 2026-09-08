@@ -1,7 +1,5 @@
 package com.coui.appcompat.poplist;
 
-import com.coui.appcompat.R;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -27,14 +25,18 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Space;
 import android.widget.TextView;
+
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.view.ViewCompat;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.reddot.COUIHintRedDot;
 import com.coui.appcompat.state.COUIMaskEffectDrawable;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 import com.coui.appcompat.uiutil.UIUtil;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -139,14 +141,14 @@ public class DefaultAdapter extends BaseAdapter {
         this.mDescriptionColor = COUIContextUtil.getAttrColor(context, R.attr.couiColorLabelSecondary, R.color.coui_color_secondary_neutral);
     }
 
-    private void configItemVerticalPadding(View view, int i2) {
+    private void configItemVerticalPadding(View view, int index) {
         if (this.mMenuItemList.size() == 1) {
             view.setMinimumHeight(this.mPopupListItemMinHeight + (this.mPopupListPaddingVertical * 2));
             view.setPadding(view.getPaddingStart(), this.mPopupListItemPaddingVertical + this.mPopupListPaddingVertical, view.getPaddingEnd(), this.mPopupListItemPaddingVertical + this.mPopupListPaddingVertical);
-        } else if (i2 == 0) {
+        } else if (index == 0) {
             view.setMinimumHeight(this.mPopupListItemMinHeight + this.mPopupListPaddingVertical);
             view.setPadding(view.getPaddingStart(), this.mPopupListItemPaddingVertical + this.mPopupListPaddingVertical, view.getPaddingEnd(), this.mPopupListItemPaddingVertical);
-        } else if (i2 == this.mMenuItemList.size() - 1) {
+        } else if (index == this.mMenuItemList.size() - 1) {
             view.setMinimumHeight(this.mPopupListItemMinHeight + this.mPopupListPaddingVertical);
             view.setPadding(view.getPaddingStart(), this.mPopupListItemPaddingVertical, view.getPaddingEnd(), this.mPopupListItemPaddingVertical + this.mPopupListPaddingVertical);
         } else {
@@ -158,9 +160,9 @@ public class DefaultAdapter extends BaseAdapter {
     @SuppressLint({"ClickableViewAccessibility"})
     private void configStateEffectBackground(View view, PopupListItem popupListItem) {
         ListItemMaskEffectDrawable listItemMaskEffectDrawable;
-        if (popupListItem != null && popupListItem.hasSubMenu() && popupListItem.getGroupState() != 2 && !(view.getBackground() instanceof ListItemMaskEffectDrawable)) {
+        if (popupListItem != null && popupListItem.hasSubMenu() && popupListItem.getGroupState() != PopupListItem.MENU_GROUP_ITEM_ACTIVATED_IN_SUB && !(view.getBackground() instanceof ListItemMaskEffectDrawable)) {
             view.setBackground(new ListItemMaskEffectDrawable(this.mContext, 1, null));
-        } else if (popupListItem != null && popupListItem.hasSubMenu() && popupListItem.getGroupState() == 2 && (listItemMaskEffectDrawable = this.mSharedDrawable) != null) {
+        } else if (popupListItem != null && popupListItem.hasSubMenu() && popupListItem.getGroupState() == PopupListItem.MENU_GROUP_ITEM_ACTIVATED_IN_SUB && (listItemMaskEffectDrawable = this.mSharedDrawable) != null) {
             view.setBackground(listItemMaskEffectDrawable.getChild());
         } else if (!(view.getBackground() instanceof COUIMaskEffectDrawable)) {
             COUIMaskEffectDrawable cOUIMaskEffectDrawable = new COUIMaskEffectDrawable(this.mContext, 1);
@@ -171,27 +173,27 @@ public class DefaultAdapter extends BaseAdapter {
         }
         view.setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public final boolean onTouch(View view2, MotionEvent motionEvent) {
-                return DefaultAdapter.lambda$configStateEffectBackground$0(view2, motionEvent);
+            public final boolean onTouch(View view_2, MotionEvent motionEvent) {
+                return DefaultAdapter.onStateEffectTouchEvent(view_2, motionEvent);
             }
         });
     }
 
-    public static int dataIndexToRealPosition(int i2) {
-        return i2 * 2;
+    public static int dataIndexToRealPosition(int index) {
+        return index * 2;
     }
 
     @Deprecated
-    public static final int dataindexToRealPosition(int i2) {
-        return (i2 * 2) - 1;
+    public static final int dataindexToRealPosition(int index) {
+        return (index * 2) - 1;
     }
 
-    private static View.AccessibilityDelegate getAccessibilityDelegate(final int i2) {
+    private static View.AccessibilityDelegate getAccessibilityDelegate(final int index) {
         return new View.AccessibilityDelegate() {
             @Override
-            public boolean performAccessibilityAction(View view, int i6, Bundle bundle) {
-                super.performAccessibilityAction(view, i6, bundle);
-                if (i6 != 16) {
+            public boolean performAccessibilityAction(View view, int index_2, Bundle bundle) {
+                super.performAccessibilityAction(view, index_2, bundle);
+                if (index_2 != 16) {
                     return true;
                 }
                 ViewParent parent = view.getParent();
@@ -199,15 +201,15 @@ public class DefaultAdapter extends BaseAdapter {
                     return true;
                 }
                 COUITouchListView cOUITouchListView = (COUITouchListView) parent;
-                int firstVisiblePosition = i2 - cOUITouchListView.getFirstVisiblePosition();
+                int firstVisiblePosition = index - cOUITouchListView.getFirstVisiblePosition();
                 cOUITouchListView.performItemClick(cOUITouchListView.getChildAt(firstVisiblePosition), firstVisiblePosition, cOUITouchListView.getItemIdAtPosition(firstVisiblePosition));
                 return true;
             }
         };
     }
 
-    private View getCustomItemView(int i2, View view, ViewGroup viewGroup) {
-        PopupListItem popupListItem = this.mMenuItemList.get(realPositionToDataIndex(i2));
+    private View getCustomItemView(int index, View view, ViewGroup viewGroup) {
+        PopupListItem popupListItem = this.mMenuItemList.get(realPositionToDataIndex(index));
         View customItemView = popupListItem.getCustomItemView();
         if (customItemView == null) {
             Log.e(TAG, "Popup list item custom view is null! Return an empty view.");
@@ -217,21 +219,21 @@ public class DefaultAdapter extends BaseAdapter {
             customItemView.setClickable(true);
             view = customItemView;
         }
-        view.setAccessibilityDelegate(getAccessibilityDelegate(i2));
+        view.setAccessibilityDelegate(getAccessibilityDelegate(index));
         configStateEffectBackground(view, popupListItem);
         view.setEnabled(popupListItem.isEnable());
         return customItemView;
     }
 
-    private InsetDrawable getDefaultDividerDrawable(boolean z6) {
+    private InsetDrawable getDefaultDividerDrawable(boolean flag) {
         boolean zIsLayoutRTL = isLayoutRTL();
-        int i2 = (zIsLayoutRTL || z6 || !hasIcon()) ? this.mDefaultDividerMarginHorizontal : this.mDefaultDividerMarginStartWithIcon;
-        int i6 = i2;
-        int i10 = (zIsLayoutRTL && !z6 && hasIcon()) ? this.mDefaultDividerMarginStartWithIcon : this.mDefaultDividerMarginHorizontal;
-        return new InsetDrawable((Drawable) new ColorDrawable(COUIContextUtil.getAttrColor(this.mContext, R.attr.couiColorDivider)), i6, 0, i10, 0);
+        int index = (zIsLayoutRTL || flag || !hasIcon()) ? this.mDefaultDividerMarginHorizontal : this.mDefaultDividerMarginStartWithIcon;
+        int index_2 = index;
+        int index_3 = (zIsLayoutRTL && !flag && hasIcon()) ? this.mDefaultDividerMarginStartWithIcon : this.mDefaultDividerMarginHorizontal;
+        return new InsetDrawable((Drawable) new ColorDrawable(COUIContextUtil.getAttrColor(this.mContext, R.attr.couiColorDivider)), index_2, 0, index_3, 0);
     }
 
-    private View getDefaultDividerView(View view, boolean z6) {
+    private View getDefaultDividerView(View view, boolean flag) {
         if (view != null) {
             // Leapy added 2026-07-29: Divider rows participate in COUI's press
             // alpha animation. Always normalize recycled rows during binding
@@ -239,42 +241,39 @@ public class DefaultAdapter extends BaseAdapter {
             view.setAlpha(1.0f);
             return view;
         }
-        View view2 = new View(this.mContext);
-        ViewCompat.setImportantForAccessibility(view2, 2);
-        COUIDarkModeUtil.setForceDarkAllow(view2, false);
-        view2.setBackground(getDefaultDividerDrawable(z6));
-        view2.setLayoutParams(new ViewGroup.LayoutParams(-1, this.mDefaultDividerHeight));
-        view2.setFocusable(false);
-        return view2;
+        View view_2 = new View(this.mContext);
+        ViewCompat.setImportantForAccessibility(view_2, 2);
+        COUIDarkModeUtil.setForceDarkAllow(view_2, false);
+        view_2.setBackground(getDefaultDividerDrawable(flag));
+        view_2.setLayoutParams(new ViewGroup.LayoutParams(-1, this.mDefaultDividerHeight));
+        view_2.setFocusable(false);
+        return view_2;
     }
 
-    private View getDefaultItemView(int i2, View view, ViewGroup viewGroup) {
+    private View getDefaultItemView(int index, View view, ViewGroup viewGroup) {
         ViewHolder viewHolder;
-        int iRealPositionToDataIndex = realPositionToDataIndex(i2);
+        int iRealPositionToDataIndex = realPositionToDataIndex(index);
         if (view == null || !(view.getTag() instanceof ViewHolder)) {
-            ViewHolder viewHolder2 = new ViewHolder();
+            ViewHolder viewHolder_2 = new ViewHolder();
             View viewInflate = LayoutInflater.from(this.mContext).inflate(R.layout.coui_popup_list_window_item, viewGroup, false);
-            viewHolder2.initViewHolder(viewInflate);
+            viewHolder_2.initViewHolder(viewInflate);
             viewInflate.setClickable(true);
-            CheckBox checkBox = viewHolder2.mCheckbox;
+            CheckBox checkBox = viewHolder_2.mCheckbox;
             if (checkBox != null) {
                 checkBox.setAccessibilityDelegate(this.mAccessibilityDelegate);
-                viewHolder2.mCheckbox.setBackground(null);
+                viewHolder_2.mCheckbox.setBackground(null);
             }
-            viewInflate.setTag(viewHolder2);
-            viewHolder = viewHolder2;
+            viewInflate.setTag(viewHolder_2);
+            viewHolder = viewHolder_2;
             view = viewInflate;
         } else {
             viewHolder = (ViewHolder) view.getTag();
         }
-        view.setAccessibilityDelegate(getAccessibilityDelegate(i2));
-        // Submenu transition dims rows via View alpha; normalize on every bind so
-        // a recycled row cannot stay at the faded "disabled" look.
-        view.setAlpha(1.0f);
+        view.setAccessibilityDelegate(getAccessibilityDelegate(index));
         configItemVerticalPadding(view, iRealPositionToDataIndex);
         PopupListItem popupListItem = this.mMenuItemList.get(iRealPositionToDataIndex);
         setIcon(viewHolder.mIcon, popupListItem);
-        setTitle(viewHolder.mTitle, popupListItem, i2);
+        setTitle(viewHolder.mTitle, popupListItem, index);
         setDescription(viewHolder.mDescription, popupListItem);
         setGap(viewHolder, popupListItem);
         setHint(viewHolder.mHintLayout, popupListItem);
@@ -284,8 +283,8 @@ public class DefaultAdapter extends BaseAdapter {
         return view;
     }
 
-    private View getDividerView(int i2, View view, int i6) {
-        View defaultDividerView = i6 != 2 ? i6 != 5 ? getDefaultDividerView(view, false) : getDefaultDividerView(view, true) : (this.mHasSubMenuHeader && i2 == 1) ? getDefaultDividerView(view, false) : getGroupDividerView(view);
+    private View getDividerView(int index, View view, int index_2) {
+        View defaultDividerView = index_2 != TYPE_DIVIDER_GROUP ? index_2 != TYPE_DIVIDER_HEADER ? getDefaultDividerView(view, false) : getDefaultDividerView(view, true) : (this.mHasSubMenuHeader && index == 1) ? getDefaultDividerView(view, false) : getGroupDividerView(view);
         defaultDividerView.setFocusable(false);
         return defaultDividerView;
     }
@@ -298,17 +297,17 @@ public class DefaultAdapter extends BaseAdapter {
             // Leapy end
             return view;
         }
-        View view2 = new View(this.mContext);
-        ViewCompat.setImportantForAccessibility(view2, 2);
-        COUIDarkModeUtil.setForceDarkAllow(view2, false);
-        view2.setBackgroundColor(ResourcesCompat.getColor(this.mContext.getResources(), R.color.coui_popup_list_group_divider_color, this.mContext.getTheme()));
-        view2.setLayoutParams(new ViewGroup.LayoutParams(-1, this.mGroupDividerHeight));
-        return view2;
+        View view_2 = new View(this.mContext);
+        ViewCompat.setImportantForAccessibility(view_2, 2);
+        COUIDarkModeUtil.setForceDarkAllow(view_2, false);
+        view_2.setBackgroundColor(ResourcesCompat.getColor(this.mContext.getResources(), R.color.coui_popup_list_group_divider_color, this.mContext.getTheme()));
+        view_2.setLayoutParams(new ViewGroup.LayoutParams(-1, this.mGroupDividerHeight));
+        return view_2;
     }
 
-    private View getHeaderItemView(int i2, View view, ViewGroup viewGroup) {
+    private View getHeaderItemView(int index, View view, ViewGroup viewGroup) {
         HeaderViewHolder headerViewHolder;
-        int iRealPositionToDataIndex = realPositionToDataIndex(i2);
+        int iRealPositionToDataIndex = realPositionToDataIndex(index);
         if (view == null || !(view.getTag() instanceof HeaderViewHolder)) {
             HeaderViewHolder headerViewHolder2 = new HeaderViewHolder();
             View viewInflate = LayoutInflater.from(this.mContext).inflate(R.layout.coui_popup_list_window_header_item, viewGroup, false);
@@ -320,7 +319,7 @@ public class DefaultAdapter extends BaseAdapter {
         } else {
             headerViewHolder = (HeaderViewHolder) view.getTag();
         }
-        view.setAccessibilityDelegate(getAccessibilityDelegate(i2));
+        view.setAccessibilityDelegate(getAccessibilityDelegate(index));
         configItemVerticalPadding(view, iRealPositionToDataIndex);
         view.setMinimumHeight(this.mPopupListMenuItemMinHeight);
         PopupListItem popupListItem = this.mMenuItemList.get(iRealPositionToDataIndex);
@@ -329,7 +328,7 @@ public class DefaultAdapter extends BaseAdapter {
             headerViewHolder.mTitle.setContentDescription(popupListItem.getTitleContentDescription());
         }
         if (this.mIsFixedFontSize) {
-            headerViewHolder.mTitle.setTextSize(1, 12.0f);
+            headerViewHolder.mTitle.setTextSize(1, FIRST_TITLE_SIZE_DP);
         } else if (this.mIsAdaptiveFontSize) {
             COUIChangeTextUtil.adaptFontSize(headerViewHolder.mTitle, 4);
         } else {
@@ -338,8 +337,8 @@ public class DefaultAdapter extends BaseAdapter {
         return view;
     }
 
-    private View getItemView(int i2, View view, ViewGroup viewGroup, int i6) {
-        return i6 != 3 ? i6 != 4 ? getDefaultItemView(i2, view, viewGroup) : getHeaderItemView(i2, view, viewGroup) : getCustomItemView(i2, view, viewGroup);
+    private View getItemView(int index, View view, ViewGroup viewGroup, int index_2) {
+        return index_2 != TYPE_ITEM_CUSTOM ? index_2 != TYPE_ITEM_HEADER ? getDefaultItemView(index, view, viewGroup) : getHeaderItemView(index, view, viewGroup) : getCustomItemView(index, view, viewGroup);
     }
 
     private View getRedDotHint(PopupListItem popupListItem) {
@@ -365,8 +364,8 @@ public class DefaultAdapter extends BaseAdapter {
         return getTintColorByState(colorStateList, popupListItem, false);
     }
 
-    public static boolean isDataIndex(int i2) {
-        return i2 % 2 == 0;
+    public static boolean isDataIndex(int index) {
+        return index % 2 == 0;
     }
 
     private boolean isLayoutRTL() {
@@ -374,7 +373,7 @@ public class DefaultAdapter extends BaseAdapter {
     }
 
 
-    public static boolean lambda$configStateEffectBackground$0(View view, MotionEvent motionEvent) {
+    public static boolean onStateEffectTouchEvent(View view, MotionEvent motionEvent) {
         if (view == null) {
             return false;
         }
@@ -392,13 +391,13 @@ public class DefaultAdapter extends BaseAdapter {
         return (list == null || list.isEmpty()) ? false : true;
     }
 
-    public static int realPositionToDataIndex(int i2) {
-        return i2 / 2;
+    public static int realPositionToDataIndex(int index) {
+        return index / 2;
     }
 
     @Deprecated
-    public static final int realPositionToDataindex(int i2) {
-        return realPositionToDataIndex(i2);
+    public static final int realPositionToDataindex(int index) {
+        return realPositionToDataIndex(index);
     }
 
     private void setDescription(TextView textView, PopupListItem popupListItem) {
@@ -410,7 +409,7 @@ public class DefaultAdapter extends BaseAdapter {
         textView.setTextAppearance(R.style.couiTextBodyXS);
         textView.setText(popupListItem.getDescription());
         if (this.mIsFixedFontSize) {
-            textView.setTextSize(1, 12.0f);
+            textView.setTextSize(1, DESCRIPTION_TEXT_SIZE_DP);
         } else if (this.mIsAdaptiveFontSize) {
             COUIChangeTextUtil.adaptFontSize(textView, 4);
         }
@@ -424,14 +423,14 @@ public class DefaultAdapter extends BaseAdapter {
     }
 
     private void setGap(ViewHolder viewHolder, PopupListItem popupListItem) {
-        boolean z6 = popupListItem.getHintType() != -1;
-        boolean z10 = popupListItem.getStateIcon() != null || popupListItem.getStateIconId() != 0 || popupListItem.hasSubMenu() || (popupListItem.getStateIcon() == null && popupListItem.getStateIconId() == 0 && popupListItem.isChecked());
-        if (!z6 && !z10) {
+        boolean hintType = popupListItem.getHintType() != -1;
+        boolean flag = popupListItem.getStateIcon() != null || popupListItem.getStateIconId() != 0 || popupListItem.hasSubMenu() || (popupListItem.getStateIcon() == null && popupListItem.getStateIconId() == 0 && popupListItem.isChecked());
+        if (!hintType && !flag) {
             viewHolder.mTitleEndGap.setVisibility(8);
             return;
         }
         viewHolder.mTitleEndGap.setVisibility(4);
-        if (z6 && z10) {
+        if (hintType && flag) {
             viewHolder.mHintEndGap.setVisibility(4);
         } else {
             viewHolder.mHintEndGap.setVisibility(8);
@@ -512,10 +511,10 @@ public class DefaultAdapter extends BaseAdapter {
         textView.setTextColor(getTintColorByState(colorStateList, popupListItem));
     }
 
-    private void setTitle(TextView textView, PopupListItem popupListItem, int i2) {
-        boolean z6 = !TextUtils.isEmpty(popupListItem.getDescription());
+    private void setTitle(TextView textView, PopupListItem popupListItem, int title) {
+        boolean isEmpty_2 = !TextUtils.isEmpty(popupListItem.getDescription());
         textView.setTextAppearance(R.style.couiTextBodyL);
-        if (popupListItem.getGroupState() == 2 && i2 == 0) {
+        if (popupListItem.getGroupState() == PopupListItem.MENU_GROUP_ITEM_ACTIVATED_IN_SUB && title == 0) {
             textView.setTypeface(MEDIUM_TYPEFACE);
         } else {
             textView.setTypeface(null);
@@ -525,13 +524,13 @@ public class DefaultAdapter extends BaseAdapter {
             textView.setContentDescription(popupListItem.getTitleContentDescription());
         }
         if (this.mIsFixedFontSize) {
-            textView.setTextSize(1, 16.0f);
+            textView.setTextSize(1, TITLE_TEXT_SIZE_DP);
         } else if (this.mIsAdaptiveFontSize) {
             COUIChangeTextUtil.adaptFontSize(textView, 4);
         } else {
             COUIChangeTextUtil.adaptFontSize(textView, 5);
         }
-        if (z6) {
+        if (isEmpty_2) {
             textView.setMaxLines(2);
         } else {
             textView.setMaxLines(3);
@@ -559,38 +558,38 @@ public class DefaultAdapter extends BaseAdapter {
         return 0;
     }
 
-    public int getDividerHeight(int i2) {
-        if (i2 == 1) {
+    public int getDividerHeight(int index) {
+        if (index == 1) {
             return this.mDefaultDividerHeight;
         }
-        if (i2 == 2) {
+        if (index == 2) {
             return this.mGroupDividerHeight;
         }
         return 0;
     }
 
     @Override
-    public Object getItem(int i2) {
-        if (realPositionToDataIndex(i2) >= this.mMenuItemList.size()) {
+    public Object getItem(int position) {
+        if (realPositionToDataIndex(position) >= this.mMenuItemList.size()) {
             return null;
         }
-        return this.mMenuItemList.get(realPositionToDataIndex(i2));
+        return this.mMenuItemList.get(realPositionToDataIndex(position));
     }
 
     @Override
-    public long getItemId(int i2) {
-        return i2;
+    public long getItemId(int position) {
+        return position;
     }
 
     @Override
-    public int getItemViewType(int i2) {
-        if (!isDataIndex(i2)) {
-            if (isHeaderPosition(i2)) {
+    public int getItemViewType(int position) {
+        if (!isDataIndex(position)) {
+            if (isHeaderPosition(position)) {
                 return 5;
             }
-            return isGroupIndex(i2) ? 2 : 1;
+            return isGroupIndex(position) ? 2 : 1;
         }
-        int iRealPositionToDataIndex = realPositionToDataIndex(i2);
+        int iRealPositionToDataIndex = realPositionToDataIndex(position);
         if (!listNotEmpty(this.mMenuItemList) || iRealPositionToDataIndex >= this.mMenuItemList.size()) {
             return 0;
         }
@@ -602,8 +601,8 @@ public class DefaultAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int i2, View view, ViewGroup viewGroup) {
-        int itemViewType = getItemViewType(i2);
+    public View getView(int index, View view, ViewGroup viewGroup) {
+        int itemViewType = getItemViewType(index);
         if (itemViewType != 0) {
             if (itemViewType != 1 && itemViewType != 2) {
                 if (itemViewType != 3 && itemViewType != 4) {
@@ -613,14 +612,14 @@ public class DefaultAdapter extends BaseAdapter {
                     }
                 }
             }
-            return getDividerView(i2, view, itemViewType);
+            return getDividerView(index, view, itemViewType);
         }
-        return getItemView(i2, view, viewGroup, itemViewType);
+        return getItemView(index, view, viewGroup, itemViewType);
     }
 
     @Override
     public int getViewTypeCount() {
-        return 6;
+        return VIEW_TYPE_COUNT;
     }
 
     public boolean hasIcon() {
@@ -632,24 +631,24 @@ public class DefaultAdapter extends BaseAdapter {
     }
 
     @Override
-    public boolean isEnabled(int i2) {
-        return isDataIndex(i2);
+    public boolean isEnabled(int index) {
+        return isDataIndex(index);
     }
 
-    public boolean isGroupIndex(int i2) {
+    public boolean isGroupIndex(int index) {
         Set<Integer> set = this.mGroupSets;
-        return (set == null || !set.contains(Integer.valueOf((i2 + 1) / 2)) || isHeaderPosition(i2)) ? false : true;
+        return (set == null || !set.contains(Integer.valueOf((index + 1) / 2)) || isHeaderPosition(index)) ? false : true;
     }
 
-    public boolean isHeaderPosition(int i2) {
-        if (i2 <= 0) {
+    public boolean isHeaderPosition(int index) {
+        if (index <= 0) {
             return false;
         }
-        return listNotEmpty(this.mMenuItemList) && this.mMenuItemList.get(realPositionToDataIndex(i2 - 1)).getItemType() == 3;
+        return listNotEmpty(this.mMenuItemList) && this.mMenuItemList.get(realPositionToDataIndex(index - 1)).getItemType() == TYPE_ITEM_CUSTOM;
     }
 
-    public void setAdapterFontSize(boolean z6) {
-        this.mIsAdaptiveFontSize = z6;
+    public void setAdapterFontSize(boolean adapterFontSize) {
+        this.mIsAdaptiveFontSize = adapterFontSize;
     }
 
     @Deprecated
@@ -660,8 +659,8 @@ public class DefaultAdapter extends BaseAdapter {
         this.mGroupSets = set;
     }
 
-    public void setIsFixedFontSize(boolean z6) {
-        this.mIsFixedFontSize = z6;
+    public void setIsFixedFontSize(boolean isFixedFontSize) {
+        this.mIsFixedFontSize = isFixedFontSize;
     }
 
     public void setItemList(List<PopupListItem> list) {
@@ -702,25 +701,25 @@ public class DefaultAdapter extends BaseAdapter {
     }
 
     @Deprecated
-    public void setMaxLine(int i2) {
+    public void setMaxLine(int maxLine) {
     }
 
     @Deprecated
-    public void setSelectItemColor(int i2) {
+    public void setSelectItemColor(int selectItemColor) {
     }
 
     public void setSharedBackground(ListItemMaskEffectDrawable listItemMaskEffectDrawable) {
         this.mSharedDrawable = listItemMaskEffectDrawable;
     }
 
-    private int getTintColorByState(ColorStateList colorStateList, PopupListItem popupListItem, boolean z6) {
-        return popupListItem.isEnable() ? popupListItem.getItemType() == 0 ? (!z6 || popupListItem.getGroupState() == 0) ? popupListItem.isChecked() ? colorStateList.getColorForState(STATE_SELECTED, R.color.coui_color_error) : colorStateList.getDefaultColor() : colorStateList.getColorForState(STATE_SELECTED, R.color.coui_color_error) : popupListItem.getItemType() == 1 ? this.mAlertColor : colorStateList.getDefaultColor() : colorStateList.getColorForState(STATE_DISABLED, R.color.coui_color_error);
+    private int getTintColorByState(ColorStateList colorStateList, PopupListItem popupListItem, boolean flag) {
+        return popupListItem.isEnable() ? popupListItem.getItemType() == TYPE_ITEM_DEFAULT ? (!flag || popupListItem.getGroupState() == 0) ? popupListItem.isChecked() ? colorStateList.getColorForState(STATE_SELECTED, R.color.coui_color_error) : colorStateList.getDefaultColor() : colorStateList.getColorForState(STATE_SELECTED, R.color.coui_color_error) : popupListItem.getItemType() == 1 ? this.mAlertColor : colorStateList.getDefaultColor() : colorStateList.getColorForState(STATE_DISABLED, R.color.coui_color_error);
     }
 
-    private void setIconTint(Drawable drawable, ColorStateList colorStateList, PopupListItem popupListItem, boolean z6) {
+    private void setIconTint(Drawable drawable, ColorStateList colorStateList, PopupListItem popupListItem, boolean iconTint) {
         if (drawable == null) {
             return;
         }
-        drawable.setTint(getTintColorByState(colorStateList, popupListItem, z6));
+        drawable.setTint(getTintColorByState(colorStateList, popupListItem, iconTint));
     }
 }

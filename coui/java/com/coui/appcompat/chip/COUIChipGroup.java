@@ -37,6 +37,7 @@ import java.util.Set;
 public class COUIChipGroup extends ViewGroup {
     private static final float HEIGHT_CHANGE_ANIMATION_RESPONSE = 0.35f;
     private static final float HEIGHT_CHANGE_ANIMATION_BOUNCE = 0.0f;
+
     public interface ChipGroupLayoutAnimationCallback {
         default void onAnimatingHeightUpdate(
                 int animatingHeight, int finalHeight, int suggestedTranslationY) {
@@ -59,12 +60,19 @@ public class COUIChipGroup extends ViewGroup {
         float DEFAULT_CHIP_SPRING_ANIMATION_RESPONSE = 0.3f;
 
         void bindController(COUIChipGroup controller);
+
         void forceFinishAllAnimation();
+
         void getDrawingBounds(RectF outBounds);
+
         boolean isChipAnimationRunning();
+
         void resetChipGroupAnimations();
+
         void unbindController();
+
         void updateAttachState(boolean attached, boolean animate);
+
         void updateChipRealBounds(
                 int left, int top, int right, int bottom, boolean animate);
     }
@@ -75,6 +83,7 @@ public class COUIChipGroup extends ViewGroup {
 
     public interface OnChipGroupCollapsableButtonClickListener {
         void onExpandButtonClicked();
+
         void onCollapseButtonClicked();
     }
 
@@ -492,8 +501,8 @@ public class COUIChipGroup extends ViewGroup {
                 getCheckedChipIds().isEmpty()
                         ? AccessibilityNodeInfo.CollectionInfo.SELECTION_MODE_NONE
                         : (isSingleSelection()
-                                ? AccessibilityNodeInfo.CollectionInfo.SELECTION_MODE_SINGLE
-                                : AccessibilityNodeInfo.CollectionInfo.SELECTION_MODE_MULTIPLE)));
+                           ? AccessibilityNodeInfo.CollectionInfo.SELECTION_MODE_SINGLE
+                           : AccessibilityNodeInfo.CollectionInfo.SELECTION_MODE_MULTIPLE)));
     }
 
     public void addChip(COUIChip chip) {

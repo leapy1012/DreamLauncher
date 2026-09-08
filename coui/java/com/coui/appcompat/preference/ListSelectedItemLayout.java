@@ -16,21 +16,31 @@ import com.coui.appcompat.animation.COUILinearInterpolator;
 import com.coui.appcompat.list.ConfigurationChangedListener;
 import com.coui.appcompat.list.ICardListSelectedItem;
 import com.coui.appcompat.list.IListSelectedItem;
-import com.coui.appcompat.state.DrawableStateProxy;
 import com.coui.appcompat.state.COUIMaskEffectDrawable;
 import com.coui.appcompat.state.COUIStateEffectDrawable;
+import com.coui.appcompat.state.DrawableStateProxy;
 
 public class ListSelectedItemLayout extends COUICheckedLinearLayout implements IListSelectedItem, ICardListSelectedItem {
-    @Deprecated protected static final int APPEAR_DURATION = 150;
-    @Deprecated protected static final int DISAPPEAR_DURATION = 367;
-    @Deprecated protected static final int STATE_BACKGROUND_APPEAR = 1;
-    @Deprecated protected static final int STATE_BACKGROUND_DISAPPEAR = 2;
-    @Deprecated protected Interpolator mAppearInterpolator;
-    @Deprecated protected ValueAnimator mBackgroundAppearAnimator;
-    @Deprecated protected ValueAnimator mBackgroundDisappearAnimator;
-    @Deprecated protected Interpolator mDisappearInterpolator;
-    @Deprecated protected boolean mNeedAutoStartDisAppear;
-    @Deprecated protected int mState;
+    @Deprecated
+    protected static final int APPEAR_DURATION = 150;
+    @Deprecated
+    protected static final int DISAPPEAR_DURATION = 367;
+    @Deprecated
+    protected static final int STATE_BACKGROUND_APPEAR = 1;
+    @Deprecated
+    protected static final int STATE_BACKGROUND_DISAPPEAR = 2;
+    @Deprecated
+    protected Interpolator mAppearInterpolator;
+    @Deprecated
+    protected ValueAnimator mBackgroundAppearAnimator;
+    @Deprecated
+    protected ValueAnimator mBackgroundDisappearAnimator;
+    @Deprecated
+    protected Interpolator mDisappearInterpolator;
+    @Deprecated
+    protected boolean mNeedAutoStartDisAppear;
+    @Deprecated
+    protected int mState;
 
     private boolean mBackgroundAnimationEnabled;
     private boolean mConsumeDispatchingEventForState;

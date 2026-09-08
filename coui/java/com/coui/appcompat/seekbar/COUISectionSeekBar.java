@@ -23,7 +23,6 @@ import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.hapticfeedback.COUIHapticFeedbackConstants;
 import com.coui.appcompat.statelistutil.COUIStateListUtil;
-import com.coui.appcompat.vibrateutil.VibrateUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -80,7 +79,7 @@ public class COUISectionSeekBar extends COUISeekBar {
     }
 
     public COUISectionSeekBar(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                              int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         mPorterDuffXfermode = new PorterDuffXfermode(PorterDuff.Mode.SRC);
         mMarkRadius = getResources().getDimensionPixelSize(
@@ -272,7 +271,7 @@ public class COUISectionSeekBar extends COUISeekBar {
     }
 
     private void startMoveAnimation(float startThumbX, float endThumbX, float startValue,
-            boolean animate) {
+                                    boolean animate) {
         ValueAnimator animator;
         if (Float.compare(mThumbX, endThumbX) == 0
                 || ((animator = mMoveAnimator) != null && animator.isRunning()
@@ -341,9 +340,9 @@ public class COUISectionSeekBar extends COUISeekBar {
     private void trackTouchEvent(MotionEvent event, float touchX) {
         setTouchScale(isLayoutRtl()
                 ? (((getWidth() - event.getX()) - getEnd()) - mProgressPaddingHorizontal)
-                / getSeekBarWidth()
+                  / getSeekBarWidth()
                 : ((event.getX() - getStart()) - mProgressPaddingHorizontal)
-                / getSeekBarWidth(), false);
+                  / getSeekBarWidth(), false);
         executeTouchGlitterEffectAnim();
         float delta = subtract(touchX, mTouchDownThumbX);
         float correctedDelta = delta < 0.0f ? delta - 0.1f : delta + 0.1f;
@@ -615,7 +614,7 @@ public class COUISectionSeekBar extends COUISeekBar {
 
     @Override
     public void startTransitionAnim(int progress, final boolean fromUser,
-            final boolean clearDragging) {
+                                    final boolean clearDragging) {
         COUIDynamicAnimation.OnAnimationEndListener endListener =
                 (animation, canceled, value, velocity) -> stopTrackingTouch(fromUser, clearDragging);
         int startX = (int) (mClickAnimationStartThumbX >= 0.0f

@@ -51,7 +51,7 @@ public class OplusOutline implements IOplusOutline {
         }
 
         boolean callSmoothRoundRect(String methodName, int left, int top, int right, int bottom,
-                float radius) {
+                                    float radius) {
             if (mExtImpl == null) {
                 return false;
             }
@@ -66,7 +66,7 @@ public class OplusOutline implements IOplusOutline {
         }
 
         boolean callSmoothRoundRect(String methodName, int left, int top, int right, int bottom,
-                float radius, float weight) {
+                                    float radius, float weight) {
             if (mExtImpl == null) {
                 return false;
             }

@@ -15,14 +15,13 @@ import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.animation.PathInterpolator;
+
 import androidx.core.view.ViewCompat;
-import androidx.recyclerview.widget.RecyclerView;
-import com.coui.appcompat.animation.COUIEaseInterpolator;
+
 import com.coui.appcompat.R;
+import com.coui.appcompat.animation.COUIEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.vibrateutil.VibrateUtils;
-
-
 
 
 /**
@@ -131,12 +130,12 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
     private boolean mEnableAdaptiveVibrator = true;
     private boolean mEnabled = true;
     private boolean mNeedVerticalScrollbar = false;
-    private int mState = 0;
-    private int mDragState = 0;
+    private int mState = STATE_HIDDEN;
+    private int mDragState = DRAG_NONE;
     private float mVibrateIntensity = 1.0f;
     private final int[] mVerticalRange = new int[2];
     final ValueAnimator mShowHideAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
-    int mAnimationState = 0;
+    int mAnimationState = ANIMATION_STATE_OUT;
     private final Runnable mHideRunnable = new a();
     private final RecyclerView.OnScrollListener mOnScrollListener = new b();
 
@@ -149,7 +148,7 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
             if (COUIFastScroller.this.mIsThumbAlwaysShow) {
                 return;
             }
-            COUIFastScroller.this.hide(160);
+            COUIFastScroller.this.hide(HIDE_DURATION_MS);
         }
     }
 
@@ -158,7 +157,7 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         }
 
         @Override
-        public void onScrolled(RecyclerView recyclerView, int i5, int i6) {
+        public void onScrolled(RecyclerView recyclerView, int index, int index_2) {
             if (COUIFastScroller.this.mEnabled) {
                 COUIFastScroller.this.performFeedback();
                 COUIFastScroller.this.updateScrollPosition(recyclerView.computeHorizontalScrollOffset(), recyclerView.computeVerticalScrollOffset());
@@ -204,11 +203,11 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
             }
             if (((Float) COUIFastScroller.this.mShowHideAnimator.getAnimatedValue()).floatValue() == 0.0f) {
                 COUIFastScroller cOUIFastScroller = COUIFastScroller.this;
-                cOUIFastScroller.mAnimationState = 0;
+                cOUIFastScroller.mAnimationState = ANIMATION_STATE_OUT;
                 cOUIFastScroller.setState(0);
             } else {
                 COUIFastScroller cOUIFastScroller2 = COUIFastScroller.this;
-                cOUIFastScroller2.mAnimationState = 2;
+                cOUIFastScroller2.mAnimationState = ANIMATION_STATE_IN;
                 cOUIFastScroller2.requestRedraw();
             }
         }
@@ -234,13 +233,13 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         @Override
         public void onAnimationUpdate(ValueAnimator valueAnimator) {
             COUIFastScroller.this.mMessageAlphaAnimatedValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-            int i5 = (int) (COUIFastScroller.this.mMessageAlphaAnimatedValue * 255.0f);
-            COUIFastScroller.this.mMessageBackgroundDrawable.setAlpha(i5);
-            COUIFastScroller.this.mMessagePaint.setAlpha(i5);
+            int index = (int) (COUIFastScroller.this.mMessageAlphaAnimatedValue * 255.0f);
+            COUIFastScroller.this.mMessageBackgroundDrawable.setAlpha(index);
+            COUIFastScroller.this.mMessagePaint.setAlpha(index);
             COUIFastScroller.this.requestRedraw();
         }
 
- f(COUIFastScroller cOUIFastScroller, a aVar) {
+        f(COUIFastScroller cOUIFastScroller, a aVar) {
             this();
         }
     }
@@ -286,7 +285,7 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
             COUIFastScroller.this.requestRedraw();
         }
 
- h(COUIFastScroller cOUIFastScroller, a aVar) {
+        h(COUIFastScroller cOUIFastScroller, a aVar) {
             this();
         }
     }
@@ -325,22 +324,22 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         Drawable drawable = context.getDrawable(R.drawable.coui_fast_scroller_slide_bar_background);
         this.mVerticalThumbDrawableBackground = drawable;
         drawable.setBounds(0, 0, dimensionPixelOffset, dimensionPixelOffset2);
-        drawable.setAlpha(255);
-        Drawable drawable2 = context.getDrawable(R.drawable.coui_fast_scroller_union);
-        this.mVerticalThumbDrawable = drawable2;
+        drawable.setAlpha(SCROLLBAR_FULL_OPAQUE);
+        Drawable verticalThumbDrawable = context.getDrawable(R.drawable.coui_fast_scroller_union);
+        this.mVerticalThumbDrawable = verticalThumbDrawable;
         this.mScaleEndThumbTranslateX = context.getResources().getDimensionPixelOffset(R.dimen.coui_fast_scroller_bar_thumb_translate_x);
         this.mScaleEndThumbTranslateY = context.getResources().getDimensionPixelOffset(R.dimen.coui_fast_scroller_bar_thumb_translate_y);
         this.mCurrentThumbShadowY = context.getResources().getDimensionPixelOffset(R.dimen.coui_fast_scroller_bar_thumb_shadow_padding_y);
         this.mCurrentThumbShadowX = context.getResources().getDimensionPixelOffset(R.dimen.coui_fast_scroller_bar_thumb_shadow_padding_x);
         int dimensionPixelOffset5 = context.getResources().getDimensionPixelOffset(R.dimen.coui_fast_scroller_union_width);
         int dimensionPixelOffset6 = context.getResources().getDimensionPixelOffset(R.dimen.coui_fast_scroller_union_height);
-        int i5 = (dimensionPixelOffset - dimensionPixelOffset5) / 2;
-        int i6 = (dimensionPixelOffset2 - dimensionPixelOffset6) / 2;
-        drawable2.setBounds(i5, i6, dimensionPixelOffset5 + i5, dimensionPixelOffset6 + i6);
-        drawable2.setAlpha(255);
-        Drawable drawable3 = context.getDrawable(R.drawable.coui_fast_scroller_message_background);
-        this.mMessageBackgroundDrawable = drawable3;
-        drawable3.setAlpha(0);
+        int index = (dimensionPixelOffset - dimensionPixelOffset5) / 2;
+        int index_2 = (dimensionPixelOffset2 - dimensionPixelOffset6) / 2;
+        verticalThumbDrawable.setBounds(index, index_2, dimensionPixelOffset5 + index, dimensionPixelOffset6 + index_2);
+        verticalThumbDrawable.setAlpha(SCROLLBAR_FULL_OPAQUE);
+        Drawable messageBackgroundDrawable = context.getDrawable(R.drawable.coui_fast_scroller_message_background);
+        this.mMessageBackgroundDrawable = messageBackgroundDrawable;
+        messageBackgroundDrawable.setAlpha(0);
         this.mMessageTextPadding = context.getResources().getDimensionPixelOffset(R.dimen.coui_fast_scroller_message_text_padding);
         this.mMessageBackgroundInternalPadding = context.getResources().getDimensionPixelOffset(R.dimen.coui_fast_scroller_message_background_internal_padding);
         this.mMessageBackgroundTopOffset = context.getResources().getDimensionPixelOffset(R.dimen.coui_fast_scroller_message_background_top_offset);
@@ -393,68 +392,68 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
     }
 
     private void drawVerticalScrollbar(Canvas canvas) {
-        int i5;
-        int i6;
-        float f5;
-        float f6;
-        float f7;
+        int index_7;
+        int index_8;
+        float value_9;
+        float value_10;
+        float value_11;
         this.mVerticalThumbDrawableBackground.mutate();
         this.mVerticalThumbDrawable.mutate();
-        int i7 = this.mRecyclerViewWidth;
-        int i8 = this.mVerticalThumbCenterY;
-        int i9 = (i8 - (this.mDefaultVerticalThumbHeight / 2)) + this.mThumbBackgroundShadowPaddingTop;
-        float f8 = ((i8 - (this.mScaleEndVerticalThumbHeight / 2.0f)) - this.mMessageBackgroundTopOffset) + this.mMessageBackgroundShadowPaddingTop;
-        float f9 = -this.mCurrentThumbTranslateY;
-        float f10 = -this.mCurrentThumbShadowY;
-        float f11 = -this.mMessageTextShadowPaddingY;
+        int index = this.mRecyclerViewWidth;
+        int index_2 = this.mVerticalThumbCenterY;
+        int index_3 = (index_2 - (this.mDefaultVerticalThumbHeight / 2)) + this.mThumbBackgroundShadowPaddingTop;
+        float value = ((index_2 - (this.mScaleEndVerticalThumbHeight / 2.0f)) - this.mMessageBackgroundTopOffset) + this.mMessageBackgroundShadowPaddingTop;
+        float value_2 = -this.mCurrentThumbTranslateY;
+        float value_3 = -this.mCurrentThumbShadowY;
+        float value_4 = -this.mMessageTextShadowPaddingY;
         if (isLayoutRTL()) {
-            int i10 = this.mDefaultVerticalMarginEnd;
-            i5 = i10 - this.mThumbBackgroundShadowPaddingEnd;
-            f5 = ((i10 + this.mScaleEndVerticalThumbWidth) - this.mMessageMarginEnd) - this.mMessageBackgroundShadowPaddingEnd;
-            f6 = this.mCurrentThumbTranslateX;
-            f7 = -this.mCurrentThumbShadowX;
-            i6 = this.mThumbDrawableBackgroundScaleCenterX - i5;
+            int index_4 = this.mDefaultVerticalMarginEnd;
+            index_7 = index_4 - this.mThumbBackgroundShadowPaddingEnd;
+            value_9 = ((index_4 + this.mScaleEndVerticalThumbWidth) - this.mMessageMarginEnd) - this.mMessageBackgroundShadowPaddingEnd;
+            value_10 = this.mCurrentThumbTranslateX;
+            value_11 = -this.mCurrentThumbShadowX;
+            index_8 = this.mThumbDrawableBackgroundScaleCenterX - index_7;
         } else {
-            int i11 = i7 - this.mDefaultVerticalThumbWidth;
-            int i12 = this.mDefaultVerticalMarginEnd;
-            i5 = (i11 - i12) + this.mThumbBackgroundShadowPaddingEnd;
-            float f12 = this.mMessageBackgroundShadowPaddingEnd + ((((i7 - this.mMessageWidth) - this.mScaleEndVerticalThumbWidth) - i12) - this.mMessageMarginEnd);
-            float f13 = -this.mCurrentThumbTranslateX;
-            float f14 = this.mCurrentThumbShadowX;
-            i6 = (i7 - i5) - this.mThumbDrawableBackgroundScaleCenterX;
-            f5 = f12;
-            f6 = f13;
-            f7 = f14;
+            int index_5 = index - this.mDefaultVerticalThumbWidth;
+            int index_6 = this.mDefaultVerticalMarginEnd;
+            index_7 = (index_5 - index_6) + this.mThumbBackgroundShadowPaddingEnd;
+            float value_5 = this.mMessageBackgroundShadowPaddingEnd + ((((index - this.mMessageWidth) - this.mScaleEndVerticalThumbWidth) - index_6) - this.mMessageMarginEnd);
+            float value_6 = -this.mCurrentThumbTranslateX;
+            float value_7 = this.mCurrentThumbShadowX;
+            index_8 = (index - index_7) - this.mThumbDrawableBackgroundScaleCenterX;
+            value_9 = value_5;
+            value_10 = value_6;
+            value_11 = value_7;
         }
         int iSave = canvas.save();
-        canvas.translate(i5, i9);
+        canvas.translate(index_7, index_3);
         int iSave2 = canvas.save();
-        float f15 = i6;
-        canvas.scale(this.mCurrentWidthScale, this.mCurrentHeightScale, f15, this.mThumbDrawableBackgroundScaleCenterY);
+        float value_8 = index_8;
+        canvas.scale(this.mCurrentWidthScale, this.mCurrentHeightScale, value_8, this.mThumbDrawableBackgroundScaleCenterY);
         this.mVerticalThumbDrawableBackground.draw(canvas);
         canvas.restoreToCount(iSave2);
-        canvas.translate(f7, f10);
-        canvas.translate(f6, f9);
-        canvas.scale(this.mCurrentWidthScale, this.mCurrentHeightScale, f15, this.mThumbDrawableBackgroundScaleCenterY);
+        canvas.translate(value_11, value_3);
+        canvas.translate(value_10, value_2);
+        canvas.scale(this.mCurrentWidthScale, this.mCurrentHeightScale, value_8, this.mThumbDrawableBackgroundScaleCenterY);
         this.mVerticalThumbDrawable.draw(canvas);
         canvas.restoreToCount(iSave);
         if (!this.mNeedShowMessage || this.mMessageAlphaAnimatedValue == 0.0f) {
             return;
         }
         int iSave3 = canvas.save();
-        canvas.translate(f5, f8);
+        canvas.translate(value_9, value);
         this.mMessageBackgroundDrawable.draw(canvas);
-        canvas.translate(0.0f, f11);
+        canvas.translate(0.0f, value_4);
         canvas.drawText(this.mRealShowMessage, this.mTextX, this.mTextY, this.mMessagePaint);
         canvas.restoreToCount(iSave3);
     }
 
-    private void executePressAnimator(boolean z5) {
-        this.mWidthScaleHolder.setFloatValues(this.mCurrentWidthScale, z5 ? this.mWidthEndScale : 1.0f);
-        this.mHeightScaleHolder.setFloatValues(this.mCurrentHeightScale, z5 ? this.mHeightEndScale : 1.0f);
-        this.mThumbTranslateXHolder.setFloatValues(this.mCurrentThumbTranslateScaleX, z5 ? 1.0f : 0.0f);
+    private void executePressAnimator(boolean flag) {
+        this.mWidthScaleHolder.setFloatValues(this.mCurrentWidthScale, flag ? this.mWidthEndScale : 1.0f);
+        this.mHeightScaleHolder.setFloatValues(this.mCurrentHeightScale, flag ? this.mHeightEndScale : 1.0f);
+        this.mThumbTranslateXHolder.setFloatValues(this.mCurrentThumbTranslateScaleX, flag ? 1.0f : 0.0f);
         if (this.mNeedShowMessage) {
-            this.mMessageAlphaAnimator.setFloatValues(this.mMessageAlphaAnimatedValue, z5 ? 1.0f : 0.0f);
+            this.mMessageAlphaAnimator.setFloatValues(this.mMessageAlphaAnimatedValue, flag ? 1.0f : 0.0f);
         }
         this.mPressAnimators.start();
     }
@@ -464,7 +463,7 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
             this.lastVibratorTime = System.currentTimeMillis();
             return false;
         }
-        if (System.currentTimeMillis() - this.lastVibratorTime < 100) {
+        if (System.currentTimeMillis() - this.lastVibratorTime < MIN_VIBRATOR_TIME) {
             return true;
         }
         this.lastVibratorTime = System.currentTimeMillis();
@@ -479,17 +478,17 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
     }
 
 
-    public void hide(int i5) {
-        int i6 = this.mAnimationState;
-        if (i6 == 1) {
+    public void hide(int index) {
+        int index_2 = this.mAnimationState;
+        if (index_2 == ANIMATION_STATE_FADING_IN) {
             this.mShowHideAnimator.cancel();
-        } else if (i6 != 2) {
+        } else if (index_2 != ANIMATION_STATE_IN) {
             return;
         }
-        this.mAnimationState = 3;
+        this.mAnimationState = ANIMATION_STATE_FADING_OUT;
         ValueAnimator valueAnimator = this.mShowHideAnimator;
         valueAnimator.setFloatValues(((Float) valueAnimator.getAnimatedValue()).floatValue(), 0.0f);
-        this.mShowHideAnimator.setDuration(i5);
+        this.mShowHideAnimator.setDuration(index);
         this.mShowHideAnimator.start();
     }
 
@@ -513,7 +512,7 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(new float[0]);
         this.mMessageAlphaAnimator = valueAnimatorOfFloat;
         valueAnimatorOfFloat.addUpdateListener(this.mMessageAnimatorUpdateListener);
-        this.mMessageAlphaAnimator.setDuration(160L);
+        this.mMessageAlphaAnimator.setDuration(SHOW_DURATION_MS);
         this.mMessageAlphaAnimator.setInterpolator(this.mCommonInterpolator);
         resetPressAnimator(false);
     }
@@ -523,12 +522,12 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         this.mMessagePaint = textPaint;
         textPaint.setAntiAlias(true);
         this.mMessagePaint.setTextSize(context.getResources().getDimensionPixelSize(R.dimen.coui_fast_scroller_message_text_size));
-        this.mMessagePaint.setTypeface(Typeface.create("sans-serif-medium", 0));
+        this.mMessagePaint.setTypeface(Typeface.create(MEDIUM_FONT, 0));
         this.mMessagePaint.setColor(COUIContextUtil.getAttrColor(context, R.attr.couiColorLabelPrimary));
         this.mMessagePaint.setAlpha(0);
         Paint.FontMetrics fontMetrics = this.mMessagePaint.getFontMetrics();
-        float f5 = fontMetrics.bottom;
-        this.mTextY = ((this.mScaleEndVerticalThumbHeight + (f5 - fontMetrics.top)) / 2.0f) - f5;
+        float value = fontMetrics.bottom;
+        this.mTextY = ((this.mScaleEndVerticalThumbHeight + (value - fontMetrics.top)) / 2.0f) - value;
     }
 
     private void initOrResetVelocityTracker() {
@@ -551,10 +550,10 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
     }
 
     private void letGo() {
-        int i5 = this.mPressAnimatorState;
-        if (i5 == 1) {
+        int index = this.mPressAnimatorState;
+        if (index == 1) {
             this.mPressAnimators.cancel();
-        } else if (i5 != 2) {
+        } else if (index != 2) {
             return;
         }
         this.mPressAnimatorState = 3;
@@ -573,11 +572,11 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         }
         velocityTracker.computeCurrentVelocity(this.mTrackerPeriod, this.mTrackerMaxVelocity);
         int iAbs = (int) Math.abs(this.mVelocityTracker.getYVelocity());
-        int i5 = iAbs > this.mMidVelocityThreshold ? 0 : 1;
+        int index = iAbs > this.mMidVelocityThreshold ? 0 : 1;
         if ((iAbs > MIN_VELOCITY_WEAKEST && iAbs < MIN_VELOCITY_WEAK && filterVibrator()) || iAbs < MIN_VELOCITY_WEAKEST) {
             return true;
         }
-        VibrateUtils.setLinearMotorVibratorStrength(this.mLinearMotorVibrator, i5, iAbs, this.mTrackerMaxVelocity, 1200, VibrateUtils.STRENGTH_MAX_GRANULAR, this.mVibrateLevel, this.mVibrateIntensity);
+        VibrateUtils.setLinearMotorVibratorStrength(this.mLinearMotorVibrator, index, iAbs, this.mTrackerMaxVelocity, 1200, VibrateUtils.STRENGTH_MAX_GRANULAR, this.mVibrateLevel, this.mVibrateIntensity);
         return true;
     }
 
@@ -589,9 +588,9 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
     }
 
     private void press() {
-        int i5 = this.mPressAnimatorState;
-        if (i5 != 0) {
-            if (i5 != 3) {
+        int index = this.mPressAnimatorState;
+        if (index != 0) {
+            if (index != 3) {
                 return;
             } else {
                 this.mPressAnimators.cancel();
@@ -609,30 +608,30 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         }
     }
 
-    private void resetHideDelay(int i5) {
+    private void resetHideDelay(int index) {
         cancelHide();
         if (this.mIsThumbAlwaysShow) {
             return;
         }
-        this.mRecyclerView.postDelayed(this.mHideRunnable, i5);
+        this.mRecyclerView.postDelayed(this.mHideRunnable, index);
     }
 
-    private void resetPressAnimator(boolean z5) {
+    private void resetPressAnimator(boolean flag) {
         AnimatorSet animatorSet = new AnimatorSet();
         this.mPressAnimators = animatorSet;
         animatorSet.play(this.mThumbScaleAnimator);
         this.mPressAnimators.addListener(this.mPressAnimatorListener);
-        if (z5) {
+        if (flag) {
             this.mPressAnimators.playTogether(this.mMessageAlphaAnimator);
         }
     }
 
-    private int scrollTo(float f5, float f6, int[] iArr, int i5) {
-        int i6 = iArr[1] - iArr[0];
-        if (i6 == 0) {
+    private int scrollTo(float value, float value_2, int[] iArr, int index) {
+        int index_2 = iArr[1] - iArr[0];
+        if (index_2 == 0) {
             return 0;
         }
-        return (int) (((f6 - f5) / i6) * (i5 - this.mRecyclerViewHeight));
+        return (int) (((value_2 - value) / index_2) * (index - this.mRecyclerViewHeight));
     }
 
     private void setupCallbacks() {
@@ -643,29 +642,29 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
     }
 
     private void show() {
-        int i5 = this.mAnimationState;
-        if (i5 != 0) {
-            if (i5 != 3) {
+        int index = this.mAnimationState;
+        if (index != ANIMATION_STATE_OUT) {
+            if (index != ANIMATION_STATE_FADING_OUT) {
                 return;
             } else {
                 this.mShowHideAnimator.cancel();
             }
         }
-        this.mAnimationState = 1;
+        this.mAnimationState = ANIMATION_STATE_FADING_IN;
         ValueAnimator valueAnimator = this.mShowHideAnimator;
         valueAnimator.setFloatValues(((Float) valueAnimator.getAnimatedValue()).floatValue(), 1.0f);
-        this.mShowHideAnimator.setDuration(160L);
+        this.mShowHideAnimator.setDuration(SHOW_DURATION_MS);
         this.mShowHideAnimator.start();
     }
 
-    private void verticalScrollTo(float f5) {
+    private void verticalScrollTo(float value) {
         int iScrollTo;
         int[] verticalRange = getVerticalRange();
-        if (((f5 <= verticalRange[0] || f5 >= verticalRange[1]) && !this.mRecyclerView.canScrollVertically(1)) || Math.abs(this.mVerticalThumbCenterY - f5) < 2.0f || (iScrollTo = scrollTo(this.mVerticalDragY, f5, verticalRange, this.mRecyclerView.computeVerticalScrollRange())) == 0) {
+        if (((value <= verticalRange[0] || value >= verticalRange[1]) && !this.mRecyclerView.canScrollVertically(1)) || Math.abs(this.mVerticalThumbCenterY - value) < 2.0f || (iScrollTo = scrollTo(this.mVerticalDragY, value, verticalRange, this.mRecyclerView.computeVerticalScrollRange())) == 0) {
             return;
         }
         this.mRecyclerView.scrollBy(0, iScrollTo);
-        this.mVerticalDragY = f5;
+        this.mVerticalDragY = value;
     }
 
     public void attachToRecyclerView(RecyclerView recyclerView) {
@@ -715,7 +714,7 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
     }
 
     public boolean isDragging() {
-        return this.mState == 2;
+        return this.mState == STATE_DRAGGING;
     }
 
     /**
@@ -730,19 +729,19 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         return isDragging() && this.mDragState == DRAG_Y;
     }
 
-    boolean isPointInsideVerticalThumb(float f5, float f6) {
-        int i5 = this.mDefaultVerticalThumbWidth;
-        int i6 = this.mDefaultVerticalMarginEnd;
-        int i7 = this.mThumbBackgroundShadowPaddingEnd;
-        float f7 = (i5 + i6) - (i7 * TOUCH_SCALE_FACTOR);
-        float f8 = ((this.mRecyclerViewWidth - i5) - i6) + (i7 * TOUCH_SCALE_FACTOR);
-        int i8 = this.mVerticalThumbCenterY;
-        int i9 = this.mDefaultVerticalThumbHeight;
-        int i10 = this.mThumbBackgroundShadowPaddingTop;
-        float f9 = (i8 - (i9 / 2.0f)) + (i10 * TOUCH_SCALE_FACTOR);
-        float f10 = (i8 + (i9 / 2.0f)) - (i10 * TOUCH_SCALE_FACTOR);
-        if (!isLayoutRTL() ? f5 >= f8 : f5 <= f7) {
-            if (f6 >= f9 && f6 <= f10) {
+    boolean isPointInsideVerticalThumb(float value, float value_2) {
+        int index = this.mDefaultVerticalThumbWidth;
+        int index_2 = this.mDefaultVerticalMarginEnd;
+        int index_3 = this.mThumbBackgroundShadowPaddingEnd;
+        float value_3 = (index + index_2) - (index_3 * TOUCH_SCALE_FACTOR);
+        float value_4 = ((this.mRecyclerViewWidth - index) - index_2) + (index_3 * TOUCH_SCALE_FACTOR);
+        int index_4 = this.mVerticalThumbCenterY;
+        int index_5 = this.mDefaultVerticalThumbHeight;
+        int index_6 = this.mThumbBackgroundShadowPaddingTop;
+        float value_5 = (index_4 - (index_5 / 2.0f)) + (index_6 * TOUCH_SCALE_FACTOR);
+        float value_6 = (index_4 + (index_5 / 2.0f)) - (index_6 * TOUCH_SCALE_FACTOR);
+        if (!isLayoutRTL() ? value >= value_4 : value <= value_3) {
+            if (value_2 >= value_5 && value_2 <= value_6) {
                 return true;
             }
         }
@@ -750,17 +749,17 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
     }
 
     public boolean isVisible() {
-        return this.mState == 1;
+        return this.mState == STATE_VISIBLE;
     }
 
     @Override
-    public void onDrawOver(Canvas canvas, RecyclerView recyclerView, RecyclerView.State b5) {
+    public void onDrawOver(Canvas canvas, RecyclerView recyclerView, RecyclerView.State state) {
         if (this.mRecyclerViewWidth != this.mRecyclerView.getWidth() || this.mRecyclerViewHeight != this.mRecyclerView.getHeight()) {
             this.mRecyclerViewWidth = this.mRecyclerView.getWidth();
             this.mRecyclerViewHeight = this.mRecyclerView.getHeight();
             setState(0);
         } else {
-            if (this.mAnimationState == 0 || !this.mNeedVerticalScrollbar) {
+            if (this.mAnimationState == ANIMATION_STATE_OUT || !this.mNeedVerticalScrollbar) {
                 return;
             }
             drawVerticalScrollbar(canvas);
@@ -769,28 +768,28 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
 
     @Override
     public boolean onInterceptTouchEvent(RecyclerView recyclerView, MotionEvent motionEvent) {
-        int i5 = this.mState;
-        if (i5 == 1) {
+        int index = this.mState;
+        if (index == 1) {
             boolean zIsPointInsideVerticalThumb = isPointInsideVerticalThumb(motionEvent.getX(), motionEvent.getY());
             if (motionEvent.getAction() != 0 || !zIsPointInsideVerticalThumb) {
                 return false;
             }
-            this.mDragState = 2;
+            this.mDragState = DRAG_Y;
             this.mVerticalDragY = (int) motionEvent.getY();
             setState(2);
-        } else if (i5 != 2) {
+        } else if (index != 2) {
             return false;
         }
         return true;
     }
 
     @Override
-    public void onRequestDisallowInterceptTouchEvent(boolean z5) {
+    public void onRequestDisallowInterceptTouchEvent(boolean flag) {
     }
 
     @Override
     public void onTouchEvent(RecyclerView recyclerView, MotionEvent motionEvent) {
-        if (this.mState == 0) {
+        if (this.mState == STATE_HIDDEN) {
             return;
         }
         if (this.mEnableAdaptiveVibrator) {
@@ -799,7 +798,7 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         int action = motionEvent.getAction();
         if (action == 0) {
             if (isPointInsideVerticalThumb(motionEvent.getX(), motionEvent.getY())) {
-                this.mDragState = 2;
+                this.mDragState = DRAG_Y;
                 this.mVerticalDragY = (int) motionEvent.getY();
                 setState(2);
                 return;
@@ -808,9 +807,9 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         }
         if (action != 1) {
             if (action == 2) {
-                if (this.mState == 2) {
+                if (this.mState == STATE_DRAGGING) {
                     show();
-                    if (this.mDragState == 2) {
+                    if (this.mDragState == DRAG_Y) {
                         verticalScrollTo(motionEvent.getY());
                         return;
                     }
@@ -822,10 +821,10 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
                 return;
             }
         }
-        if (this.mState == 2) {
+        if (this.mState == STATE_DRAGGING) {
             this.mVerticalDragY = 0.0f;
             setState(1);
-            this.mDragState = 0;
+            this.mDragState = DRAG_NONE;
         }
     }
 
@@ -833,16 +832,16 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         this.mRecyclerView.invalidate();
     }
 
-    public void setEnable(boolean z5) {
-        this.mEnabled = z5;
-        if (z5 || this.mState == 0) {
+    public void setEnable(boolean enable) {
+        this.mEnabled = enable;
+        if (enable || this.mState == STATE_HIDDEN) {
             return;
         }
-        hide(160);
+        hide(HIDE_DURATION_MS);
     }
 
-    public void setEnableAdaptiveVibrator(boolean z5) {
-        this.mEnableAdaptiveVibrator = z5;
+    public void setEnableAdaptiveVibrator(boolean enableAdaptiveVibrator) {
+        this.mEnableAdaptiveVibrator = enableAdaptiveVibrator;
     }
 
     public void setMessage(String str) {
@@ -853,24 +852,24 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         this.mRealShowMessage = str;
         float fMeasureText = this.mMessagePaint.measureText(str);
         this.mTextWidth = fMeasureText;
-        float f5 = fMeasureText + this.mMessageTextPadding + this.mMessageBackgroundInternalPadding;
-        this.mMessageWidth = f5;
-        if (f5 > this.mMessageMaximumWidth) {
-            for (int i5 = 1; i5 < str.length(); i5++) {
-                String str2 = str.substring(0, str.length() - i5) + this.mDots;
-                this.mRealShowMessage = str2;
-                float fMeasureText2 = this.mMessagePaint.measureText(str2);
+        float messageWidth = fMeasureText + this.mMessageTextPadding + this.mMessageBackgroundInternalPadding;
+        this.mMessageWidth = messageWidth;
+        if (messageWidth > this.mMessageMaximumWidth) {
+            for (int index = 1; index < str.length(); index++) {
+                String realShowMessage = str.substring(0, str.length() - index) + this.mDots;
+                this.mRealShowMessage = realShowMessage;
+                float fMeasureText2 = this.mMessagePaint.measureText(realShowMessage);
                 this.mTextWidth = fMeasureText2;
-                float f6 = fMeasureText2 + this.mMessageTextPadding + this.mMessageBackgroundInternalPadding;
-                this.mMessageWidth = f6;
-                if (f6 <= this.mMessageMaximumWidth) {
+                float messageWidth_2 = fMeasureText2 + this.mMessageTextPadding + this.mMessageBackgroundInternalPadding;
+                this.mMessageWidth = messageWidth_2;
+                if (messageWidth_2 <= this.mMessageMaximumWidth) {
                     break;
                 }
             }
         } else {
-            int i6 = this.mMessageMinimumWidth;
-            if (f5 < i6) {
-                this.mMessageWidth = i6;
+            int messageWidth_3 = this.mMessageMinimumWidth;
+            if (messageWidth < messageWidth_3) {
+                this.mMessageWidth = messageWidth_3;
             }
         }
         this.mMessageBackgroundDrawable.setBounds(0, 0, (int) this.mMessageWidth, this.mMessageBackgroundHeight);
@@ -878,69 +877,69 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         requestRedraw();
     }
 
-    public void setNeedShowMessage(boolean z5) {
-        if (this.mNeedShowMessage != z5) {
-            resetPressAnimator(z5);
-            this.mNeedShowMessage = z5;
+    public void setNeedShowMessage(boolean needShowMessage) {
+        if (this.mNeedShowMessage != needShowMessage) {
+            resetPressAnimator(needShowMessage);
+            this.mNeedShowMessage = needShowMessage;
             requestRedraw();
         }
     }
 
-    void setState(int i5) {
-        if (i5 == 2 && this.mState != 2) {
+    void setState(int state) {
+        if (state == 2 && this.mState != STATE_DRAGGING) {
             press();
             cancelHide();
         }
-        if (i5 == 0) {
+        if (state == 0) {
             requestRedraw();
         } else {
             show();
         }
-        if (this.mState == 2 && i5 != 2) {
-            resetHideDelay(2000);
+        if (this.mState == STATE_DRAGGING && state != 2) {
+            resetHideDelay(HIDE_DELAY_AFTER_VISIBLE_MS);
             letGo();
-        } else if (i5 == 1) {
-            resetHideDelay(2000);
+        } else if (state == 1) {
+            resetHideDelay(HIDE_DELAY_AFTER_VISIBLE_MS);
         }
-        this.mState = i5;
+        this.mState = state;
     }
 
-    public void setThumbAlwaysShow(boolean z5) {
-        if (z5 != this.mIsThumbAlwaysShow) {
-            this.mIsThumbAlwaysShow = z5;
-            if (z5) {
+    public void setThumbAlwaysShow(boolean thumbAlwaysShow) {
+        if (thumbAlwaysShow != this.mIsThumbAlwaysShow) {
+            this.mIsThumbAlwaysShow = thumbAlwaysShow;
+            if (thumbAlwaysShow) {
                 cancelHide();
-            } else if (this.mState == 1) {
-                resetHideDelay(2000);
+            } else if (this.mState == STATE_VISIBLE) {
+                resetHideDelay(HIDE_DELAY_AFTER_VISIBLE_MS);
             }
         }
     }
 
-    public void setThumbBottomMargin(int i5) {
-        this.mThumbBottomMargin = i5;
+    public void setThumbBottomMargin(int thumbBottomMargin) {
+        this.mThumbBottomMargin = thumbBottomMargin;
     }
 
-    public void setThumbTopMargin(int i5) {
-        this.mThumbTopMargin = i5;
+    public void setThumbTopMargin(int thumbTopMargin) {
+        this.mThumbTopMargin = thumbTopMargin;
     }
 
-    public void setVibrateIntensity(float f5) {
-        this.mVibrateIntensity = f5;
+    public void setVibrateIntensity(float vibrateIntensity) {
+        this.mVibrateIntensity = vibrateIntensity;
     }
 
-    public void setVibrateLevel(int i5) {
-        this.mVibrateLevel = i5;
+    public void setVibrateLevel(int vibrateLevel) {
+        this.mVibrateLevel = vibrateLevel;
     }
 
-    void updateScrollPosition(int i5, int i6) {
+    void updateScrollPosition(int index, int index_2) {
         int[] verticalRange = getVerticalRange();
         int iComputeVerticalScrollRange = this.mRecyclerView.computeVerticalScrollRange();
-        int i7 = verticalRange[1];
-        int i8 = verticalRange[0];
-        int i9 = i7 - i8;
-        boolean z5 = iComputeVerticalScrollRange - i9 > 0 && this.mRecyclerViewHeight >= this.mScrollbarMinimumRange;
-        this.mNeedVerticalScrollbar = z5;
-        if (!z5) {
+        int index_3 = verticalRange[1];
+        int index_4 = verticalRange[0];
+        int verticalThumbCenterY = index_3 - index_4;
+        boolean needVerticalScrollbar = iComputeVerticalScrollRange - verticalThumbCenterY > 0 && this.mRecyclerViewHeight >= this.mScrollbarMinimumRange;
+        this.mNeedVerticalScrollbar = needVerticalScrollbar;
+        if (!needVerticalScrollbar) {
             if (this.mState != 0) {
                 setState(0);
                 return;
@@ -950,16 +949,16 @@ public class COUIFastScroller extends RecyclerView.ItemDecoration implements Rec
         // Leapy modified 2026-08-01: Match decoded int-to-float/div-float.
         // Integer division pins the thumb to the start until the final scroll
         // position, which is why the recovered scroller appeared unchanged.
-        float f5 = (float) i6
+        float value = (float) index_2
                 / (iComputeVerticalScrollRange - this.mRecyclerViewHeight);
         // Leapy end
-        if (f5 > 1.0f) {
-            this.mVerticalThumbCenterY = i9 + i8;
+        if (value > 1.0f) {
+            this.mVerticalThumbCenterY = verticalThumbCenterY + index_4;
         } else {
-            this.mVerticalThumbCenterY = (int) ((f5 * i9) + i8);
+            this.mVerticalThumbCenterY = (int) ((value * verticalThumbCenterY) + index_4);
         }
-        int i10 = this.mState;
-        if (i10 == 0 || i10 == 1) {
+        int index_5 = this.mState;
+        if (index_5 == 0 || index_5 == 1) {
             setState(1);
         }
     }

@@ -200,7 +200,7 @@ public abstract class COUIDynamicAnimation<T extends COUIDynamicAnimation<T>>
 
     public interface OnAnimationEndListener {
         void onAnimationEnd(COUIDynamicAnimation animation, boolean canceled, float value,
-                float velocity);
+                            float velocity);
     }
 
     public interface OnAnimationUpdateListener {
@@ -209,7 +209,7 @@ public abstract class COUIDynamicAnimation<T extends COUIDynamicAnimation<T>>
 
     public interface OnLogicallyCompleteListener {
         void onLogicallyComplete(COUIDynamicAnimation animation, boolean canceled, float value,
-                float velocity);
+                                 float velocity);
     }
 
     public static abstract class ViewProperty extends FloatPropertyCompat<View> {

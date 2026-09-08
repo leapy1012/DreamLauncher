@@ -7,6 +7,6 @@
         android:fillBefore="false"
         android:fillEnabled="true"
         android:fromYDelta="100.0%"
-        android:interpolator="@anim/android_alert_dialog_enter"
+        android:interpolator="@interpolator/android_alert_dialog_enter"
         android:toYDelta="0.0%p" />
 </set>

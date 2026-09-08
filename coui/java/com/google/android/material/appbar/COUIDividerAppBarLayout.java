@@ -24,7 +24,7 @@ import com.coui.appcompat.scrollview.COUINestedScrollView;
 /**
  * Leapy added 2026-07-20: Source-compatible port of decoded OPPO
  * com.google.android.material.appbar.COUIDividerAppBarLayout.
- *
+ * <p>
  * The decompiler-only SystemUI R and synthetic outline references were replaced
  * with the COUI library's own generated R class and ordinary Java logging/math.
  */
@@ -93,17 +93,17 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
         // Leapy added 2026-07-30: Preserve the decoded OPPO divider behavior.
         @Override
         public boolean onNestedPreFling(@NonNull CoordinatorLayout parent,
-                @NonNull AppBarLayout child, @NonNull View target,
-                float velocityX, float velocityY) {
+                                        @NonNull AppBarLayout child, @NonNull View target,
+                                        float velocityX, float velocityY) {
             mStopAfterFling = true;
             return super.onNestedPreFling(parent, child, target, velocityX, velocityY);
         }
 
         @Override
         public void onNestedScroll(@NonNull CoordinatorLayout parent,
-                @NonNull AppBarLayout child, @NonNull View target, int dxConsumed,
-                int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type,
-                @NonNull int[] consumed) {
+                                   @NonNull AppBarLayout child, @NonNull View target, int dxConsumed,
+                                   int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type,
+                                   @NonNull int[] consumed) {
             if (target instanceof COUIRecyclerView) {
                 int oldOverScroll = mScrollDyByOverScroll;
                 mScrollDyByOverScroll = Math.max(0, target.getScrollY());
@@ -117,15 +117,15 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
 
         @Override
         public boolean onStartNestedScroll(@NonNull CoordinatorLayout parent,
-                @NonNull AppBarLayout child, @NonNull View directTargetChild,
-                @NonNull View target, int axes, int type) {
+                                           @NonNull AppBarLayout child, @NonNull View directTargetChild,
+                                           @NonNull View target, int axes, int type) {
             return super.onStartNestedScroll(parent, child, directTargetChild, target, axes, type)
                     || isDividerAnimEnable();
         }
 
         @Override
         public void onStopNestedScroll(@NonNull CoordinatorLayout parent,
-                @NonNull AppBarLayout child, @NonNull View target, int type) {
+                                       @NonNull AppBarLayout child, @NonNull View target, int type) {
             if (target instanceof COUIRecyclerView) {
                 if (mScrollChangedListener == null) {
                     mScrollChangedListener = new DividerAppBarOnScrollChangedListener();
@@ -151,7 +151,7 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
     }
 
     public COUIDividerAppBarLayout(Context context, @Nullable AttributeSet attrs,
-            int defStyleAttr) {
+                                   int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         mCollapsable = false;
         init(attrs);
@@ -192,7 +192,7 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
             }
         };
         mOnLayoutChangeListener = (view, left, top, right, bottom,
-                oldLeft, oldTop, oldRight, oldBottom) -> refreshAppBar(view);
+                                   oldLeft, oldTop, oldRight, oldBottom) -> refreshAppBar(view);
     }
 
     private static float clamp(float value) {

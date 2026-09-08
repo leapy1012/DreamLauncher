@@ -17,14 +17,17 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.animation.PathInterpolator;
+
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
-import com.coui.appcompat.animation.COUIEaseInterpolator;
+
 import com.coui.appcompat.R;
+import com.coui.appcompat.animation.COUIEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.log.COUILog;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -176,7 +179,7 @@ public class COUIPageIndicator extends View implements COUIIPagerIndicator {
         private SpringAnimation mSpringAnimation;
         private View mViewHost;
         private final LinkedList<PageIndicatorDotModel> mDots = new LinkedList<>();
-        private final int mMaxVisibleCount = 6;
+        private final int mMaxVisibleCount = MAX_VISIBLE_DOT_NUMBER;
         private final Path mTraceRectPath = new Path();
         private final RectF mVisibleRect = new RectF();
         private final float[] mVisibleBounds = new float[2];
@@ -375,7 +378,7 @@ public class COUIPageIndicator extends View implements COUIIPagerIndicator {
             SpringAnimation springAnimation = new SpringAnimation(this, this.mCurrentPosition);
             this.mSpringAnimation = springAnimation;
             springAnimation.setSpring(springForce);
-            this.mSpringAnimation.setMinimumVisibleChange(0.005f);
+            this.mSpringAnimation.setMinimumVisibleChange(DEFAULT_MINIMUM_VISIBLE_CHANGE);
         }
 
         private void mapPoints(float[] points) {
@@ -405,12 +408,12 @@ public class COUIPageIndicator extends View implements COUIIPagerIndicator {
             } else if (previousPosition < currentPosition && previousPosition <= Math.ceil(maskStart) && currentPosition >= Math.ceil(maskStart)) {
                 this.mMaskOffset = (float) Math.ceil(this.mMaskOffset);
             }
-            this.mVisibleOffset = Math.min(this.mIndicatorCount - 6, Math.max(0.0f, this.mMaskOffset - 1.0f));
-            if (this.mIndicatorCount < 6) {
+            this.mVisibleOffset = Math.min(this.mIndicatorCount - MAX_VISIBLE_DOT_NUMBER, Math.max(0.0f, this.mMaskOffset - 1.0f));
+            if (this.mIndicatorCount < MAX_VISIBLE_DOT_NUMBER) {
                 this.mVisibleOffset = 0.0f;
             }
             this.mVisibleBounds[0] = this.mVisibleOffset * this.mInterval;
-            this.mVisibleBounds[1] = this.mVisibleBounds[0] + (Math.min(6, this.mIndicatorCount) * (this.mInterval + COUIPageIndicator.this.mNormalDotSize));
+            this.mVisibleBounds[1] = this.mVisibleBounds[0] + (Math.min(MAX_VISIBLE_DOT_NUMBER, this.mIndicatorCount) * (this.mInterval + COUIPageIndicator.this.mNormalDotSize));
             this.mDrawHorizontalOffset = 0.0f;
             for (int i = 0; i < this.mDots.size(); i++) {
                 PageIndicatorDotModel dot = this.mDots.get(i);
@@ -523,10 +526,10 @@ public class COUIPageIndicator extends View implements COUIIPagerIndicator {
                     this.mMaskOffset = 0.0f;
                 }
             }
-            if (this.mIndicatorCount < 6) {
+            if (this.mIndicatorCount < MAX_VISIBLE_DOT_NUMBER) {
                 this.mScaleMaskSize[0] = 5.0f;
             } else {
-                this.mScaleMaskSize[0] = 3.0f;
+                this.mScaleMaskSize[0] = INDICATOR_DOT_LARGE_LEVEL_SIZE;
             }
         }
 
@@ -586,7 +589,7 @@ public class COUIPageIndicator extends View implements COUIIPagerIndicator {
         }
 
         public RectF getVisibleRect() {
-            this.mVisibleRect.set(0.0f, 0.0f, Math.min(6, this.mIndicatorCount) * (this.mInterval + COUIPageIndicator.this.mNormalDotSize), COUIPageIndicator.this.mNormalDotSize);
+            this.mVisibleRect.set(0.0f, 0.0f, Math.min(MAX_VISIBLE_DOT_NUMBER, this.mIndicatorCount) * (this.mInterval + COUIPageIndicator.this.mNormalDotSize), COUIPageIndicator.this.mNormalDotSize);
             return this.mVisibleRect;
         }
 
@@ -808,8 +811,8 @@ public class COUIPageIndicator extends View implements COUIIPagerIndicator {
         try {
             getResources().getQuantityString(this.mIndicatorDescriptionID, 1, 1, 1, 1);
             this.mIndicatorDescriptionID = indicatorDescriptionID;
-        } catch (Exception e2) {
-            COUILog.e(TAG, "setIndicatorDescriptionID indicatorDescriptionID error :" + e2.getMessage());
+        } catch (Exception e) {
+            COUILog.e(TAG, "setIndicatorDescriptionID indicatorDescriptionID error :" + e.getMessage());
         }
     }
 
@@ -917,7 +920,7 @@ public class COUIPageIndicator extends View implements COUIIPagerIndicator {
     public COUIPageIndicator(Context context, AttributeSet attributeSet, int defStyleAttr, int defStyleRes) {
         super(context, attributeSet, defStyleAttr, defStyleRes);
         this.mTouchPoint = new float[2];
-        this.mMoveFactorThreshold = 0.005f;
+        this.mMoveFactorThreshold = DEFAULT_MOVE_FACTOR_THRESHOLD;
         this.mDownTime = 0L;
         this.mIndicatorDescriptionID = R.plurals.coui_page_indicator_description;
         if (attributeSet == null || attributeSet.getStyleAttribute() == 0) {

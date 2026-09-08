@@ -3,6 +3,7 @@ package com.coui.component.responsiveui.window;
 import android.content.Context;
 import android.os.Build;
 import android.util.Log;
+
 import com.coui.component.responsiveui.breakpoints.Breakpoints;
 import com.coui.component.responsiveui.unit.Dp;
 

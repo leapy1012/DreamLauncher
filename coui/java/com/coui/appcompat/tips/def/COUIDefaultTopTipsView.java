@@ -1,7 +1,6 @@
 package com.coui.appcompat.tips.def;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -198,9 +197,17 @@ public class COUIDefaultTopTipsView extends ConstraintLayout implements IDefault
         mType = type;
     }
 
-    public TextView getAction() { return mAction; }
-    public TextView getIgnore() { return mIgnore; }
-    public TextView getTitle() { return mTitle; }
+    public TextView getAction() {
+        return mAction;
+    }
+
+    public TextView getIgnore() {
+        return mIgnore;
+    }
+
+    public TextView getTitle() {
+        return mTitle;
+    }
 
     public void init() {
         LayoutInflater.from(getContext()).inflate(R.layout.coui_default_toptips, this);
@@ -259,18 +266,72 @@ public class COUIDefaultTopTipsView extends ConstraintLayout implements IDefault
         mTextBtnRuleFlag = 0;
     }
 
-    @Override public void setCloseBtnListener(View.OnClickListener listener) { mCloseBtnClickListener = listener; }
-    @Override public void setCloseDrawable(Drawable drawable) { setBtnDrawableImpl(CLOSE_ID, drawable); }
-    @Override public void setNegativeButton(CharSequence text) { setBtnTextImpl(IGNORE_ID, text); }
-    @Override public void setNegativeButtonColor(int color) { setBtnColorImpl(IGNORE_ID, color); }
-    @Override public void setNegativeButtonListener(View.OnClickListener listener) { mNegativeClickListener = listener; }
-    public void setOnLinesChangedListener(OnLinesChangedListener listener) { mOnLinesChangedListener = listener; }
-    @Override public void setPositiveButton(CharSequence text) { setBtnTextImpl(ACTION_ID, text); }
-    @Override public void setPositiveButtonColor(int color) { setBtnColorImpl(ACTION_ID, color); }
-    @Override public void setPositiveButtonListener(View.OnClickListener listener) { mPositiveClickListener = listener; }
-    @Override public void setStartIcon(Drawable drawable) { mImage.setImageDrawable(drawable); }
-    @Override public void setTipsText(CharSequence text) { mIsChangeText = true; mTitle.setText(text); }
-    @Override public void setTipsTextColor(int color) { mTitle.setTextColor(color); }
-    public void startRoll() { mTitle.continueRoll(); }
-    public void stopRoll() { mTitle.stopRoll(); mTitle.setMarqueeEnable(false); }
+    @Override
+    public void setCloseBtnListener(View.OnClickListener listener) {
+        mCloseBtnClickListener = listener;
+    }
+
+    @Override
+    public void setCloseDrawable(Drawable drawable) {
+        setBtnDrawableImpl(CLOSE_ID, drawable);
+    }
+
+    @Override
+    public void setNegativeButton(CharSequence text) {
+        setBtnTextImpl(IGNORE_ID, text);
+    }
+
+    @Override
+    public void setNegativeButtonColor(int color) {
+        setBtnColorImpl(IGNORE_ID, color);
+    }
+
+    @Override
+    public void setNegativeButtonListener(View.OnClickListener listener) {
+        mNegativeClickListener = listener;
+    }
+
+    public void setOnLinesChangedListener(OnLinesChangedListener listener) {
+        mOnLinesChangedListener = listener;
+    }
+
+    @Override
+    public void setPositiveButton(CharSequence text) {
+        setBtnTextImpl(ACTION_ID, text);
+    }
+
+    @Override
+    public void setPositiveButtonColor(int color) {
+        setBtnColorImpl(ACTION_ID, color);
+    }
+
+    @Override
+    public void setPositiveButtonListener(View.OnClickListener listener) {
+        mPositiveClickListener = listener;
+    }
+
+    @Override
+    public void setStartIcon(Drawable drawable) {
+        mImage.setImageDrawable(drawable);
+    }
+
+    @Override
+    public void setTipsText(CharSequence text) {
+        mIsChangeText = true;
+        mTitle.setText(text);
+    }
+
+    @Override
+    public void setTipsTextColor(int color) {
+        mTitle.setTextColor(color);
+    }
+
+    public void startRoll() {
+        mTitle.continueRoll();
+    }
+
+    public void stopRoll() {
+        mTitle.stopRoll();
+        mTitle.setMarqueeEnable(false);
+    }
 }

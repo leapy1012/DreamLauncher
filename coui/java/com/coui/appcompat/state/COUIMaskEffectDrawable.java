@@ -9,9 +9,10 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.RectF;
 
+import androidx.core.graphics.ColorUtils;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.contextutil.COUIContextUtil;
-import androidx.core.graphics.ColorUtils;
 import com.coui.appcompat.log.COUILog;
 
 public class COUIMaskEffectDrawable extends StatefulDrawable {

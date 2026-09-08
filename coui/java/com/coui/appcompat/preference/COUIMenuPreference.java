@@ -164,7 +164,9 @@ public class COUIMenuPreference extends COUIPreference {
         mCouiClickSelectMenu.setOnItemClickListener(mItemClickListener);
         mCouiClickSelectMenu.setMaxShowItemCount(mMaxShowItemCount);
         holder.itemView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-            @Override public void onViewAttachedToWindow(View view) {}
+            @Override
+            public void onViewAttachedToWindow(View view) {
+            }
 
             @Override
             public void onViewDetachedFromWindow(View view) {
@@ -352,8 +354,15 @@ public class COUIMenuPreference extends COUIPreference {
 
     public static class SavedState extends Preference.BaseSavedState {
         public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.Creator<SavedState>() {
-            @Override public SavedState createFromParcel(Parcel in) { return new SavedState(in); }
-            @Override public SavedState[] newArray(int size) { return new SavedState[size]; }
+            @Override
+            public SavedState createFromParcel(Parcel in) {
+                return new SavedState(in);
+            }
+
+            @Override
+            public SavedState[] newArray(int size) {
+                return new SavedState[size];
+            }
         };
         String mValue;
 

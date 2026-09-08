@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
+
 import com.airbnb.lottie.LottieAnimationView;
 
 import com.coui.appcompat.R;
@@ -136,14 +137,14 @@ public class COUIRotatingDialogBuilder {
     }
 
     public COUIRotatingDialogBuilder setCancelButton(String text,
-            DialogInterface.OnClickListener listener) {
+                                                     DialogInterface.OnClickListener listener) {
         mCancelButton = text;
         mCancelClickListener = listener;
         return this;
     }
 
     public COUIRotatingDialogBuilder setCancelButton(int textId,
-            DialogInterface.OnClickListener listener) {
+                                                     DialogInterface.OnClickListener listener) {
         return setCancelButton(mContext.getString(textId), listener);
     }
 

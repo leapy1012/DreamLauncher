@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Leapy added 2026-08-04: Keep COUI alert dialog messages from falling
+<?xml version="1.0" encoding="utf-8"?><!-- Leapy added 2026-08-04: Keep COUI alert dialog messages from falling
      back to the base 80dp scroll cap on phones whose available height is
      below OPPO's h560dp bucket. This preserves the OPPO dialog behavior for
      normal portrait devices while still letting very short windows use the

@@ -1,13 +1,13 @@
 package com.coui.appcompat.grid;
 
-import com.coui.appcompat.R;
-
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.GridLayout;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.uiutil.UIUtil;
 import com.coui.component.responsiveui.ResponsiveUIModel;
 import com.coui.component.responsiveui.layoutgrid.MarginType;
@@ -127,7 +127,7 @@ public class COUIGridLayout extends GridLayout {
         if (getContext() == null) {
             return;
         }
-        this.mResponsiveUIModel.rebuild(getMeasuredWidth(), UIUtil.getScreenHeightMetrics(getContext())).chooseMargin(this.mGridMarginType == 1 ? MarginType.MARGIN_SMALL : MarginType.MARGIN_LARGE);
+        this.mResponsiveUIModel.rebuild(getMeasuredWidth(), UIUtil.getScreenHeightMetrics(getContext())).chooseMargin(this.mGridMarginType == SMALL_MARGIN ? MarginType.MARGIN_SMALL : MarginType.MARGIN_LARGE);
         this.mGridMargin = this.mResponsiveUIModel.margin();
         this.mHorizontalGap = this.mResponsiveUIModel.gutter();
         this.mColumn = this.mResponsiveUIModel.columnCount() / this.mChildGridNumber;
@@ -259,7 +259,7 @@ public class COUIGridLayout extends GridLayout {
             this.mChildHeight = typedArrayObtainStyledAttributes.getDimension(R.styleable.COUIGridLayout_childHeight, 0.0f);
             this.mChildWidth = typedArrayObtainStyledAttributes.getDimension(R.styleable.COUIGridLayout_childWidth, 0.0f);
             this.mChildGridNumber = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIGridLayout_childGridNumber, 0);
-            this.mGridMarginType = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIGridLayout_gridMarginType, 1);
+            this.mGridMarginType = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIGridLayout_gridMarginType, SMALL_MARGIN);
             this.mType = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIGridLayout_specificType, 0);
             typedArrayObtainStyledAttributes.recycle();
         }

@@ -19,13 +19,15 @@ import android.view.ViewParent;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIPhysicalAnimationUtil;
 import com.coui.appcompat.hapticfeedback.COUIHapticFeedbackConstants;
 import com.coui.appcompat.scroll.COUIIOverScroller;
 import com.coui.appcompat.scroll.SpringOverScroller;
 import com.coui.appcompat.version.COUIVersionUtil;
 import com.coui.appcompat.view.ViewNative;
-import com.coui.appcompat.R;
+
 import java.util.ArrayList;
 
 
@@ -91,8 +93,8 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
 
 
             @Override
-            public COUISavedState[] newArray(int i2) {
-                return new COUISavedState[i2];
+            public COUISavedState[] newArray(int size) {
+                return new COUISavedState[size];
             }
         };
         public int scrollOffsetFromStart;
@@ -106,8 +108,8 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         }
 
         @Override
-        public void writeToParcel(Parcel parcel, int i2) {
-            super.writeToParcel(parcel, i2);
+        public void writeToParcel(Parcel parcel, int flags) {
+            super.writeToParcel(parcel, flags);
             parcel.writeInt(this.scrollOffsetFromStart);
         }
 
@@ -137,19 +139,19 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
     private boolean dispatchClickEvent(View view, MotionEvent motionEvent) {
         boolean zDispatchTouchEvent = true;
         int[] iArr = {0, 1};
-        for (int i2 = 0; i2 < 2; i2++) {
-            motionEvent.setAction(iArr[i2]);
+        for (int i = 0; i < 2; i++) {
+            motionEvent.setAction(iArr[i]);
             zDispatchTouchEvent &= view.dispatchTouchEvent(motionEvent);
         }
         return zDispatchTouchEvent;
     }
 
-    private void doScrollX(int i2) {
-        if (i2 != 0) {
+    private void doScrollX(int index) {
+        if (index != 0) {
             if (this.mSmoothScrollingEnabled) {
-                smoothCOUIScrollBy(i2, 0);
+                smoothCOUIScrollBy(index, 0);
             } else {
-                scrollBy(i2, 0);
+                scrollBy(index, 0);
             }
         }
     }
@@ -187,11 +189,11 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         return focusCandidate;
     }
 
-    private View findFocusableViewInMyBounds(boolean z6, int i2, View view) {
+    private View findFocusableViewInMyBounds(boolean enabled, int index, View view) {
         int horizontalFadingEdgeLength = getHorizontalFadingEdgeLength() / 2;
-        int i6 = i2 + horizontalFadingEdgeLength;
-        int width = (i2 + getWidth()) - horizontalFadingEdgeLength;
-        return (view == null || view.getLeft() >= width || view.getRight() <= i6) ? findFocusableViewInBounds(z6, i6, width) : view;
+        int count = index + horizontalFadingEdgeLength;
+        int width = (index + getWidth()) - horizontalFadingEdgeLength;
+        return (view == null || view.getLeft() >= width || view.getRight() <= count) ? findFocusableViewInBounds(enabled, count, width) : view;
     }
 
     private View findViewToDispatchClickEvent(MotionEvent motionEvent) {
@@ -230,17 +232,17 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         return this.mOverScroller.getCurrVelocityX();
     }
 
-    private boolean hookIfNeedInterceptMoveEvent(float f2, float f10) {
-        return !(this.mEnableDispatchEventWhileScrolling || (this.mEnableDispatchEventWhileOverScrolling && isOverScrolling())) || f10 == 0.0f || ((double) Math.abs(f2 / f10)) > Math.tan(((double) this.mEventFilterAngle) * DEGREE_TO_ARC_CONSTANT);
+    private boolean hookIfNeedInterceptMoveEvent(float fraction, float ratio) {
+        return !(this.mEnableDispatchEventWhileScrolling || (this.mEnableDispatchEventWhileOverScrolling && isOverScrolling())) || ratio == 0.0f || ((double) Math.abs(fraction / ratio)) > Math.tan(((double) this.mEventFilterAngle) * DEGREE_TO_ARC_CONSTANT);
     }
 
-    private boolean inChild(int i2, int i6) {
+    private boolean inChild(int index, int count) {
         if (getChildCount() <= 0) {
             return false;
         }
         int scrollX = getScrollX();
         View childAt = getChildAt(0);
-        return i6 >= childAt.getTop() && i6 < childAt.getBottom() && i2 >= childAt.getLeft() - scrollX && i2 < childAt.getRight() - scrollX;
+        return count >= childAt.getTop() && count < childAt.getBottom() && index >= childAt.getLeft() - scrollX && index < childAt.getRight() - scrollX;
     }
 
     private void initCOUIHorizontalScrollView(Context context) {
@@ -257,10 +259,10 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         this.mTouchSlop = viewConfiguration.getScaledTouchSlop();
         this.mMinimumVelocity = viewConfiguration.getScaledMinimumFlingVelocity();
         this.mMaximumVelocity = viewConfiguration.getScaledMaximumFlingVelocity();
-        int i2 = displayMetrics.widthPixels;
-        this.mOverscrollDistance = i2;
-        this.mOverflingDistance = i2;
-        this.mScreenWidth = i2;
+        int overscrollDistance = displayMetrics.widthPixels;
+        this.mOverscrollDistance = overscrollDistance;
+        this.mOverflingDistance = overscrollDistance;
+        this.mScreenWidth = overscrollDistance;
         this.mHorizontalScrollFactor = viewConfiguration.getScaledHorizontalScrollFactor();
         setOverScrollMode(0);
     }
@@ -281,8 +283,8 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
     }
 
     private boolean isClickEvent(MotionEvent motionEvent) {
-        int x6 = (int) (motionEvent.getX() - this.mInitialTouchX);
-        return System.currentTimeMillis() - this.mTouchTime < 100 && ((int) Math.sqrt((double) (x6 * x6))) < 10;
+        int deltaX = (int) (motionEvent.getX() - this.mInitialTouchX);
+        return System.currentTimeMillis() - this.mTouchTime < 100 && ((int) Math.sqrt((double) (deltaX * deltaX))) < 10;
     }
 
     private Boolean isColorDevice() {
@@ -292,8 +294,8 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         return this.mIsColorDevice;
     }
 
-    private boolean isFastFling(float f2, float f10) {
-        return !this.mAvoidAccidentalTouch || Math.abs(f2) > this.mFastFlingVelocity || Math.abs(f10) > this.mFastFlingVelocity;
+    private boolean isFastFling(float fraction, float ratio) {
+        return !this.mAvoidAccidentalTouch || Math.abs(fraction) > this.mFastFlingVelocity || Math.abs(ratio) > this.mFastFlingVelocity;
     }
 
     private boolean isOffScreen(View view) {
@@ -304,29 +306,29 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         return getScrollX() < 0 || getScrollX() > getScrollRange();
     }
 
-    private static boolean isViewDescendantOf(View view, View view2) {
-        if (view == view2) {
+    private static boolean isViewDescendantOf(View view, View otherView) {
+        if (view == otherView) {
             return true;
         }
         Object parent = view.getParent();
-        return (parent instanceof ViewGroup) && isViewDescendantOf((View) parent, view2);
+        return (parent instanceof ViewGroup) && isViewDescendantOf((View) parent, otherView);
     }
 
-    private boolean isWithinDeltaOfScreen(View view, int i2) {
+    private boolean isWithinDeltaOfScreen(View view, int index) {
         view.getDrawingRect(this.mTempRect);
         offsetDescendantRectToMyCoords(view, this.mTempRect);
-        return this.mTempRect.right + i2 >= getScrollX() && this.mTempRect.left - i2 <= getScrollX() + getWidth();
+        return this.mTempRect.right + index >= getScrollX() && this.mTempRect.left - index <= getScrollX() + getWidth();
     }
 
     private void onSecondaryPointerUp(MotionEvent motionEvent) {
         int action = (motionEvent.getAction() & 65280) >> 8;
         if (motionEvent.getPointerId(action) == this.mActivePointerId) {
-            int i2 = action == 0 ? 1 : 0;
-            int x6 = (int) motionEvent.getX(i2);
-            this.mLastMotionX = x6;
-            this.mInitialTouchX = x6;
-            this.mInitialTouchY = (int) motionEvent.getY(i2);
-            this.mActivePointerId = motionEvent.getPointerId(i2);
+            int index = action == 0 ? 1 : 0;
+            int touchX = (int) motionEvent.getX(index);
+            this.mLastMotionX = touchX;
+            this.mInitialTouchX = touchX;
+            this.mInitialTouchY = (int) motionEvent.getY(index);
+            this.mActivePointerId = motionEvent.getPointerId(index);
             VelocityTracker velocityTracker = this.mVelocityTracker;
             if (velocityTracker != null) {
                 velocityTracker.clear();
@@ -348,24 +350,24 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         }
     }
 
-    private boolean scrollAndFocus(int i2, int i6, int i10) {
+    private boolean scrollAndFocus(int index, int count, int value) {
         int width = getWidth();
         int scrollX = getScrollX();
-        int i11 = width + scrollX;
-        boolean z6 = false;
-        boolean z10 = i2 == 17;
-        View viewFindFocusableViewInBounds = findFocusableViewInBounds(z10, i6, i10);
+        int offset = width + scrollX;
+        boolean enabled = false;
+        boolean flag = index == 17;
+        View viewFindFocusableViewInBounds = findFocusableViewInBounds(flag, count, value);
         if (viewFindFocusableViewInBounds == null) {
             viewFindFocusableViewInBounds = this;
         }
-        if (i6 < scrollX || i10 > i11) {
-            doScrollX(z10 ? i6 - scrollX : i10 - i11);
-            z6 = true;
+        if (count < scrollX || value > offset) {
+            doScrollX(flag ? count - scrollX : value - offset);
+            enabled = true;
         }
         if (viewFindFocusableViewInBounds != findFocus()) {
-            viewFindFocusableViewInBounds.requestFocus(i2);
+            viewFindFocusableViewInBounds.requestFocus(index);
         }
-        return z6;
+        return enabled;
     }
 
     private void scrollToChild(View view) {
@@ -377,38 +379,38 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         }
     }
 
-    private boolean scrollToChildRect(Rect rect, boolean z6) {
+    private boolean scrollToChildRect(Rect rect, boolean enabled) {
         int iComputeScrollDeltaToGetChildRectOnScreen = computeScrollDeltaToGetChildRectOnScreen(rect);
-        boolean z10 = iComputeScrollDeltaToGetChildRectOnScreen != 0;
-        if (z10) {
-            if (z6) {
+        boolean flag = iComputeScrollDeltaToGetChildRectOnScreen != 0;
+        if (flag) {
+            if (enabled) {
                 scrollBy(iComputeScrollDeltaToGetChildRectOnScreen, 0);
             } else {
                 smoothCOUIScrollBy(iComputeScrollDeltaToGetChildRectOnScreen, 0);
             }
         }
-        return z10;
+        return flag;
     }
 
     @Override
-    public boolean arrowScroll(int i2) {
+    public boolean arrowScroll(int direction) {
         int right;
         View viewFindFocus = findFocus();
         if (viewFindFocus == this) {
             viewFindFocus = null;
         }
-        View viewFindNextFocus = FocusFinder.getInstance().findNextFocus(this, viewFindFocus, i2);
+        View viewFindNextFocus = FocusFinder.getInstance().findNextFocus(this, viewFindFocus, direction);
         int maxScrollAmount = getMaxScrollAmount();
         if (viewFindNextFocus == null || !isWithinDeltaOfScreen(viewFindNextFocus, maxScrollAmount)) {
-            if (i2 == 17 && getScrollX() < maxScrollAmount) {
+            if (direction == 17 && getScrollX() < maxScrollAmount) {
                 maxScrollAmount = getScrollX();
-            } else if (i2 == 66 && getChildCount() > 0 && (right = getChildAt(0).getRight() - (getScrollX() + getWidth())) < maxScrollAmount) {
+            } else if (direction == 66 && getChildCount() > 0 && (right = getChildAt(0).getRight() - (getScrollX() + getWidth())) < maxScrollAmount) {
                 maxScrollAmount = right;
             }
             if (maxScrollAmount == 0) {
                 return false;
             }
-            if (i2 != 66) {
+            if (direction != 66) {
                 maxScrollAmount = -maxScrollAmount;
             }
             doScrollX(maxScrollAmount);
@@ -416,7 +418,7 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
             viewFindNextFocus.getDrawingRect(this.mTempRect);
             offsetDescendantRectToMyCoords(viewFindNextFocus, this.mTempRect);
             doScrollX(computeScrollDeltaToGetChildRectOnScreen(this.mTempRect));
-            viewFindNextFocus.requestFocus(i2);
+            viewFindNextFocus.requestFocus(direction);
         }
         if (viewFindFocus == null || !viewFindFocus.isFocused() || !isOffScreen(viewFindFocus)) {
             return true;
@@ -464,11 +466,11 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
             float velocityAlongScrollableDirection = getVelocityAlongScrollableDirection();
             if (motionEvent.getActionMasked() == 0 && this.mDispatchEventVelocityThreshold >= Math.abs(velocityAlongScrollableDirection)) {
                 COUIIOverScroller cOUIIOverScroller2 = this.mOverScroller;
-                float f2 = 0.0f;
+                float abortVelocityX = 0.0f;
                 if (cOUIIOverScroller2 != null && cOUIIOverScroller2.getCurrVelocityX() != 0.0f) {
-                    f2 = this.mFlingVelocityX;
+                    abortVelocityX = this.mFlingVelocityX;
                 }
-                this.mAbortVelocityX = f2;
+                this.mAbortVelocityX = abortVelocityX;
                 COUIIOverScroller cOUIIOverScroller3 = this.mOverScroller;
                 if (cOUIIOverScroller3 != null) {
                     cOUIIOverScroller3.abortAnimation();
@@ -514,46 +516,46 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
     }
 
     @Override
-    public void fling(int i2) {
-        this.mFlingVelocityX = i2;
+    public void fling(int flingVelocityX) {
+        this.mFlingVelocityX = flingVelocityX;
         if (getChildCount() > 0) {
             int width = (getWidth() - getPaddingRight()) - getPaddingLeft();
             int iMax = Math.max(0, (getChildAt(0).getRight() - getPaddingLeft()) - width);
             COUIIOverScroller cOUIIOverScroller = this.mOverScroller;
             if (cOUIIOverScroller != null) {
-                cOUIIOverScroller.fling(getScrollX(), getScrollY(), i2, 0, 0, iMax, 0, 0, width / 2, 0);
+                cOUIIOverScroller.fling(getScrollX(), getScrollY(), flingVelocityX, 0, 0, iMax, 0, 0, width / 2, 0);
             }
             if (!this.mFlingStrictSpan) {
                 this.mFlingStrictSpan = true;
             }
-            boolean z6 = i2 > 0;
+            boolean enabled = flingVelocityX > 0;
             View viewFindFocus = findFocus();
             COUIIOverScroller cOUIIOverScroller2 = this.mOverScroller;
-            View viewFindFocusableViewInMyBounds = findFocusableViewInMyBounds(z6, cOUIIOverScroller2 != null ? cOUIIOverScroller2.getCOUIFinalX() : 0, viewFindFocus);
+            View viewFindFocusableViewInMyBounds = findFocusableViewInMyBounds(enabled, cOUIIOverScroller2 != null ? cOUIIOverScroller2.getCOUIFinalX() : 0, viewFindFocus);
             if (viewFindFocusableViewInMyBounds == null) {
                 viewFindFocusableViewInMyBounds = this;
             }
             if (viewFindFocusableViewInMyBounds != viewFindFocus) {
-                viewFindFocusableViewInMyBounds.requestFocus(z6 ? 66 : 17);
+                viewFindFocusableViewInMyBounds.requestFocus(enabled ? 66 : 17);
             }
             postInvalidateOnAnimation();
         }
     }
 
     @Override
-    public boolean fullScroll(int i2) {
-        boolean z6 = i2 == 66;
+    public boolean fullScroll(int direction) {
+        boolean enabled = direction == 66;
         int width = getWidth();
         Rect rect = this.mTempRect;
         rect.left = 0;
         rect.right = width;
-        if (z6 && getChildCount() > 0) {
+        if (enabled && getChildCount() > 0) {
             this.mTempRect.right = getChildAt(0).getRight();
             Rect rect2 = this.mTempRect;
             rect2.left = rect2.right - width;
         }
         Rect rect3 = this.mTempRect;
-        return scrollAndFocus(i2, rect3.left, rect3.right);
+        return scrollAndFocus(direction, rect3.left, rect3.right);
     }
 
     public int getScrollableRange() {
@@ -606,11 +608,11 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
             if (iRound != 0) {
                 int scrollRange = getScrollRange();
                 int scrollX = getScrollX();
-                int i2 = iRound + scrollX;
-                if (i2 < 0) {
+                int index = iRound + scrollX;
+                if (index < 0) {
                     scrollRange = 0;
-                } else if (i2 <= scrollRange) {
-                    scrollRange = i2;
+                } else if (index <= scrollRange) {
+                    scrollRange = index;
                 }
                 if (scrollRange != scrollX) {
                     super.scrollTo(scrollRange, getScrollY());
@@ -714,77 +716,77 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
     }
 
     @Override
-    public void onMeasure(int i2, int i6) {
-        super.onMeasure(i2, i6);
-        if (this.mFillViewport && View.MeasureSpec.getMode(i2) != 0 && getChildCount() > 0) {
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (this.mFillViewport && View.MeasureSpec.getMode(widthMeasureSpec) != 0 && getChildCount() > 0) {
             View childAt = getChildAt(0);
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) childAt.getLayoutParams();
             int paddingLeft = getPaddingLeft() + getPaddingRight() + layoutParams.leftMargin + layoutParams.rightMargin;
             int paddingTop = getPaddingTop() + getPaddingBottom() + layoutParams.topMargin + layoutParams.bottomMargin;
             int measuredWidth = getMeasuredWidth() - paddingLeft;
             if (childAt.getMeasuredWidth() < measuredWidth) {
-                childAt.measure(View.MeasureSpec.makeMeasureSpec(measuredWidth, 1073741824), ViewGroup.getChildMeasureSpec(i6, paddingTop, layoutParams.height));
+                childAt.measure(View.MeasureSpec.makeMeasureSpec(measuredWidth, 1073741824), ViewGroup.getChildMeasureSpec(heightMeasureSpec, paddingTop, layoutParams.height));
             }
         }
     }
 
     @Override
-    public void onOverScrolled(int i2, int i6, boolean z6, boolean z10) {
-        if (getScrollY() == i6 && getScrollX() == i2) {
+    public void onOverScrolled(int scrollX, int scrollY, boolean clampedX, boolean clampedY) {
+        if (getScrollY() == scrollY && getScrollX() == scrollX) {
             return;
         }
-        if ((i2 < 0 || i2 > getScrollRange()) && this.mFlingStrictSpan) {
-            int scrollRange = i2 >= getScrollRange() ? getScrollRange() : 0;
-            i2 = COUIPhysicalAnimationUtil.calcOverFlingDecelerateDist(scrollRange, i2 - scrollRange, this.mScreenWidth);
+        if ((scrollX < 0 || scrollX > getScrollRange()) && this.mFlingStrictSpan) {
+            int scrollRange = scrollX >= getScrollRange() ? getScrollRange() : 0;
+            scrollX = COUIPhysicalAnimationUtil.calcOverFlingDecelerateDist(scrollRange, scrollX - scrollRange, this.mScreenWidth);
         }
         if (getOverScrollMode() == 2 || (getOverScrollMode() == 1 && getChildAt(0).getWidth() <= getScrollableRange())) {
-            i2 = Math.min(Math.max(i2, 0), getScrollRange());
+            scrollX = Math.min(Math.max(scrollX, 0), getScrollRange());
         }
-        if (getScrollX() >= 0 && i2 < 0 && this.mFlingStrictSpan) {
+        if (getScrollX() >= 0 && scrollX < 0 && this.mFlingStrictSpan) {
             performFeedback();
             SpringOverScroller springOverScroller = this.mSpringOverScroller;
             if (springOverScroller != null) {
-                springOverScroller.notifyHorizontalEdgeReached(i2, 0, this.mOverflingDistance);
+                springOverScroller.notifyHorizontalEdgeReached(scrollX, 0, this.mOverflingDistance);
             }
         }
-        if (getScrollX() <= getScrollRange() && i2 > getScrollRange() && this.mFlingStrictSpan) {
+        if (getScrollX() <= getScrollRange() && scrollX > getScrollRange() && this.mFlingStrictSpan) {
             performFeedback();
             SpringOverScroller springOverScroller2 = this.mSpringOverScroller;
             if (springOverScroller2 != null) {
-                springOverScroller2.notifyHorizontalEdgeReached(i2, getScrollRange(), this.mOverflingDistance);
+                springOverScroller2.notifyHorizontalEdgeReached(scrollX, getScrollRange(), this.mOverflingDistance);
             }
         }
         if (isColorDevice().booleanValue()) {
-            ViewNative.setScrollX(this, i2);
-            ViewNative.setScrollY(this, i6);
+            ViewNative.setScrollX(this, scrollX);
+            ViewNative.setScrollY(this, scrollY);
         } else {
-            super.scrollTo(i2, i6);
+            super.scrollTo(scrollX, scrollY);
         }
         invalidateParentIfNeeded();
         awakenScrollBars();
     }
 
     @Override
-    public boolean onRequestFocusInDescendants(int i2, Rect rect) {
-        if (i2 == 2) {
-            i2 = 66;
-        } else if (i2 == 1) {
-            i2 = 17;
+    public boolean onRequestFocusInDescendants(int direction, Rect rect) {
+        if (direction == 2) {
+            direction = 66;
+        } else if (direction == 1) {
+            direction = 17;
         }
-        View viewFindNextFocus = rect == null ? FocusFinder.getInstance().findNextFocus(this, null, i2) : FocusFinder.getInstance().findNextFocusFromRect(this, rect, i2);
+        View viewFindNextFocus = rect == null ? FocusFinder.getInstance().findNextFocus(this, null, direction) : FocusFinder.getInstance().findNextFocusFromRect(this, rect, direction);
         if (viewFindNextFocus == null || isOffScreen(viewFindNextFocus)) {
             return false;
         }
-        return viewFindNextFocus.requestFocus(i2, rect);
+        return viewFindNextFocus.requestFocus(direction, rect);
     }
 
     @Override
-    public void onSizeChanged(int i2, int i6, int i10, int i11) {
-        super.onSizeChanged(i2, i6, i10, i11);
-        int i12 = getContext().getResources().getDisplayMetrics().widthPixels;
-        this.mOverscrollDistance = i12;
-        this.mOverflingDistance = i12;
-        this.mScreenWidth = i12;
+    public void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        int overscrollDistance = getContext().getResources().getDisplayMetrics().widthPixels;
+        this.mOverscrollDistance = overscrollDistance;
+        this.mOverflingDistance = overscrollDistance;
+        this.mScreenWidth = overscrollDistance;
         View viewFindFocus = findFocus();
         if (viewFindFocus == null || this == viewFindFocus || !isWithinDeltaOfScreen(viewFindFocus, getRight() - getLeft())) {
             return;
@@ -803,9 +805,9 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         if (action != 0) {
             if (action == 1) {
                 boolean zIsOverScrolling = isOverScrolling();
-                boolean z6 = this.mItemClickableWhileSlowScrolling && this.mIsTouchDownWhileSlowScrolling;
-                boolean z10 = this.mItemClickableWhileOverScrolling && this.mIsTouchDownWhileOverScrolling && zIsOverScrolling;
-                if (z6 || z10) {
+                boolean enabled = this.mItemClickableWhileSlowScrolling && this.mIsTouchDownWhileSlowScrolling;
+                boolean flag = this.mItemClickableWhileOverScrolling && this.mIsTouchDownWhileOverScrolling && zIsOverScrolling;
+                if (enabled || flag) {
                     findViewToDispatchClickEvent(motionEvent);
                 }
                 if (this.mIsBeingDragged) {
@@ -868,8 +870,8 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
                 if (iFindPointerIndex == -1) {
                     Log.e(TAG, "Invalid pointerId=" + this.mActivePointerId + " in onTouchEvent");
                 } else {
-                    int x6 = (int) motionEvent.getX(iFindPointerIndex);
-                    int iCalcRealOverScrollDist = this.mLastMotionX - x6;
+                    int touchX = (int) motionEvent.getX(iFindPointerIndex);
+                    int iCalcRealOverScrollDist = this.mLastMotionX - touchX;
                     if (!this.mIsBeingDragged && Math.abs(iCalcRealOverScrollDist) > this.mTouchSlop) {
                         ViewParent parent2 = getParent();
                         if (parent2 != null) {
@@ -879,7 +881,7 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
                         iCalcRealOverScrollDist = iCalcRealOverScrollDist > 0 ? iCalcRealOverScrollDist - this.mTouchSlop : iCalcRealOverScrollDist + this.mTouchSlop;
                     }
                     if (this.mIsBeingDragged) {
-                        this.mLastMotionX = x6;
+                        this.mLastMotionX = touchX;
                         int scrollRange = getScrollRange();
                         if (getScrollX() < 0) {
                             iCalcRealOverScrollDist = COUIPhysicalAnimationUtil.calcRealOverScrollDist(iCalcRealOverScrollDist, getScrollX(), this.mOverscrollDistance);
@@ -920,9 +922,9 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
                     this.mFlingStrictSpan = false;
                 }
             }
-            int x10 = (int) motionEvent.getX();
-            this.mLastMotionX = x10;
-            this.mInitialTouchX = x10;
+            int touchX = (int) motionEvent.getX();
+            this.mLastMotionX = touchX;
+            this.mInitialTouchX = touchX;
             this.mInitialTouchY = (int) motionEvent.getY();
             this.mActivePointerId = motionEvent.getPointerId(0);
         }
@@ -930,10 +932,10 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
     }
 
     @Override
-    public void onVisibilityChanged(View view, int i2) {
+    public void onVisibilityChanged(View view, int index) {
         SpringOverScroller springOverScroller;
-        super.onVisibilityChanged(view, i2);
-        if (i2 == 0 || (springOverScroller = this.mSpringOverScroller) == null) {
+        super.onVisibilityChanged(view, index);
+        if (index == 0 || (springOverScroller = this.mSpringOverScroller) == null) {
             return;
         }
         springOverScroller.abortAnimation();
@@ -941,16 +943,16 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
     }
 
     @Override
-    public boolean overScrollBy(int i2, int i6, int i10, int i11, int i12, int i13, int i14, int i15, boolean z6) {
-        onOverScrolled(i10 + i2, i11 + i6, false, false);
+    public boolean overScrollBy(int index, int count, int value, int offset, int delta, int start, int end, int min, boolean enabled) {
+        onOverScrolled(value + index, offset + count, false, false);
         return false;
     }
 
     @Override
-    public boolean pageScroll(int i2) {
-        boolean z6 = i2 == 66;
+    public boolean pageScroll(int direction) {
+        boolean enabled = direction == 66;
         int width = getWidth();
-        if (z6) {
+        if (enabled) {
             this.mTempRect.left = getScrollX() + width;
             if (getChildCount() > 0) {
                 View childAt = getChildAt(0);
@@ -966,36 +968,36 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
             }
         }
         Rect rect2 = this.mTempRect;
-        int i6 = rect2.left;
-        int i10 = width + i6;
-        rect2.right = i10;
-        return scrollAndFocus(i2, i6, i10);
+        int count = rect2.left;
+        int value = width + count;
+        rect2.right = value;
+        return scrollAndFocus(direction, count, value);
     }
 
     @Override
-    public void requestChildFocus(View view, View view2) {
-        if (view2 != null && view2.getRevealOnFocusHint()) {
+    public void requestChildFocus(View view, View childToScrollTo) {
+        if (childToScrollTo != null && childToScrollTo.getRevealOnFocusHint()) {
             if (this.mIsLayoutDirty) {
-                this.mChildToScrollTo = view2;
+                this.mChildToScrollTo = childToScrollTo;
             } else {
-                scrollToChild(view2);
+                scrollToChild(childToScrollTo);
             }
         }
-        super.requestChildFocus(view, view2);
+        super.requestChildFocus(view, childToScrollTo);
     }
 
     @Override
-    public boolean requestChildRectangleOnScreen(View view, Rect rect, boolean z6) {
+    public boolean requestChildRectangleOnScreen(View view, Rect rect, boolean enabled) {
         rect.offset(view.getLeft() - view.getScrollX(), view.getTop() - view.getScrollY());
-        return scrollToChildRect(rect, z6);
+        return scrollToChildRect(rect, enabled);
     }
 
     @Override
-    public void requestDisallowInterceptTouchEvent(boolean z6) {
-        if (z6) {
+    public void requestDisallowInterceptTouchEvent(boolean enabled) {
+        if (enabled) {
             recycleVelocityTracker();
         }
-        super.requestDisallowInterceptTouchEvent(z6);
+        super.requestDisallowInterceptTouchEvent(enabled);
     }
 
     @Override
@@ -1004,81 +1006,81 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         super.requestLayout();
     }
 
-    public void setAvoidAccidentalTouch(boolean z6) {
-        this.mAvoidAccidentalTouch = z6;
+    public void setAvoidAccidentalTouch(boolean avoidAccidentalTouch) {
+        this.mAvoidAccidentalTouch = avoidAccidentalTouch;
     }
 
-    public void setDispatchEventWhileOverScrolling(boolean z6) {
-        this.mEnableDispatchEventWhileOverScrolling = z6;
+    public void setDispatchEventWhileOverScrolling(boolean enableDispatchEventWhileOverScrolling) {
+        this.mEnableDispatchEventWhileOverScrolling = enableDispatchEventWhileOverScrolling;
     }
 
-    public void setDispatchEventWhileScrolling(boolean z6) {
-        this.mEnableDispatchEventWhileScrolling = z6;
+    public void setDispatchEventWhileScrolling(boolean enableDispatchEventWhileScrolling) {
+        this.mEnableDispatchEventWhileScrolling = enableDispatchEventWhileScrolling;
     }
 
-    public void setDispatchEventWhileScrollingThreshold(int i2) {
-        this.mDispatchEventVelocityThreshold = i2;
+    public void setDispatchEventWhileScrollingThreshold(int dispatchEventVelocityThreshold) {
+        this.mDispatchEventVelocityThreshold = dispatchEventVelocityThreshold;
     }
 
-    public void setEnableFlingSpeedIncrease(boolean z6) {
+    public void setEnableFlingSpeedIncrease(boolean enabled) {
         SpringOverScroller springOverScroller = this.mSpringOverScroller;
         if (springOverScroller != null) {
-            springOverScroller.setEnableFlingSpeedIncrease(z6);
+            springOverScroller.setEnableFlingSpeedIncrease(enabled);
         }
     }
 
-    public void setEnableVibrator(boolean z6) {
-        this.mEnableVibrator = z6;
+    public void setEnableVibrator(boolean enableVibrator) {
+        this.mEnableVibrator = enableVibrator;
     }
 
-    public void setEventFilterTangent(float f2) {
-        this.mEventFilterAngle = f2;
+    public void setEventFilterTangent(float eventFilterAngle) {
+        this.mEventFilterAngle = eventFilterAngle;
     }
 
-    public void setFastFlingThreshold(float f2) {
-        this.mFastFlingVelocity = Math.max(f2, 0.0f);
+    public void setFastFlingThreshold(float fraction) {
+        this.mFastFlingVelocity = Math.max(fraction, 0.0f);
     }
 
     @Override
-    public void setFillViewport(boolean z6) {
-        if (z6 != this.mFillViewport) {
-            this.mFillViewport = z6;
+    public void setFillViewport(boolean fillViewport) {
+        if (fillViewport != this.mFillViewport) {
+            this.mFillViewport = fillViewport;
             requestLayout();
         }
     }
 
-    public void setIsUseOptimizedScroll(boolean z6) {
-        this.mEnableOptimizedScroll = z6;
+    public void setIsUseOptimizedScroll(boolean enableOptimizedScroll) {
+        this.mEnableOptimizedScroll = enableOptimizedScroll;
     }
 
-    public void setItemClickableWhileOverScrolling(boolean z6) {
-        this.mItemClickableWhileOverScrolling = z6;
+    public void setItemClickableWhileOverScrolling(boolean itemClickableWhileOverScrolling) {
+        this.mItemClickableWhileOverScrolling = itemClickableWhileOverScrolling;
     }
 
-    public void setItemClickableWhileSlowScrolling(boolean z6) {
-        this.mItemClickableWhileSlowScrolling = z6;
+    public void setItemClickableWhileSlowScrolling(boolean itemClickableWhileSlowScrolling) {
+        this.mItemClickableWhileSlowScrolling = itemClickableWhileSlowScrolling;
     }
 
     @Override
-    public void setSmoothScrollingEnabled(boolean z6) {
-        this.mSmoothScrollingEnabled = z6;
+    public void setSmoothScrollingEnabled(boolean smoothScrollingEnabled) {
+        this.mSmoothScrollingEnabled = smoothScrollingEnabled;
     }
 
-    public void setSpringOverScrollerDebug(boolean z6) {
+    public void setSpringOverScrollerDebug(boolean enabled) {
         SpringOverScroller springOverScroller = this.mSpringOverScroller;
         if (springOverScroller != null) {
-            springOverScroller.setDebug(z6);
+            springOverScroller.setDebug(enabled);
         }
     }
 
-    public final void smoothCOUIScrollBy(int i2, int i6) {
+    public final void smoothCOUIScrollBy(int index, int count) {
         if (getChildCount() == 0) {
             return;
         }
         if (AnimationUtils.currentAnimationTimeMillis() - this.mLastScroll > 250) {
             int iMax = Math.max(0, getChildAt(0).getWidth() - ((getWidth() - getPaddingRight()) - getPaddingLeft()));
             int scrollX = getScrollX();
-            int iMax2 = Math.max(0, Math.min(i2 + scrollX, iMax)) - scrollX;
+            int iMax2 = Math.max(0, Math.min(index + scrollX, iMax)) - scrollX;
             COUIIOverScroller cOUIIOverScroller = this.mOverScroller;
             if (cOUIIOverScroller != null) {
                 cOUIIOverScroller.startScroll(scrollX, getScrollY(), iMax2, 0);
@@ -1093,21 +1095,21 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
                     this.mFlingStrictSpan = false;
                 }
             }
-            scrollBy(i2, i6);
+            scrollBy(index, count);
         }
         this.mLastScroll = AnimationUtils.currentAnimationTimeMillis();
     }
 
-    public final void smoothCOUIScrollTo(int i2, int i6) {
-        smoothCOUIScrollBy(i2 - getScrollX(), i6 - getScrollY());
+    public final void smoothCOUIScrollTo(int index, int count) {
+        smoothCOUIScrollBy(index - getScrollX(), count - getScrollY());
     }
 
     public COUIHorizontalScrollView(Context context, AttributeSet attributeSet) {
         this(context, attributeSet, 0);
     }
 
-    public COUIHorizontalScrollView(Context context, AttributeSet attributeSet, int i2) {
-        super(context, attributeSet, i2);
+    public COUIHorizontalScrollView(Context context, AttributeSet attributeSet, int index) {
+        super(context, attributeSet, index);
         this.mScreenWidth = 0;
         this.mTempRect = new Rect();
         this.mOverScroller = null;
@@ -1131,13 +1133,13 @@ public class COUIHorizontalScrollView extends HorizontalScrollView {
         this.mEnableVibrator = true;
         this.mIsColorDevice = null;
         initCOUIHorizontalScrollView(context);
-        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUIHorizontalScrollView, i2, 0);
+        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUIHorizontalScrollView, index, 0);
         this.mEnableVibrator = typedArrayObtainStyledAttributes.getBoolean(R.styleable.COUIHorizontalScrollView_couiScrollViewEnableVibrator, true);
         typedArrayObtainStyledAttributes.recycle();
     }
 
-    public COUIHorizontalScrollView(Context context, AttributeSet attributeSet, int i2, int i6) {
-        super(context, attributeSet, i2, i6);
+    public COUIHorizontalScrollView(Context context, AttributeSet attributeSet, int index, int count) {
+        super(context, attributeSet, index, count);
         this.mScreenWidth = 0;
         this.mTempRect = new Rect();
         this.mOverScroller = null;

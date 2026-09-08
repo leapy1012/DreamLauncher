@@ -8,7 +8,7 @@
         android:fillBefore="false"
         android:fillEnabled="true"
         android:fromXDelta="0.0%"
-        android:interpolator="@anim/coui_close_slide_enter_translate_interpolator_zoom"
+        android:interpolator="@interpolator/coui_close_slide_enter_translate_interpolator_zoom"
         android:toXDelta="0.0%" />
     <alpha
         android:duration="350"
@@ -16,6 +16,6 @@
         android:fillBefore="false"
         android:fillEnabled="true"
         android:fromAlpha="1.0"
-        android:interpolator="@anim/coui_ease"
+        android:interpolator="@interpolator/coui_ease"
         android:toAlpha="1.0" />
 </set>

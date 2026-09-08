@@ -168,7 +168,7 @@ public class COUIGuideLayoutContentView extends LinearLayout {
 
             @Override
             public void onPageScrolled(int position, float positionOffset,
-                    int positionOffsetPixels) {
+                                       int positionOffsetPixels) {
                 super.onPageScrolled(position, positionOffset, positionOffsetPixels);
                 mPageIndicator.onPageScrolled(position, positionOffset, positionOffsetPixels);
                 mButtonLayout.onPageScrolled(position, positionOffset, positionOffsetPixels);

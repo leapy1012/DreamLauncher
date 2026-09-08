@@ -55,8 +55,8 @@ class CardViewApi21Impl implements CardViewImpl {
 
     @Override
     public void initialize(CardViewDelegate delegate, Context context, ColorStateList colorStateList,
-            float radius, float elevation, float maxElevation, float weight,
-            float cardRoundCornerRadius) {
+                           float radius, float elevation, float maxElevation, float weight,
+                           float cardRoundCornerRadius) {
         delegate.setCardBackground(new RoundRectDrawable(
                 colorStateList, radius, weight, cardRoundCornerRadius));
         View cardView = delegate.getCardView();

@@ -7,11 +7,14 @@ import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
+
 import androidx.core.view.ViewCompat;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.component.responsiveui.ResponsiveUIModel;
 import com.coui.component.responsiveui.layoutgrid.MarginType;
+
 import java.util.Arrays;
 
 public class COUIResponsiveGridMaskView extends View {

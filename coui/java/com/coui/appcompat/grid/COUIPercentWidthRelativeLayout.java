@@ -1,7 +1,5 @@
 package com.coui.appcompat.grid;
 
-import com.coui.appcompat.R;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -10,6 +8,8 @@ import android.util.AttributeSet;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+
+import com.coui.appcompat.R;
 
 
 public class COUIPercentWidthRelativeLayout extends RelativeLayout {
@@ -42,10 +42,10 @@ public class COUIPercentWidthRelativeLayout extends RelativeLayout {
             int gridNumberStyleable = R.styleable.COUIPercentWidthRelativeLayout_gridNumber;
             this.mGridNumberResourceId = typedArrayObtainStyledAttributes.getResourceId(gridNumberStyleable, 0);
             this.mGridNumber = typedArrayObtainStyledAttributes.getInteger(gridNumberStyleable, getContext().getResources().getInteger(R.integer.grid_guide_column_preference));
-            this.mPaddingType = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthRelativeLayout_paddingType, 0);
-            this.mPaddingSize = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthRelativeLayout_paddingSize, 0);
+            this.mPaddingType = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthRelativeLayout_paddingType, DEFAULT_FLAG);
+            this.mPaddingSize = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthRelativeLayout_paddingSize, LARGE_PADDING);
             this.mPercentEnabled = typedArrayObtainStyledAttributes.getBoolean(R.styleable.COUIPercentWidthRelativeLayout_percentIndentEnabled, true);
-            this.mMode = typedArrayObtainStyledAttributes.getInt(R.styleable.COUIPercentWidthRelativeLayout_percentMode, 0);
+            this.mMode = typedArrayObtainStyledAttributes.getInt(R.styleable.COUIPercentWidthRelativeLayout_percentMode, PADDING_MODE);
             this.mIsParentChildHierarchy = typedArrayObtainStyledAttributes.getBoolean(R.styleable.COUIPercentWidthRelativeLayout_isParentChildHierarchy, false);
             this.mInitPaddingStart = getPaddingStart();
             this.mInitPaddingEnd = getPaddingEnd();

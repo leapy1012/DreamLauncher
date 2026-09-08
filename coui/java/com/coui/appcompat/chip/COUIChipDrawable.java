@@ -41,11 +41,11 @@ import com.google.android.material.resources.MaterialResources;
 import com.google.android.material.resources.TextAppearance;
 import com.oplus.graphics.OplusPathAdapter;
 
-import java.lang.ref.WeakReference;
-import java.util.Arrays;
-
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
+
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
 
 /**
  * COUI chip renderer.
@@ -63,8 +63,11 @@ public class COUIChipDrawable extends Drawable implements Drawable.Callback,
 
     public interface COUIChipDrawableDelegate {
         void onChipDrawableSizeChange();
+
         void onChipTextColorChange(int color);
+
         void onChipTextFontChanged(Typeface typeface);
+
         void onChipTextOffsetChanged(float x, float y);
     }
 
@@ -719,54 +722,182 @@ public class COUIChipDrawable extends Drawable implements Drawable.Callback,
         invalidateSelf();
     }
 
-    public boolean isCheckable() { return mCheckable; }
-    public void setCheckable(boolean value) { mCheckable = value; invalidateSelf(); }
-    public boolean isChipIconVisible() { return mChipIconVisible; }
-    public boolean isCloseIconVisible() { return mCloseIconVisible; }
-    public boolean isShowRedDot() { return mShowRedDot; }
-    public boolean showsChipIcon() { return mChipIconVisible && mChipIcon != null; }
-    public boolean showsCloseIcon() { return mCloseIconVisible && mCloseIcon != null; }
-    public Drawable getChipBackground() { return mChipBackground; }
-    public Drawable getChipIcon() { return mChipIcon; }
-    public Drawable getCloseIcon() { return mCloseIcon; }
-    public CharSequence getCloseIconContentDescription() { return mCloseIconContentDescription; }
-    public float getChipCornerRadius() { return mChipCornerRadius; }
-    public float getChipEndPadding() { return mChipEndPadding; }
-    public float getChipIconEndPadding() { return mChipIconEndPadding; }
-    public float getChipIconSize() { return mChipIconSize; }
-    public float getChipIconStartPadding() { return mChipIconStartPadding; }
-    public float getChipMinHeight() { return mChipMinHeight; }
-    public float getChipStartPadding() { return mChipStartPadding; }
-    public float getCloseIconEndPadding() { return mCloseIconEndPadding; }
-    public float getCloseIconSize() { return mCloseIconSize; }
-    public float getCloseIconStartPadding() { return mCloseIconStartPadding; }
-    public int[] getCloseIconState() { return mCloseIconStateSet; }
-    public TextUtils.TruncateAt getEllipsize() { return mTruncateAt; }
-    public CharSequence getText() { return mText; }
-    public TextAppearance getTextAppearance() { return mDefaultTextAppearance; }
-    public TextAppearance getCheckedTextAppearance() { return mCheckedTextAppearance; }
-    public float getTextEndPadding() { return mTextEndPadding; }
-    public int getTextMaxWidth() { return mTextMaxWidth; }
-    public float getTextSize() { return mTextPaint.getTextSize(); }
-    public float getTextStartPadding() { return mTextStartPadding; }
-    public int getCheckedBackgroundColor() { return mCheckedBackgroundColor; }
-    public int getUncheckedBackgroundColor() { return mUncheckedBackgroundColor; }
-    public int getCheckedDisabledBackgroundColor() { return mCheckedDisabledBackgroundColor; }
+    public boolean isCheckable() {
+        return mCheckable;
+    }
+
+    public void setCheckable(boolean value) {
+        mCheckable = value;
+        invalidateSelf();
+    }
+
+    public boolean isChipIconVisible() {
+        return mChipIconVisible;
+    }
+
+    public boolean isCloseIconVisible() {
+        return mCloseIconVisible;
+    }
+
+    public boolean isShowRedDot() {
+        return mShowRedDot;
+    }
+
+    public boolean showsChipIcon() {
+        return mChipIconVisible && mChipIcon != null;
+    }
+
+    public boolean showsCloseIcon() {
+        return mCloseIconVisible && mCloseIcon != null;
+    }
+
+    public Drawable getChipBackground() {
+        return mChipBackground;
+    }
+
+    public Drawable getChipIcon() {
+        return mChipIcon;
+    }
+
+    public Drawable getCloseIcon() {
+        return mCloseIcon;
+    }
+
+    public CharSequence getCloseIconContentDescription() {
+        return mCloseIconContentDescription;
+    }
+
+    public float getChipCornerRadius() {
+        return mChipCornerRadius;
+    }
+
+    public float getChipEndPadding() {
+        return mChipEndPadding;
+    }
+
+    public float getChipIconEndPadding() {
+        return mChipIconEndPadding;
+    }
+
+    public float getChipIconSize() {
+        return mChipIconSize;
+    }
+
+    public float getChipIconStartPadding() {
+        return mChipIconStartPadding;
+    }
+
+    public float getChipMinHeight() {
+        return mChipMinHeight;
+    }
+
+    public float getChipStartPadding() {
+        return mChipStartPadding;
+    }
+
+    public float getCloseIconEndPadding() {
+        return mCloseIconEndPadding;
+    }
+
+    public float getCloseIconSize() {
+        return mCloseIconSize;
+    }
+
+    public float getCloseIconStartPadding() {
+        return mCloseIconStartPadding;
+    }
+
+    public int[] getCloseIconState() {
+        return mCloseIconStateSet;
+    }
+
+    public TextUtils.TruncateAt getEllipsize() {
+        return mTruncateAt;
+    }
+
+    public CharSequence getText() {
+        return mText;
+    }
+
+    public TextAppearance getTextAppearance() {
+        return mDefaultTextAppearance;
+    }
+
+    public TextAppearance getCheckedTextAppearance() {
+        return mCheckedTextAppearance;
+    }
+
+    public float getTextEndPadding() {
+        return mTextEndPadding;
+    }
+
+    public int getTextMaxWidth() {
+        return mTextMaxWidth;
+    }
+
+    public float getTextSize() {
+        return mTextPaint.getTextSize();
+    }
+
+    public float getTextStartPadding() {
+        return mTextStartPadding;
+    }
+
+    public int getCheckedBackgroundColor() {
+        return mCheckedBackgroundColor;
+    }
+
+    public int getUncheckedBackgroundColor() {
+        return mUncheckedBackgroundColor;
+    }
+
+    public int getCheckedDisabledBackgroundColor() {
+        return mCheckedDisabledBackgroundColor;
+    }
+
     public int getUncheckedDisabledBackgroundColor() {
         return mUncheckedDisabledBackgroundColor;
     }
-    public int getCheckedTextColor() { return mCheckedTextColor; }
-    public int getUncheckedTextColor() { return mUncheckedTextColor; }
-    public int getCheckedDisabledTextColor() { return mCheckedDisabledTextColor; }
-    public int getUncheckedDisabledTextColor() { return mUncheckedDisabledTextColor; }
-    public int getCheckedChipIconTint() { return mCheckedChipIconTint; }
-    public int getUncheckedChipIconTint() { return mUncheckedChipIconTint; }
-    public int getCheckedDisabledChipIconTint() { return mCheckedDisabledChipIconTint; }
+
+    public int getCheckedTextColor() {
+        return mCheckedTextColor;
+    }
+
+    public int getUncheckedTextColor() {
+        return mUncheckedTextColor;
+    }
+
+    public int getCheckedDisabledTextColor() {
+        return mCheckedDisabledTextColor;
+    }
+
+    public int getUncheckedDisabledTextColor() {
+        return mUncheckedDisabledTextColor;
+    }
+
+    public int getCheckedChipIconTint() {
+        return mCheckedChipIconTint;
+    }
+
+    public int getUncheckedChipIconTint() {
+        return mUncheckedChipIconTint;
+    }
+
+    public int getCheckedDisabledChipIconTint() {
+        return mCheckedDisabledChipIconTint;
+    }
+
     public int getUncheckedDisabledChipIconTint() {
         return mUncheckedDisabledChipIconTint;
     }
-    public int getMaxWidth() { return mMaxWidth; }
-    public boolean shouldDrawText() { return mShouldDrawText; }
+
+    public int getMaxWidth() {
+        return mMaxWidth;
+    }
+
+    public boolean shouldDrawText() {
+        return mShouldDrawText;
+    }
 
     public void setChipBackground(@Nullable Drawable drawable) {
         mChipBackground = drawable;
@@ -837,23 +968,89 @@ public class COUIChipDrawable extends Drawable implements Drawable.Callback,
         }
     }
 
-    public void setShowRedDot(boolean value) { mShowRedDot = value; invalidateSelf(); }
-    public void setShouldDrawText(boolean value) { mShouldDrawText = value; invalidateSelf(); }
-    public void setEllipsize(@Nullable TextUtils.TruncateAt value) { mTruncateAt = value; }
-    public void setMaxWidth(@Px int value) { mMaxWidth = value; onSizeChange(); }
-    public void setTextMaxWidth(@Px int value) { mTextMaxWidth = value; onSizeChange(); }
-    public void setChipCornerRadius(float value) { mChipCornerRadius = value; invalidateSelf(); }
-    public void setChipEndPadding(float value) { mChipEndPadding = value; onSizeChange(); }
-    public void setChipIconEndPadding(float value) { mChipIconEndPadding = value; onSizeChange(); }
-    public void setChipIconSize(float value) { mChipIconSize = value; onSizeChange(); }
-    public void setChipIconStartPadding(float value) { mChipIconStartPadding = value; onSizeChange(); }
-    public void setChipMinHeight(float value) { mChipMinHeight = value; onSizeChange(); }
-    public void setChipStartPadding(float value) { mChipStartPadding = value; onSizeChange(); }
-    public void setCloseIconEndPadding(float value) { mCloseIconEndPadding = value; onSizeChange(); }
-    public void setCloseIconSize(float value) { mCloseIconSize = value; onSizeChange(); }
-    public void setCloseIconStartPadding(float value) { mCloseIconStartPadding = value; onSizeChange(); }
-    public void setTextEndPadding(float value) { mTextEndPadding = value; onSizeChange(); }
-    public void setTextStartPadding(float value) { mTextStartPadding = value; onSizeChange(); }
+    public void setShowRedDot(boolean value) {
+        mShowRedDot = value;
+        invalidateSelf();
+    }
+
+    public void setShouldDrawText(boolean value) {
+        mShouldDrawText = value;
+        invalidateSelf();
+    }
+
+    public void setEllipsize(@Nullable TextUtils.TruncateAt value) {
+        mTruncateAt = value;
+    }
+
+    public void setMaxWidth(@Px int value) {
+        mMaxWidth = value;
+        onSizeChange();
+    }
+
+    public void setTextMaxWidth(@Px int value) {
+        mTextMaxWidth = value;
+        onSizeChange();
+    }
+
+    public void setChipCornerRadius(float value) {
+        mChipCornerRadius = value;
+        invalidateSelf();
+    }
+
+    public void setChipEndPadding(float value) {
+        mChipEndPadding = value;
+        onSizeChange();
+    }
+
+    public void setChipIconEndPadding(float value) {
+        mChipIconEndPadding = value;
+        onSizeChange();
+    }
+
+    public void setChipIconSize(float value) {
+        mChipIconSize = value;
+        onSizeChange();
+    }
+
+    public void setChipIconStartPadding(float value) {
+        mChipIconStartPadding = value;
+        onSizeChange();
+    }
+
+    public void setChipMinHeight(float value) {
+        mChipMinHeight = value;
+        onSizeChange();
+    }
+
+    public void setChipStartPadding(float value) {
+        mChipStartPadding = value;
+        onSizeChange();
+    }
+
+    public void setCloseIconEndPadding(float value) {
+        mCloseIconEndPadding = value;
+        onSizeChange();
+    }
+
+    public void setCloseIconSize(float value) {
+        mCloseIconSize = value;
+        onSizeChange();
+    }
+
+    public void setCloseIconStartPadding(float value) {
+        mCloseIconStartPadding = value;
+        onSizeChange();
+    }
+
+    public void setTextEndPadding(float value) {
+        mTextEndPadding = value;
+        onSizeChange();
+    }
+
+    public void setTextStartPadding(float value) {
+        mTextStartPadding = value;
+        onSizeChange();
+    }
 
     public void setText(@Nullable CharSequence value) {
         CharSequence text = value == null ? "" : value;
@@ -886,40 +1083,63 @@ public class COUIChipDrawable extends Drawable implements Drawable.Callback,
     }
 
     public void setCheckedBackgroundColor(@ColorInt int value) {
-        mCheckedBackgroundColor = value; updateStateColors(false);
+        mCheckedBackgroundColor = value;
+        updateStateColors(false);
     }
+
     public void setUncheckedBackgroundColor(@ColorInt int value) {
-        mUncheckedBackgroundColor = value; updateStateColors(false);
+        mUncheckedBackgroundColor = value;
+        updateStateColors(false);
     }
+
     public void setCheckedDisabledBackgroundColor(@ColorInt int value) {
-        mCheckedDisabledBackgroundColor = value; updateStateColors(false);
+        mCheckedDisabledBackgroundColor = value;
+        updateStateColors(false);
     }
+
     public void setUncheckedDisabledBackgroundColor(@ColorInt int value) {
-        mUncheckedDisabledBackgroundColor = value; updateStateColors(false);
+        mUncheckedDisabledBackgroundColor = value;
+        updateStateColors(false);
     }
+
     public void setCheckedTextColor(@ColorInt int value) {
-        mCheckedTextColor = value; updateStateColors(false);
+        mCheckedTextColor = value;
+        updateStateColors(false);
     }
+
     public void setUncheckedTextColor(@ColorInt int value) {
-        mUncheckedTextColor = value; updateStateColors(false);
+        mUncheckedTextColor = value;
+        updateStateColors(false);
     }
+
     public void setCheckedDisabledTextColor(@ColorInt int value) {
-        mCheckedDisabledTextColor = value; updateStateColors(false);
+        mCheckedDisabledTextColor = value;
+        updateStateColors(false);
     }
+
     public void setUncheckedDisabledTextColor(@ColorInt int value) {
-        mUncheckedDisabledTextColor = value; updateStateColors(false);
+        mUncheckedDisabledTextColor = value;
+        updateStateColors(false);
     }
+
     public void setCheckedChipIconTint(@ColorInt int value) {
-        mCheckedChipIconTint = value; updateStateColors(false);
+        mCheckedChipIconTint = value;
+        updateStateColors(false);
     }
+
     public void setUncheckedChipIconTint(@ColorInt int value) {
-        mUncheckedChipIconTint = value; updateStateColors(false);
+        mUncheckedChipIconTint = value;
+        updateStateColors(false);
     }
+
     public void setCheckedDisabledChipIconTint(@ColorInt int value) {
-        mCheckedDisabledChipIconTint = value; updateStateColors(false);
+        mCheckedDisabledChipIconTint = value;
+        updateStateColors(false);
     }
+
     public void setUncheckedDisabledChipIconTint(@ColorInt int value) {
-        mUncheckedDisabledChipIconTint = value; updateStateColors(false);
+        mUncheckedDisabledChipIconTint = value;
+        updateStateColors(false);
     }
 
     public void refresh(Context context) {

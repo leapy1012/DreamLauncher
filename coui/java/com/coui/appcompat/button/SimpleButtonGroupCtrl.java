@@ -8,7 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
-import com.coui.appcompat.button.COUIButtonLayout;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.button.listener.OnSizeChangeListener;
 import com.coui.appcompat.button.listener.OnTextChangeListener;
@@ -18,6 +18,7 @@ import com.coui.appcompat.state.IViewStateController;
 import com.coui.appcompat.state.Processor;
 import com.coui.appcompat.state.SizeProcessor;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,7 +35,7 @@ public class SimpleButtonGroupCtrl implements IViewStateController, OnTextChange
     private COUIButton mTextChangeBtn;
     private List<SingleButtonWrap> mSingleButtonWrapList = new LinkedList();
     private int mLineCountIndex = -1;
-    private int mCurLineCount = 1;
+    private int mCurLineCount = SINGLE_LINE;
     private int mType = 1;
     private boolean mParentListenerRegistered = false;
     private int mCachedHorizontalButtonMaxWidth = 0;
@@ -131,7 +132,7 @@ public class SimpleButtonGroupCtrl implements IViewStateController, OnTextChange
             boolean zIsSmallScreen = COUIResponsiveUtils.isSmallScreen(context, context.getResources().getDisplayMetrics().widthPixels);
             context.getResources().getDimensionPixelSize(R.dimen.coui_medium_btn_height);
             boolean canFitVerticalButtons = (height * 2) + verticalButtonMarginTop <= buttonLayout.getMaxHeight() && buttonLayout.getMaxHeight() != 0;
-            if (this.mCurLineCount == 2 && canFitVerticalButtons && !buttonLayout.isLimitHeight()) {
+            if (this.mCurLineCount == MULTI_LINE && canFitVerticalButtons && !buttonLayout.isLimitHeight()) {
                 buttonLayout.setOrientation(LinearLayout.VERTICAL);
                 buttonWidth = zIsSmallScreen ? -1 : context.getResources().getDimensionPixelSize(R.dimen.coui_larger_btn_width);
                 buttonMaxHeight = -2;

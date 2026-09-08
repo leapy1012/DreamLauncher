@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -57,19 +56,19 @@ public class ChoiceListAdapter extends BaseAdapter {
     }
 
     public ChoiceListAdapter(Context context, int layoutResId, CharSequence[] items,
-            CharSequence[] summaries, boolean[] checkedItems, boolean isMultiChoice) {
+                             CharSequence[] summaries, boolean[] checkedItems, boolean isMultiChoice) {
         this(context, layoutResId, items, summaries, checkedItems, null, isMultiChoice);
     }
 
     public ChoiceListAdapter(Context context, int layoutResId, CharSequence[] items,
-            CharSequence[] summaries, boolean[] checkedItems, boolean[] disableStatus,
-            boolean isMultiChoice) {
+                             CharSequence[] summaries, boolean[] checkedItems, boolean[] disableStatus,
+                             boolean isMultiChoice) {
         this(context, layoutResId, items, summaries, checkedItems, disableStatus, isMultiChoice, 0);
     }
 
     public ChoiceListAdapter(Context context, int layoutResId, CharSequence[] items,
-            CharSequence[] summaries, boolean[] checkedItems, boolean[] disableStatus,
-            boolean isMultiChoice, int maxCheckedNum) {
+                             CharSequence[] summaries, boolean[] checkedItems, boolean[] disableStatus,
+                             boolean isMultiChoice, int maxCheckedNum) {
         mIsTop = false;
         mIsBottom = false;
         mContext = context;
@@ -89,7 +88,7 @@ public class ChoiceListAdapter extends BaseAdapter {
     }
 
     public ChoiceListAdapter(Context context, int layoutResId, CharSequence[] items,
-            CharSequence[] summaries) {
+                             CharSequence[] summaries) {
         this(context, layoutResId, items, summaries, null, false);
     }
 

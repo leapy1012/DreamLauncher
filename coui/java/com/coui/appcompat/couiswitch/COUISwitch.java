@@ -115,6 +115,7 @@ public class COUISwitch extends SwitchCompat {
 
     public interface OnLoadingStateChangedListener {
         void onStartLoading();
+
         void onStopLoading();
     }
 
@@ -478,8 +479,13 @@ public class COUISwitch extends SwitchCompat {
         mOuterCirclePaint.setShadowLayer(8.0f, 0.0f, 4.0f, Color.argb(25, 0, 0, 0));
     }
 
-    public void disableThemed() { mIsThemedEnabled = false; }
-    public void enableThemed() { mIsThemedEnabled = true; }
+    public void disableThemed() {
+        mIsThemedEnabled = false;
+    }
+
+    public void enableThemed() {
+        mIsThemedEnabled = true;
+    }
 
     @Override
     public CharSequence getAccessibilityClassName() {
@@ -720,10 +726,24 @@ public class COUISwitch extends SwitchCompat {
         invalidate();
     }
 
-    public void setCheckedDrawable(Drawable drawable) { mCheckedDrawable = drawable; }
-    public void setCircleScale(float scale) { mCircleScale = scale; invalidate(); }
-    public void setCircleScaleX(float scaleX) { mCircleScaleX = scaleX; invalidate(); }
-    public void setCircleTranslation(int translation) { mCircleTranslation = translation; invalidate(); }
+    public void setCheckedDrawable(Drawable drawable) {
+        mCheckedDrawable = drawable;
+    }
+
+    public void setCircleScale(float scale) {
+        mCircleScale = scale;
+        invalidate();
+    }
+
+    public void setCircleScaleX(float scaleX) {
+        mCircleScaleX = scaleX;
+        invalidate();
+    }
+
+    public void setCircleTranslation(int translation) {
+        mCircleTranslation = translation;
+        invalidate();
+    }
 
     @Override
     public void setEnabled(boolean enabled) {
@@ -746,22 +766,74 @@ public class COUISwitch extends SwitchCompat {
         }
     }
 
-    public void setInnerCircleAlpha(float alpha) { mInnerCircleAlpha = alpha; invalidate(); }
-    public void setInnerCircleColor(int color) { mInnerCircleColor = color; }
-    public void setLoadingAlpha(float alpha) { mLoadingAlpha = alpha; invalidate(); }
-    public void setLoadingDrawable(Drawable drawable) { mLoadingDrawable = drawable; }
-    public void setLoadingRotation(float rotation) { mLoadingRotation = rotation; invalidate(); }
-    public void setLoadingScale(float scale) { mLoadingScale = scale; invalidate(); }
-    public void setLoadingStyle(boolean loadingStyle) { mIsLoadingStyle = loadingStyle; }
-    public void setOnLoadingStateChangedListener(OnLoadingStateChangedListener listener) { mOnLoadingStateChangedListener = listener; }
-    public void setOuterCircleColor(int color) { mOuterCircleColor = color; }
-    public void setOuterCircleStrokeWidth(int width) { mOuterCircleStrokeWidth = width; }
-    public final void setOuterCircleUncheckedColor(int color) { mOuterCircleUnCheckedColor = color; invalidate(); }
-    public void setShouldPlaySound(boolean shouldPlaySound) { mShouldPlaySound = shouldPlaySound; }
-    public void setTactileFeedbackEnabled(boolean enabled) { mEnableHapticFeedback = enabled; }
-    public void setThemedLoadingCheckedBackground(Drawable drawable) { mThemedLoadingCheckedBackground = drawable; }
-    public void setThemedLoadingUncheckedBackground(Drawable drawable) { mThemedLoadingUncheckedBackground = drawable; }
-    public void setUncheckedDrawable(Drawable drawable) { mUncheckedDrawable = drawable; }
+    public void setInnerCircleAlpha(float alpha) {
+        mInnerCircleAlpha = alpha;
+        invalidate();
+    }
+
+    public void setInnerCircleColor(int color) {
+        mInnerCircleColor = color;
+    }
+
+    public void setLoadingAlpha(float alpha) {
+        mLoadingAlpha = alpha;
+        invalidate();
+    }
+
+    public void setLoadingDrawable(Drawable drawable) {
+        mLoadingDrawable = drawable;
+    }
+
+    public void setLoadingRotation(float rotation) {
+        mLoadingRotation = rotation;
+        invalidate();
+    }
+
+    public void setLoadingScale(float scale) {
+        mLoadingScale = scale;
+        invalidate();
+    }
+
+    public void setLoadingStyle(boolean loadingStyle) {
+        mIsLoadingStyle = loadingStyle;
+    }
+
+    public void setOnLoadingStateChangedListener(OnLoadingStateChangedListener listener) {
+        mOnLoadingStateChangedListener = listener;
+    }
+
+    public void setOuterCircleColor(int color) {
+        mOuterCircleColor = color;
+    }
+
+    public void setOuterCircleStrokeWidth(int width) {
+        mOuterCircleStrokeWidth = width;
+    }
+
+    public final void setOuterCircleUncheckedColor(int color) {
+        mOuterCircleUnCheckedColor = color;
+        invalidate();
+    }
+
+    public void setShouldPlaySound(boolean shouldPlaySound) {
+        mShouldPlaySound = shouldPlaySound;
+    }
+
+    public void setTactileFeedbackEnabled(boolean enabled) {
+        mEnableHapticFeedback = enabled;
+    }
+
+    public void setThemedLoadingCheckedBackground(Drawable drawable) {
+        mThemedLoadingCheckedBackground = drawable;
+    }
+
+    public void setThemedLoadingUncheckedBackground(Drawable drawable) {
+        mThemedLoadingUncheckedBackground = drawable;
+    }
+
+    public void setUncheckedDrawable(Drawable drawable) {
+        mUncheckedDrawable = drawable;
+    }
 
     public void startLoading() {
         if (mIsLoading) {

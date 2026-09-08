@@ -5,10 +5,10 @@ import android.graphics.RectF;
 
 interface IOplusPath {
     void addSmoothRoundRect(float left, float top, float right, float bottom, float rx, float ry,
-            float weight, Path.Direction dir);
+                            float weight, Path.Direction dir);
 
     void addSmoothRoundRect(float left, float top, float right, float bottom, float rx, float ry,
-            Path.Direction dir);
+                            Path.Direction dir);
 
     void addSmoothRoundRect(RectF rect, float rx, float ry, Path.Direction dir);
 

@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<set xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" android:ordering="together">
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:ordering="together">
     <objectAnimator
         android:interpolator="@interpolator/coui_shape_checkbox_part_to_unselected_interpolator_09"
         android:duration="60"
@@ -7,7 +8,7 @@
         android:valueFrom="1"
         android:valueTo="1"
         android:valueType="floatType"
-        android:propertyName="fillAlpha"/>
+        android:propertyName="fillAlpha" />
     <objectAnimator
         android:interpolator="@interpolator/coui_shape_checkbox_part_to_unselected_interpolator_10"
         android:duration="120"
@@ -15,5 +16,5 @@
         android:valueFrom="1"
         android:valueTo="0"
         android:valueType="floatType"
-        android:propertyName="fillAlpha"/>
+        android:propertyName="fillAlpha" />
 </set>

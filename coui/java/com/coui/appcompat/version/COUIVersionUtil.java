@@ -44,12 +44,8 @@ public class COUIVersionUtil {
         if (sCanReachFrameworkWrapper != null) {
             return sCanReachFrameworkWrapper;
         }
-        try {
-            Class.forName(VERSION_WRAPPER);
-            sCanReachFrameworkWrapper = true;
-        } catch (Exception ignored) {
-            sCanReachFrameworkWrapper = false;
-        }
+        // Same gate as CouiPlatform (OplusBuild); keep local cache for call sites.
+        sCanReachFrameworkWrapper = com.coui.appcompat.compat.CouiPlatform.isColorOsRuntime();
         return sCanReachFrameworkWrapper;
     }
 

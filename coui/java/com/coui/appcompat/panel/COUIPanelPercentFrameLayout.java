@@ -62,7 +62,7 @@ public class COUIPanelPercentFrameLayout extends COUIPercentWidthFrameLayout {
     private boolean mUseNormalSmoothCorner;
     private float mWeight;
 
-//
+    //
     public COUIPanelPercentFrameLayout(Context context) {
         this(context, null);
     }

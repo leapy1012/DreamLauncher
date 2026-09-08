@@ -134,9 +134,18 @@ public class COUIHintRedDot extends View {
             requestLayout();
         });
         mWidthAnim.addListener(new AnimatorListenerAdapter() {
-            @Override public void onAnimationCancel(Animator animation) { mIsExecutingWidthAnim = false; }
-            @Override public void onAnimationEnd(Animator animation) { mIsExecutingWidthAnim = false; }
-            @Override public void onAnimationStart(Animator animation) {
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                mIsExecutingWidthAnim = false;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                mIsExecutingWidthAnim = false;
+            }
+
+            @Override
+            public void onAnimationStart(Animator animation) {
                 mIsExecutingWidthAnim = true;
                 executeAlphaAnim();
             }
@@ -172,15 +181,25 @@ public class COUIHintRedDot extends View {
             }
         });
         animator.addListener(new Animator.AnimatorListener() {
-            @Override public void onAnimationCancel(Animator animation) { if (!show) setPointMode(NO_POINT_MODE); }
-            @Override public void onAnimationRepeat(Animator animation) { }
-            @Override public void onAnimationStart(Animator animation) {
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                if (!show) setPointMode(NO_POINT_MODE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+            }
+
+            @Override
+            public void onAnimationStart(Animator animation) {
                 if (show) {
                     setVisibility(VISIBLE);
                     requestLayout();
                 }
             }
-            @Override public void onAnimationEnd(Animator animation) {
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
                 if (!show) {
                     setVisibility(GONE);
                     setPointMode(NO_POINT_MODE);
@@ -190,10 +209,21 @@ public class COUIHintRedDot extends View {
         animator.start();
     }
 
-    public boolean getIsLaidOut() { return mIsLaidOut; }
-    public int getPointMode() { return mPointMode; }
-    public int getPointNumber() { return mPointNumber; }
-    public String getPointText() { return mPointText; }
+    public boolean getIsLaidOut() {
+        return mIsLaidOut;
+    }
+
+    public int getPointMode() {
+        return mPointMode;
+    }
+
+    public int getPointNumber() {
+        return mPointNumber;
+    }
+
+    public String getPointText() {
+        return mPointText;
+    }
 
     @Override
     protected void onDetachedFromWindow() {
@@ -238,13 +268,33 @@ public class COUIHintRedDot extends View {
         return memento;
     }
 
-    public void setBgColor(int color) { mCOUIHintRedDotHelper.setBgColor(color); }
-    public void setCornerRadius(int radius) { mCOUIHintRedDotHelper.setCornerRadius(radius); }
-    public void setDotDiameter(int diameter) { mCOUIHintRedDotHelper.setDotDiameter(diameter); }
-    public void setEllipsisDiameter(int diameter) { mCOUIHintRedDotHelper.setEllipsisDiameter(diameter); }
-    public void setLaidOut() { mIsLaidOut = true; }
-    public void setLargeWidth(int width) { mCOUIHintRedDotHelper.setLargeWidth(width); }
-    public void setMediumWidth(int width) { mCOUIHintRedDotHelper.setMediumWidth(width); }
+    public void setBgColor(int color) {
+        mCOUIHintRedDotHelper.setBgColor(color);
+    }
+
+    public void setCornerRadius(int radius) {
+        mCOUIHintRedDotHelper.setCornerRadius(radius);
+    }
+
+    public void setDotDiameter(int diameter) {
+        mCOUIHintRedDotHelper.setDotDiameter(diameter);
+    }
+
+    public void setEllipsisDiameter(int diameter) {
+        mCOUIHintRedDotHelper.setEllipsisDiameter(diameter);
+    }
+
+    public void setLaidOut() {
+        mIsLaidOut = true;
+    }
+
+    public void setLargeWidth(int width) {
+        mCOUIHintRedDotHelper.setLargeWidth(width);
+    }
+
+    public void setMediumWidth(int width) {
+        mCOUIHintRedDotHelper.setMediumWidth(width);
+    }
 
     public void setPointMode(int mode) {
         if (mPointMode != mode) {
@@ -276,8 +326,19 @@ public class COUIHintRedDot extends View {
         requestLayout();
     }
 
-    public void setSmallWidth(int width) { mCOUIHintRedDotHelper.setSmallWidth(width); }
-    public void setTextColor(int color) { mCOUIHintRedDotHelper.setTextColor(color); }
-    public void setTextSize(int size) { mCOUIHintRedDotHelper.setTextSize(size); }
-    public void setViewHeight(int height) { mCOUIHintRedDotHelper.setViewHeight(height); }
+    public void setSmallWidth(int width) {
+        mCOUIHintRedDotHelper.setSmallWidth(width);
+    }
+
+    public void setTextColor(int color) {
+        mCOUIHintRedDotHelper.setTextColor(color);
+    }
+
+    public void setTextSize(int size) {
+        mCOUIHintRedDotHelper.setTextSize(size);
+    }
+
+    public void setViewHeight(int height) {
+        mCOUIHintRedDotHelper.setViewHeight(height);
+    }
 }

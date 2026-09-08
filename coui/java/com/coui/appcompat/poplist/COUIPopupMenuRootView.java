@@ -1,7 +1,5 @@
 package com.coui.appcompat.poplist;
 
-import com.coui.appcompat.R;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -12,9 +10,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+
 import com.coui.appcompat.grid.COUIResponsiveUtils;
 import com.coui.appcompat.log.COUILog;
-import com.coui.appcompat.poplist.BasePopupMenuAnimationController;
 
 
 public class COUIPopupMenuRootView extends FrameLayout {
@@ -44,13 +42,13 @@ public class COUIPopupMenuRootView extends FrameLayout {
         private final View.OnClickListener mCancelSubMenuEnterAndStartExit = new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIPopupMenuRootView.AnonymousClass1.this.lambda$$0(view);
+                COUIPopupMenuRootView.AnonymousClass1.this.onCancelSubMenuEnterAndStartExit(view);
             }
         };
         private final View.OnClickListener mCancelSubMenuExitAndStartEnter = new View.OnClickListener() {
             @Override
             public final void onClick(View view) {
-                COUIPopupMenuRootView.AnonymousClass1.this.lambda$$1(view);
+                COUIPopupMenuRootView.AnonymousClass1.this.onCancelSubMenuExitAndStartEnter(view);
             }
         };
 
@@ -58,13 +56,13 @@ public class COUIPopupMenuRootView extends FrameLayout {
         }
 
 
-        public void lambda$$0(View view) {
+        public void onCancelSubMenuEnterAndStartExit(View view) {
             COUIPopupMenuRootView.this.hideSubMenu(true);
             COUIPopupMenuRootView.this.mMainMenuRootView.setOnClickListener(null);
         }
 
 
-        public void lambda$$1(View view) {
+        public void onCancelSubMenuExitAndStartEnter(View view) {
             COUIPopupMenuRootView.this.showSubMenu();
         }
 
@@ -224,21 +222,21 @@ public class COUIPopupMenuRootView extends FrameLayout {
     }
 
 
-    public void allowListViewDispatchTouchEvent(ViewGroup viewGroup, boolean z6) {
+    public void allowListViewDispatchTouchEvent(ViewGroup viewGroup, boolean flag) {
         if (viewGroup != null) {
             View childAt = viewGroup.getChildAt(0);
             if (childAt instanceof COUITouchListView) {
-                ((COUITouchListView) childAt).allowDispatchEvent(z6);
+                ((COUITouchListView) childAt).allowDispatchEvent(flag);
             }
         }
     }
 
 
-    public void allowListViewScroll(ViewGroup viewGroup, boolean z6) {
+    public void allowListViewScroll(ViewGroup viewGroup, boolean flag) {
         if (viewGroup != null) {
             View childAt = viewGroup.getChildAt(0);
             if (childAt instanceof COUITouchListView) {
-                ((COUITouchListView) childAt).allowScroll(z6);
+                ((COUITouchListView) childAt).allowScroll(flag);
             }
         }
     }
@@ -249,9 +247,9 @@ public class COUIPopupMenuRootView extends FrameLayout {
     }
 
     public void addMainMenuView(ViewGroup viewGroup) {
-        ViewGroup viewGroup2 = this.mMainMenuRootView;
-        if (viewGroup2 != null) {
-            removeView(viewGroup2);
+        ViewGroup view = this.mMainMenuRootView;
+        if (view != null) {
+            removeView(view);
         }
         if (this.mSubMenuRootView != null) {
             hideSubMenu(false);
@@ -265,9 +263,9 @@ public class COUIPopupMenuRootView extends FrameLayout {
     }
 
     public void addSubMenuView(ViewGroup viewGroup) {
-        ViewGroup viewGroup2 = this.mSubMenuRootView;
-        if (viewGroup2 != null) {
-            removeView(viewGroup2);
+        ViewGroup view = this.mSubMenuRootView;
+        if (view != null) {
+            removeView(view);
         }
         this.mSubMenuRootView = viewGroup;
         viewGroup.setTranslationZ(1.0f);
@@ -296,22 +294,22 @@ public class COUIPopupMenuRootView extends FrameLayout {
         return super.dispatchTouchEvent(motionEvent);
     }
 
-    public void hideMainMenu(boolean z6) {
+    public void hideMainMenu(boolean flag) {
         BasePopupMenuAnimationController basePopupMenuAnimationController = this.mController;
         if (basePopupMenuAnimationController == null) {
             return;
         }
-        if (z6) {
+        if (flag) {
             basePopupMenuAnimationController.startMainMenuExit();
         } else {
             basePopupMenuAnimationController.startMainMenuExit(false);
         }
     }
 
-    public void hideSubMenu(boolean z6) {
+    public void hideSubMenu(boolean flag) {
         ViewGroup viewGroup = this.mSubMenuRootView;
         if (viewGroup != null) {
-            if (!z6) {
+            if (!flag) {
                 this.mController.startSubMenuExit(false);
                 return;
             }
@@ -358,9 +356,9 @@ public class COUIPopupMenuRootView extends FrameLayout {
             if (viewGroup != null) {
                 viewGroup.setAlpha(0.5f);
             }
-            ViewGroup viewGroup2 = this.mSubMenuRootView;
-            if (viewGroup2 != null) {
-                viewGroup2.setAlpha(0.5f);
+            ViewGroup view = this.mSubMenuRootView;
+            if (view != null) {
+                view.setAlpha(0.5f);
             }
             this.mDebugPaint.setColor(Color.parseColor("#33FF0000"));
             canvas.save();
@@ -394,30 +392,30 @@ public class COUIPopupMenuRootView extends FrameLayout {
     }
 
     @Override
-    public void onLayout(boolean z6, int i2, int i6, int i10, int i11) {
+    public void onLayout(boolean changed, int left_2, int top_2, int right_2, int bottom_2) {
         ViewGroup viewGroup = this.mMainMenuRootView;
         if (viewGroup != null) {
             Rect rect = this.mDomain.mMainMenu;
             viewGroup.layout(rect.left, rect.top, rect.right, rect.bottom);
         }
-        ViewGroup viewGroup2 = this.mSubMenuRootView;
-        if (viewGroup2 != null) {
-            Rect rect2 = this.mDomain.mSubMenu;
-            viewGroup2.layout(rect2.left, rect2.top, rect2.right, rect2.bottom);
+        ViewGroup view = this.mSubMenuRootView;
+        if (view != null) {
+            Rect rect_2 = this.mDomain.mSubMenu;
+            view.layout(rect_2.left, rect_2.top, rect_2.right, rect_2.bottom);
         }
     }
 
     @Override
-    public void onMeasure(int i2, int i6) {
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         ViewGroup viewGroup = this.mMainMenuRootView;
         if (viewGroup != null) {
             viewGroup.measure(View.MeasureSpec.makeMeasureSpec(this.mMainMenuWidth, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mMainMenuHeight, 1073741824));
         }
-        ViewGroup viewGroup2 = this.mSubMenuRootView;
-        if (viewGroup2 != null) {
-            viewGroup2.measure(View.MeasureSpec.makeMeasureSpec(this.mSubMenuWidth, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mSubMenuHeight, 1073741824));
+        ViewGroup view = this.mSubMenuRootView;
+        if (view != null) {
+            view.measure(View.MeasureSpec.makeMeasureSpec(this.mSubMenuWidth, 1073741824), View.MeasureSpec.makeMeasureSpec(this.mSubMenuHeight, 1073741824));
         }
-        setMeasuredDimension(View.MeasureSpec.getSize(i2), View.MeasureSpec.getSize(i6));
+        setMeasuredDimension(View.MeasureSpec.getSize(widthMeasureSpec), View.MeasureSpec.getSize(heightMeasureSpec));
     }
 
     public void performSubMenuHeader(View view) {
@@ -427,11 +425,11 @@ public class COUIPopupMenuRootView extends FrameLayout {
         }
     }
 
-    public void postDelayedDismiss(Runnable runnable, long j2) {
+    public void postDelayedDismiss(Runnable runnable, long timestamp) {
         removeDelayedDismiss();
         this.mPendingDismissRunnable = runnable;
         if (runnable != null) {
-            postDelayed(runnable, j2);
+            postDelayed(runnable, timestamp);
         }
     }
 
@@ -475,25 +473,25 @@ public class COUIPopupMenuRootView extends FrameLayout {
         invalidate();
     }
 
-    public void setEnableRenderThreadAnimation(boolean z6) {
+    public void setEnableRenderThreadAnimation(boolean enableRenderThreadAnimation) {
         BasePopupMenuAnimationController basePopupMenuAnimationController = this.mController;
         if (basePopupMenuAnimationController != null) {
-            basePopupMenuAnimationController.setEnableRenderThreadAnimation(z6);
+            basePopupMenuAnimationController.setEnableRenderThreadAnimation(enableRenderThreadAnimation);
         }
     }
 
-    public void setMainMenuSize(int i2, int i6) {
-        this.mMainMenuWidth = i2;
-        this.mMainMenuHeight = i6;
+    public void setMainMenuSize(int width, int height) {
+        this.mMainMenuWidth = width;
+        this.mMainMenuHeight = height;
     }
 
     public void setOnSubMenuStateChangedListener(OnMenuStateChangedListener onMenuStateChangedListener) {
         this.mMenuStateChangedListener = onMenuStateChangedListener;
     }
 
-    public void setSubMenuSize(int i2, int i6) {
-        this.mSubMenuWidth = i2;
-        this.mSubMenuHeight = i6;
+    public void setSubMenuSize(int width, int height) {
+        this.mSubMenuWidth = width;
+        this.mSubMenuHeight = height;
     }
 
     public void showMainMenu() {
@@ -515,12 +513,12 @@ public class COUIPopupMenuRootView extends FrameLayout {
         this(context, attributeSet, 0);
     }
 
-    public COUIPopupMenuRootView(Context context, AttributeSet attributeSet, int i2) {
-        this(context, attributeSet, i2, 0);
+    public COUIPopupMenuRootView(Context context, AttributeSet attributeSet, int index) {
+        this(context, attributeSet, index, 0);
     }
 
-    public COUIPopupMenuRootView(Context context, AttributeSet attributeSet, int i2, int i6) {
-        super(context, attributeSet, i2, i6);
+    public COUIPopupMenuRootView(Context context, AttributeSet attributeSet, int index, int index_2) {
+        super(context, attributeSet, index, index_2);
         this.mNeedReDispatchDownForNextEvent = false;
         this.mShowSubMenuAfterAnimationSkipped = null;
         this.mPendingDismissRunnable = null;

@@ -3,7 +3,7 @@ package com.coui.appcompat.poplist;
 import android.view.MotionEvent;
 import android.view.View;
 
-import com.coui.appcompat.AccessibilityUtils.COUIAccessibilityUtil;
+import com.coui.appcompat.talkbackutil.COUIAccessibilityUtil;
 
 public class PreciseClickHelper {
     private final float[] mLastTouchDownXY = new float[2];

@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<set xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" android:ordering="together">
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:ordering="together">
     <objectAnimator
         android:interpolator="@interpolator/coui_shape_checkbox_unselected_to_part_interpolator_15"
         android:duration="20"
@@ -7,7 +8,7 @@
         android:valueFrom="1"
         android:valueTo="1"
         android:valueType="floatType"
-        android:propertyName="trimPathStart"/>
+        android:propertyName="trimPathStart" />
     <objectAnimator
         android:interpolator="@interpolator/coui_shape_checkbox_unselected_to_part_interpolator_16"
         android:duration="160"
@@ -15,5 +16,5 @@
         android:valueFrom="1"
         android:valueTo="0.5"
         android:valueType="floatType"
-        android:propertyName="trimPathStart"/>
+        android:propertyName="trimPathStart" />
 </set>

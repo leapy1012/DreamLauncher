@@ -101,7 +101,7 @@ public class COUIListViewCompat extends ListView {
     }
 
     public int measureHeightOfChildrenCompat(int widthMeasureSpec, int startPosition,
-            int endPosition, int maxHeight, int disallowPartialChildPosition) {
+                                             int endPosition, int maxHeight, int disallowPartialChildPosition) {
         int returnedHeight = getListPaddingTop() + getListPaddingBottom();
         int dividerHeight = getDividerHeight();
         Drawable divider = getDivider();

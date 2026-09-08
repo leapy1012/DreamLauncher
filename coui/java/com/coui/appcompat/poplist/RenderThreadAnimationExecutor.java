@@ -1,10 +1,9 @@
 package com.coui.appcompat.poplist;
 
-import com.coui.appcompat.R;
-
 import android.animation.Animator;
 import android.os.Looper;
 import android.view.View;
+
 import com.coui.appcompat.animation.dynamicanimation.COUIRtAnimationImpl;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.oplus.animation.OplusAsyncAnimatorUtils;
@@ -32,24 +31,24 @@ class RenderThreadAnimationExecutor implements AnimationExecutor {
     }
 
     @Override
-    public void setAlpha(View view, float f2) {
-        OplusAsyncAnimatorUtils.setAlpha(view, f2);
+    public void setAlpha(View view, float alpha) {
+        OplusAsyncAnimatorUtils.setAlpha(view, alpha);
     }
 
     @Override
-    public void setScaleX(View view, float f2) {
-        OplusAsyncAnimatorUtils.setScaleX(view, f2);
+    public void setScaleX(View view, float scaleX) {
+        OplusAsyncAnimatorUtils.setScaleX(view, scaleX);
     }
 
     @Override
-    public void setScaleY(View view, float f2) {
-        OplusAsyncAnimatorUtils.setScaleY(view, f2);
+    public void setScaleY(View view, float scaleY) {
+        OplusAsyncAnimatorUtils.setScaleY(view, scaleY);
     }
 
     @Override
-    public Animator startAnimation(COUISpringAnimation cOUISpringAnimation, View view, float f2) {
+    public Animator startAnimation(COUISpringAnimation cOUISpringAnimation, View view, float forward) {
         Animator animatorCreateRtAnimator = OplusRenderNodeAnimator.createRtAnimator(new COUIRtAnimationImpl(cOUISpringAnimation), view);
-        OplusRenderNodeAnimator.animateToFinalPosition(animatorCreateRtAnimator, f2);
+        OplusRenderNodeAnimator.animateToFinalPosition(animatorCreateRtAnimator, forward);
         return animatorCreateRtAnimator;
     }
 }

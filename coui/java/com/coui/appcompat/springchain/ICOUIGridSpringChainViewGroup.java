@@ -31,17 +31,17 @@ public interface ICOUIGridSpringChainViewGroup {
             }
         }
 
-        public static void startRebound(ICOUIGridSpringChainViewGroup iCOUIGridSpringChainViewGroup, int i2) {
+        public static void startRebound(ICOUIGridSpringChainViewGroup iCOUIGridSpringChainViewGroup, int index) {
             COUIGridSpringChain springChain = iCOUIGridSpringChainViewGroup.getSpringChain();
             if (springChain != null) {
-                springChain.startRebound(i2);
+                springChain.startRebound(index);
             }
         }
 
-        public static void updateMoveTranslation(ICOUIGridSpringChainViewGroup iCOUIGridSpringChainViewGroup, float f2, int i2) {
+        public static void updateMoveTranslation(ICOUIGridSpringChainViewGroup iCOUIGridSpringChainViewGroup, float value, int index) {
             COUIGridSpringChain springChain = iCOUIGridSpringChainViewGroup.getSpringChain();
             if (springChain != null) {
-                springChain.updateMoveTranslation(f2, i2);
+                springChain.updateMoveTranslation(value, index);
             }
         }
     }
@@ -54,7 +54,7 @@ public interface ICOUIGridSpringChainViewGroup {
 
     void releaseSpring();
 
-    void startRebound(int i2);
+    void startRebound(int index);
 
-    void updateMoveTranslation(float f2, int i2);
+    void updateMoveTranslation(float value, int index);
 }

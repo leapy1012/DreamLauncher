@@ -22,7 +22,7 @@ public class COUISpringInterpolator extends BaseInterpolator {
     }
 
     public COUISpringInterpolator(double response, double bounce, double velocity,
-            float velocityUnit) {
+                                  float velocityUnit) {
         this(Math.pow(6.283185307179586d / (response == 0.0d ? 1.0d : response), 2.0d),
                 1.0d - bounce,
                 velocity,
@@ -31,13 +31,13 @@ public class COUISpringInterpolator extends BaseInterpolator {
     }
 
     public COUISpringInterpolator(double stiffness, double dampingRatio, double velocity,
-            float cutRatio, float velocityUnit, boolean isFling) {
+                                  float cutRatio, float velocityUnit, boolean isFling) {
         this(stiffness, dampingRatio, velocity, cutRatio, velocityUnit);
         mIsFling = isFling;
     }
 
     public COUISpringInterpolator(double stiffness, double dampingRatio, double velocity,
-            float cutRatio, float velocityUnit) {
+                                  float cutRatio, float velocityUnit) {
         mFinalValue = -1.0f;
         double unDampedAngularFreq = Math.sqrt(stiffness <= 0.0d ? DEFAULT_STIFFNESS : stiffness);
         mUnDampedAngularFreq = unDampedAngularFreq;

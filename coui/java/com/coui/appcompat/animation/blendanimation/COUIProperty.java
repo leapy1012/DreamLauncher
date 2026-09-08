@@ -1,6 +1,7 @@
 package com.coui.appcompat.animation.blendanimation;
 
 import android.view.View;
+
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
 
 public abstract class COUIProperty<T> extends FloatPropertyCompat<T> {

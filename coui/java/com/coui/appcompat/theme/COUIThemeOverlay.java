@@ -23,10 +23,12 @@ import com.coui.appcompat.log.COUILog;
 import com.coui.appcompat.tintimageview.COUITintUtil;
 import com.coui.appcompat.version.COUICompatUtil;
 import com.coui.appcompat.version.COUIVersionUtil;
+
 import java.io.File;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+
 import oplus.content.res.OplusExtraConfiguration;
 
 
@@ -81,15 +83,15 @@ public class COUIThemeOverlay {
     }
 
     private boolean canReachBaseConfiguration() {
-        try {
-            Class.forName(BASE_CONFIG_NEW);
-            return true;
-        } catch (Exception unused) {
-            return false;
-        }
+        // In-tree stub OplusBaseConfiguration would make Class.forName succeed on AOSP;
+        // require a real ColorOS runtime (OplusBuild) instead.
+        return com.coui.appcompat.compat.CouiPlatform.isColorOsRuntime();
     }
 
     private static boolean canReachFrameworkWrapper() {
+        if (!com.coui.appcompat.compat.CouiPlatform.isColorOsRuntime()) {
+            return false;
+        }
         try {
             Class.forName(WRAPPER_CLASS_NEW);
             return true;
@@ -117,13 +119,13 @@ public class COUIThemeOverlay {
             try {
                 String compatThemeVersion = (String) method.invoke(null, COUICompatUtil.getInstance().getThemeVerisonName());
                 return !TextUtils.isEmpty(compatThemeVersion) ? Integer.parseInt(compatThemeVersion.trim()) : parsedThemeVersion;
-            } catch (Exception e2) {
+            } catch (Exception e) {
                 compatVersion = parsedThemeVersion;
-                COUILog.e(TAG, "getCompatVersion e: " + e2);
+                COUILog.e(TAG, "getCompatVersion e: " + e);
                 return compatVersion;
             }
-        } catch (Exception e10) {
-            COUILog.e(TAG, "getCompatVersion e: " + e10);
+        } catch (Exception e) {
+            COUILog.e(TAG, "getCompatVersion e: " + e);
             return compatVersion;
         }
     }
@@ -225,8 +227,8 @@ public class COUIThemeOverlay {
                 couiEnabled = true;
             }
             this.mMetaCaches.put(context.getPackageName(), new WeakReference<>(Boolean.valueOf(couiEnabled)));
-        } catch (PackageManager.NameNotFoundException e2) {
-            COUILog.e(TAG, "isCOUIEnable e: " + e2);
+        } catch (PackageManager.NameNotFoundException e) {
+            COUILog.e(TAG, "isCOUIEnable e: " + e);
         }
         return couiEnabled;
     }
@@ -352,8 +354,8 @@ public class COUIThemeOverlay {
                 return ((Long) cls.getMethod("getMaterialColor", Configuration.class).invoke(null, configuration)).longValue();
             }
             return 0L;
-        } catch (Exception e2) {
-            COUILog.e(TAG, "getCOUITheme e: " + e2);
+        } catch (Exception e) {
+            COUILog.e(TAG, "getCOUITheme e: " + e);
             return 0L;
         }
     }
@@ -385,12 +387,12 @@ public class COUIThemeOverlay {
         try {
             extraConfig = getExtraConfig(context.getResources().getConfiguration());
             try {
-            } catch (Exception e2) {
-                Log.d(TAG, "get extra config failed : " + e2.getMessage());
+            } catch (Exception e) {
+                Log.d(TAG, "get extra config failed : " + e.getMessage());
             }
-        } catch (Exception e10) {
+        } catch (Exception e) {
             extraConfig = null;
-            Log.d(TAG, "get extra config failed : " + e10.getMessage());
+            Log.d(TAG, "get extra config failed : " + e.getMessage());
         }
         long jLongValue = extraConfig instanceof OplusExtraConfiguration ? extraConfig.mThemeChangedFlags : 0L;
         if (extraConfig == null) {
@@ -399,12 +401,12 @@ public class COUIThemeOverlay {
                 if (cls.newInstance() != null) {
                     jLongValue = ((Long) cls.getMethod("getThemeChangedFlags", Configuration.class).invoke(null, configuration)).longValue();
                 }
-            } catch (Exception e11) {
-                COUILog.e(TAG, "isRejectTheme e: " + e11);
+            } catch (Exception e) {
+                COUILog.e(TAG, "isRejectTheme e: " + e);
             }
         }
         if ((1 & jLongValue) != 0) {
-            return (((jLongValue & 256) > 0L ? 1 : ((jLongValue & 256) == 0L ? 0 : -1)) != 0 ? hasCustomThemePkg(context) : hasDataThemePkg(context)) && (configuration.uiMode & 48) != 32;
+            return (((jLongValue & COUI_CUSTOM_THEME_FLAG) > 0L ? 1 : ((jLongValue & COUI_CUSTOM_THEME_FLAG) == 0L ? 0 : -1)) != 0 ? hasCustomThemePkg(context) : hasDataThemePkg(context)) && (configuration.uiMode & 48) != 32;
         }
         return false;
     }

@@ -309,9 +309,9 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
                 ? getContext().getResources().getDimensionPixelOffset(
                 R.dimen.coui_alert_dialog_builder_customstyle_padding_top_withouttitle)
                 : !mIsAssignMentLayout
-                ? getContext().getResources().getDimensionPixelOffset(
+                  ? getContext().getResources().getDimensionPixelOffset(
                 R.dimen.coui_alert_dialog_customer_layout_imageview_margin_top)
-                : 0;
+                  : 0;
         int bottom = mIsAssignMentLayout
                 ? getContext().getResources().getDimensionPixelOffset(
                 R.dimen.coui_alert_dialog_customer_layout_imageview_margin_bottom)
@@ -330,8 +330,24 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
         boolean hasList = listView != null;
         if (listView != null) {
             listView.setScrollIndicators(0);
+            listView.setClipToPadding(true);
+            listView.setClipChildren(true);
+            listView.setNestedScrollingEnabled(true);
             if (listView.getParent() instanceof ViewGroup) {
                 ((ViewGroup) listView.getParent()).removeView(listView);
+            }
+            listPanelGroup.setClipChildren(true);
+            listPanelGroup.setClipToPadding(true);
+            // Prefer weight-sized list panel so MATCH_PARENT does not paint
+            // under the title / button chrome on long adapters.
+            if (listPanelGroup.getLayoutParams() instanceof android.widget.LinearLayout.LayoutParams) {
+                android.widget.LinearLayout.LayoutParams panelLp =
+                        (android.widget.LinearLayout.LayoutParams) listPanelGroup.getLayoutParams();
+                if (panelLp.weight <= 0f) {
+                    panelLp.height = 0;
+                    panelLp.weight = 1f;
+                    listPanelGroup.setLayoutParams(panelLp);
+                }
             }
             listPanelGroup.addView(listView, new ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -706,7 +722,7 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
         }
         if (!mHasAdapter && mItems != null && mItems.length > 0) {
             setAdapter(new SummaryAdapter(getContext(), !mHasTitle && !mHasMessage,
-                    !mHasSetView && !mHasSetButton, mItems, mSummaryItems, mTextColor),
+                            !mHasSetView && !mHasSetButton, mItems, mSummaryItems, mTextColor),
                     mItemClickListener);
         }
     }
@@ -953,7 +969,7 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
 
     @Override
     public COUIAlertDialogBuilder setSingleChoiceItems(ListAdapter adapter, int checkedItem,
-            DialogInterface.OnClickListener listener) {
+                                                       DialogInterface.OnClickListener listener) {
         mHasAdapter = adapter != null;
         if (adapter instanceof ChoiceListAdapter) {
             mChoiceListAdapter = (ChoiceListAdapter) adapter;
@@ -986,7 +1002,7 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
     }
 
     public COUIAlertDialogBuilder setItems(int itemsId, DialogInterface.OnClickListener listener,
-            int[] textColor) {
+                                           int[] textColor) {
         mItems = getContext().getResources().getTextArray(itemsId);
         mItemClickListener = listener;
         mTextColor = textColor;
@@ -1053,7 +1069,7 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
 
     @Override
     public COUIAlertDialogBuilder setNegativeButton(CharSequence text,
-            DialogInterface.OnClickListener listener) {
+                                                    DialogInterface.OnClickListener listener) {
         super.setNegativeButton(text, listener);
         setHasSetButton(true);
         return this;
@@ -1061,7 +1077,7 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
 
     @Override
     public COUIAlertDialogBuilder setNeutralButton(CharSequence text,
-            DialogInterface.OnClickListener listener) {
+                                                   DialogInterface.OnClickListener listener) {
         super.setNeutralButton(text, listener);
         setHasSetButton(true);
         return this;
@@ -1069,14 +1085,14 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
 
     @Override
     public COUIAlertDialogBuilder setPositiveButton(CharSequence text,
-            DialogInterface.OnClickListener listener) {
+                                                    DialogInterface.OnClickListener listener) {
         super.setPositiveButton(text, listener);
         setHasSetButton(true);
         return this;
     }
 
     public COUIAlertDialogBuilder setNegativeButton(int textId,
-            DialogInterface.OnClickListener listener, boolean recommend) {
+                                                    DialogInterface.OnClickListener listener, boolean recommend) {
         super.setNegativeButton(textId, listener);
         setHasSetButton(true);
         if (recommend) {
@@ -1086,7 +1102,7 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
     }
 
     public COUIAlertDialogBuilder setNeutralButton(int textId,
-            DialogInterface.OnClickListener listener, boolean recommend) {
+                                                   DialogInterface.OnClickListener listener, boolean recommend) {
         super.setNeutralButton(textId, listener);
         setHasSetButton(true);
         if (recommend) {
@@ -1096,7 +1112,7 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
     }
 
     public COUIAlertDialogBuilder setPositiveButton(int textId,
-            DialogInterface.OnClickListener listener, boolean recommend) {
+                                                    DialogInterface.OnClickListener listener, boolean recommend) {
         super.setPositiveButton(textId, listener);
         setHasSetButton(true);
         if (recommend) {
@@ -1106,7 +1122,7 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
     }
 
     public COUIAlertDialogBuilder setNegativeButton(CharSequence text,
-            DialogInterface.OnClickListener listener, boolean recommend) {
+                                                    DialogInterface.OnClickListener listener, boolean recommend) {
         super.setNegativeButton(text, listener);
         setHasSetButton(true);
         if (recommend) {
@@ -1116,7 +1132,7 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
     }
 
     public COUIAlertDialogBuilder setNeutralButton(CharSequence text,
-            DialogInterface.OnClickListener listener, boolean recommend) {
+                                                   DialogInterface.OnClickListener listener, boolean recommend) {
         super.setNeutralButton(text, listener);
         setHasSetButton(true);
         if (recommend) {
@@ -1126,7 +1142,7 @@ public class COUIAlertDialogBuilder extends AlertDialog.Builder {
     }
 
     public COUIAlertDialogBuilder setPositiveButton(CharSequence text,
-            DialogInterface.OnClickListener listener, boolean recommend) {
+                                                    DialogInterface.OnClickListener listener, boolean recommend) {
         super.setPositiveButton(text, listener);
         setHasSetButton(true);
         if (recommend) {

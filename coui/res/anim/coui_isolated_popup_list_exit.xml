@@ -3,6 +3,6 @@
     <alpha
         android:duration="250"
         android:fromAlpha="1.0"
-        android:interpolator="@anim/coui_ease"
+        android:interpolator="@interpolator/coui_ease"
         android:toAlpha="0.0" />
 </set>

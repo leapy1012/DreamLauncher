@@ -8,6 +8,7 @@ import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -17,6 +18,8 @@ import android.os.Looper;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -32,23 +35,26 @@ import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.hapticfeedback.COUIHapticFeedbackConstants;
 import com.coui.appcompat.log.COUILog;
+import com.coui.appcompat.talkbackutil.COUIAccessibilityUtil;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 import com.coui.appcompat.uiutil.ShadowUtils;
 import com.coui.appcompat.uiutil.UIUtil;
 import com.coui.appcompat.vibrateutil.VibrateUtils;
 import com.coui.appcompat.view.MaterialResource;
+
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 
@@ -253,24 +259,22 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             return this.mTop;
         }
 
-        public void setLeft(int i2) {
-            this.mLeft = i2;
+        public void setLeft(int left) {
+            this.mLeft = left;
         }
 
-        public void setTop(int i2) {
-            this.mTop = i2;
+        public void setTop(int top) {
+            this.mTop = top;
         }
 
-        public Key(Drawable drawable, String str) {
-            this.mTextPaint = null;
+        public Key(Drawable drawable, String text) {
             this.mIcon = drawable;
-            this.mText = str;
-            this.mTextPaint = new TextPaint(1);
-            this.mTextPaint.setTextSize(COUITouchSearchView.this.mUserTextSize == 0 ? COUITouchSearchView.this.mDefaultTextSize : COUITouchSearchView.this.mUserTextSize);
-            COUITouchSearchView.this.mTextColor = COUITouchSearchView.this.mUserTextColor;
-            if (COUITouchSearchView.this.mTextColor == null) {
-                COUITouchSearchView.this.mTextColor = COUITouchSearchView.this.mDefaultTextColor;
-            }
+            this.mText = text;
+            this.mTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            int textSize = COUITouchSearchView.this.mUserTextSize == 0
+                    ? COUITouchSearchView.this.mDefaultTextSize
+                    : COUITouchSearchView.this.mUserTextSize;
+            this.mTextPaint.setTextSize(textSize);
             if (COUITouchSearchView.this.mFontFace != null) {
                 this.mTextPaint.setTypeface(COUITouchSearchView.this.mFontFace);
             }
@@ -284,12 +288,13 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         public int replenishDotValueTheIndex;
         public int showLetterSize;
 
-        public LetterLimitLevelInfo(int i2, int i6, int i10, int i11, int i12) {
-            this.dotLevel = i2;
-            this.dotSize = i6;
-            this.showLetterSize = i10;
-            this.limitHeight = i11;
-            this.replenishDotValueTheIndex = i12;
+        public LetterLimitLevelInfo(int dotLevel, int dotSize, int showLetterSize, int limitHeight,
+                                    int replenishDotValueTheIndex) {
+            this.dotLevel = dotLevel;
+            this.dotSize = dotSize;
+            this.showLetterSize = showLetterSize;
+            this.limitHeight = limitHeight;
+            this.replenishDotValueTheIndex = replenishDotValueTheIndex;
         }
     }
 
@@ -302,16 +307,16 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             this.mTempRect = new Rect();
         }
 
-        private Rect getBoundsForVirtualView(int i2) {
+        private Rect getBoundsForVirtualView(int index) {
             Rect rect = this.mTempRect;
-            if (i2 < 0 || i2 > COUITouchSearchView.this.mKey.size() - 1) {
+            if (index < 0 || index > COUITouchSearchView.this.mKey.size() - 1) {
                 rect.left = 0;
                 rect.top = 0;
                 rect.right = COUITouchSearchView.this.getWidth();
                 rect.bottom = COUITouchSearchView.this.getHeight();
                 return rect;
             }
-            Key key = (Key) COUITouchSearchView.this.mKey.get(i2);
+            Key key = COUITouchSearchView.this.mKey.get(index);
             rect.left = key.mLeft;
             rect.top = key.mTop;
             rect.right = COUITouchSearchView.this.getWidth();
@@ -320,11 +325,11 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         }
 
         @Override
-        public int getVirtualViewAt(float f2, float f10) {
+        public int getVirtualViewAt(float x, float y) {
             if (COUITouchSearchView.this.mHasValueKeyTexts.isEmpty() || COUITouchSearchView.this.mKey.isEmpty()) {
                 return -1;
             }
-            return COUITouchSearchView.this.virtualViewAtKey((int) f10);
+            return COUITouchSearchView.this.virtualViewAtKey((int) y);
         }
 
         @Override
@@ -332,34 +337,25 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             if (COUITouchSearchView.this.mHasValueKeyTexts.isEmpty() || COUITouchSearchView.this.mKey.isEmpty()) {
                 return;
             }
-            for (int i2 = 0; i2 < COUITouchSearchView.this.mHasValueKeyTexts.size(); i2++) {
-                if (((IndexIndicationKey) COUITouchSearchView.this.mHasValueKeyTexts.get(i2)).hasValue) {
-                    list.add(Integer.valueOf(i2));
+            for (int i = 0; i < COUITouchSearchView.this.mHasValueKeyTexts.size(); i++) {
+                if (COUITouchSearchView.this.mHasValueKeyTexts.get(i).hasValue) {
+                    list.add(i);
                 }
             }
         }
 
         @Override
-        public void onInitializeAccessibilityNodeInfo(View view, AccessibilityNodeInfoCompat nodeInfo) {
-            super.onInitializeAccessibilityNodeInfo(view, nodeInfo);
-        }
-
-        @Override
-        public boolean onPerformActionForVirtualView(int i2, int i6, Bundle bundle) {
-            int i10 = 0;
-            if (i6 != 16) {
+        public boolean onPerformActionForVirtualView(int virtualViewId, int action, Bundle bundle) {
+            if (action != AccessibilityNodeInfoCompat.ACTION_CLICK) {
                 return false;
             }
-            while (true) {
-                if (i10 >= COUITouchSearchView.this.mHasValueKeyTexts.size()) {
+            for (int i = 0; i < COUITouchSearchView.this.mHasValueKeyTexts.size(); i++) {
+                IndexIndicationKey indication = COUITouchSearchView.this.mHasValueKeyTexts.get(i);
+                if (indication.hasValue && virtualViewId == i) {
+                    COUITouchSearchView.this.invalidateKey(
+                            COUITouchSearchView.this.getWillDisplayY(indication.keyText), true);
                     break;
                 }
-                IndexIndicationKey indexIndicationKey = (IndexIndicationKey) COUITouchSearchView.this.mHasValueKeyTexts.get(i10);
-                if (indexIndicationKey.hasValue && i2 == i10) {
-                    COUITouchSearchView.this.invalidateKey(COUITouchSearchView.this.getWillDisplayY(indexIndicationKey.keyText), true);
-                    break;
-                }
-                i10++;
             }
             COUITouchSearchView.this.invalidate();
             return true;
@@ -368,67 +364,65 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         @Override
         public void onPopulateAccessibilityEvent(View view, AccessibilityEvent accessibilityEvent) {
             super.onPopulateAccessibilityEvent(view, accessibilityEvent);
-            if (COUITouchSearchView.this.mDisplayKey == null || COUITouchSearchView.this.mDisplayKey.equals("")) {
+            if (TextUtils.isEmpty(COUITouchSearchView.this.mDisplayKey)) {
                 return;
             }
-            accessibilityEvent.setContentDescription(COUITouchSearchView.this.getContext().getString(R.string.coui_touchsearch_description, COUITouchSearchView.this.mDisplayKey));
+            accessibilityEvent.setContentDescription(COUITouchSearchView.this.getContext().getString(
+                    R.string.coui_touchsearch_description, COUITouchSearchView.this.mDisplayKey));
         }
 
         @Override
-        public void onPopulateEventForVirtualView(int i2, AccessibilityEvent accessibilityEvent) {
-            String str;
-            if (COUITouchSearchView.this.mHasValueKeyTexts.isEmpty() || COUITouchSearchView.this.mKey.isEmpty() || (str = ((IndexIndicationKey) COUITouchSearchView.this.mHasValueKeyTexts.get(i2)).keyText) == null || str.equals("")) {
+        public void onPopulateEventForVirtualView(int virtualViewId, AccessibilityEvent accessibilityEvent) {
+            if (COUITouchSearchView.this.mHasValueKeyTexts.isEmpty()
+                    || COUITouchSearchView.this.mKey.isEmpty()) {
                 return;
             }
-            accessibilityEvent.getText().add(str);
+            String text = COUITouchSearchView.this.mHasValueKeyTexts.get(virtualViewId).keyText;
+            if (TextUtils.isEmpty(text)) {
+                return;
+            }
+            accessibilityEvent.getText().add(text);
         }
 
         @Override
-        public void onPopulateNodeForVirtualView(int i2, AccessibilityNodeInfoCompat nodeInfo) {
-            if (i2 == -1) {
+        public void onPopulateNodeForVirtualView(int virtualViewId, AccessibilityNodeInfoCompat nodeInfo) {
+            if (virtualViewId == INIT_VIRTUAL_ID) {
                 return;
             }
-            String str = ((IndexIndicationKey) COUITouchSearchView.this.mHasValueKeyTexts.get(i2)).keyText;
+            String text = COUITouchSearchView.this.mHasValueKeyTexts.get(virtualViewId).keyText;
             if (COUITouchSearchView.this.mHeightNotEnough) {
-                int i6 = i2;
-                i2 = 0;
+                int fallbackId = virtualViewId;
+                virtualViewId = 0;
                 while (true) {
-                    if (i2 >= COUITouchSearchView.this.mKey.size()) {
-                        i2 = i6;
+                    if (virtualViewId >= COUITouchSearchView.this.mKey.size()) {
+                        virtualViewId = fallbackId;
                         break;
                     }
-                    Key key = (Key) COUITouchSearchView.this.mKey.get(i2);
+                    Key key = COUITouchSearchView.this.mKey.get(virtualViewId);
                     if (key.mIsDot) {
-                        Iterator<Key> it = key.mHiddenCharList.iterator();
-                        while (true) {
-                            if (!it.hasNext()) {
-                                break;
-                            } else if (it.next().mText.equals(str)) {
-                                i6 = i2;
+                        for (Key hidden : key.mHiddenCharList) {
+                            if (hidden.mText.equals(text)) {
+                                fallbackId = virtualViewId;
                                 break;
                             }
                         }
-                    } else if (key.mText.equals(str)) {
+                    } else if (key.mText.equals(text)) {
                         break;
                     }
-                    i2++;
+                    virtualViewId++;
                 }
             }
-            nodeInfo.setContentDescription(COUITouchSearchView.this.getContext().getString(R.string.coui_touchsearch_description, str));
-            nodeInfo.setText(str);
+            nodeInfo.setContentDescription(COUITouchSearchView.this.getContext().getString(
+                    R.string.coui_touchsearch_description, text));
+            nodeInfo.setText(text);
             nodeInfo.setClassName(COUITouchSearchView.class.getName());
-            nodeInfo.setBoundsInParent(getBoundsForVirtualView(i2));
+            nodeInfo.setBoundsInParent(getBoundsForVirtualView(virtualViewId));
             nodeInfo.addAction(AccessibilityNodeInfoCompat.ACTION_CLICK);
-        }
-
-        @Override
-        public void onVirtualViewKeyboardFocusChanged(int i2, boolean z6) {
-            super.onVirtualViewKeyboardFocusChanged(i2, z6);
         }
     }
 
     public interface TouchSearchActionListener {
-        default void onKey(int i2, int i6, int i10, CharSequence charSequence) {
+        default void onKey(int index, int count, int value, CharSequence charSequence) {
         }
 
         void onKey(CharSequence charSequence);
@@ -439,43 +433,49 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
     static {
-        int[] iArr = {android.R.attr.state_window_focused, 1, 16842913, 2, 16842908, 4, 16842910, 8, 16842919, 16, android.R.attr.state_activated, 32, android.R.attr.state_accelerated, 64, 16843623, 128, android.R.attr.state_drag_can_accept, 256, android.R.attr.state_drag_hovered, VIEW_STATE_DRAG_HOVERED};
-        VIEW_STATE_IDS = iArr;
-        int length = R.styleable.ViewDrawableStates.length;
-        sSTYLEABLELENGTH = length;
-        int length2 = iArr.length / 2;
-        if (length2 != length) {
-            throw new IllegalStateException("VIEW_STATE_IDS array length does not match ViewDrawableStates style array");
+        int[] stateIds = {
+                android.R.attr.state_window_focused, VIEW_STATE_WINDOW_FOCUSED,
+                android.R.attr.state_selected, VIEW_STATE_SELECTED,
+                android.R.attr.state_focused, VIEW_STATE_FOCUSED,
+                android.R.attr.state_enabled, VIEW_STATE_ENABLED,
+                android.R.attr.state_pressed, VIEW_STATE_PRESSED,
+                android.R.attr.state_activated, VIEW_STATE_ACTIVATED,
+                android.R.attr.state_accelerated, VIEW_STATE_ACCELERATED,
+                android.R.attr.state_hovered, VIEW_STATE_HOVERED,
+                android.R.attr.state_drag_can_accept, VIEW_STATE_DRAG_CAN_ACCEPT,
+                android.R.attr.state_drag_hovered, VIEW_STATE_DRAG_HOVERED
+        };
+        VIEW_STATE_IDS = stateIds;
+        int styleableLength = R.styleable.ViewDrawableStates.length;
+        sSTYLEABLELENGTH = styleableLength;
+        int stateCount = stateIds.length / 2;
+        if (stateCount != styleableLength) {
+            throw new IllegalStateException(
+                    "VIEW_STATE_IDS array length does not match ViewDrawableStates style array");
         }
-        int length3 = iArr.length;
-        int[] iArr2 = new int[length3];
-        for (int i2 = 0; i2 < sSTYLEABLELENGTH; i2++) {
-            int i6 = R.styleable.ViewDrawableStates[i2];
-            int i10 = 0;
-            while (true) {
-                int[] iArr3 = VIEW_STATE_IDS;
-                if (i10 < iArr3.length) {
-                    if (iArr3[i10] == i6) {
-                        int i11 = i2 * 2;
-                        iArr2[i11] = i6;
-                        iArr2[i11 + 1] = iArr3[i10 + 1];
-                    }
-                    i10 += 2;
-                } else {
+        int orderedLength = stateIds.length;
+        int[] orderedIds = new int[orderedLength];
+        for (int i = 0; i < sSTYLEABLELENGTH; i++) {
+            int viewState = R.styleable.ViewDrawableStates[i];
+            for (int j = 0; j < VIEW_STATE_IDS.length; j += 2) {
+                if (VIEW_STATE_IDS[j] == viewState) {
+                    int orderedIndex = i * 2;
+                    orderedIds[orderedIndex] = viewState;
+                    orderedIds[orderedIndex + 1] = VIEW_STATE_IDS[j + 1];
                     break;
                 }
             }
         }
-        int i12 = 1 << length2;
-        sVIEWSTATESETS = new int[i12][][];
-        sVIEWSETS = new int[i12][];
-        for (int i13 = 0; i13 < sVIEWSETS.length; i13++) {
-            sVIEWSETS[i13] = new int[Integer.bitCount(i13)];
-            int i14 = 0;
-            for (int i15 = 0; i15 < length3; i15 += 2) {
-                if ((iArr2[i15 + 1] & i13) != 0) {
-                    sVIEWSETS[i13][i14] = iArr2[i15];
-                    i14++;
+        int setCount = 1 << stateCount;
+        sVIEWSTATESETS = new int[setCount][][];
+        sVIEWSETS = new int[setCount][];
+        for (int mask = 0; mask < sVIEWSETS.length; mask++) {
+            sVIEWSETS[mask] = new int[Integer.bitCount(mask)];
+            int dest = 0;
+            for (int k = 0; k < orderedLength; k += 2) {
+                if ((orderedIds[k + 1] & mask) != 0) {
+                    sVIEWSETS[mask][dest] = orderedIds[k];
+                    dest++;
                 }
             }
         }
@@ -485,58 +485,68 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         this(context, null);
     }
 
-    private int calDotRadio(int i2, int i6) {
-        int i10 = i2 + i6;
-        int i11 = i6 + 1;
-        int i12 = i10 / i11;
-        if (i11 * i12 >= i10) {
-            i12--;
-        } else if (i12 == 3) {
-            i12 = 2;
+    private int calDotRadio(int hiddenCount, int groupCount) {
+        int total = hiddenCount + groupCount;
+        int divisor = groupCount + 1;
+        int ratio = total / divisor;
+        if (divisor * ratio >= total) {
+            ratio--;
+        } else if (ratio == MIN_COUNT_RATIO) {
+            ratio = 2;
         }
-        return Math.max(2, i12);
+        return Math.max(2, ratio);
+    }
+
+    private ColorStateList resolveTextColor() {
+        if (mTextColor != null) {
+            return mTextColor;
+        }
+        mTextColor = mUserTextColor != null ? mUserTextColor : mDefaultTextColor;
+        return mTextColor;
+    }
+
+    private void applyKeyTextColor(Key key, int keyIndex) {
+        ColorStateList colors = (key.mIsDot && mDefaultDotTextColor != null)
+                ? mDefaultDotTextColor
+                : resolveTextColor();
+        if (colors == null || key.mTextPaint == null) {
+            return;
+        }
+        key.mTextPaint.setColor(colors.getColorForState(getIconState(keyIndex), colors.getDefaultColor()));
     }
 
     private void changeTextStatus() {
-        ColorStateList colorStateList;
-        int i2 = this.mKeyIndices;
-        if (i2 != -1) {
-            setIconPressed(i2, true);
+        int keyIndex = this.mKeyIndices;
+        if (keyIndex != -1) {
+            setIconPressed(keyIndex, true);
             Key key = this.mKey.get(this.mKeyIndices);
             refreshIconState(this.mKeyIndices, key.getIcon());
-            if (!key.mIsDot || (colorStateList = this.mDefaultDotTextColor) == null) {
-                ColorStateList colorStateList2 = this.mTextColor;
-                if (colorStateList2 != null) {
-                    key.mTextPaint.setColor(colorStateList2.getColorForState(getIconState(this.mKeyIndices), this.mTextColor.getDefaultColor()));
-                    invalidate();
-                }
-            } else {
-                key.mTextPaint.setColor(colorStateList.getColorForState(getIconState(this.mKeyIndices), this.mDefaultDotTextColor.getDefaultColor()));
-            }
+            applyKeyTextColor(key, this.mKeyIndices);
+            invalidate();
         }
-        int i6 = this.mPreviousIndex;
-        if (-1 != i6 && this.mKeyIndices != i6 && i6 < this.mKey.size()) {
+        int previous = this.mPreviousIndex;
+        if (-1 != previous && this.mKeyIndices != previous && previous < this.mKey.size()) {
             setItemRestore(this.mPreviousIndex);
         }
         this.mPreviousIndex = this.mKeyIndices;
     }
 
-    private boolean checkLetterLengthSmallLimit(int i2) {
-        return i2 >= 8;
+    private boolean checkLetterLengthSmallLimit(int letterCount) {
+        return letterCount >= FIXED_MIN_LETTER_LENGTH_FOR_DISPLAY;
     }
 
-    private void computeVelocityWithTouchEvent(int i2, MotionEvent motionEvent) {
-        if (i2 == 0) {
+    private void computeVelocityWithTouchEvent(int action, MotionEvent motionEvent) {
+        if (action == MotionEvent.ACTION_DOWN) {
             initOrResetVelocityTracker();
             this.mVelocityTracker.addMovement(motionEvent);
             return;
         }
-        if (i2 != 1) {
-            if (i2 == 2) {
+        if (action != MotionEvent.ACTION_UP) {
+            if (action == MotionEvent.ACTION_MOVE) {
                 initVelocityTrackerIfNotExists();
                 this.mVelocityTracker.addMovement(motionEvent);
                 return;
-            } else if (i2 != 3) {
+            } else if (action != MotionEvent.ACTION_CANCEL) {
                 return;
             }
         }
@@ -547,8 +557,7 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         if (motionEvent.getPointerId(motionEvent.getActionIndex()) > 0) {
             return false;
         }
-        int action = motionEvent.getAction() & 255;
-        int invalidPointerIndex = -1;
+        int action = motionEvent.getAction() & MotionEvent.ACTION_MASK;
         if (action == MotionEvent.ACTION_DOWN) {
             this.mActivePointerId = motionEvent.getPointerId(0);
             this.mHandler.removeCallbacks(this.mDismissTask);
@@ -557,8 +566,9 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             getLocationInWindow(this.mLocationInWindow);
             updatePopupWindow();
             int pointerIndex = motionEvent.findPointerIndex(this.mActivePointerId);
-            if (pointerIndex == invalidPointerIndex) {
-                COUILog.e("COUITouchSearchView", "Invalid pointerId=" + this.mActivePointerId + " in dealWithTouchEvent ACTION_DOWN");
+            if (pointerIndex == INVALID_POINTER) {
+                COUILog.e(TAG, "Invalid pointerId=" + this.mActivePointerId
+                        + " in dealWithTouchEvent ACTION_DOWN");
                 return false;
             }
             invalidateKey((int) motionEvent.getY(pointerIndex), false);
@@ -567,20 +577,21 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             return true;
         } else if (action == MotionEvent.ACTION_POINTER_UP) {
             onSecondaryPointerUp(motionEvent);
-            COUILog.d("COUITouchSearchView", "onTouchEvent --- pointer up --- mActivePointerId = " + this.mActivePointerId);
+            COUILog.d(TAG, "onTouchEvent --- pointer up --- mActivePointerId = "
+                    + this.mActivePointerId);
             return true;
         } else if (action != MotionEvent.ACTION_MOVE) {
             return true;
         }
         int pointerIndex = motionEvent.findPointerIndex(this.mActivePointerId);
-        if (pointerIndex != invalidPointerIndex) {
+        if (pointerIndex != INVALID_POINTER) {
             invalidateKey((int) motionEvent.getY(pointerIndex), true);
         }
         return true;
     }
 
     private void dealWithTouchEventCancel() {
-        this.mActivePointerId = -1;
+        this.mActivePointerId = INVALID_POINTER;
         this.mDisplayKey = "";
         if (!this.mSecondKeyPopupWindow.isShowing()) {
             startFirstAnimationToDismiss();
@@ -599,15 +610,15 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         return (charSequence == null || charSequence.toString().equals(this.mDisplayKey.toString())) ? false : true;
     }
 
-    private LetterLimitLevelInfo findLetterLimitLevelInfo(int i2) {
-        LetterLimitLevelInfo letterLimitLevelInfo = null;
-        for (int i6 = 0; i6 < this.mLimitLevelInfoArray.size(); i6++) {
-            LetterLimitLevelInfo letterLimitLevelInfo2 = this.mLimitLevelInfoArray.get(i6);
-            if (this.mLimitLevelInfoArray.get(i6).dotLevel == i2) {
-                letterLimitLevelInfo = letterLimitLevelInfo2;
+    private LetterLimitLevelInfo findLetterLimitLevelInfo(int dotLevel) {
+        LetterLimitLevelInfo match = null;
+        for (int i = 0; i < this.mLimitLevelInfoArray.size(); i++) {
+            LetterLimitLevelInfo info = this.mLimitLevelInfoArray.get(i);
+            if (info.dotLevel == dotLevel) {
+                match = info;
             }
         }
-        return letterLimitLevelInfo;
+        return match;
     }
 
     private int getCharacterStartIndex() {
@@ -621,171 +632,191 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         return this.mLimitLevelInfoArray.get(0).limitHeight;
     }
 
-    private int getKeyIndices(int i2) {
+    private int getKeyIndices(int touchY) {
         if (this.mKey.size() <= 0) {
             return -1;
         }
-        if ((this.mKey.size() == 1 || (this.mKey.size() > 1 && this.mKey.get(1).getTop() > i2)) && this.mHasValueKeyTexts.get(0).hasValue) {
+        if ((this.mKey.size() == 1 || (this.mKey.size() > 1 && this.mKey.get(1).getTop() > touchY))
+                && this.mHasValueKeyTexts.get(0).hasValue) {
             return 0;
         }
-        ArrayList<Key> arrayList = this.mKey;
-        if (i2 > arrayList.get(arrayList.size() - 1).getTop()) {
-            ArrayList<IndexIndicationKey> arrayList2 = this.mHasValueKeyTexts;
-            if (arrayList2.get(arrayList2.size() - 1).hasValue) {
+        ArrayList<Key> keys = this.mKey;
+        if (touchY > keys.get(keys.size() - 1).getTop()) {
+            ArrayList<IndexIndicationKey> indications = this.mHasValueKeyTexts;
+            if (indications.get(indications.size() - 1).hasValue) {
                 return this.mKey.size() - 1;
             }
         }
-        int i6 = -1;
-        for (int i10 = 0; i10 < this.mKey.size(); i10++) {
-            Key key = this.mKey.get(i10);
-            if (this.mHasValueKeyTexts.get(i10).hasValue) {
-                i6 = i10;
+        int lastValuedIndex = -1;
+        for (int i = 0; i < this.mKey.size(); i++) {
+            Key key = this.mKey.get(i);
+            if (this.mHasValueKeyTexts.get(i).hasValue) {
+                lastValuedIndex = i;
             }
-            if ((i2 >= key.mTouchTop && i2 <= key.mTouchBottom && i6 != -1) || (i2 <= key.mTouchBottom && i6 != -1)) {
-                return i6;
+            if ((touchY >= key.mTouchTop && touchY <= key.mTouchBottom && lastValuedIndex != -1)
+                    || (touchY <= key.mTouchBottom && lastValuedIndex != -1)) {
+                return lastValuedIndex;
             }
         }
         return -1;
     }
 
-    private int getKeyIndicesByCharacter(String str) {
+    private int getKeyIndicesByCharacter(String letter) {
         if (this.mHeightNotEnough) {
-            for (int i2 = 0; i2 < this.mKey.size(); i2++) {
-                Key key = this.mKey.get(i2);
+            for (int i = 0; i < this.mKey.size(); i++) {
+                Key key = this.mKey.get(i);
                 if (key.mIsDot) {
-                    for (int i6 = 0; i6 < key.mHiddenCharList.size(); i6++) {
-                        if (str.equals(key.mHiddenCharList.get(i6).mText)) {
-                            return i2;
+                    for (int j = 0; j < key.mHiddenCharList.size(); j++) {
+                        if (letter.equals(key.mHiddenCharList.get(j).mText)) {
+                            return i;
                         }
                     }
-                } else if (str.equals(key.mText)) {
-                    return i2;
+                } else if (letter.equals(key.mText)) {
+                    return i;
                 }
             }
         } else {
-            for (int i10 = 0; i10 < this.mKey.size(); i10++) {
-                if (this.mKey.get(i10).mText.equals(str)) {
-                    return i10;
+            for (int i = 0; i < this.mKey.size(); i++) {
+                if (this.mKey.get(i).mText.equals(letter)) {
+                    return i;
                 }
             }
         }
         return 0;
     }
 
-    private void getKeyIndicesWithDots(int i2) {
-        int i6;
+    private void getKeyIndicesWithDots(int touchY) {
         int size = this.mKey.size();
-        int i10 = -1;
-        int i11 = -1;
-        for (int i12 = 0; i12 < size; i12++) {
-            Key key = this.mKey.get(i12);
+        int matchedKeyIndex = -1;
+        int matchedOriginalIndex = -1;
+        for (int i = 0; i < size; i++) {
+            Key key = this.mKey.get(i);
+            int touchBottom = key.mTouchBottom;
             if (key.mIsDot) {
-                int iMax = Math.max(Math.min(((int) Math.ceil(((double) (i2 - key.mTouchTop)) / ((double) ((key.mTouchBottom - key.mTouchTop) / Math.max(key.mHiddenCharList.size(), 1))))) - 1, key.mHiddenCharList.size() - 1), 0);
-                for (int i13 = 0; i13 < key.mHiddenCharList.size(); i13++) {
-                    int i14 = key.mHiddenCharList.get(i13).mIndexInOriginalArray;
-                    if (this.mHasValueKeyTexts.get(i14).hasValue) {
-                        i10 = i12;
-                        i11 = i14;
+                int hiddenCount = Math.max(key.mHiddenCharList.size(), 1);
+                int slotHeight = (key.mTouchBottom - key.mTouchTop) / hiddenCount;
+                int hiddenIndex = Math.max(Math.min(
+                        ((int) Math.ceil((double) (touchY - key.mTouchTop) / (double) slotHeight)) - 1,
+                        key.mHiddenCharList.size() - 1), 0);
+                for (int j = 0; j < key.mHiddenCharList.size(); j++) {
+                    int originalIndex = key.mHiddenCharList.get(j).mIndexInOriginalArray;
+                    if (this.mHasValueKeyTexts.get(originalIndex).hasValue) {
+                        matchedKeyIndex = i;
+                        matchedOriginalIndex = originalIndex;
                     }
-                    if (i13 >= iMax && i10 != -1) {
+                    if (j >= hiddenIndex && matchedKeyIndex != -1) {
                         break;
                     }
                 }
             } else if (this.mHasValueKeyTexts.get(key.mIndexInOriginalArray).hasValue) {
-                i11 = key.mIndexInOriginalArray;
-                i10 = i12;
+                matchedOriginalIndex = key.mIndexInOriginalArray;
+                matchedKeyIndex = i;
             }
-            if ((i2 >= key.mTouchTop && i2 <= key.mTouchBottom && i10 != -1) || (i2 <= (i6 = key.mTouchBottom) && i10 != -1)) {
-                int[] iArr = this.mKeyIndexAndOriginalIndex;
-                iArr[0] = i10;
-                iArr[1] = i11;
+            if ((touchY >= key.mTouchTop && touchY <= touchBottom && matchedKeyIndex != -1)
+                    || (touchY <= touchBottom && matchedKeyIndex != -1)) {
+                this.mKeyIndexAndOriginalIndex[0] = matchedKeyIndex;
+                this.mKeyIndexAndOriginalIndex[1] = matchedOriginalIndex;
                 return;
-            } else {
-                if (i12 < size - 1 && i2 > i6 && i2 < this.mKey.get(i12 + 1).mTouchTop) {
-                    return;
-                }
+            }
+            if (i < size - 1 && touchY > touchBottom && touchY < this.mKey.get(i + 1).mTouchTop) {
+                return;
             }
         }
     }
 
-    private int getLetterSizeFromDot(int i2, int i6) {
-        LetterLimitLevelInfo letterLimitLevelInfoFindLetterLimitLevelInfo;
-        if (i2 == 6 || (letterLimitLevelInfoFindLetterLimitLevelInfo = findLetterLimitLevelInfo(i2)) == null) {
+    private int getLetterSizeFromDot(int dotLevel, int groupIndex) {
+        if (dotLevel == LIMIT_DOT_LEVEL6) {
             return 0;
         }
-        int size = this.mHasValueKeyTexts.size();
-        if (!this.mFirstIsCharacter) {
-            size--;
+        LetterLimitLevelInfo limitInfo = findLetterLimitLevelInfo(dotLevel);
+        if (limitInfo == null) {
+            return 0;
         }
-        int i10 = size - letterLimitLevelInfoFindLetterLimitLevelInfo.showLetterSize;
-        int i11 = letterLimitLevelInfoFindLetterLimitLevelInfo.dotSize;
-        double d2 = i10 + i11;
-        int i12 = (int) (d2 / ((double) i11));
-        return d2 % ((double) i11) == 0.0d ? i12 : d2 % ((double) i11) == 1.0d ? i6 == i11 + (-1) ? i12 + 1 : i12 : i6 >= i11 - letterLimitLevelInfoFindLetterLimitLevelInfo.replenishDotValueTheIndex ? i12 + 1 : i12;
+        int letterCount = this.mHasValueKeyTexts.size();
+        if (!this.mFirstIsCharacter) {
+            letterCount--;
+        }
+        int hiddenLetters = letterCount - limitInfo.showLetterSize;
+        int dotSize = limitInfo.dotSize;
+        double grouped = hiddenLetters + dotSize;
+        int perDot = (int) (grouped / (double) dotSize);
+        double remainder = grouped % (double) dotSize;
+        if (remainder == 0.0d) {
+            return perDot;
+        }
+        if (remainder == 1.0d) {
+            return groupIndex == dotSize - 1 ? perDot + 1 : perDot;
+        }
+        return groupIndex >= dotSize - limitInfo.replenishDotValueTheIndex ? perDot + 1 : perDot;
     }
 
-    private int getLimitDotLevel(int i2) {
-        for (int i6 = 0; i6 < this.mLimitLevelInfoArray.size(); i6++) {
-            LetterLimitLevelInfo letterLimitLevelInfo = this.mLimitLevelInfoArray.get(i6);
-            if (i2 >= letterLimitLevelInfo.limitHeight) {
-                return letterLimitLevelInfo.dotLevel;
+    private int getLimitDotLevel(int availableHeight) {
+        for (int i = 0; i < this.mLimitLevelInfoArray.size(); i++) {
+            LetterLimitLevelInfo info = this.mLimitLevelInfoArray.get(i);
+            if (availableHeight >= info.limitHeight) {
+                return info.dotLevel;
             }
         }
-        return 6;
+        return LIMIT_DOT_LEVEL6;
     }
 
-    private LetterLimitLevelInfo getShowLettersSize(int i2, int i6, int i10, int i11) {
-        int i12 = i2 - i6;
-        if (!checkLetterLengthSmallLimit(i12) && i11 != 0) {
+    private LetterLimitLevelInfo getShowLettersSize(int letterCount, int lastSymbolAdjust,
+                                                    int collectHeight, int dotLevel) {
+        int lettersMinusSymbol = letterCount - lastSymbolAdjust;
+        if (!checkLetterLengthSmallLimit(lettersMinusSymbol) && dotLevel != LIMIT_DOT_LEVEL0) {
             return null;
         }
-        double d2 = i12 - 1;
-        if (i11 == 0) {
-            return new LetterLimitLevelInfo(i11, 0, i2, (this.mLetterDrawHeightPx * i2) + i10, -1);
+        double hiddenSpan = lettersMinusSymbol - 1;
+        if (dotLevel == LIMIT_DOT_LEVEL0) {
+            return new LetterLimitLevelInfo(dotLevel, 0, letterCount,
+                    (this.mLetterDrawHeightPx * letterCount) + collectHeight, -1);
         }
-        if (i11 == 1) {
-            int i13 = d2 % ((double) (i11 + 1)) == 0.0d ? 2 : 1;
-            int i14 = i2 - i13;
-            return checkLetterLengthSmallLimit(i11, ((i14 - i6) - 1) / 2, i14, (this.mLetterDrawHeightPx * i14) + i10, i13, i6);
+        if (dotLevel == LIMIT_DOT_LEVEL1) {
+            int extra = hiddenSpan % ((double) (dotLevel + 1)) == 0.0d ? 2 : 1;
+            int shown = letterCount - extra;
+            return checkLetterLengthSmallLimit(dotLevel, ((shown - lastSymbolAdjust) - 1) / 2, shown,
+                    (this.mLetterDrawHeightPx * shown) + collectHeight, extra, lastSymbolAdjust);
         }
-        if (i11 != 2 && i11 != 3 && i11 != 4) {
-            if (i11 != 5) {
+        if (dotLevel != LIMIT_DOT_LEVEL2 && dotLevel != LIMIT_DOT_LEVEL3 && dotLevel != LIMIT_DOT_LEVEL4) {
+            if (dotLevel != LIMIT_DOT_LEVEL5) {
                 return null;
             }
-            int i15 = i6 + 8;
-            return checkLetterLengthSmallLimit(i11, 6, i15, (this.mLetterDrawHeightPx * i15) + i10, (int) ((d2 - 1.0d) % 6.0d), i6);
+            int shown = lastSymbolAdjust + FIXED_MIN_LETTER_LENGTH_FOR_DISPLAY;
+            return checkLetterLengthSmallLimit(dotLevel, 6, shown,
+                    (this.mLetterDrawHeightPx * shown) + collectHeight,
+                    (int) ((hiddenSpan - 1.0d) % 6.0d), lastSymbolAdjust);
         }
-        double d7 = i11 + 1;
-        int i16 = (int) (d2 % d7);
-        int i17 = (int) (d2 / d7);
-        int i18 = ((i2 - (i17 * i11)) + i17) - i16;
-        return checkLetterLengthSmallLimit(i11, i17, i18, (this.mLetterDrawHeightPx * i18) + i10, i16, i6);
+        double group = dotLevel + 1;
+        int remainder = (int) (hiddenSpan % group);
+        int quotient = (int) (hiddenSpan / group);
+        int shown = ((letterCount - (quotient * dotLevel)) + quotient) - remainder;
+        return checkLetterLengthSmallLimit(dotLevel, quotient, shown,
+                (this.mLetterDrawHeightPx * shown) + collectHeight, remainder, lastSymbolAdjust);
     }
 
-
-    public int getWillDisplayY(CharSequence charSequence) {
+    public int getWillDisplayY(CharSequence letter) {
+        String text = letter.toString();
         if (!this.mHeightNotEnough) {
-            for (int i2 = 0; i2 < this.mKey.size(); i2++) {
-                Key key = this.mKey.get(i2);
-                if (key.mText.equals(charSequence.toString())) {
-                    int i6 = key.mTouchTop;
-                    return i6 + ((key.mTouchBottom - i6) / 2);
+            for (int i = 0; i < this.mKey.size(); i++) {
+                Key key = this.mKey.get(i);
+                if (key.mText.equals(text)) {
+                    return key.mTouchTop + ((key.mTouchBottom - key.mTouchTop) / 2);
                 }
             }
             return -1;
         }
-        for (int i10 = 0; i10 < this.mKey.size(); i10++) {
-            Key key2 = this.mKey.get(i10);
-            if (key2.mIsDot) {
-                double dMax = (key2.mTouchBottom - key2.mTouchTop) / Math.max(key2.mHiddenCharList.size(), 1);
-                for (int i11 = 0; i11 < key2.mHiddenCharList.size(); i11++) {
-                    if (charSequence.toString().equals(key2.mHiddenCharList.get(i11).mText)) {
-                        return (int) Math.min(((double) key2.mTouchTop) + (dMax * ((double) (i11 + 1))), key2.mTouchBottom);
+        for (int i = 0; i < this.mKey.size(); i++) {
+            Key key = this.mKey.get(i);
+            if (key.mIsDot) {
+                double slot = (key.mTouchBottom - key.mTouchTop)
+                        / (double) Math.max(key.mHiddenCharList.size(), 1);
+                for (int j = 0; j < key.mHiddenCharList.size(); j++) {
+                    if (text.equals(key.mHiddenCharList.get(j).mText)) {
+                        return (int) Math.min(key.mTouchTop + (slot * (j + 1)), key.mTouchBottom);
                     }
                 }
-            } else if (charSequence.toString().equals(key2.mText)) {
-                int i12 = key2.mTouchTop;
-                return i12 + ((key2.mTouchBottom - i12) / 2);
+            } else if (text.equals(key.mText)) {
+                return key.mTouchTop + ((key.mTouchBottom - key.mTouchTop) / 2);
             }
         }
         return -1;
@@ -802,17 +833,18 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
     private void initAccessibilityListener(Context context) {
-        this.mAccessManager = (AccessibilityManager) context.getApplicationContext().getSystemService("accessibility");
+        this.mAccessManager = (AccessibilityManager) context.getApplicationContext()
+                .getSystemService(Context.ACCESSIBILITY_SERVICE);
         this.mAccessChangeListener = new AccessibilityManager.AccessibilityStateChangeListener() {
             @Override
-            public void onAccessibilityStateChanged(boolean z6) {
+            public void onAccessibilityStateChanged(boolean enabled) {
                 COUITouchSearchView cOUITouchSearchView = COUITouchSearchView.this;
                 cOUITouchSearchView.mIsAccessibilityEnabled = COUIAccessibilityUtil.isTalkbackEnabled(cOUITouchSearchView.getContext());
             }
         };
         this.mAccessTouchChangeListener = new AccessibilityManager.TouchExplorationStateChangeListener() {
             @Override
-            public void onTouchExplorationStateChanged(boolean z6) {
+            public void onTouchExplorationStateChanged(boolean enabled) {
                 COUITouchSearchView cOUITouchSearchView = COUITouchSearchView.this;
                 cOUITouchSearchView.mIsAccessibilityEnabled = COUIAccessibilityUtil.isTalkbackEnabled(cOUITouchSearchView.getContext());
             }
@@ -822,7 +854,7 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
     private void initAttributes(Resources resources, Context context, TypedArray typedArray) {
-        this.mBackgroundAlignMode = typedArray.getInt(R.styleable.COUITouchSearchView_couiBackgroundAlignMode, 0);
+        this.mBackgroundAlignMode = typedArray.getInt(R.styleable.COUITouchSearchView_couiBackgroundAlignMode, BG_ALIGN_MIDDLE);
         this.mBackgroundLeftMargin = typedArray.getDimensionPixelOffset(R.styleable.COUITouchSearchView_couiMarginLeft, 0);
         this.mBackgroundRightMargin = typedArray.getDimensionPixelOffset(R.styleable.COUITouchSearchView_couiMarginRigh, 0);
         this.mPopupFirstLayoutHeight = typedArray.getDimensionPixelOffset(R.styleable.COUITouchSearchView_couiPopupWinFirstHeight, resources.getDimensionPixelOffset(R.dimen.coui_touchsearch_popup_first_default_height));
@@ -864,25 +896,26 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
 
     private void initHeightRangeSpec() {
         this.mLimitLevelInfoArray.clear();
-        int size = this.mHasValueKeyTexts.size();
+        int letterCount = this.mHasValueKeyTexts.size();
         if (!this.mFirstIsCharacter) {
-            size--;
+            letterCount--;
         }
-        int i2 = 1;
+        int lastSymbolAdjust = 1;
         if (TextUtils.isEmpty(this.mStrLastSymbol)) {
-            ArrayList<IndexIndicationKey> arrayList = this.mHasValueKeyTexts;
-            if (arrayList.get(arrayList.size() - 1).keyText.equals(this.mStrLastSymbol)) {
-                i2 = 0;
+            ArrayList<IndexIndicationKey> indications = this.mHasValueKeyTexts;
+            if (indications.get(indications.size() - 1).keyText.equals(this.mStrLastSymbol)) {
+                lastSymbolAdjust = 0;
             }
         }
-        int i6 = !this.mFirstIsCharacter ? this.mKeyDrawableHeight : 0;
-        for (int i10 = 0; i10 < 6; i10++) {
-            LetterLimitLevelInfo showLettersSize = getShowLettersSize(size, i2, i6, i10);
+        int collectHeight = !this.mFirstIsCharacter ? this.mKeyDrawableHeight : 0;
+        for (int level = LIMIT_DOT_LEVEL0; level < LIMIT_DOT_LEVEL6; level++) {
+            LetterLimitLevelInfo showLettersSize =
+                    getShowLettersSize(letterCount, lastSymbolAdjust, collectHeight, level);
             if (showLettersSize == null) {
-                LetterLimitLevelInfo showLettersSize2 = getShowLettersSize(size, i2, i6, 5);
-                if (showLettersSize2 != null) {
-                    this.mLimitLevelInfoArray.add(showLettersSize2);
-                    return;
+                LetterLimitLevelInfo fallback =
+                        getShowLettersSize(letterCount, lastSymbolAdjust, collectHeight, MIN_SIZE_COUNT);
+                if (fallback != null) {
+                    this.mLimitLevelInfoArray.add(fallback);
                 }
                 return;
             }
@@ -912,7 +945,7 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
     private void initPopupWindow(Context context) {
-        LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService("layout_inflater");
+        LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         this.mLayoutInflater = layoutInflater;
         View viewInflate = layoutInflater.inflate(R.layout.coui_touchsearch_poppup_firstkey, (ViewGroup) null);
         this.mPopupFirstTextView = (TextView) viewInflate.findViewById(R.id.touchsearch_popup_content_textview);
@@ -922,16 +955,16 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         imageView.setImageDrawable(this.mPopupCollectDrawable);
         int suitableFontSize = (int) COUIChangeTextUtil.getSuitableFontSize(this.mPopupWindowFirstKeyTextSize, context.getResources().getConfiguration().fontScale, 4);
         this.mPopupWindowFirstKeyTextSize = suitableFontSize;
-        this.mPopupFirstTextView.setTextSize(0, suitableFontSize);
+        this.mPopupFirstTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, suitableFontSize);
         ViewGroup.LayoutParams layoutParams = this.mPopupFirstLayout.getLayoutParams();
         layoutParams.height = this.mPopupFirstLayoutHeight;
         layoutParams.width = this.mPopupFirstLayoutWidth;
         this.mPopupFirstLayout.setLayoutParams(layoutParams);
         this.mPopupFirstLayout.setBackground(this.mCOUITouchFirstPopTopBg);
         ShadowUtils.setElevationToView(this.mPopupFirstLayout, 2, context.getResources().getDimensionPixelOffset(R.dimen.support_shadow_size_level_five), this.mContext.getResources().getDimensionPixelOffset(R.dimen.support_shadow_size_level_for_touch_search_lowerP), COUIContextUtil.getColor(context, R.color.coui_popup_outline_spot_shadow_color_touch_search));
-        int i2 = android.R.attr.popupWindowStyle;
-        int i6 = R.style.Widget_COUI_PopupWindow;
-        this.mFirstKeyPopupWindow = new PopupWindow(context, (AttributeSet) null, i2, i6);
+        int popupAttr = android.R.attr.popupWindowStyle;
+        int popupStyle = R.style.Widget_COUI_PopupWindow;
+        this.mFirstKeyPopupWindow = new PopupWindow(context, (AttributeSet) null, popupAttr, popupStyle);
         COUIDarkModeUtil.setForceDarkAllow(this.mPopupFirstTextView, false);
         this.mFirstKeyPopupWindow.setWidth(this.mPopupFirstWidth);
         this.mFirstKeyPopupWindow.setHeight(this.mPopupFirstLayoutHeight);
@@ -958,7 +991,7 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         View viewInflate2 = this.mLayoutInflater.inflate(R.layout.coui_touchsearch_second_name, (ViewGroup) null);
         this.mSecondKeyScrollView = (ScrollView) viewInflate2.findViewById(R.id.touchsearch_popup_content_scrollview);
         this.mSecondKeyContainer = (ViewGroup) viewInflate2.findViewById(R.id.touchsearch_popup_content_name);
-        PopupWindow popupWindow = new PopupWindow(context, (AttributeSet) null, i2, i6);
+        PopupWindow popupWindow = new PopupWindow(context, (AttributeSet) null, popupAttr, popupStyle);
         this.mSecondKeyPopupWindow = popupWindow;
         popupWindow.setWidth(this.mPopupFirstLayoutWidth);
         this.mSecondKeyPopupWindow.setContentView(viewInflate2);
@@ -972,11 +1005,11 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         this.mSecondKeyPopupWindow.setExitTransition(null);
     }
 
-    private ValueAnimator initPopupWindowAnimator(final View view, final boolean z6) {
+    private ValueAnimator initPopupWindowAnimator(final View view, final boolean enabled) {
         final ValueAnimator valueAnimator = new ValueAnimator();
         valueAnimator.setInterpolator(MOVE_EASE_INTERPOLATOR);
-        if (z6) {
-            valueAnimator.setDuration(300L);
+        if (enabled) {
+            valueAnimator.setDuration(POPUP_WINDOW_DISAPPEAR_DURATION);
             valueAnimator.addListener(new Animator.AnimatorListener() {
                 @Override
                 public void onAnimationCancel(Animator animator) {
@@ -998,12 +1031,12 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
                 }
             });
         } else {
-            valueAnimator.setDuration(350L);
+            valueAnimator.setDuration(POPUP_WINDOW_APPEAR_DURATION);
         }
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator2) {
-                if ((!z6 && COUITouchSearchView.this.mFirstPopupAlpha < 1.0f) || z6) {
+                if ((!enabled && COUITouchSearchView.this.mFirstPopupAlpha < ALPHA_MAX) || enabled) {
                     COUITouchSearchView.this.mFirstPopupAlpha = ((Float) valueAnimator2.getAnimatedValue(COUITouchSearchView.PROPERTY_FIRST_POPUP_ALPHA)).floatValue();
                 }
                 COUITouchSearchView.this.mFirstPopupScale = ((Float) valueAnimator2.getAnimatedValue(COUITouchSearchView.PROPERTY_FIRST_POPUP_SCALE)).floatValue();
@@ -1022,45 +1055,44 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
 
-    public void invalidateKey(int i2, boolean z6) {
-        String str;
-        int i6;
+    public void invalidateKey(int touchY, boolean fromMove) {
+        String letter;
         if (this.mHeightNotEnough) {
-            getKeyIndicesWithDots(i2);
-            int[] iArr = this.mKeyIndexAndOriginalIndex;
-            int i10 = iArr[0];
-            if (i10 < 0 || (i6 = iArr[1]) < 0) {
+            getKeyIndicesWithDots(touchY);
+            int keyIndex = this.mKeyIndexAndOriginalIndex[0];
+            int originalIndex = this.mKeyIndexAndOriginalIndex[1];
+            if (keyIndex < 0 || originalIndex < 0) {
                 return;
             }
-            this.mKeyIndices = i10;
-            str = this.mHasValueKeyTexts.get(i6).keyText;
+            this.mKeyIndices = keyIndex;
+            letter = this.mHasValueKeyTexts.get(originalIndex).keyText;
         } else {
-            int keyIndices = getKeyIndices(i2);
-            if (keyIndices < 0) {
+            int keyIndex = getKeyIndices(touchY);
+            if (keyIndex < 0) {
                 return;
             }
-            this.mKeyIndices = keyIndices;
-            str = this.mHasValueKeyTexts.get(keyIndices).keyText;
+            this.mKeyIndices = keyIndex;
+            letter = this.mHasValueKeyTexts.get(keyIndex).keyText;
         }
-        if (displayChange(str)) {
+        if (displayChange(letter)) {
             Key key = this.mKey.get(this.mKeyIndices);
             if (!this.mIsAccessibilityEnabled) {
-                onKeyChanged(str.toString(), key.getLeft() - this.mKeyPaddingX, key.getTop(), this.mKeyIndices, z6);
+                onKeyChanged(letter, key.getLeft() - this.mKeyPaddingX, key.getTop(),
+                        this.mKeyIndices, fromMove);
             }
-            String string = str.toString();
-            this.mDisplayKey = string;
-            TouchSearchActionListener touchSearchActionListener = this.mTouchSearchActionListener;
-            if (touchSearchActionListener != null) {
-                touchSearchActionListener.onKey(string);
-                this.mTouchSearchActionListener.onKey(key.mLeft, key.mTop, key.mTouchBottom, this.mDisplayKey);
+            this.mDisplayKey = letter;
+            TouchSearchActionListener listener = this.mTouchSearchActionListener;
+            if (listener != null) {
+                listener.onKey(letter);
+                listener.onKey(key.mLeft, key.mTop, key.mTouchBottom, this.mDisplayKey);
             }
             invalidateTouchBarText();
         }
     }
 
     private void invalidateTouchBarText() {
-        int i2 = this.mKeyIndices;
-        if (i2 != this.mPreviousIndex && -1 != i2) {
+        int index = this.mKeyIndices;
+        if (index != this.mPreviousIndex && -1 != index) {
             performFeedback();
         }
         changeTextStatus();
@@ -1072,52 +1104,57 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             Object zoomWindowManager = zoomWindowManagerClass.getMethod("getInstance").invoke(null);
             Object zoomWindowState = zoomWindowManagerClass.getMethod("getCurrentZoomWindowState").invoke(zoomWindowManager);
             return zoomWindowState.getClass().getField("windowShown").getBoolean(zoomWindowState);
-        } catch (Error e2) {
-            COUILog.d(TAG, "getCurrentZoomWindowState error: " + e2.getMessage());
+        } catch (Error e) {
+            COUILog.d(TAG, "getCurrentZoomWindowState error: " + e.getMessage());
             return false;
-        } catch (Exception e10) {
-            COUILog.d(TAG, "getCurrentZoomWindowState exception: " + e10.getMessage());
+        } catch (Exception e) {
+            COUILog.d(TAG, "getCurrentZoomWindowState exception: " + e.getMessage());
             return false;
         }
     }
 
-    private void onKeyChanged(CharSequence charSequence, int i2, int i6, int i10, boolean z6) {
+    private void onKeyChanged(CharSequence letter, int unusedLeft, int keyTop, int keyIndex,
+                              boolean fromMove) {
         if (this.mFirstKeyPopupWindow == null) {
             return;
         }
-        COUILog.d(TAG, "onKeyChanged --- display = " + ((Object) charSequence));
-        if (this.mFirstIsCharacter || !this.mHasValueKeyTexts.get(0).keyText.equals(charSequence.toString())) {
-            this.mPopupFirstImageView.setVisibility(8);
-            this.mPopupFirstTextView.setText(charSequence);
-            this.mPopupFirstTextView.setVisibility(0);
-            this.mFirstPopupTextOffset = (this.mLocationInWindow[1] - (this.mPopupFirstLayoutHeight / 2)) + i6 + ((this.mKey.get(i10).mTouchBottom - i6) / 2);
+        COUILog.d(TAG, "onKeyChanged --- display = " + letter);
+        if (this.mFirstIsCharacter || !this.mHasValueKeyTexts.get(0).keyText.equals(letter.toString())) {
+            this.mPopupFirstImageView.setVisibility(View.GONE);
+            this.mPopupFirstTextView.setText(letter);
+            this.mPopupFirstTextView.setVisibility(View.VISIBLE);
+            this.mFirstPopupTextOffset = (this.mLocationInWindow[1] - (this.mPopupFirstLayoutHeight / 2))
+                    + keyTop + ((this.mKey.get(keyIndex).mTouchBottom - keyTop) / 2);
         } else {
-            this.mPopupFirstImageView.setVisibility(0);
-            this.mPopupFirstTextView.setVisibility(8);
-            this.mFirstPopupTextOffset = (this.mLocationInWindow[1] - (this.mPopupFirstLayoutHeight / 2)) + this.mKeyCollectDrawable.getBounds().top + (this.mKeyDrawableHeight / 2);
+            this.mPopupFirstImageView.setVisibility(View.VISIBLE);
+            this.mPopupFirstTextView.setVisibility(View.GONE);
+            this.mFirstPopupTextOffset = (this.mLocationInWindow[1] - (this.mPopupFirstLayoutHeight / 2))
+                    + this.mKeyCollectDrawable.getBounds().top + (this.mKeyDrawableHeight / 2);
         }
         if (this.mIsFirstMarginTop) {
             this.mFirstPopupTextOffset = this.mLocationInWindow[1] + getPaddingTop();
         }
-        ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) this.mPopupFirstLayout.getLayoutParams();
+        ViewGroup.MarginLayoutParams marginLayoutParams =
+                (ViewGroup.MarginLayoutParams) this.mPopupFirstLayout.getLayoutParams();
         marginLayoutParams.topMargin = this.mFirstPopupTextOffset;
         this.mPopupFirstLayout.setLayoutParams(marginLayoutParams);
-        if (z6) {
-            this.mFirstPopupAlpha = 1.0f;
+        if (fromMove) {
+            this.mFirstPopupAlpha = ALPHA_MAX;
         }
         startFirstAnimationToShow();
-        sendAccessibilityEvent(8192); // TYPE_VIEW_TEXT_SELECTION_CHANGED
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED);
     }
 
     private void onSecondaryPointerUp(MotionEvent motionEvent) {
-        int action = (motionEvent.getAction() & 65280) >> 8;
-        int pointerId = motionEvent.getPointerId(action);
+        int pointerIndex = (motionEvent.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK)
+                >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
+        int pointerId = motionEvent.getPointerId(pointerIndex);
         COUILog.d(TAG, "onSecondaryPointerUp --- pointerId = " + pointerId);
         COUILog.d(TAG, "onSecondaryPointerUp --- mActivePointerId = " + this.mActivePointerId);
         if (pointerId == this.mActivePointerId) {
-            int i2 = action == 0 ? 1 : 0;
-            this.mActivePointerId = motionEvent.getPointerId(i2);
-            COUILog.d(TAG, "onSecondaryPointerUp --- newPointerIndex = " + i2);
+            int newPointerIndex = pointerIndex == 0 ? 1 : 0;
+            this.mActivePointerId = motionEvent.getPointerId(newPointerIndex);
+            COUILog.d(TAG, "onSecondaryPointerUp --- newPointerIndex = " + newPointerIndex);
         }
     }
 
@@ -1153,28 +1190,19 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
     private void refreshIcon() {
-        ColorStateList colorStateList;
+        resolveTextColor();
         int size = this.mKey.size();
-        for (int i2 = 0; i2 < size; i2++) {
-            int[][][] iArr = sVIEWSTATESETS;
-            int[][] iArr2 = sVIEWSETS;
-            int[][] iArr3 = new int[iArr2.length][];
-            iArr[i2] = iArr3;
-            System.arraycopy(iArr2, 0, iArr3, 0, iArr2.length);
+        for (int i = 0; i < size; i++) {
+            int[][] copy = new int[sVIEWSETS.length][];
+            sVIEWSTATESETS[i] = copy;
+            System.arraycopy(sVIEWSETS, 0, copy, 0, sVIEWSETS.length);
         }
-        for (int i6 = 0; i6 < size; i6++) {
+        for (int i = 0; i < size; i++) {
             this.mIconState.add(new int[sSTYLEABLELENGTH]);
             this.mPrivateFlags.add(0);
-            Key key = this.mKey.get(i6);
-            refreshIconState(i6, key.getIcon());
-            if (!key.mIsDot || (colorStateList = this.mDefaultDotTextColor) == null) {
-                ColorStateList colorStateList2 = this.mTextColor;
-                if (colorStateList2 != null) {
-                    key.mTextPaint.setColor(colorStateList2.getColorForState(getIconState(i6), this.mTextColor.getDefaultColor()));
-                }
-            } else {
-                key.mTextPaint.setColor(colorStateList.getColorForState(getIconState(i6), this.mDefaultDotTextColor.getDefaultColor()));
-            }
+            Key key = this.mKey.get(i);
+            refreshIconState(i, key.getIcon());
+            applyKeyTextColor(key, i);
         }
     }
 
@@ -1188,34 +1216,26 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
     private void restoreAnimation() {
-        this.mFirstPopupAlpha = 0.0f;
+        this.mFirstPopupAlpha = ALPHA_MIN;
         this.mFirstPopupScale = SCALE_MIN;
     }
 
-    private void setIconPressed(int i2, boolean z6) {
-        int iIntValue = this.mPrivateFlags.get(i2).intValue();
-        this.mPrivateFlags.set(i2, Integer.valueOf(z6 ? iIntValue | PFLAG_PRESSED : iIntValue & (-16385)));
+    private void setIconPressed(int keyIndex, boolean pressed) {
+        int flags = this.mPrivateFlags.get(keyIndex);
+        this.mPrivateFlags.set(keyIndex, pressed ? flags | PFLAG_PRESSED : flags & ~PFLAG_PRESSED);
     }
 
-    private void setItemRestore(int i2) {
-        ColorStateList colorStateList;
-        Key key = this.mKey.get(i2);
-        setIconPressed(i2, false);
-        refreshIconState(i2, key.getIcon());
-        if (!key.mIsDot || (colorStateList = this.mDefaultDotTextColor) == null) {
-            ColorStateList colorStateList2 = this.mTextColor;
-            if (colorStateList2 != null) {
-                key.mTextPaint.setColor(colorStateList2.getColorForState(getIconState(i2), this.mTextColor.getDefaultColor()));
-            }
-        } else {
-            key.mTextPaint.setColor(colorStateList.getColorForState(getIconState(i2), this.mDefaultDotTextColor.getDefaultColor()));
-        }
+    private void setItemRestore(int keyIndex) {
+        Key key = this.mKey.get(keyIndex);
+        setIconPressed(keyIndex, false);
+        refreshIconState(keyIndex, key.getIcon());
+        applyKeyTextColor(key, keyIndex);
         invalidate();
     }
 
 
-    public void setPopupWindowAnimatorValues(boolean z6) {
-        if (z6) {
+    public void setPopupWindowAnimatorValues(boolean enabled) {
+        if (enabled) {
             this.mFirstPopupValueDisAppearAnimator.setValues(PropertyValuesHolder.ofFloat(PROPERTY_FIRST_POPUP_ALPHA, this.mFirstPopupAlpha, 0.0f), PropertyValuesHolder.ofFloat(PROPERTY_FIRST_POPUP_SCALE, this.mFirstPopupScale, SCALE_MIN));
         } else {
             this.mFirstPopupValueAppearAnimator.setValues(PropertyValuesHolder.ofFloat(PROPERTY_FIRST_POPUP_ALPHA, this.mFirstPopupAlpha, 1.0f), PropertyValuesHolder.ofFloat(PROPERTY_FIRST_POPUP_SCALE, this.mFirstPopupScale, 1.0f));
@@ -1223,15 +1243,15 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
     private void startFirstAnimationToDismiss() {
-        this.mHandler.postDelayed(this.mDismissTask, 1000L);
+        this.mHandler.postDelayed(this.mDismissTask, SEC_WINDOW_SHOW_DELAY_DURATION);
     }
 
     private void startFirstAnimationToShow() {
         if (!this.mFirstKeyPopupWindow.isShowing()) {
             if (ViewCompat.getLayoutDirection(this) == ViewCompat.LAYOUT_DIRECTION_RTL) {
-                this.mFirstKeyPopupWindow.showAtLocation(this, 0, this.mPopupWindowFirstLocalx + this.mTouchPaddingStart + this.mPopupWindowEndGap, 0);
+                this.mFirstKeyPopupWindow.showAtLocation(this, Gravity.NO_GRAVITY, this.mPopupWindowFirstLocalx + this.mTouchPaddingStart + this.mPopupWindowEndGap, 0);
             } else {
-                this.mFirstKeyPopupWindow.showAtLocation(this, 0, (this.mPopupWindowFirstLocalx + this.mTouchPaddingStart) - this.mPopupWindowEndGap, 0);
+                this.mFirstKeyPopupWindow.showAtLocation(this, Gravity.NO_GRAVITY, (this.mPopupWindowFirstLocalx + this.mTouchPaddingStart) - this.mPopupWindowEndGap, 0);
             }
         }
         this.mHandler.removeCallbacks(this.mDismissTask);
@@ -1261,32 +1281,30 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         reset();
         updateKeys(height);
         refreshIcon();
-        sendAccessibilityEvent(4);
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_SELECTED);
     }
 
     private void updateBackGroundBound() {
-        int i2;
-        int width;
-        int i6 = this.mBackgroundAlignMode;
-        if (i6 == 0) {
-            int width2 = getWidth();
-            int i10 = this.mBackgroundWidth;
-            i2 = (width2 - i10) / 2;
-            width = i10 + i2;
-        } else if (i6 == 2) {
-            width = getWidth() - this.mBackgroundRightMargin;
-            i2 = width - this.mBackgroundWidth;
+        int left;
+        int right;
+        int align = this.mBackgroundAlignMode;
+        if (align == BG_ALIGN_MIDDLE) {
+            int viewWidth = getWidth();
+            int barWidth = this.mBackgroundWidth;
+            left = (viewWidth - barWidth) / 2;
+            right = barWidth + left;
+        } else if (align == BG_ALIGN_RIGHT) {
+            right = getWidth() - this.mBackgroundRightMargin;
+            left = right - this.mBackgroundWidth;
         } else {
-            i2 = this.mBackgroundLeftMargin;
-            width = i2 + this.mBackgroundWidth;
+            left = this.mBackgroundLeftMargin;
+            right = left + this.mBackgroundWidth;
         }
-        this.mPositionRect = new Rect(i2, 0, width, getBottom() - getTop());
+        this.mPositionRect = new Rect(left, 0, right, getBottom() - getTop());
     }
 
 
-
-
-    private void updateKeys(int i2) {
+    private void updateKeys(int exactHeight) {
         Drawable drawable;
         Drawable drawable2;
         int size = this.mHasValueKeyTexts.size();
@@ -1294,17 +1312,17 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         int defaultLimitHeight = getDefaultLimitHeight();
         Rect rect = this.mPositionRect;
         if (rect != null) {
-            int i6 = rect.left;
-            int i10 = i6 + (((rect.right - i6) - this.mKeyDrawableWidth) / 2);
-            int i11 = this.mTouchPaddingStart;
-            this.mKeyPaddingX = (i10 + i11) - ((i11 + this.mTouchPaddingEnd) / 2);
+            int rectLeft = rect.left;
+            int centered = rectLeft + (((rect.right - rectLeft) - this.mKeyDrawableWidth) / 2);
+            int touchPadStart = this.mTouchPaddingStart;
+            this.mKeyPaddingX = (centered + touchPadStart) - ((touchPadStart + this.mTouchPaddingEnd) / 2);
         }
-        COUILog.d(TAG, "updateKeys exactHeight:" + i2 + ",totalItemHeight:" + defaultLimitHeight + ",getHeight():" + getHeight() + ",mFirstIsCharacter:" + this.mFirstIsCharacter);
-        if (defaultLimitHeight > i2) {
+        COUILog.d(TAG, "updateKeys exactHeight:" + exactHeight + ",totalItemHeight:" + defaultLimitHeight + ",getHeight():" + getHeight() + ",mFirstIsCharacter:" + this.mFirstIsCharacter);
+        if (defaultLimitHeight > exactHeight) {
             this.mHeightNotEnough = true;
-            int limitDotLevel = getLimitDotLevel(i2);
+            int limitDotLevel = getLimitDotLevel(exactHeight);
             this.mDotLevel = limitDotLevel;
-            if (limitDotLevel == 6) {
+            if (limitDotLevel == LIMIT_DOT_LEVEL6) {
                 return;
             }
             LetterLimitLevelInfo letterLimitLevelInfoFindLetterLimitLevelInfo = findLetterLimitLevelInfo(limitDotLevel);
@@ -1324,21 +1342,21 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             }
             int defaultColor = this.mDefaultDotTextColor.getDefaultColor();
             int characterStartIndex = getCharacterStartIndex();
-            int i12 = 0;
-            int i13 = 0;
+            int start = 0;
+            int end = 0;
             while (characterStartIndex < size) {
                 Key key2 = new Key(null, null);
                 key2.setLeft(this.mKeyPaddingX);
                 key2.setTop(paddingTop);
-                if (i12 == 0 || i13 >= letterLimitLevelInfoFindLetterLimitLevelInfo.dotSize) {
+                if (start == 0 || end >= letterLimitLevelInfoFindLetterLimitLevelInfo.dotSize) {
                     key2.mIndexInOriginalArray = characterStartIndex;
                     key2.mText = this.mHasValueKeyTexts.get(characterStartIndex).keyText;
                     key2.mTouchTop = paddingTop;
-                    int i14 = this.mCellHeight;
-                    int i15 = this.mItemSpacing;
-                    key2.mTouchBottom = paddingTop + i14 + i15;
-                    i12++;
-                    paddingTop += i14 + i15;
+                    int min = this.mCellHeight;
+                    int max = this.mItemSpacing;
+                    key2.mTouchBottom = paddingTop + min + max;
+                    start++;
+                    paddingTop += min + max;
                     this.mKey.add(key2);
                 } else {
                     key2.mIsDot = true;
@@ -1348,16 +1366,16 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
                     key2.mTouchTop = paddingTop;
                     key2.mTouchBottom = this.mCellHeight + paddingTop + this.mItemSpacing;
                     key2.mHiddenCharList = new ArrayList();
-                    int letterSizeFromDot = getLetterSizeFromDot(this.mDotLevel, i13);
-                    i13++;
-                    i12 = this.mDotLevel >= 5 ? i12 + 1 : 0;
-                    int i16 = 0;
-                    while (i16 < letterSizeFromDot) {
+                    int letterSizeFromDot = getLetterSizeFromDot(this.mDotLevel, end);
+                    end++;
+                    start = this.mDotLevel >= LIMIT_DOT_LEVEL5 ? start + 1 : 0;
+                    int pos = 0;
+                    while (pos < letterSizeFromDot) {
                         Key key3 = new Key();
                         key3.mIndexInOriginalArray = characterStartIndex;
                         key3.mText = this.mHasValueKeyTexts.get(characterStartIndex).keyText;
                         key2.mHiddenCharList.add(key3);
-                        i16++;
+                        pos++;
                         characterStartIndex++;
                     }
                     characterStartIndex--;
@@ -1402,9 +1420,9 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             this.mPopupWindowFirstLocalx = measuredWidth;
             this.mPopupWindowSecondLocalx = measuredWidth + this.mPopupFirstLayoutWidth + this.mSecondPopupMargin;
         } else {
-            int i2 = (this.mLocationInWindow[0] - this.mPopupWindowEndMargin) - this.mPopupFirstWidth;
-            this.mPopupWindowFirstLocalx = i2;
-            this.mPopupWindowSecondLocalx = (i2 - this.mSecondPopupMargin) - this.mPopupSecondTextWidth;
+            int popupWindowFirstLocalx = (this.mLocationInWindow[0] - this.mPopupWindowEndMargin) - this.mPopupFirstWidth;
+            this.mPopupWindowFirstLocalx = popupWindowFirstLocalx;
+            this.mPopupWindowSecondLocalx = (popupWindowFirstLocalx - this.mSecondPopupMargin) - this.mPopupSecondTextWidth;
         }
         int height = getRootView().getHeight();
         COUILog.i(TAG, "location in screen : " + this.mLocationInWindow[1] + "  key size : " + this.mKey.size() + "  cell height = " + this.mCellHeight + " " + height);
@@ -1428,36 +1446,32 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         }
         this.mSecondKeyPopupWindow.setWidth(this.mPopupSecondTextWidth);
         this.mSecondKeyPopupWindow.setHeight(this.mScrollViewHeight);
-        this.mSecondKeyPopupWindow.showAtLocation(this, 0, this.mPopupWindowSecondLocalx, this.mPopupWindowSecondLocaly);
+        this.mSecondKeyPopupWindow.showAtLocation(this, Gravity.NO_GRAVITY, this.mPopupWindowSecondLocalx, this.mPopupWindowSecondLocaly);
     }
 
 
-    public int virtualViewAtKey(int i2) {
-        int i6;
+    public int virtualViewAtKey(int touchY) {
         if (!this.mHeightNotEnough) {
-            int keyIndices = getKeyIndices(i2);
-            if (keyIndices < 0) {
-                return -1;
-            }
-            return keyIndices;
+            return getKeyIndices(touchY);
         }
-        getKeyIndicesWithDots(i2);
-        int[] iArr = this.mKeyIndexAndOriginalIndex;
-        if (iArr[0] < 0 || (i6 = iArr[1]) < 0) {
+        getKeyIndicesWithDots(touchY);
+        int keyIndex = this.mKeyIndexAndOriginalIndex[0];
+        int originalIndex = this.mKeyIndexAndOriginalIndex[1];
+        if (keyIndex < 0 || originalIndex < 0) {
             return -1;
         }
-        return i6;
+        return originalIndex;
     }
 
     public void closing() {
-        int i2 = this.mPreviousIndex;
-        if (-1 != i2 && this.mKeyIndices != i2 && i2 < this.mKey.size()) {
+        int index = this.mPreviousIndex;
+        if (-1 != index && this.mKeyIndices != index && index < this.mKey.size()) {
             setItemRestore(this.mPreviousIndex);
         }
         int size = this.mKey.size();
-        int i6 = this.mKeyIndices;
-        if (i6 > -1 && i6 < size) {
-            setItemRestore(i6);
+        int count = this.mKeyIndices;
+        if (count > -1 && count < size) {
+            setItemRestore(count);
         }
         this.mPreviousIndex = -1;
         if (this.mFirstKeyPopupWindow.isShowing()) {
@@ -1477,13 +1491,13 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         return this.mExploreByTouchHelper.dispatchHoverEvent(motionEvent) | super.dispatchHoverEvent(motionEvent);
     }
 
-    public int[] getIconState(int i2) {
-        int iIntValue = this.mPrivateFlags.get(i2).intValue();
-        if ((iIntValue & 1024) != 0) {
-            this.mIconState.set(i2, onCreateIconState(i2, 0));
-            this.mPrivateFlags.set(i2, Integer.valueOf(iIntValue & (-1025)));
+    public int[] getIconState(int keyIndex) {
+        int flags = this.mPrivateFlags.get(keyIndex);
+        if ((flags & PFLAG_DRAWABLE_STATE_DIRTY) != 0) {
+            this.mIconState.set(keyIndex, onCreateIconState(keyIndex, 0));
+            this.mPrivateFlags.set(keyIndex, flags & ~PFLAG_DRAWABLE_STATE_DIRTY);
         }
-        return this.mIconState.get(i2);
+        return this.mIconState.get(keyIndex);
     }
 
     public PopupWindow getPopupWindow() {
@@ -1494,21 +1508,21 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         return this.mTouchSearchActionListener;
     }
 
-    public void iconStateChanged(int i2, Drawable drawable) {
-        int[] iconState = getIconState(i2);
+    public void iconStateChanged(int index, Drawable drawable) {
+        int[] iconState = getIconState(index);
         if (drawable == null || !drawable.isStateful()) {
             return;
         }
         drawable.setState(iconState);
     }
 
-    public int makeTouchSearchLimitHeight(int i2) {
-        int paddingTop = getPaddingTop() + getPaddingBottom();
-        int i6 = i2 - paddingTop;
-        for (int i10 = 0; i10 < this.mLimitLevelInfoArray.size(); i10++) {
-            int i11 = this.mLimitLevelInfoArray.get(i10).limitHeight;
-            if (i6 >= i11) {
-                return i11 + paddingTop;
+    public int makeTouchSearchLimitHeight(int viewHeight) {
+        int verticalPadding = getPaddingTop() + getPaddingBottom();
+        int contentHeight = viewHeight - verticalPadding;
+        for (int i = 0; i < this.mLimitLevelInfoArray.size(); i++) {
+            int limitHeight = this.mLimitLevelInfoArray.get(i).limitHeight;
+            if (contentHeight >= limitHeight) {
+                return limitHeight + verticalPadding;
             }
         }
         return 0;
@@ -1526,25 +1540,25 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         this.mTouchSearchActionListener.onNameClick(((TextView) view).getText());
     }
 
-    public int[] onCreateIconState(int i2, int i6) {
-        int iIntValue = this.mPrivateFlags.get(i2).intValue();
-        int i10 = (this.mPrivateFlags.get(i2).intValue() & PFLAG_PRESSED) != 0 ? 16 : 0;
-        if ((iIntValue & 32) == 0) {
-            i10 |= 8;
+    public int[] onCreateIconState(int keyIndex, int extraSpace) {
+        int flags = this.mPrivateFlags.get(keyIndex);
+        int stateMask = (flags & PFLAG_PRESSED) != 0 ? VIEW_STATE_PRESSED : 0;
+        if ((flags & ENABLED_MASK) == ENABLED) {
+            stateMask |= VIEW_STATE_ENABLED;
         }
         if (hasWindowFocus()) {
-            i10 |= 1;
+            stateMask |= VIEW_STATE_WINDOW_FOCUSED;
         }
-        int[] iArr = sVIEWSTATESETS[i2][i10];
-        if (i6 == 0) {
-            return iArr;
+        int[] states = sVIEWSTATESETS[keyIndex][stateMask];
+        if (extraSpace == 0) {
+            return states;
         }
-        if (iArr == null) {
-            return new int[i6];
+        if (states == null) {
+            return new int[extraSpace];
         }
-        int[] iArr2 = new int[iArr.length + i6];
-        System.arraycopy(iArr, 0, iArr2, 0, iArr.length);
-        return iArr2;
+        int[] expanded = new int[states.length + extraSpace];
+        System.arraycopy(states, 0, expanded, 0, states.length);
+        return expanded;
     }
 
     @Override
@@ -1568,7 +1582,7 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     @Override
     public void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (this.mDotLevel == 6) {
+        if (this.mDotLevel == LIMIT_DOT_LEVEL6) {
             return;
         }
         if (!this.mFirstIsCharacter && this.mKey.size() > 0) {
@@ -1592,9 +1606,9 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
     @Override
-    public void onLayout(boolean z6, int i2, int i6, int i10, int i11) {
-        super.onLayout(z6, i2, i6, i10, i11);
-        COUILog.i(TAG, "onLayout left= " + i2 + " top= " + i6 + " right= " + i10 + " bottom= " + i11 + " mFrameChanged= " + this.mFrameChanged + " mFirstLayout= " + this.mFirstLayout);
+    public void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        COUILog.i(TAG, "onLayout left= " + left + " top= " + top + " right= " + right + " bottom= " + bottom + " mFrameChanged= " + this.mFrameChanged + " mFirstLayout= " + this.mFirstLayout);
         if (this.mFirstLayout || this.mFrameChanged) {
             updateBackGroundBound();
             update();
@@ -1608,14 +1622,14 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
     @Override
-    public void onSizeChanged(int i2, int i6, int i10, int i11) {
+    public void onSizeChanged(int w, int h, int oldw, int oldh) {
         this.mFrameChanged = true;
-        super.onSizeChanged(i2, i6, i10, i11);
+        super.onSizeChanged(w, h, oldw, oldh);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
-        if (getVisibility() == 8) {
+        if (getVisibility() == View.GONE) {
             if (this.mInTouching) {
                 this.mInTouching = false;
                 dealWithTouchEventCancel();
@@ -1623,9 +1637,9 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             return true;
         }
         int action = motionEvent.getAction();
-        if (action == 0) {
+        if (action == MotionEvent.ACTION_DOWN) {
             this.mInTouching = true;
-        } else if (action == 3 || action == 1) {
+        } else if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
             this.mInTouching = false;
         }
         if (this.mEnableAdaptiveVibrator) {
@@ -1635,7 +1649,6 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
     }
 
     public void refresh() {
-        ColorStateList colorStateList;
         String resourceTypeName = getResources().getResourceTypeName(this.mStyle);
         TypedArray typedArrayObtainStyledAttributes = null;
         if ("attr".equals(resourceTypeName)) {
@@ -1658,96 +1671,75 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         if (!this.mKey.isEmpty()) {
             this.mKey.get(0).mIcon = this.mKeyCollectDrawable;
         }
-        int i2 = 0;
-        while (true) {
-            if (i2 >= this.mKey.size()) {
-                break;
-            }
+        for (int i = 0; i < this.mKey.size(); i++) {
             this.mIconState.add(new int[sSTYLEABLELENGTH]);
             this.mPrivateFlags.add(0);
-            Key key = this.mKey.get(i2);
-            refreshIconState(i2, key.getIcon());
-            if (key.mIsDot && (colorStateList = this.mDefaultDotTextColor) != null) {
-                key.mTextPaint.setColor(colorStateList.getColorForState(getIconState(i2), this.mDefaultDotTextColor.getDefaultColor()));
-                break;
-            }
-            ColorStateList colorStateList2 = this.mTextColor;
-            if (colorStateList2 != null) {
-                key.mTextPaint.setColor(colorStateList2.getColorForState(getIconState(i2), this.mTextColor.getDefaultColor()));
-            }
-            i2++;
+            Key key = this.mKey.get(i);
+            refreshIconState(i, key.getIcon());
+            applyKeyTextColor(key, i);
         }
-        this.mLetterDrawHeightPx = UIUtil.dip2px(getContext(), 16.0f);
+        this.mLetterDrawHeightPx = UIUtil.dip2px(getContext(), LETTER_DRAW_HEIGHT);
         invalidate();
     }
 
-    public void refreshIconState(int i2, Drawable drawable) {
-        this.mPrivateFlags.set(i2, Integer.valueOf(this.mPrivateFlags.get(i2).intValue() | 1024));
-        iconStateChanged(i2, drawable);
+    public void refreshIconState(int index, Drawable drawable) {
+        this.mPrivateFlags.set(index, Integer.valueOf(this.mPrivateFlags.get(index).intValue() | PFLAG_DRAWABLE_STATE_DIRTY));
+        iconStateChanged(index, drawable);
     }
 
-    public void setBackgroundAlignMode(int i2) {
-        this.mBackgroundAlignMode = i2;
+    public void setBackgroundAlignMode(int backgroundAlignMode) {
+        this.mBackgroundAlignMode = backgroundAlignMode;
     }
 
-    public void setBackgroundLeftMargin(int i2) {
-        this.mBackgroundLeftMargin = i2;
+    public void setBackgroundLeftMargin(int backgroundLeftMargin) {
+        this.mBackgroundLeftMargin = backgroundLeftMargin;
     }
 
-    public void setBackgroundRightMargin(int i2) {
-        this.mBackgroundRightMargin = i2;
+    public void setBackgroundRightMargin(int backgroundRightMargin) {
+        this.mBackgroundRightMargin = backgroundRightMargin;
     }
 
     public void setCharTextColor(ColorStateList colorStateList) {
         setCharTextColor(colorStateList, false);
     }
 
-    public void setCharTextSize(int i2) {
-        if (i2 != 0) {
-            this.mUserTextSize = i2;
-            this.mMeasurePaint.setTextSize(i2);
+    public void setCharTextSize(int userTextSize) {
+        if (userTextSize != 0) {
+            this.mUserTextSize = userTextSize;
+            this.mMeasurePaint.setTextSize(userTextSize);
         }
     }
 
     public void setDefaultTextColor(ColorStateList colorStateList) {
-        ColorStateList colorStateList2;
         this.mTextColor = colorStateList;
-        for (int i2 = 0; i2 < this.mKey.size(); i2++) {
+        for (int i = 0; i < this.mKey.size(); i++) {
             this.mIconState.add(new int[sSTYLEABLELENGTH]);
-            this.mPrivateFlags.add(new Integer(0));
-            refreshIconState(i2, this.mKey.get(i2).getIcon());
-            Key key = this.mKey.get(i2);
-            if (!key.mIsDot || (colorStateList2 = this.mDefaultDotTextColor) == null) {
-                ColorStateList colorStateList3 = this.mTextColor;
-                if (colorStateList3 != null) {
-                    key.mTextPaint.setColor(colorStateList3.getColorForState(getIconState(i2), this.mTextColor.getDefaultColor()));
-                }
-            } else {
-                key.mTextPaint.setColor(colorStateList2.getColorForState(getIconState(i2), this.mDefaultDotTextColor.getDefaultColor()));
-            }
+            this.mPrivateFlags.add(0);
+            refreshIconState(i, this.mKey.get(i).getIcon());
+            applyKeyTextColor(this.mKey.get(i), i);
         }
         invalidate();
     }
 
-    public void setDefaultTextSize(int i2) {
-        if (i2 > 0) {
-            this.mDefaultTextSize = i2;
-            int i6 = this.mItemSpacing;
-            int i10 = i2 + i6;
-            this.mCellHeight = i10;
-            this.mLetterDrawHeightPx = i10 + i6;
+    public void setDefaultTextSize(int defaultTextSize) {
+        if (defaultTextSize > 0) {
+            this.mDefaultTextSize = defaultTextSize;
+            int index = this.mItemSpacing;
+            int cellHeight = defaultTextSize + index;
+            this.mCellHeight = cellHeight;
+            this.mLetterDrawHeightPx = cellHeight + index;
         }
     }
 
-    public void setEnableAdaptiveVibrator(boolean z6) {
-        this.mEnableAdaptiveVibrator = z6;
+    public void setEnableAdaptiveVibrator(boolean enableAdaptiveVibrator) {
+        this.mEnableAdaptiveVibrator = enableAdaptiveVibrator;
     }
 
-    public void setFirstKeyIsCharacter(boolean z6) {
-        if (z6 == this.mFirstIsCharacter) {
+    public void setFirstKeyIsCharacter(boolean firstIsCharacter) {
+        if (firstIsCharacter == this.mFirstIsCharacter) {
             return;
         }
-        this.mFirstIsCharacter = z6;
+        this.mFirstIsCharacter = firstIsCharacter;
         initHeightRangeSpec();
     }
 
@@ -1761,29 +1753,29 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         }
     }
 
-    public void setFirstKeyPopupWindowSize(int i2, int i6) {
-        if (this.mPopupFirstLayoutWidth == i2 && this.mPopupFirstLayoutHeight == i6) {
+    public void setFirstKeyPopupWindowSize(int popupFirstLayoutWidth, int popupFirstLayoutHeight) {
+        if (this.mPopupFirstLayoutWidth == popupFirstLayoutWidth && this.mPopupFirstLayoutHeight == popupFirstLayoutHeight) {
             return;
         }
-        this.mPopupFirstLayoutWidth = i2;
-        this.mPopupFirstLayoutHeight = i6;
+        this.mPopupFirstLayoutWidth = popupFirstLayoutWidth;
+        this.mPopupFirstLayoutHeight = popupFirstLayoutHeight;
         ViewGroup.LayoutParams layoutParams = this.mPopupFirstLayout.getLayoutParams();
-        layoutParams.height = i6;
-        layoutParams.width = i2;
+        layoutParams.height = popupFirstLayoutHeight;
+        layoutParams.width = popupFirstLayoutWidth;
         this.mPopupFirstLayout.setLayoutParams(layoutParams);
         updatePopupWindow();
     }
 
-    public void setIsFirstMarginTop(boolean z6) {
-        this.mIsFirstMarginTop = z6;
+    public void setIsFirstMarginTop(boolean isFirstMarginTop) {
+        this.mIsFirstMarginTop = isFirstMarginTop;
     }
 
-    public void setItemSpacing(int i2) {
-        if (i2 > 0) {
-            this.mItemSpacing = i2;
-            int i6 = this.mDefaultTextSize + i2;
-            this.mCellHeight = i6;
-            this.mLetterDrawHeightPx = i6 + i2;
+    public void setItemSpacing(int itemSpacing) {
+        if (itemSpacing > 0) {
+            this.mItemSpacing = itemSpacing;
+            int cellHeight = this.mDefaultTextSize + itemSpacing;
+            this.mCellHeight = cellHeight;
+            this.mLetterDrawHeightPx = cellHeight + itemSpacing;
         }
     }
 
@@ -1799,9 +1791,9 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             COUILog.d(TAG, "setKeys indexIndicationKeys is null");
             return;
         }
-        for (int i2 = 0; i2 < arrayList.size(); i2++) {
-            if (TextUtils.isEmpty(arrayList.get(i2).keyText)) {
-                COUILog.d(TAG, "setKeys," + i2 + " the value.keyText is null");
+        for (int i = 0; i < arrayList.size(); i++) {
+            if (TextUtils.isEmpty(arrayList.get(i).keyText)) {
+                COUILog.d(TAG, "setKeys," + i + " the value.keyText is null");
                 return;
             }
         }
@@ -1821,46 +1813,46 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         int childCount = this.mSecondKeyContainer.getChildCount();
         if (length > childCount) {
             ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(this.mPopupFirstLayoutWidth, this.mPopupFirstLayoutHeight);
-            for (int i2 = 0; i2 < length - childCount; i2++) {
+            for (int i = 0; i < length - childCount; i++) {
                 TextView textView = (TextView) this.mLayoutInflater.inflate(R.layout.coui_touchsearch_popup_content_item, (ViewGroup) null);
-                textView.setTextSize(0, (int) COUIChangeTextUtil.getSuitableFontSize(this.mPopupSecondTextViewSize, this.mContext.getResources().getConfiguration().fontScale, 4));
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, (int) COUIChangeTextUtil.getSuitableFontSize(this.mPopupSecondTextViewSize, this.mContext.getResources().getConfiguration().fontScale, 4));
                 this.mSecondKeyContainer.addView(textView, layoutParams);
                 textView.setOnClickListener(this);
             }
         } else {
-            for (int i6 = 0; i6 < childCount - length; i6++) {
-                this.mSecondKeyContainer.removeViewAt((childCount - i6) - 1);
+            for (int j = 0; j < childCount - length; j++) {
+                this.mSecondKeyContainer.removeViewAt((childCount - j) - 1);
             }
         }
-        for (int i10 = 0; i10 < length; i10++) {
-            ((TextView) this.mSecondKeyContainer.getChildAt(i10)).setText(strArr[i10]);
+        for (int k = 0; k < length; k++) {
+            ((TextView) this.mSecondKeyContainer.getChildAt(k)).setText(strArr[k]);
         }
-        int i11 = ((ViewGroup.MarginLayoutParams) this.mPopupFirstLayout.getLayoutParams()).topMargin;
+        int index = ((ViewGroup.MarginLayoutParams) this.mPopupFirstLayout.getLayoutParams()).topMargin;
         ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) this.mSecondKeyScrollView.getLayoutParams();
-        int i12 = length * this.mPopupSecondTextHeight;
-        this.mScrollViewHeight = i12;
-        int iMin = Math.min(i12, this.mPopupWinSecondNameMaxHeight);
+        int scrollViewHeight = length * this.mPopupSecondTextHeight;
+        this.mScrollViewHeight = scrollViewHeight;
+        int iMin = Math.min(scrollViewHeight, this.mPopupWinSecondNameMaxHeight);
         this.mScrollViewHeight = iMin;
         marginLayoutParams.height = iMin;
         this.mSecondKeyScrollView.setLayoutParams(marginLayoutParams);
-        this.mPopupWindowSecondLocaly = (this.mPopupWindowFirstLocaly + i11) - ((this.mScrollViewHeight - this.mPopupFirstLayoutHeight) / 2);
+        this.mPopupWindowSecondLocaly = (this.mPopupWindowFirstLocaly + index) - ((this.mScrollViewHeight - this.mPopupFirstLayoutHeight) / 2);
         int height = this.mLocationInWindow[1] + getHeight();
-        int i13 = this.mSecondPopupOffset;
-        int i14 = (height + i13) - this.mScrollViewHeight;
-        int i15 = this.mLocationInWindow[1] - i13;
-        int i16 = this.mPopupWindowSecondLocaly;
-        if (i16 < i15) {
-            this.mPopupWindowSecondLocaly = i15;
-        } else if (i16 > i14) {
-            this.mPopupWindowSecondLocaly = i14;
+        int count = this.mSecondPopupOffset;
+        int popupWindowSecondLocaly = (height + count) - this.mScrollViewHeight;
+        int popupWindowSecondLocaly2 = this.mLocationInWindow[1] - count;
+        int value = this.mPopupWindowSecondLocaly;
+        if (value < popupWindowSecondLocaly2) {
+            this.mPopupWindowSecondLocaly = popupWindowSecondLocaly2;
+        } else if (value > popupWindowSecondLocaly) {
+            this.mPopupWindowSecondLocaly = popupWindowSecondLocaly;
         }
         updateSecondPopup();
     }
 
-    public void setPopText(String str, String str2) {
+    public void setPopText(String str, String text) {
         stopAnimationRunning();
         startFirstAnimationToShow();
-        this.mPopupFirstTextView.setText(str2);
+        this.mPopupFirstTextView.setText(text);
         this.mKeyIndices = str.charAt(0) - '?';
         if (str.equals(INIT_STR_LAST_SYM_BOL)) {
             this.mKeyIndices = 1;
@@ -1868,16 +1860,16 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         this.mHasValueKeyTexts.size();
     }
 
-    public void setPopupSecondTextHeight(int i2) {
-        this.mPopupSecondTextHeight = i2;
+    public void setPopupSecondTextHeight(int popupSecondTextHeight) {
+        this.mPopupSecondTextHeight = popupSecondTextHeight;
     }
 
-    public void setPopupSecondTextViewSize(int i2) {
-        this.mPopupSecondTextViewSize = i2;
+    public void setPopupSecondTextViewSize(int popupSecondTextViewSize) {
+        this.mPopupSecondTextViewSize = popupSecondTextViewSize;
     }
 
-    public void setPopupSecondTextWidth(int i2) {
-        this.mPopupSecondTextWidth = i2;
+    public void setPopupSecondTextWidth(int popupSecondTextWidth) {
+        this.mPopupSecondTextWidth = popupSecondTextWidth;
     }
 
     public void setPopupTextView(String str) {
@@ -1886,33 +1878,33 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         setTouchBarSelectedText(str);
     }
 
-    public void setPopupWindowFirstTextSize(int i2) {
-        if (this.mPopupWindowFirstKeyTextSize != i2) {
-            this.mPopupWindowFirstKeyTextSize = i2;
-            this.mPopupFirstTextView.setTextSize(0, i2);
+    public void setPopupWindowFirstTextSize(int popupWindowFirstKeyTextSize) {
+        if (this.mPopupWindowFirstKeyTextSize != popupWindowFirstKeyTextSize) {
+            this.mPopupWindowFirstKeyTextSize = popupWindowFirstKeyTextSize;
+            this.mPopupFirstTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, popupWindowFirstKeyTextSize);
         }
     }
 
-    public void setPopupWindowTextColor(int i2) {
-        if (this.mPopupWindowFirstTextColor != i2) {
-            this.mPopupWindowFirstTextColor = i2;
-            this.mPopupFirstTextView.setTextColor(i2);
+    public void setPopupWindowTextColor(int popupWindowFirstTextColor) {
+        if (this.mPopupWindowFirstTextColor != popupWindowFirstTextColor) {
+            this.mPopupWindowFirstTextColor = popupWindowFirstTextColor;
+            this.mPopupFirstTextView.setTextColor(popupWindowFirstTextColor);
             invalidate();
         }
     }
 
-    public void setPopupWindowTopMinCoordinate(int i2) {
-        if (this.mPopupWindowMinTop != i2) {
-            this.mPopupWindowMinTop = i2;
+    public void setPopupWindowTopMinCoordinate(int popupWindowMinTop) {
+        if (this.mPopupWindowMinTop != popupWindowMinTop) {
+            this.mPopupWindowMinTop = popupWindowMinTop;
         }
     }
 
-    public void setSecondPopupMargin(int i2) {
-        this.mSecondPopupMargin = i2;
+    public void setSecondPopupMargin(int secondPopupMargin) {
+        this.mSecondPopupMargin = secondPopupMargin;
     }
 
-    public void setSecondPopupOffset(int i2) {
-        this.mSecondPopupOffset = i2;
+    public void setSecondPopupOffset(int secondPopupOffset) {
+        this.mSecondPopupOffset = secondPopupOffset;
     }
 
     @Deprecated
@@ -1940,8 +1932,8 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             this.mKeyIndices = 1;
         }
         int size = this.mKey.size();
-        int i2 = this.mKeyIndices;
-        if (i2 < 0 || i2 > size - 1) {
+        int index = this.mKeyIndices;
+        if (index < 0 || index > size - 1) {
             return;
         }
         invalidateTouchBarText();
@@ -1951,27 +1943,27 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         this.mTouchSearchActionListener = touchSearchActionListener;
     }
 
-    public void setVibrateIntensity(float f2) {
-        this.mVibrateIntensity = f2;
+    public void setVibrateIntensity(float vibrateIntensity) {
+        this.mVibrateIntensity = vibrateIntensity;
     }
 
-    public void setVibrateLevel(int i2) {
-        this.mVibrateLevel = i2;
+    public void setVibrateLevel(int vibrateLevel) {
+        this.mVibrateLevel = vibrateLevel;
     }
 
     public void updateMoveTouchBarText(CharSequence charSequence) {
         int willDisplayY;
-        int i2;
+        int index;
         if (!this.mInTouching && (willDisplayY = getWillDisplayY(charSequence)) >= 0) {
             if (this.mHeightNotEnough) {
                 getKeyIndicesWithDots(willDisplayY);
                 int[] iArr = this.mKeyIndexAndOriginalIndex;
-                int i6 = iArr[0];
-                if (i6 < 0 || (i2 = iArr[1]) < 0) {
+                int keyIndices2 = iArr[0];
+                if (keyIndices2 < 0 || (index = iArr[1]) < 0) {
                     return;
                 }
-                this.mKeyIndices = i6;
-                this.mDisplayKey = this.mHasValueKeyTexts.get(i2).keyText;
+                this.mKeyIndices = keyIndices2;
+                this.mDisplayKey = this.mHasValueKeyTexts.get(index).keyText;
             } else {
                 int keyIndices = getKeyIndices(willDisplayY);
                 if (keyIndices < 0) {
@@ -1988,11 +1980,12 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         this(context, attributeSet, R.attr.couiTouchSearchViewStyle);
     }
 
-    private LetterLimitLevelInfo checkLetterLengthSmallLimit(int i2, int i6, int i10, int i11, int i12, int i13) {
-        if (i10 - i13 < 8) {
+    private LetterLimitLevelInfo checkLetterLengthSmallLimit(int dotLevel, int dotSize,
+                                                             int showLetterSize, int limitHeight, int replenishIndex, int lastSymbolAdjust) {
+        if (showLetterSize - lastSymbolAdjust < FIXED_MIN_LETTER_LENGTH_FOR_DISPLAY) {
             return null;
         }
-        return new LetterLimitLevelInfo(i2, i6, i10, i11, i12);
+        return new LetterLimitLevelInfo(dotLevel, dotSize, showLetterSize, limitHeight, replenishIndex);
     }
 
     public void setCharTextColor(ColorStateList colorStateList, ColorStateList colorStateList2) {
@@ -2000,27 +1993,27 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         setCharTextColor(colorStateList, false);
     }
 
-    public COUITouchSearchView(Context context, AttributeSet attributeSet, int i2) {
-        this(context, attributeSet, i2, R.style.Widget_COUI_COUITouchSearchView);
+    public COUITouchSearchView(Context context, AttributeSet attributeSet, int defStyleAttr) {
+        this(context, attributeSet, defStyleAttr, R.style.Widget_COUI_COUITouchSearchView);
     }
 
-    public void setCharTextColor(ColorStateList colorStateList, boolean z6) {
+    public void setCharTextColor(ColorStateList colorStateList, boolean enabled) {
         if (colorStateList != null) {
             this.mUserTextColor = colorStateList;
         }
-        if (z6) {
+        if (enabled) {
             update();
         }
     }
 
-    public COUITouchSearchView(Context context, AttributeSet attributeSet, int i2, int i6) {
-        super(context, attributeSet, i2);
+    public COUITouchSearchView(Context context, AttributeSet attributeSet, int defStyleAttr, int style) {
+        super(context, attributeSet, defStyleAttr);
         this.mPrivateFlags = new ArrayList();
         this.mIconState = new ArrayList();
         this.mFirstLayout = true;
         this.mFrameChanged = false;
         this.mDisplayKey = "";
-        this.mActivePointerId = -1;
+        this.mActivePointerId = INVALID_POINTER;
         this.mKeyIndices = -1;
         this.mKeyIndexAndOriginalIndex = new int[]{-1, -1};
         this.mPopupCollectDrawable = null;
@@ -2046,10 +2039,10 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         this.mVibrateIntensity = 1.0f;
         this.mIsFirstMarginTop = false;
         this.mDotLevel = 0;
-        this.mLetterDrawHeightPx = UIUtil.dip2px(getContext(), 16.0f);
+        this.mLetterDrawHeightPx = UIUtil.dip2px(getContext(), LETTER_DRAW_HEIGHT);
         this.mLimitLevelInfoArray = new ArrayList<>();
         this.mHasValueKeyTexts = new ArrayList<>();
-        this.mFirstPopupAlpha = 0.0f;
+        this.mFirstPopupAlpha = ALPHA_MIN;
         this.mFirstPopupScale = SCALE_MIN;
         this.mDismissTask = new Runnable() {
             @Override
@@ -2065,11 +2058,11 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
         this.mHandler = new Handler(Looper.getMainLooper());
         Resources resources = getResources();
         if (attributeSet == null || attributeSet.getStyleAttribute() == 0) {
-            this.mStyle = i6;
+            this.mStyle = style;
         } else {
             this.mStyle = attributeSet.getStyleAttribute();
         }
-        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUITouchSearchView, i2, i6);
+        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUITouchSearchView, defStyleAttr, style);
         initAttributes(resources, context, typedArrayObtainStyledAttributes);
         typedArrayObtainStyledAttributes.recycle();
         initDimensionAndColorAttributes(resources, context);
@@ -2081,7 +2074,7 @@ public class COUITouchSearchView extends View implements View.OnClickListener {
             this.mKeyDrawableHeight = this.mKeyCollectDrawable.getIntrinsicHeight();
         }
         initKeyValue(resources);
-        TextPaint textPaint = new TextPaint(1);
+        TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         this.mMeasurePaint = textPaint;
         textPaint.setTextSize(this.mDefaultTextSize);
         initPopupWindow(context);

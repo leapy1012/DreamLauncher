@@ -8,8 +8,11 @@ public class COUIViewCompat {
 
     public interface ViewCompatImpl {
         int getRawLayoutDirection(View view);
+
         int getTextAlignment(View view);
+
         boolean isVisibleToUser(View view);
+
         void setTextAlignment(View view, int textAlignment);
     }
 

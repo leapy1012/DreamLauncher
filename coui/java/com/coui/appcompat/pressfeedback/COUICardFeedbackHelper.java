@@ -178,15 +178,15 @@ public class COUICardFeedbackHelper {
                 ? mStartTranslateY + mDragMaxVertical : mStartTranslateY;
         float targetX = (dragDirection & DRAG_DIRECTION_HORIZONTAL) != 0
                 ? Math.max(minX, Math.min(maxX,
-                        mProxyView.getTranslationX() + getRealDragDistance(
-                                x - mLastX, mStartTranslateX, mProxyView.getTranslationX(),
-                                mDragMaxHorizontal)))
+                mProxyView.getTranslationX() + getRealDragDistance(
+                        x - mLastX, mStartTranslateX, mProxyView.getTranslationX(),
+                        mDragMaxHorizontal)))
                 : UNSET;
         float targetY = (dragDirection & DRAG_DIRECTION_VERTICAL) != 0
                 ? Math.max(minY, Math.min(maxY,
-                        mProxyView.getTranslationY() + getRealDragDistance(
-                                y - mLastY, mStartTranslateY, mProxyView.getTranslationY(),
-                                mDragMaxVertical)))
+                mProxyView.getTranslationY() + getRealDragDistance(
+                        y - mLastY, mStartTranslateY, mProxyView.getTranslationY(),
+                        mDragMaxVertical)))
                 : UNSET;
         if (!mEnableSloping && mCurDragDirection == DRAG_DIRECTION_ALL) {
             if (targetX != UNSET && targetY != UNSET) {

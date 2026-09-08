@@ -1,6 +1,7 @@
 package com.coui.component.responsiveui.window;
 
 import android.content.Context;
+
 import com.coui.component.responsiveui.unit.Dp;
 
 public final class LayoutGridWindowSize {

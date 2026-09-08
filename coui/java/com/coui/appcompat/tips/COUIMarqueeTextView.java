@@ -152,9 +152,19 @@ public final class COUIMarqueeTextView extends AppCompatTextView {
         mScroller.start();
     }
 
-    @Override public float getLeftFadingEdgeStrength() { return fadingEdgeStrength; }
-    @Override public float getRightFadingEdgeStrength() { return fadingEdgeStrength; }
-    public boolean isMarqueeEnable() { return isMarqueeEnable; }
+    @Override
+    public float getLeftFadingEdgeStrength() {
+        return fadingEdgeStrength;
+    }
+
+    @Override
+    public float getRightFadingEdgeStrength() {
+        return fadingEdgeStrength;
+    }
+
+    public boolean isMarqueeEnable() {
+        return isMarqueeEnable;
+    }
 
     @Override
     protected void onDetachedFromWindow() {

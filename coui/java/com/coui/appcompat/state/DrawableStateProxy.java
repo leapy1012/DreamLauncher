@@ -19,27 +19,50 @@ public interface DrawableStateProxy {
     int TOUCH_TYPE_SELECTED = 1;
 
     int getTouchType();
+
     boolean isDrawableEnabled();
+
     boolean isEnabled();
+
     boolean isFocused();
+
     boolean isHovered();
+
     boolean isNativeStateEnabled(int stateFlag);
+
     boolean isPressed();
+
     boolean isSelected();
+
     boolean isStateLocked(int state);
+
     boolean isTouchEntered();
+
     void onViewStateChanged(int state);
+
     void setDrawableEnabled(boolean enabled);
+
     void setFocusEntered();
+
     void setFocusExited();
+
     void setHoverEntered();
+
     void setHoverExited();
+
     void setNativeStateEnabled(int stateFlag, boolean disabled);
+
     void setSelectedEntered();
+
     void setSelectedExited();
+
     void setStateLocked(int state, boolean locked, boolean entered, boolean animated);
+
     void setTouchEntered();
+
     void setTouchExited();
+
     void setTouchSelectEntered();
+
     void setTouchSelectExited();
 }

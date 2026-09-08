@@ -358,11 +358,30 @@ public class COUIViewPager2 extends ViewGroup {
         @Override
         public abstract void onChanged();
 
-        @Override public final void onItemRangeChanged(int positionStart, int itemCount) { onChanged(); }
-        @Override public final void onItemRangeChanged(int positionStart, int itemCount, Object payload) { onChanged(); }
-        @Override public final void onItemRangeInserted(int positionStart, int itemCount) { onChanged(); }
-        @Override public final void onItemRangeMoved(int fromPosition, int toPosition, int itemCount) { onChanged(); }
-        @Override public final void onItemRangeRemoved(int positionStart, int itemCount) { onChanged(); }
+        @Override
+        public final void onItemRangeChanged(int positionStart, int itemCount) {
+            onChanged();
+        }
+
+        @Override
+        public final void onItemRangeChanged(int positionStart, int itemCount, Object payload) {
+            onChanged();
+        }
+
+        @Override
+        public final void onItemRangeInserted(int positionStart, int itemCount) {
+            onChanged();
+        }
+
+        @Override
+        public final void onItemRangeMoved(int fromPosition, int toPosition, int itemCount) {
+            onChanged();
+        }
+
+        @Override
+        public final void onItemRangeRemoved(int positionStart, int itemCount) {
+            onChanged();
+        }
     }
 
     public class LinearLayoutManagerImpl extends LinearLayoutManager {
@@ -384,7 +403,7 @@ public class COUIViewPager2 extends ViewGroup {
 
         @Override
         public boolean requestChildRectangleOnScreen(RecyclerView parent, View child, Rect rect,
-                boolean immediate, boolean focusedChildVisible) {
+                                                     boolean immediate, boolean focusedChildVisible) {
             return false;
         }
     }
@@ -459,8 +478,8 @@ public class COUIViewPager2 extends ViewGroup {
             public final float mTimeInVelocityRatio;
 
             public FlingScrollConfig(int minDurationMs, int maxDurationMs,
-                    Interpolator interpolator, float velocityThreshold, int maxVelocity,
-                    float velocityDecayFactor) {
+                                     Interpolator interpolator, float velocityThreshold, int maxVelocity,
+                                     float velocityDecayFactor) {
                 mMinDurationMs = minDurationMs;
                 mMaxDurationMs = maxDurationMs;
                 mInterpolator = interpolator != null ? interpolator : new LinearInterpolator();

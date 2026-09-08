@@ -15,9 +15,8 @@ import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.view.View;
 
-import androidx.core.view.ViewCompat;
-import com.coui.appcompat.animation.COUILinearInterpolator;
 import com.coui.appcompat.R;
+import com.coui.appcompat.animation.COUILinearInterpolator;
 
 
 public class COUILoadingButton extends COUIButton {
@@ -50,7 +49,7 @@ public class COUILoadingButton extends COUIButton {
     }
 
     private void drawClipDot(Canvas canvas, float left, float right, float textX, float textY,
-            TextPaint textPaint, int alpha) {
+                             TextPaint textPaint, int alpha) {
         textPaint.setAlpha(alpha);
         int saveCount = canvas.save();
         canvas.clipRect(left, 0.0f, right, getHeight());
@@ -82,7 +81,7 @@ public class COUILoadingButton extends COUIButton {
     }
 
     private ValueAnimator getAlphaAnimator(float startAlpha, float endAlpha, long duration,
-            long startDelay, ValueAnimator.AnimatorUpdateListener updateListener) {
+                                           long startDelay, ValueAnimator.AnimatorUpdateListener updateListener) {
         ValueAnimator animator = ValueAnimator.ofFloat(startAlpha, endAlpha);
         animator.setDuration(duration);
         animator.setStartDelay(startDelay);
@@ -131,7 +130,7 @@ public class COUILoadingButton extends COUIButton {
         this.mLoadingAnim.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animator) {
-                if (COUILoadingButton.this.mLoadingAnim == null || COUILoadingButton.this.mButtonState != 1) {
+                if (COUILoadingButton.this.mLoadingAnim == null || COUILoadingButton.this.mButtonState != LOADING_STATE) {
                     return;
                 }
                 COUILoadingButton.this.post(new Runnable() {
@@ -189,7 +188,7 @@ public class COUILoadingButton extends COUIButton {
     public void onAttachedToWindow() {
         AnimatorSet animatorSet;
         super.onAttachedToWindow();
-        if (this.mButtonState != 1 || (animatorSet = this.mLoadingAnim) == null || animatorSet.isRunning()) {
+        if (this.mButtonState != LOADING_STATE || (animatorSet = this.mLoadingAnim) == null || animatorSet.isRunning()) {
             return;
         }
         this.mLoadingAnim.start();
@@ -198,7 +197,7 @@ public class COUILoadingButton extends COUIButton {
     @Override
     public void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (this.mButtonState == 1) {
+        if (this.mButtonState == LOADING_STATE) {
             this.mLoadingAnim.cancel();
         }
     }

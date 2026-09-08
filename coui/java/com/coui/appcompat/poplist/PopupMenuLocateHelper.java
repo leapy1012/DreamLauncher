@@ -6,11 +6,13 @@ import android.util.Log;
 import android.view.DisplayCutout;
 import android.view.View;
 import android.view.ViewGroup;
-import com.coui.appcompat.log.COUILog;
+
 import com.coui.appcompat.R;
+import com.coui.appcompat.log.COUILog;
 import com.coui.component.responsiveui.ResponsiveUIModel;
 import com.coui.component.responsiveui.layoutgrid.MarginType;
 import com.coui.component.responsiveui.window.WindowTotalSizeClass;
+
 import java.util.Arrays;
 
 
@@ -99,8 +101,8 @@ final class PopupMenuLocateHelper {
         }
 
         @Override
-        public void setPopupMenuRuleEnabled(boolean z6) {
-            this.mEnabled = z6;
+        public void setPopupMenuRuleEnabled(boolean popupMenuRuleEnabled) {
+            this.mEnabled = popupMenuRuleEnabled;
         }
     }
 
@@ -129,7 +131,7 @@ final class PopupMenuLocateHelper {
     }
 
 
-    private void executeConfigRules(View view, int i2, int i6) {
+    private void executeConfigRules(View view, int index, int index_2) {
         this.mDomain.reset();
         this.mExecutor.execute((PopupMenuRule) this.mWindowConfigRule, this.mDomain);
         if (!this.mIgnoreBarrier && this.mUseWindowBarrier) {
@@ -142,7 +144,7 @@ final class PopupMenuLocateHelper {
                 return;
             }
         }
-        if (i2 == Integer.MIN_VALUE || i6 == Integer.MIN_VALUE) {
+        if (index == Integer.MIN_VALUE || index_2 == Integer.MIN_VALUE) {
             this.mExecutor.execute((PopupMenuRule) this.mDefaultAnchorConfigRule, this.mDomain);
         } else {
             this.mExecutor.execute((PopupMenuRule) this.mContextAnchorConfigRule, this.mDomain);
@@ -176,8 +178,8 @@ final class PopupMenuLocateHelper {
         if (view instanceof ViewGroup) {
             ViewGroup viewGroup = (ViewGroup) view;
             int childCount = viewGroup.getChildCount();
-            for (int i2 = 0; i2 < childCount; i2++) {
-                findAllBarrierRulesAndExecute(viewGroup.getChildAt(i2));
+            for (int index = 0; index < childCount; index++) {
+                findAllBarrierRulesAndExecute(viewGroup.getChildAt(index));
             }
         }
     }
@@ -204,29 +206,29 @@ final class PopupMenuLocateHelper {
     }
 
 
-    public void lambda$setupMainMenuGlobalOffsetRule$0(PopupMenuDomain popupMenuDomain) {
-        int i2 = this.mGlobalOffsetX;
-        popupMenuDomain.mGlobalOffsetX = i2;
+    public void applyMainMenuGlobalOffset(PopupMenuDomain popupMenuDomain) {
+        int index = this.mGlobalOffsetX;
+        popupMenuDomain.mGlobalOffsetX = index;
         popupMenuDomain.mGlobalOffsetY = this.mGlobalOffsetY;
-        int iMin = Math.min(Math.max(this.mAvailableBounds.left, popupMenuDomain.mMainMenu.left + i2), this.mAvailableBounds.right - popupMenuDomain.mMainMenu.width());
+        int iMin = Math.min(Math.max(this.mAvailableBounds.left, popupMenuDomain.mMainMenu.left + index), this.mAvailableBounds.right - popupMenuDomain.mMainMenu.width());
         int iMin2 = Math.min(Math.max(this.mAvailableBounds.top, popupMenuDomain.mMainMenu.top + this.mGlobalOffsetY), this.mAvailableBounds.bottom - popupMenuDomain.mMainMenu.height());
         Rect rect = popupMenuDomain.mMainMenu;
         rect.set(iMin, iMin2, rect.width() + iMin, popupMenuDomain.mMainMenu.height() + iMin2);
     }
 
-    private void setAnchor(View view, int i2, int i6, View view2) {
+    private void setAnchor(View view, int index, int index_2, View view_2) {
         getGlobalVisibleRectWithoutTransformation(view, this.mAnchorBounds);
-        if (i2 != Integer.MIN_VALUE && i6 != Integer.MIN_VALUE) {
+        if (index != Integer.MIN_VALUE && index_2 != Integer.MIN_VALUE) {
             Rect rect = this.mAnchorBounds;
-            int i10 = rect.left;
-            int i11 = rect.top;
-            rect.set(i10 + i2, i11 + i6, i10 + i2, i11 + i6);
+            int index_3 = rect.left;
+            int index_4 = rect.top;
+            rect.set(index_3 + index, index_4 + index_2, index_3 + index, index_4 + index_2);
         }
-        Rect rect2 = this.mContentVisibleBounds;
+        Rect rect_2 = this.mContentVisibleBounds;
         int[] iArr = this.mOffset;
-        rect2.offset(-iArr[0], -iArr[1]);
-        Rect rect3 = this.mContentVisibleBounds;
-        rect3.bottom = Math.min(rect3.bottom, this.mApplicationWindow.bottom);
+        rect_2.offset(-iArr[0], -iArr[1]);
+        Rect rect_3 = this.mContentVisibleBounds;
+        rect_3.bottom = Math.min(rect_3.bottom, this.mApplicationWindow.bottom);
         ResponsiveUIModel responsiveUIModel = this.mResponsiveUIModel;
         if (responsiveUIModel == null) {
             ResponsiveUIModel responsiveUIModel2 = new ResponsiveUIModel(view.getContext(), Math.abs(this.mApplicationWindow.width()), Math.abs(this.mApplicationWindow.height()));
@@ -326,7 +328,7 @@ final class PopupMenuLocateHelper {
         this.mMainMenuGlobalOffsetRule = new PopupMenuControlRule() {
             @Override
             public final void operation(PopupMenuDomain popupMenuDomain) {
-                PopupMenuLocateHelper.this.lambda$setupMainMenuGlobalOffsetRule$0(popupMenuDomain);
+                PopupMenuLocateHelper.this.applyMainMenuGlobalOffset(popupMenuDomain);
             }
         };
     }
@@ -380,19 +382,19 @@ final class PopupMenuLocateHelper {
                 }
             }
 
-            private boolean tryLocateAboveAnchor(int i2) {
-                if (i2 - PopupMenuLocateHelper.this.mAvailableBounds.top < PopupMenuLocateHelper.this.mMainMenuHeight) {
+            private boolean tryLocateAboveAnchor(int y_2) {
+                if (y_2 - PopupMenuLocateHelper.this.mAvailableBounds.top < PopupMenuLocateHelper.this.mMainMenuHeight) {
                     return false;
                 }
-                this.mY = i2 - PopupMenuLocateHelper.this.mMainMenuHeight;
+                this.mY = y_2 - PopupMenuLocateHelper.this.mMainMenuHeight;
                 return true;
             }
 
-            private boolean tryLocateBelowAnchor(int i2) {
-                if (PopupMenuLocateHelper.this.mAvailableBounds.bottom - i2 < PopupMenuLocateHelper.this.mMainMenuHeight) {
+            private boolean tryLocateBelowAnchor(int y_2) {
+                if (PopupMenuLocateHelper.this.mAvailableBounds.bottom - y_2 < PopupMenuLocateHelper.this.mMainMenuHeight) {
                     return false;
                 }
-                this.mY = i2;
+                this.mY = y_2;
                 return true;
             }
 
@@ -402,10 +404,10 @@ final class PopupMenuLocateHelper {
                 popupMenuDomain.getAnchorRealRect(rect);
                 this.mY = PopupMenuLocateHelper.this.mAvailableBounds.top;
                 locateY(rect);
-                Rect rect2 = popupMenuDomain.mMainMenu;
-                int i2 = rect2.left;
-                int i6 = this.mY;
-                rect2.set(i2, i6, rect2.right, PopupMenuLocateHelper.this.mMainMenuHeight + i6);
+                Rect rect_2 = popupMenuDomain.mMainMenu;
+                int y_2 = rect_2.left;
+                int index = this.mY;
+                rect_2.set(y_2, index, rect_2.right, PopupMenuLocateHelper.this.mMainMenuHeight + index);
             }
         };
     }
@@ -435,8 +437,8 @@ final class PopupMenuLocateHelper {
                     return;
                 }
                 Rect rect = popupMenuDomain.mMainMenuRelocated;
-                Rect rect2 = popupMenuDomain.mMainMenu;
-                rect.set(rect2.left, rect2.top, rect2.right - PopupMenuLocateHelper.this.mMainMenuShrinkWidth, popupMenuDomain.mMainMenu.bottom - ((int) ((PopupMenuLocateHelper.this.mMainMenuShrinkWidth / popupMenuDomain.mMainMenu.width()) * popupMenuDomain.mMainMenu.height())));
+                Rect rect_2 = popupMenuDomain.mMainMenu;
+                rect.set(rect_2.left, rect_2.top, rect_2.right - PopupMenuLocateHelper.this.mMainMenuShrinkWidth, popupMenuDomain.mMainMenu.bottom - ((int) ((PopupMenuLocateHelper.this.mMainMenuShrinkWidth / popupMenuDomain.mMainMenu.width()) * popupMenuDomain.mMainMenu.height())));
                 popupMenuDomain.mMainMenuRelocated.offset(getOffsetX(popupMenuDomain), getOffsetY(popupMenuDomain));
             }
         };
@@ -464,58 +466,53 @@ final class PopupMenuLocateHelper {
     private void setupSubMenuLocateRule() {
         this.mSubMenuLocateRule = new PopupMenuControlRule() {
             private int getOffsetX(PopupMenuDomain popupMenuDomain) {
-                int i2;
-                int i6;
+                int index;
+                int index_2;
                 if (PopupMenuLocateHelper.this.isCurrentContainerSmallScreen()) {
                     return popupMenuDomain.mMainMenu.left;
                 }
                 if (PopupMenuLocateHelper.this.mIsRtl) {
                     if ((popupMenuDomain.mMainMenuRelocated.right - PopupMenuLocateHelper.this.mHorizontalOverlapBetweenMainAndSubMenu) + PopupMenuLocateHelper.this.mSubMenuWidth < PopupMenuLocateHelper.this.mAvailableBounds.right) {
-                        i2 = popupMenuDomain.mMainMenuRelocated.right;
-                        i6 = PopupMenuLocateHelper.this.mHorizontalOverlapBetweenMainAndSubMenu;
+                        index = popupMenuDomain.mMainMenuRelocated.right;
+                        index_2 = PopupMenuLocateHelper.this.mHorizontalOverlapBetweenMainAndSubMenu;
                     } else {
-                        i2 = popupMenuDomain.mMainMenuRelocated.left + PopupMenuLocateHelper.this.mHorizontalOverlapBetweenMainAndSubMenu;
-                        i6 = PopupMenuLocateHelper.this.mSubMenuWidth;
+                        index = popupMenuDomain.mMainMenuRelocated.left + PopupMenuLocateHelper.this.mHorizontalOverlapBetweenMainAndSubMenu;
+                        index_2 = PopupMenuLocateHelper.this.mSubMenuWidth;
                     }
                 } else if ((popupMenuDomain.mMainMenuRelocated.left + PopupMenuLocateHelper.this.mHorizontalOverlapBetweenMainAndSubMenu) - PopupMenuLocateHelper.this.mSubMenuWidth > PopupMenuLocateHelper.this.mAvailableBounds.left) {
-                    i2 = popupMenuDomain.mMainMenuRelocated.left + PopupMenuLocateHelper.this.mHorizontalOverlapBetweenMainAndSubMenu;
-                    i6 = PopupMenuLocateHelper.this.mSubMenuWidth;
+                    index = popupMenuDomain.mMainMenuRelocated.left + PopupMenuLocateHelper.this.mHorizontalOverlapBetweenMainAndSubMenu;
+                    index_2 = PopupMenuLocateHelper.this.mSubMenuWidth;
                 } else {
-                    i2 = popupMenuDomain.mMainMenuRelocated.right;
-                    i6 = PopupMenuLocateHelper.this.mHorizontalOverlapBetweenMainAndSubMenu;
+                    index = popupMenuDomain.mMainMenuRelocated.right;
+                    index_2 = PopupMenuLocateHelper.this.mHorizontalOverlapBetweenMainAndSubMenu;
                 }
-                return i2 - i6;
+                return index - index_2;
             }
 
             private int getOffsetY(PopupMenuDomain popupMenuDomain) {
                 int subMenuAnchorTopAfterMainMenuRelocated;
-                int i2;
+                int index;
                 if (PopupMenuLocateHelper.this.isCurrentContainerSmallScreen()) {
                     subMenuAnchorTopAfterMainMenuRelocated = getSubMenuAnchorTopAfterMainMenuRelocated(popupMenuDomain);
                     if ((subMenuAnchorTopAfterMainMenuRelocated - PopupMenuLocateHelper.this.mVerticalOverlapBetweenMainAndSubMenu) + PopupMenuLocateHelper.this.mSubMenuHeight < PopupMenuLocateHelper.this.mAvailableBounds.bottom) {
-                        i2 = PopupMenuLocateHelper.this.mVerticalOverlapBetweenMainAndSubMenu;
+                        index = PopupMenuLocateHelper.this.mVerticalOverlapBetweenMainAndSubMenu;
                     } else {
                         subMenuAnchorTopAfterMainMenuRelocated = PopupMenuLocateHelper.this.mAvailableBounds.bottom;
-                        i2 = PopupMenuLocateHelper.this.mSubMenuHeight;
+                        index = PopupMenuLocateHelper.this.mSubMenuHeight;
                     }
                 } else {
                     if (PopupMenuLocateHelper.this.mSubmenuAnchorBounds.top + PopupMenuLocateHelper.this.mSubMenuHeight < PopupMenuLocateHelper.this.mAvailableBounds.bottom) {
                         return PopupMenuLocateHelper.this.mSubmenuAnchorBounds.top;
                     }
                     subMenuAnchorTopAfterMainMenuRelocated = PopupMenuLocateHelper.this.mAvailableBounds.bottom;
-                    i2 = PopupMenuLocateHelper.this.mSubMenuHeight;
+                    index = PopupMenuLocateHelper.this.mSubMenuHeight;
                 }
-                return subMenuAnchorTopAfterMainMenuRelocated - i2;
+                return subMenuAnchorTopAfterMainMenuRelocated - index;
             }
 
             private int getSubMenuAnchorTopAfterMainMenuRelocated(PopupMenuDomain popupMenuDomain) {
-                int i2 = PopupMenuLocateHelper.this.mSubmenuAnchorBounds.top;
-                float heightRatio = popupMenuDomain.mMainMenu.height() > 0
-                        ? popupMenuDomain.mMainMenuRelocated.height()
-                            / (float) popupMenuDomain.mMainMenu.height()
-                        : 1.0f;
-                return (int) (popupMenuDomain.mMainMenuRelocated.top
-                        + (heightRatio * (i2 - popupMenuDomain.mMainMenu.top)));
+                int index = PopupMenuLocateHelper.this.mSubmenuAnchorBounds.top;
+                return (int) (popupMenuDomain.mMainMenuRelocated.top + ((popupMenuDomain.mMainMenu.height() > 0 ? popupMenuDomain.mMainMenuRelocated.height() / popupMenuDomain.mMainMenu.height() : 1.0f) * (index - popupMenuDomain.mMainMenu.top)));
             }
 
             @Override
@@ -567,10 +564,10 @@ final class PopupMenuLocateHelper {
             @Override
             public Rect getDisplayFrame() {
                 PopupMenuLocateHelper popupMenuLocateHelper = PopupMenuLocateHelper.this;
-                int i2 = popupMenuLocateHelper.mApplicationWindow.bottom - popupMenuLocateHelper.mContentVisibleBounds.bottom;
+                int index = popupMenuLocateHelper.mApplicationWindow.bottom - popupMenuLocateHelper.mContentVisibleBounds.bottom;
                 Rect rect = this.mDisplayFrame;
-                Rect rect2 = PopupMenuLocateHelper.this.mApplicationWindow;
-                rect.set(0, rect2.bottom - i2, Math.abs(rect2.width()), PopupMenuLocateHelper.this.mApplicationWindow.bottom);
+                Rect rect_2 = PopupMenuLocateHelper.this.mApplicationWindow;
+                rect.set(0, rect_2.bottom - index, Math.abs(rect_2.width()), PopupMenuLocateHelper.this.mApplicationWindow.bottom);
                 return this.mDisplayFrame;
             }
 
@@ -644,9 +641,9 @@ final class PopupMenuLocateHelper {
                     this.mDisplayFrame.set(0, 0, PopupMenuLocateHelper.this.mDisplayCutout.getBoundingRectLeft().right, Math.abs(PopupMenuLocateHelper.this.mApplicationWindow.height()));
                 } else if (!PopupMenuLocateHelper.this.mDisplayCutout.getBoundingRectRight().isEmpty()) {
                     Rect rect = this.mDisplayFrame;
-                    int i2 = PopupMenuLocateHelper.this.mDisplayCutout.getBoundingRectRight().left;
-                    Rect rect2 = PopupMenuLocateHelper.this.mApplicationWindow;
-                    rect.set(i2, 0, rect2.right, Math.abs(rect2.height()));
+                    int boundingRectRight = PopupMenuLocateHelper.this.mDisplayCutout.getBoundingRectRight().left;
+                    Rect rect_2 = PopupMenuLocateHelper.this.mApplicationWindow;
+                    rect.set(boundingRectRight, 0, rect_2.right, Math.abs(rect_2.height()));
                 }
                 return this.mDisplayFrame;
             }
@@ -705,9 +702,9 @@ final class PopupMenuLocateHelper {
                 PopupMenuLocateHelper popupMenuLocateHelper = PopupMenuLocateHelper.this;
                 int iMax = Math.max(iMargin, popupMenuLocateHelper.mApplicationWindow.right - popupMenuLocateHelper.mContentVisibleBounds.right);
                 Rect rect = this.mDisplayFrame;
-                Rect rect2 = PopupMenuLocateHelper.this.mApplicationWindow;
-                int i2 = rect2.right;
-                rect.set(i2 - iMax, 0, i2, Math.abs(rect2.height()));
+                Rect rect_2 = PopupMenuLocateHelper.this.mApplicationWindow;
+                int index = rect_2.right;
+                rect.set(index - iMax, 0, index, Math.abs(rect_2.height()));
                 return this.mDisplayFrame;
             }
 
@@ -750,24 +747,24 @@ final class PopupMenuLocateHelper {
         };
     }
 
-    public boolean checkIfLimitedWindowOrAnchorResized(View view, int i2, int i6, View view2) {
-        boolean z6 = true;
+    public boolean checkIfLimitedWindowOrAnchorResized(View view, int index, int index_2, View view_2) {
+        boolean flag = true;
         if (view == null) {
             COUILog.e(TAG, "Anchor is null!");
             return true;
         }
-        if (view2 == null) {
-            view2 = view.getRootView();
+        if (view_2 == null) {
+            view_2 = view.getRootView();
         }
-        view2.getWindowVisibleDisplayFrame(this.mTempContentVisibleBounds);
+        view_2.getWindowVisibleDisplayFrame(this.mTempContentVisibleBounds);
         if (this.mTempContentVisibleBounds.width() == this.mContentVisibleBounds.width() && this.mTempContentVisibleBounds.height() == this.mContentVisibleBounds.height()) {
-            z6 = false;
+            flag = false;
         } else {
             COUILog.w(TAG, "Visible bounds changed!");
         }
         COUILog.d(TAG, " old content visible bounds = " + this.mContentVisibleBounds + " new content visible bounds = " + this.mTempContentVisibleBounds);
         this.mContentVisibleBounds.set(this.mTempContentVisibleBounds);
-        return z6;
+        return flag;
     }
 
     public PopupMenuDomain getDomain() {
@@ -803,55 +800,55 @@ final class PopupMenuLocateHelper {
         return responsiveUIModel != null && responsiveUIModel.windowSizeClass().getWindowTotalSizeClass() == WindowTotalSizeClass.Compact;
     }
 
-    public void prepareShowMainMenu(int i2, int i6, boolean z6, int i10, int i11) {
-        this.mLocateFromAboveAnchorToBelow = z6;
-        this.mGlobalOffsetX = i10;
-        this.mGlobalOffsetY = i11;
+    public void prepareShowMainMenu(int index, int index_2, boolean flag, int index_3, int index_4) {
+        this.mLocateFromAboveAnchorToBelow = flag;
+        this.mGlobalOffsetX = index_3;
+        this.mGlobalOffsetY = index_4;
         this.mDomain.getAvailableRect(this.mAvailableBounds);
-        this.mMainMenuWidth = Math.min(i2, Math.abs(this.mAvailableBounds.width()));
-        this.mMainMenuHeight = Math.min(i6, Math.abs(this.mAvailableBounds.height()));
+        this.mMainMenuWidth = Math.min(index, Math.abs(this.mAvailableBounds.width()));
+        this.mMainMenuHeight = Math.min(index_2, Math.abs(this.mAvailableBounds.height()));
         executeShowMainMenu();
         this.mDomain.dump();
         this.mExecutor.endConfigRulesRecord();
     }
 
-    public void prepareShowSubMenu(View view, int i2, int i6, boolean z6) {
-        this.mIsRtl = z6;
+    public void prepareShowSubMenu(View view, int index, int index_2, boolean flag) {
+        this.mIsRtl = flag;
         boolean zIsCurrentContainerSmallScreen = isCurrentContainerSmallScreen();
         setSubmenuAnchor(view);
-        this.mSubMenuWidth = Math.min(i2, Math.abs(this.mAvailableBounds.width()));
-        this.mSubMenuHeight = Math.min(i6, Math.abs(this.mAvailableBounds.height()) - (zIsCurrentContainerSmallScreen ? this.mMinGapBetweenMainAndSubMenu : 0));
+        this.mSubMenuWidth = Math.min(index, Math.abs(this.mAvailableBounds.width()));
+        this.mSubMenuHeight = Math.min(index_2, Math.abs(this.mAvailableBounds.height()) - (zIsCurrentContainerSmallScreen ? this.mMinGapBetweenMainAndSubMenu : 0));
         executeShowSubMenu();
         this.mDomain.dump();
     }
 
-    public void prepareWindowAndAnchor(View view, int i2, int i6, View view2) {
-        View rootView = view2 != null ? view2 : view.getRootView();
+    public void prepareWindowAndAnchor(View view, int index, int index_2, View view_2) {
+        View rootView = view_2 != null ? view_2 : view.getRootView();
         rootView.getLocationOnScreen(this.mOffset);
         rootView.getGlobalVisibleRect(this.mApplicationWindow);
         rootView.getWindowVisibleDisplayFrame(this.mContentVisibleBounds);
         if (COUI_DEBUG) {
-            Log.d(TAG, "limited window = " + rootView + " anchor = " + view + " window location = (" + this.mOffset[0] + ", " + this.mOffset[1] + ") anchor location = (" + this.mAnchorOffset[0] + ", " + this.mAnchorOffset[1] + ") final offset = (" + i2 + ", " + i6 + ") use window barrier = " + this.mUseWindowBarrier + " center align = " + this.mCenterAlign + " mApplicationWindow [left " + this.mApplicationWindow.left + " top " + this.mApplicationWindow.top + " right " + this.mApplicationWindow.right + " bottom " + this.mApplicationWindow.bottom + "]");
+            Log.d(TAG, "limited window = " + rootView + " anchor = " + view + " window location = (" + this.mOffset[0] + ", " + this.mOffset[1] + ") anchor location = (" + this.mAnchorOffset[0] + ", " + this.mAnchorOffset[1] + ") final offset = (" + index + ", " + index_2 + ") use window barrier = " + this.mUseWindowBarrier + " center align = " + this.mCenterAlign + " mApplicationWindow [left " + this.mApplicationWindow.left + " top " + this.mApplicationWindow.top + " right " + this.mApplicationWindow.right + " bottom " + this.mApplicationWindow.bottom + "]");
         }
-        setAnchor(view, i2, i6, view2);
+        setAnchor(view, index, index_2, view_2);
         if (view.getRootWindowInsets() != null) {
             this.mDisplayCutout = view.getRootWindowInsets().getDisplayCutout();
         }
         this.mExecutor.beginConfigRulesRecord();
-        executeConfigRules(view, i2, i6);
+        executeConfigRules(view, index, index_2);
         findAllBarrierRulesAndExecute(view.getRootView());
     }
 
-    public void setCenterAlign(boolean z6) {
-        this.mCenterAlign = z6;
-        this.mDomain.mMainMenuCenterAlign = z6;
+    public void setCenterAlign(boolean centerAlign) {
+        this.mCenterAlign = centerAlign;
+        this.mDomain.mMainMenuCenterAlign = centerAlign;
     }
 
-    public void setSubMenuAnchorIsFirstItem(boolean z6) {
-        this.mDomain.mSubMenuAnchorIsFirstItem = z6;
+    public void setSubMenuAnchorIsFirstItem(boolean subMenuAnchorIsFirstItem) {
+        this.mDomain.mSubMenuAnchorIsFirstItem = subMenuAnchorIsFirstItem;
     }
 
-    public void useWindowBarrier(boolean z6) {
-        this.mUseWindowBarrier = z6;
+    public void useWindowBarrier(boolean flag) {
+        this.mUseWindowBarrier = flag;
     }
 }

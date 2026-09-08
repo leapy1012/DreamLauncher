@@ -7,8 +7,10 @@ import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+
 import com.coui.appcompat.log.COUILog;
 import com.coui.appcompat.view.COUICompatUtil;
+
 import java.lang.ref.WeakReference;
 
 public class COUIStatusBarResponseUtil {

@@ -4,12 +4,14 @@ import android.util.SparseIntArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.PathInterpolator;
+
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
+
 import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
-import com.coui.appcompat.tablayout.COUITabLayout;
 import com.coui.appcompat.viewpager.COUIViewPager2;
+
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -40,7 +42,7 @@ public final class COUITabLayoutMediator {
     private final COUIViewPager2 mViewPager;
 
     public interface OnConfigureTabCallback {
-        void onConfigureTab(COUITab cOUITab, int i2);
+        void onConfigureTab(COUITab cOUITab, int index);
     }
 
     public class PagerAdapterObserver extends RecyclerView.AdapterDataObserver {
@@ -53,27 +55,27 @@ public final class COUITabLayoutMediator {
         }
 
         @Override
-        public void onItemRangeChanged(int i2, int i6) {
+        public void onItemRangeChanged(int index, int index_2) {
             COUITabLayoutMediator.this.populateTabsFromPagerAdapter();
         }
 
         @Override
-        public void onItemRangeInserted(int i2, int i6) {
+        public void onItemRangeInserted(int index, int index_2) {
             COUITabLayoutMediator.this.populateTabsFromPagerAdapter();
         }
 
         @Override
-        public void onItemRangeMoved(int i2, int i6, int i10) {
+        public void onItemRangeMoved(int index, int index_2, int index_3) {
             COUITabLayoutMediator.this.populateTabsFromPagerAdapter();
         }
 
         @Override
-        public void onItemRangeRemoved(int i2, int i6) {
+        public void onItemRangeRemoved(int index, int index_2) {
             COUITabLayoutMediator.this.populateTabsFromPagerAdapter();
         }
 
         @Override
-        public void onItemRangeChanged(int i2, int i6, Object obj) {
+        public void onItemRangeChanged(int index, int index_2, Object obj) {
             COUITabLayoutMediator.this.populateTabsFromPagerAdapter();
         }
     }
@@ -91,44 +93,44 @@ public final class COUITabLayoutMediator {
         }
 
         @Override
-        public void onPageScrollStateChanged(int i2) {
+        public void onPageScrollStateChanged(int state) {
             this.mPreviousScrollState = this.mScrollState;
-            this.mScrollState = i2;
+            this.mScrollState = state;
         }
 
         @Override
-        public void onPageScrolled(int i2, float f2, int i6) {
+        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
             COUIViewPager2 cOUIViewPager2 = this.mViewPager2Ref.get();
             COUITabLayout cOUITabLayout = this.mTabLayoutRef.get();
             if (cOUITabLayout == null || cOUIViewPager2 == null || cOUIViewPager2.isFakeDragging()) {
                 return;
             }
-            int i10 = this.mScrollState;
-            boolean z6 = true;
-            boolean z10 = i10 != 2 || this.mPreviousScrollState == 1;
-            if (i10 == 2 && this.mPreviousScrollState == 0) {
-                z6 = false;
+            int index = this.mScrollState;
+            boolean flag = true;
+            boolean flag_2 = index != 2 || this.mPreviousScrollState == 1;
+            if (index == 2 && this.mPreviousScrollState == 0) {
+                flag = false;
             }
-            if (i10 == 0 && this.mPreviousScrollState == 0 && f2 != 0.0f) {
-                ((RecyclerView) cOUIViewPager2.getChildAt(0)).scrollBy(i6, 0);
-                cOUITabLayout.selectTab(cOUITabLayout.getTabAt(i2));
+            if (index == 0 && this.mPreviousScrollState == 0 && positionOffset != 0.0f) {
+                ((RecyclerView) cOUIViewPager2.getChildAt(0)).scrollBy(positionOffsetPixels, 0);
+                cOUITabLayout.selectTab(cOUITabLayout.getTabAt(position));
             } else {
-                COUITabLayoutMediator.setScrollPosition(cOUITabLayout, i2, f2, z10, z6);
+                COUITabLayoutMediator.setScrollPosition(cOUITabLayout, position, positionOffset, flag_2, flag);
             }
-            if (f2 != 0.0f || i2 == cOUITabLayout.getSelectedTabPosition()) {
+            if (positionOffset != 0.0f || position == cOUITabLayout.getSelectedTabPosition()) {
                 return;
             }
-            cOUITabLayout.selectTab(cOUITabLayout.getTabAt(i2));
+            cOUITabLayout.selectTab(cOUITabLayout.getTabAt(position));
         }
 
         @Override
-        public void onPageSelected(int i2) {
+        public void onPageSelected(int position) {
             COUITabLayout cOUITabLayout = this.mTabLayoutRef.get();
-            if (cOUITabLayout == null || cOUITabLayout.getSelectedTabPosition() == i2 || i2 >= cOUITabLayout.getTabCount()) {
+            if (cOUITabLayout == null || cOUITabLayout.getSelectedTabPosition() == position || position >= cOUITabLayout.getTabCount()) {
                 return;
             }
-            int i6 = this.mScrollState;
-            COUITabLayoutMediator.selectTab(cOUITabLayout, cOUITabLayout.getTabAt(i2), i6 == 0 || (i6 == 2 && this.mPreviousScrollState == 0));
+            int index = this.mScrollState;
+            COUITabLayoutMediator.selectTab(cOUITabLayout, cOUITabLayout.getTabAt(position), index == 0 || (index == 2 && this.mPreviousScrollState == 0));
         }
 
         public void reset() {
@@ -146,7 +148,7 @@ public final class COUITabLayoutMediator {
             this.mViewPager = cOUIViewPager2;
         }
 
-        private void getScrollDistanceAndDuration(LinearLayoutManager linearLayoutManager, RecyclerView recyclerView, int i2) {
+        private void getScrollDistanceAndDuration(LinearLayoutManager linearLayoutManager, RecyclerView recyclerView, int index) {
             View viewFindViewByPosition;
             int[] iArr = this.mScrollDistanceAndDuration;
             iArr[0] = 0;
@@ -168,22 +170,22 @@ public final class COUITabLayoutMediator {
             if (linearLayoutManager.getLayoutDirection() == 1) {
                 width = -width;
             }
-            int i6 = ((i2 - iFindFirstVisibleItemPosition) * width) + left;
+            int index_2 = ((index - iFindFirstVisibleItemPosition) * width) + left;
             int[] iArr2 = this.mScrollDistanceAndDuration;
-            iArr2[0] = i6;
-            iArr2[1] = getScrollDuration(Math.abs(i6), Math.abs(width));
+            iArr2[0] = index_2;
+            iArr2[1] = getScrollDuration(Math.abs(index_2), Math.abs(width));
         }
 
-        private int getScrollDuration(int i2, int i6) {
-            float f2 = i6 * 3;
-            if (i2 <= i6) {
+        private int getScrollDuration(int index, int index_2) {
+            float value = index_2 * 3;
+            if (index <= index_2) {
                 return 350;
             }
-            float f10 = i2;
-            if (f10 > f2) {
+            float value_2 = index;
+            if (value_2 > value) {
                 return 650;
             }
-            return (int) (((f10 / f2) * 300.0f) + 350.0f);
+            return (int) (((value_2 / value) * 300.0f) + 350.0f);
         }
 
         @Override
@@ -233,11 +235,11 @@ public final class COUITabLayoutMediator {
         this(cOUITabLayout, cOUIViewPager2, true, onConfigureTabCallback);
     }
 
-    public static void selectTab(COUITabLayout cOUITabLayout, COUITab cOUITab, boolean z6) {
+    public static void selectTab(COUITabLayout cOUITabLayout, COUITab cOUITab, boolean flag) {
         try {
             Method method = sSelectTab;
             if (method != null) {
-                method.invoke(cOUITabLayout, cOUITab, Boolean.valueOf(z6));
+                method.invoke(cOUITabLayout, cOUITab, Boolean.valueOf(flag));
             } else {
                 throwMethodNotFound(SELECT_TAB_NAME);
             }
@@ -246,11 +248,11 @@ public final class COUITabLayoutMediator {
         }
     }
 
-    public static void setScrollPosition(COUITabLayout cOUITabLayout, int i2, float f2, boolean z6, boolean z10) {
+    public static void setScrollPosition(COUITabLayout cOUITabLayout, int index, float value, boolean flag, boolean flag_2) {
         try {
             Method method = sSetScrollPosition;
             if (method != null) {
-                method.invoke(cOUITabLayout, Integer.valueOf(i2), Float.valueOf(f2), Boolean.valueOf(z6), Boolean.valueOf(z10));
+                method.invoke(cOUITabLayout, Integer.valueOf(index), Float.valueOf(value), Boolean.valueOf(flag), Boolean.valueOf(flag_2));
             } else {
                 throwMethodNotFound(SET_SCROLL_POSITION_NAME);
             }
@@ -309,21 +311,21 @@ public final class COUITabLayoutMediator {
         RecyclerView.Adapter hVar = this.mAdapter;
         if (hVar != null) {
             int itemCount = hVar.getItemCount();
-            for (int i2 = 0; i2 < itemCount; i2++) {
+            for (int index = 0; index < itemCount; index++) {
                 COUITab cOUITabNewTab = this.mTabLayout.newTab();
-                int i6 = this.mCustomTabViewType;
-                if (i6 != 1) {
-                    if (i6 == 2) {
+                int index_2 = this.mCustomTabViewType;
+                if (index_2 != 1) {
+                    if (index_2 == 2) {
                         cOUITabNewTab.setCustomView(this.mLayoutResAll);
                     }
-                } else if (this.mLayoutResIdMap.get(i2, -1) != -1) {
-                    cOUITabNewTab.setCustomView(this.mLayoutResIdMap.get(i2));
+                } else if (this.mLayoutResIdMap.get(index, -1) != -1) {
+                    cOUITabNewTab.setCustomView(this.mLayoutResIdMap.get(index));
                 }
-                String str = this.mTabContentDescMap.get(Integer.valueOf(i2));
+                String str = this.mTabContentDescMap.get(Integer.valueOf(index));
                 if (str != null) {
                     cOUITabNewTab.setContentDescription(str);
                 }
-                this.mOnConfigureTabCallback.onConfigureTab(cOUITabNewTab, i2);
+                this.mOnConfigureTabCallback.onConfigureTab(cOUITabNewTab, index);
                 this.mTabLayout.addTab(cOUITabNewTab, false);
             }
             if (itemCount > 0) {
@@ -337,34 +339,34 @@ public final class COUITabLayoutMediator {
         }
     }
 
-    public void setTabCustomView(int i2) {
-        this.mCustomTabViewType = 2;
-        this.mLayoutResAll = i2;
+    public void setTabCustomView(int tabCustomView) {
+        this.mCustomTabViewType = ALL_CUSTOM_TAB_VIEW;
+        this.mLayoutResAll = tabCustomView;
         if (this.mAttached) {
             populateTabsFromPagerAdapter();
             this.mTabLayout.setScrollPosition(this.mViewPager.getCurrentItem(), 0.0f, true);
         }
     }
 
-    public COUITabLayoutMediator(COUITabLayout cOUITabLayout, COUIViewPager2 cOUIViewPager2, boolean z6, OnConfigureTabCallback onConfigureTabCallback) {
+    public COUITabLayoutMediator(COUITabLayout cOUITabLayout, COUIViewPager2 cOUIViewPager2, boolean flag, OnConfigureTabCallback onConfigureTabCallback) {
         this.mTabLayout = cOUITabLayout;
         cOUITabLayout.setUpdateindicatorposition(true);
         this.mViewPager = cOUIViewPager2;
-        this.mAutoRefresh = z6;
+        this.mAutoRefresh = flag;
         this.mOnConfigureTabCallback = onConfigureTabCallback;
-        this.mCustomTabViewType = 0;
+        this.mCustomTabViewType = NO_CUSTOM_TAB_VIEW;
         this.mLayoutResIdMap = new SparseIntArray();
         this.mTabContentDescMap = new HashMap();
     }
 
-    public void setTabCustomView(int i2, int i6) {
-        setTabCustomView(i2, i6, null);
+    public void setTabCustomView(int index, int index_2) {
+        setTabCustomView(index, index_2, null);
     }
 
-    public void setTabCustomView(int i2, int i6, String str) {
-        this.mCustomTabViewType = 1;
-        this.mLayoutResIdMap.put(i6, i2);
-        this.mTabContentDescMap.put(Integer.valueOf(i6), str);
+    public void setTabCustomView(int index, int index_2, String str) {
+        this.mCustomTabViewType = PART_CUSTOM_TAB_VIEW;
+        this.mLayoutResIdMap.put(index_2, index);
+        this.mTabContentDescMap.put(Integer.valueOf(index_2), str);
         if (this.mAttached) {
             populateTabsFromPagerAdapter();
             this.mTabLayout.setScrollPosition(this.mViewPager.getCurrentItem(), 0.0f, true);

@@ -1,8 +1,10 @@
 package com.coui.appcompat.statement;
 
 import android.content.res.Configuration;
+
 import com.coui.appcompat.uiutil.UIUtil;
 import com.coui.component.responsiveui.unit.Dp;
+
 import kotlin.jvm.internal.SourceDebugExtension;
 
 

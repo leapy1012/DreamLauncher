@@ -18,7 +18,7 @@ public class COUIFakeDrag {
     private final COUIViewPager2 mViewPager;
 
     public COUIFakeDrag(COUIViewPager2 viewPager, COUIScrollEventAdapter scrollEventAdapter,
-            RecyclerView recyclerView) {
+                        RecyclerView recyclerView) {
         mViewPager = viewPager;
         mCOUIScrollEventAdapter = scrollEventAdapter;
         mRecyclerView = recyclerView;

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.FrameLayout;
+
 import com.coui.appcompat.springchain.api.IChainItem;
 
 import java.util.Objects;
@@ -117,7 +118,7 @@ public class COUIGridSpringChainItem extends FrameLayout implements IChainItem {
     }
 
     public COUIGridSpringChainItem(Context context, AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                                   int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init(context);
     }

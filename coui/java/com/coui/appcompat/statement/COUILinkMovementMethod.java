@@ -6,6 +6,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.widget.TextView;
+
 import kotlin.jvm.internal.Intrinsics;
 
 
@@ -23,8 +24,8 @@ public final class COUILinkMovementMethod extends LinkMovementMethod {
         Intrinsics.checkNotNullParameter(buffer, "buffer");
         Intrinsics.checkNotNullParameter(event, "event");
         if (event.getAction() == 0) {
-            int x6 = (int) event.getX();
-            int offsetForHorizontal = widget.getLayout().getOffsetForHorizontal(widget.getLayout().getLineForVertical((((int) event.getY()) - widget.getTotalPaddingTop()) + widget.getScrollY()), (x6 - widget.getTotalPaddingLeft()) + widget.getScrollX());
+            int touchX = (int) event.getX();
+            int offsetForHorizontal = widget.getLayout().getOffsetForHorizontal(widget.getLayout().getLineForVertical((((int) event.getY()) - widget.getTotalPaddingTop()) + widget.getScrollY()), (touchX - widget.getTotalPaddingLeft()) + widget.getScrollX());
             COUIStatementClickableSpan[] links = (COUIStatementClickableSpan[]) buffer.getSpans(offsetForHorizontal, offsetForHorizontal, COUIStatementClickableSpan.class);
             if (clickableSpan == null) {
                 Intrinsics.checkNotNullExpressionValue(links, "links");
@@ -41,10 +42,10 @@ public final class COUILinkMovementMethod extends LinkMovementMethod {
             widget.invalidate();
         }
         if (event.getAction() == 1) {
-            int x10 = (int) event.getX();
-            int y6 = (int) event.getY();
-            int totalPaddingLeft = x10 - widget.getTotalPaddingLeft();
-            int totalPaddingTop = y6 - widget.getTotalPaddingTop();
+            int touchX = (int) event.getX();
+            int touchY = (int) event.getY();
+            int totalPaddingLeft = touchX - widget.getTotalPaddingLeft();
+            int totalPaddingTop = touchY - widget.getTotalPaddingTop();
             int scrollX = totalPaddingLeft + widget.getScrollX();
             int scrollY = totalPaddingTop + widget.getScrollY();
             int offsetForHorizontal2 = widget.getLayout().getOffsetForHorizontal(widget.getLayout().getLineForVertical(scrollY), scrollX);

@@ -17,10 +17,11 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.animation.Interpolator;
+
 import androidx.core.view.MotionEventCompat;
 import androidx.core.view.ViewCompat;
+
 import com.coui.appcompat.R;
-import androidx.recyclerview.widget.RecyclerView;
 import com.coui.appcompat.animation.COUIPhysicalAnimationUtil;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.hapticfeedback.COUIHapticFeedbackConstants;
@@ -33,6 +34,7 @@ import com.coui.appcompat.scrollbar.COUIScrollBar;
 import com.coui.appcompat.uiutil.UIUtil;
 import com.coui.appcompat.vibrateutil.VibrateUtils;
 import com.coui.appcompat.view.ViewNative;
+
 import java.util.ArrayList;
 
 public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUIScrollable {
@@ -157,16 +159,16 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
 
         public void drawExpandableDivider(Canvas canvas, RecyclerView.ViewHolder viewHolder) {
             View view = viewHolder.itemView;
-            boolean z6 = view.getLayoutDirection() == 1;
+            boolean layoutDirection = view.getLayoutDirection() == 1;
             int measuredHeight = view.getMeasuredHeight() - Math.max(1, this.mDividerStrokeWidth);
             int measuredHeight2 = view.getMeasuredHeight();
-            int x6 = (int) (view.getX() + (z6 ? getDividerInsetEnd(viewHolder) : getDividerInsetStart(viewHolder)));
-            int x10 = (int) ((view.getX() + view.getWidth()) - (z6 ? getDividerInsetStart(viewHolder) : getDividerInsetEnd(viewHolder)));
+            int left = (int) (view.getX() + (layoutDirection ? getDividerInsetEnd(viewHolder) : getDividerInsetStart(viewHolder)));
+            int right = (int) ((view.getX() + view.getWidth()) - (layoutDirection ? getDividerInsetStart(viewHolder) : getDividerInsetEnd(viewHolder)));
             Drawable drawable = this.mDivider;
             if (drawable == null) {
-                canvas.drawRect(x6, measuredHeight, x10, measuredHeight2, this.mPaint);
+                canvas.drawRect(left, measuredHeight, right, measuredHeight2, this.mPaint);
             } else {
-                drawable.setBounds(x6, measuredHeight, x10, measuredHeight2);
+                drawable.setBounds(left, measuredHeight, right, measuredHeight2);
                 this.mDivider.draw(canvas);
             }
         }
@@ -199,32 +201,32 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         public void onDrawOver(Canvas canvas, RecyclerView recyclerView, RecyclerView.State b0Var) {
             int childCount = recyclerView.getChildCount();
             this.mPrevTop = -1;
-            int i2 = 0;
-            while (i2 < childCount) {
-                View childAt = recyclerView.getChildAt(i2);
-                if (shouldDrawDivider(recyclerView, i2)) {
+            int index = 0;
+            while (index < childCount) {
+                View childAt = recyclerView.getChildAt(index);
+                if (shouldDrawDivider(recyclerView, index)) {
                     drawDividerOuterBackground(canvas, recyclerView, childAt);
-                    boolean z6 = childAt.getLayoutDirection() == 1;
-                    int y6 = (int) (childAt.getY() + childAt.getHeight());
-                    if (this.mPrevTop != y6) {
-                        this.mPrevTop = y6;
-                        int iMax = Math.max(1, this.mDividerStrokeWidth) + y6;
-                        int x6 = (int) (childAt.getX() + (z6 ? getDividerInsetEnd(recyclerView, i2) : getDividerInsetStart(recyclerView, i2)));
-                        int x10 = (int) ((childAt.getX() + childAt.getWidth()) - (z6 ? getDividerInsetStart(recyclerView, i2) : getDividerInsetEnd(recyclerView, i2)));
-                        int i6 = this.mPressDividerPos;
-                        int i10 = (i6 == i2 || i6 + (-1) == i2) ? this.mPressDividerAlpha : this.mOriginAlpha;
+                    boolean layoutDirection = childAt.getLayoutDirection() == 1;
+                    int top = (int) (childAt.getY() + childAt.getHeight());
+                    if (this.mPrevTop != top) {
+                        this.mPrevTop = top;
+                        int iMax = Math.max(1, this.mDividerStrokeWidth) + top;
+                        int left = (int) (childAt.getX() + (layoutDirection ? getDividerInsetEnd(recyclerView, index) : getDividerInsetStart(recyclerView, index)));
+                        int right = (int) ((childAt.getX() + childAt.getWidth()) - (layoutDirection ? getDividerInsetStart(recyclerView, index) : getDividerInsetEnd(recyclerView, index)));
+                        int index_2 = this.mPressDividerPos;
+                        int index_3 = (index_2 == index || index_2 + (-1) == index) ? this.mPressDividerAlpha : this.mOriginAlpha;
                         Drawable drawable = this.mDivider;
                         if (drawable == null) {
-                            this.mPaint.setAlpha(i10);
-                            canvas.drawRect(x6, y6, x10, iMax, this.mPaint);
+                            this.mPaint.setAlpha(index_3);
+                            canvas.drawRect(left, top, right, iMax, this.mPaint);
                         } else {
-                            drawable.setAlpha(i10);
-                            this.mDivider.setBounds(x6, y6, x10, iMax);
+                            drawable.setAlpha(index_3);
+                            this.mDivider.setBounds(left, top, right, iMax);
                             this.mDivider.draw(canvas);
                         }
                     }
                 }
-                i2++;
+                index++;
             }
         }
 
@@ -235,40 +237,40 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             }
         }
 
-        public void setDividerColor(RecyclerView recyclerView, int i2) {
-            this.mDividerColor = i2;
-            this.mPaint.setColor(i2);
+        public void setDividerColor(RecyclerView recyclerView, int dividerColor) {
+            this.mDividerColor = dividerColor;
+            this.mPaint.setColor(dividerColor);
             if (recyclerView != null) {
                 recyclerView.invalidateItemDecorations();
             }
         }
 
-        public void setDividerStrokeWidth(RecyclerView recyclerView, int i2) {
-            this.mDividerStrokeWidth = i2;
-            this.mPaint.setStrokeWidth(i2);
+        public void setDividerStrokeWidth(RecyclerView recyclerView, int dividerStrokeWidth) {
+            this.mDividerStrokeWidth = dividerStrokeWidth;
+            this.mPaint.setStrokeWidth(dividerStrokeWidth);
             if (recyclerView != null) {
                 recyclerView.invalidateItemDecorations();
             }
         }
 
-        public void setPressDividerAlpha(int i2) {
-            this.mPressDividerAlpha = i2;
+        public void setPressDividerAlpha(int pressDividerAlpha) {
+            this.mPressDividerAlpha = pressDividerAlpha;
         }
 
-        public void setPressDividerPos(int i2) {
-            this.mPressDividerPos = i2;
+        public void setPressDividerPos(int pressDividerPos) {
+            this.mPressDividerPos = pressDividerPos;
         }
 
-        public boolean shouldDrawDivider(RecyclerView recyclerView, int i2) {
+        public boolean shouldDrawDivider(RecyclerView recyclerView, int index) {
             RecyclerView.Adapter adapter = recyclerView.getAdapter();
-            return adapter == null || adapter.getItemCount() - 1 != i2;
+            return adapter == null || adapter.getItemCount() - 1 != index;
         }
 
-        public int getDividerInsetEnd(RecyclerView recyclerView, int i2) {
+        public int getDividerInsetEnd(RecyclerView recyclerView, int index) {
             return 0;
         }
 
-        public int getDividerInsetStart(RecyclerView recyclerView, int i2) {
+        public int getDividerInsetStart(RecyclerView recyclerView, int index) {
             return 0;
         }
     }
@@ -305,50 +307,50 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         public ViewFlinger() {
         }
 
-        public final int computeScrollDuration(int i2, int i6, int i10, int i11) {
+        public final int computeScrollDuration(int index, int index_2, int index_3, int index_4) {
             int iRound;
-            int iAbs = Math.abs(i2);
-            int iAbs2 = Math.abs(i6);
-            boolean z6 = iAbs > iAbs2;
-            int iSqrt = (int) Math.sqrt((i10 * i10) + (i11 * i11));
-            int iSqrt2 = (int) Math.sqrt((i2 * i2) + (i6 * i6));
+            int iAbs = Math.abs(index);
+            int iAbs2 = Math.abs(index_2);
+            boolean flag = iAbs > iAbs2;
+            int iSqrt = (int) Math.sqrt((index_3 * index_3) + (index_4 * index_4));
+            int iSqrt2 = (int) Math.sqrt((index * index) + (index_2 * index_2));
             COUIRecyclerView cOUIRecyclerView = COUIRecyclerView.this;
-            int width = z6 ? cOUIRecyclerView.getWidth() : cOUIRecyclerView.getHeight();
-            int i12 = width / 2;
-            float f2 = width;
-            float f10 = i12;
-            float fB = f10 + (distanceInfluenceForSnapDuration(Math.min(1.0f, (iSqrt2 * 1.0f) / f2)) * f10);
+            int width = flag ? cOUIRecyclerView.getWidth() : cOUIRecyclerView.getHeight();
+            int index_5 = width / 2;
+            float value = width;
+            float value_2 = index_5;
+            float fB = value_2 + (distanceInfluenceForSnapDuration(Math.min(1.0f, (iSqrt2 * 1.0f) / value)) * value_2);
             if (iSqrt > 0) {
                 iRound = Math.round(Math.abs(fB / iSqrt) * 1000.0f) * 4;
             } else {
-                if (!z6) {
+                if (!flag) {
                     iAbs = iAbs2;
                 }
-                iRound = (int) (((iAbs / f2) + 1.0f) * 300.0f);
+                iRound = (int) (((iAbs / value) + 1.0f) * 300.0f);
             }
             return Math.min(iRound, VibrateUtils.STRENGTH_MAX_STEP);
         }
 
-        public final float distanceInfluenceForSnapDuration(float f2) {
-            return (float) Math.sin((f2 - 0.5f) * 0.47123894f);
+        public final float distanceInfluenceForSnapDuration(float value) {
+            return (float) Math.sin((value - 0.5f) * 0.47123894f);
         }
 
-        public void fling(int i2, int i6) {
-            COUIRecyclerView.this.mFlingVelocityX = i2;
-            COUIRecyclerView.this.mFlingVelocityY = i6;
+        public void fling(int velocityX, int velocityY) {
+            COUIRecyclerView.this.mFlingVelocityX = velocityX;
+            COUIRecyclerView.this.mFlingVelocityY = velocityY;
             COUIRecyclerView.this.setScrollState(2);
             this.mLastFlingY = 0;
             this.mLastFlingX = 0;
             Interpolator interpolator = this.mInterpolator;
-            Interpolator interpolator2 = RecyclerView.sQuinticInterpolator;
-            if (interpolator != interpolator2) {
-                this.mInterpolator = interpolator2;
+            Interpolator interpolator_2 = RecyclerView.sQuinticInterpolator;
+            if (interpolator != interpolator_2) {
+                this.mInterpolator = interpolator_2;
                 if (COUIRecyclerView.this.mOverScroller != null) {
-                    COUIRecyclerView.this.mOverScroller.setInterpolator(interpolator2);
+                    COUIRecyclerView.this.mOverScroller.setInterpolator(interpolator_2);
                 }
             }
             if (COUIRecyclerView.this.mOverScroller != null) {
-                COUIRecyclerView.this.mOverScroller.fling(0, 0, i2, i6, Integer.MIN_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                COUIRecyclerView.this.mOverScroller.fling(0, 0, velocityX, velocityY, Integer.MIN_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, Integer.MAX_VALUE);
                 COUIRecyclerView.this.mOverScroller.setFinalX(COUIRecyclerView.this.mLocateHelper.getTargetViewDistance(COUIRecyclerView.this.mOverScroller.getCOUIFinalX()));
             }
             requestPostOnAnimation();
@@ -367,11 +369,11 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             }
         }
 
-        public void smoothScrollBy(int i2, int i6, int i10, Interpolator interpolator) {
-            if (i10 == Integer.MIN_VALUE) {
-                i10 = computeScrollDuration(i2, i6, 0, 0);
+        public void smoothScrollBy(int index, int index_2, int index_3, Interpolator interpolator) {
+            if (index_3 == Integer.MIN_VALUE) {
+                index_3 = computeScrollDuration(index, index_2, 0, 0);
             }
-            int i11 = i10;
+            int index_4 = index_3;
             if (interpolator == null) {
                 interpolator = RecyclerView.sQuinticInterpolator;
             }
@@ -385,7 +387,7 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             this.mLastFlingX = 0;
             COUIRecyclerView.this.setScrollState(2);
             if (COUIRecyclerView.this.mOverScroller != null) {
-                COUIRecyclerView.this.mOverScroller.startScroll(0, 0, i2, i6, i11);
+                COUIRecyclerView.this.mOverScroller.startScroll(0, 0, index, index_2, index_4);
             }
             requestPostOnAnimation();
         }
@@ -395,13 +397,13 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             COUIRecyclerView cOUIRecyclerView = COUIRecyclerView.this;
             cOUIRecyclerView.ensureOverScrollers(cOUIRecyclerView.getContext());
             COUIRecyclerView cOUIRecyclerView2 = COUIRecyclerView.this;
-            float f2 = 0.0f;
+            float value = 0.0f;
             cOUIRecyclerView2.mAbortVelocityX = (cOUIRecyclerView2.mOverScroller == null || COUIRecyclerView.this.mOverScroller.getCurrVelocityX() == 0.0f) ? 0.0f : COUIRecyclerView.this.mFlingVelocityX;
             COUIRecyclerView cOUIRecyclerView3 = COUIRecyclerView.this;
             if (cOUIRecyclerView3.mOverScroller != null && COUIRecyclerView.this.mOverScroller.getCurrVelocityY() != 0.0f) {
-                f2 = COUIRecyclerView.this.mFlingVelocityY;
+                value = COUIRecyclerView.this.mFlingVelocityY;
             }
-            cOUIRecyclerView3.mAbortVelocityY = f2;
+            cOUIRecyclerView3.mAbortVelocityY = value;
             if (COUIRecyclerView.this.mOverScroller != null) {
                 COUIRecyclerView.this.mOverScroller.abortAnimation();
             }
@@ -412,9 +414,9 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
 
         @Override
         public void run() {
-            int i2;
-            int i6;
-            int i10;
+            int index_5;
+            int index_6;
+            int index_7;
             COUIRecyclerView cOUIRecyclerView = COUIRecyclerView.this;
             if (cOUIRecyclerView.mLayout == null) {
                 stop();
@@ -427,31 +429,31 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             if (cOUIIOverScroller != null && cOUIIOverScroller.computeScrollOffset()) {
                 int cOUICurrX = cOUIIOverScroller.getCOUICurrX();
                 int cOUICurrY = cOUIIOverScroller.getCOUICurrY();
-                int i11 = cOUICurrX - this.mLastFlingX;
-                int i12 = cOUICurrY - this.mLastFlingY;
+                int index = cOUICurrX - this.mLastFlingX;
+                int index_2 = cOUICurrY - this.mLastFlingY;
                 this.mLastFlingX = cOUICurrX;
                 this.mLastFlingY = cOUICurrY;
                 COUIRecyclerView cOUIRecyclerView2 = COUIRecyclerView.this;
                 int[] iArr = cOUIRecyclerView2.mReusableIntPair;
                 iArr[0] = 0;
                 iArr[1] = 0;
-                if (cOUIRecyclerView2.dispatchNestedPreScroll(i11, i12, iArr, null, 1)) {
+                if (cOUIRecyclerView2.dispatchNestedPreScroll(index, index_2, iArr, null, 1)) {
                     int[] iArr2 = COUIRecyclerView.this.mReusableIntPair;
-                    i11 -= iArr2[0];
-                    i12 -= iArr2[1];
+                    index -= iArr2[0];
+                    index_2 -= iArr2[1];
                 }
                 COUIRecyclerView cOUIRecyclerView3 = COUIRecyclerView.this;
                 if (cOUIRecyclerView3.mAdapter != null) {
                     int[] iArr3 = cOUIRecyclerView3.mReusableIntPair;
                     iArr3[0] = 0;
                     iArr3[1] = 0;
-                    cOUIRecyclerView3.scrollStep(i11, i12, iArr3);
+                    cOUIRecyclerView3.scrollStep(index, index_2, iArr3);
                     COUIRecyclerView cOUIRecyclerView4 = COUIRecyclerView.this;
                     int[] iArr4 = cOUIRecyclerView4.mReusableIntPair;
-                    i6 = iArr4[0];
-                    i2 = iArr4[1];
-                    i11 -= i6;
-                    i12 -= i2;
+                    index_6 = iArr4[0];
+                    index_5 = iArr4[1];
+                    index -= index_6;
+                    index_2 -= index_5;
                     RecyclerView.SmoothScroller a0Var = cOUIRecyclerView4.mLayout.mSmoothScroller;
                     if (a0Var != null && !a0Var.isPendingInitialRun() && a0Var.isRunning()) {
                         int iB = COUIRecyclerView.this.mState.getItemCount();
@@ -459,14 +461,14 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
                             a0Var.stop();
                         } else if (a0Var.getTargetPosition() >= iB) {
                             a0Var.setTargetPosition(iB - 1);
-                            a0Var.onAnimation(i6, i2);
+                            a0Var.onAnimation(index_6, index_5);
                         } else {
-                            a0Var.onAnimation(i6, i2);
+                            a0Var.onAnimation(index_6, index_5);
                         }
                     }
                 } else {
-                    i2 = 0;
-                    i6 = 0;
+                    index_5 = 0;
+                    index_6 = 0;
                 }
                 if (!COUIRecyclerView.this.mItemDecorations.isEmpty()) {
                     COUIRecyclerView.this.invalidate();
@@ -475,67 +477,67 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
                 int[] iArr5 = cOUIRecyclerView5.mReusableIntPair;
                 iArr5[0] = 0;
                 iArr5[1] = 0;
-                cOUIRecyclerView5.dispatchNestedScroll(i6, i2, i11, i12, null, 1, iArr5);
+                cOUIRecyclerView5.dispatchNestedScroll(index_6, index_5, index, index_2, null, 1, iArr5);
                 COUIRecyclerView cOUIRecyclerView6 = COUIRecyclerView.this;
                 int[] iArr6 = cOUIRecyclerView6.mReusableIntPair;
-                int i13 = i11 - iArr6[0];
-                int i14 = i12 - iArr6[1];
-                if (i6 != 0 || i2 != 0) {
-                    cOUIRecyclerView6.dispatchOnScrolled(i6, i2);
+                int index_3 = index - iArr6[0];
+                int index_4 = index_2 - iArr6[1];
+                if (index_6 != 0 || index_5 != 0) {
+                    cOUIRecyclerView6.dispatchOnScrolled(index_6, index_5);
                 }
-                if (!COUIRecyclerView.this.mSmoothScrollFlag || (i13 == 0 && i14 == 0)) {
-                    i10 = i14;
+                if (!COUIRecyclerView.this.mSmoothScrollFlag || (index_3 == 0 && index_4 == 0)) {
+                    index_7 = index_4;
                 } else {
                     cOUIIOverScroller.abortAnimation();
                     COUIRecyclerView.this.mSmoothScrollFlag = false;
-                    i10 = 0;
-                    i13 = 0;
+                    index_7 = 0;
+                    index_3 = 0;
                 }
-                if (i10 != 0) {
+                if (index_7 != 0) {
                     COUIRecyclerView cOUIRecyclerView7 = COUIRecyclerView.this;
                     if (cOUIRecyclerView7.mOverScrollEnable) {
                         cOUIRecyclerView7.mScrollType = 3;
                         COUIRecyclerView.this.performEdgeHapticFeedback();
                         COUIRecyclerView cOUIRecyclerView8 = COUIRecyclerView.this;
-                        cOUIRecyclerView8.overScrollBy(0, i10, 0, cOUIRecyclerView8.getScrollY(), 0, 0, 0, COUIRecyclerView.this.mOverflingDistance, false);
+                        cOUIRecyclerView8.overScrollBy(0, index_7, 0, cOUIRecyclerView8.getScrollY(), 0, 0, 0, COUIRecyclerView.this.mOverflingDistance, false);
                         if (COUIRecyclerView.this.mIsUseNativeOverScroll) {
                             if (COUIRecyclerView.this.mSpringOverScroller != null) {
                                 COUIRecyclerView.this.mSpringOverScroller.setCurrVelocityY(cOUIIOverScroller.getCurrVelocityY());
-                                COUIRecyclerView.this.mSpringOverScroller.notifyVerticalEdgeReached(i10, 0, COUIRecyclerView.this.mOverflingDistance);
+                                COUIRecyclerView.this.mSpringOverScroller.notifyVerticalEdgeReached(index_7, 0, COUIRecyclerView.this.mOverflingDistance);
                             }
                         } else if (COUIRecyclerView.this.mOverScroller != null) {
-                            COUIRecyclerView.this.mOverScroller.notifyVerticalEdgeReached(i10, 0, COUIRecyclerView.this.mOverflingDistance);
+                            COUIRecyclerView.this.mOverScroller.notifyVerticalEdgeReached(index_7, 0, COUIRecyclerView.this.mOverflingDistance);
                         }
                     }
                 }
-                if (i13 != 0) {
+                if (index_3 != 0) {
                     COUIRecyclerView cOUIRecyclerView9 = COUIRecyclerView.this;
                     if (cOUIRecyclerView9.mOverScrollEnable) {
                         cOUIRecyclerView9.mScrollType = 3;
                         COUIRecyclerView.this.performEdgeHapticFeedback();
                         COUIRecyclerView cOUIRecyclerView10 = COUIRecyclerView.this;
-                        cOUIRecyclerView10.overScrollBy(i13, 0, cOUIRecyclerView10.getScrollX(), 0, 0, 0, COUIRecyclerView.this.mOverflingDistance, 0, false);
+                        cOUIRecyclerView10.overScrollBy(index_3, 0, cOUIRecyclerView10.getScrollX(), 0, 0, 0, COUIRecyclerView.this.mOverflingDistance, 0, false);
                         if (COUIRecyclerView.this.mIsUseNativeOverScroll) {
                             if (COUIRecyclerView.this.mSpringOverScroller != null) {
                                 COUIRecyclerView.this.mSpringOverScroller.setCurrVelocityX(cOUIIOverScroller.getCurrVelocityX());
-                                COUIRecyclerView.this.mSpringOverScroller.notifyHorizontalEdgeReached(i13, 0, COUIRecyclerView.this.mOverflingDistance);
+                                COUIRecyclerView.this.mSpringOverScroller.notifyHorizontalEdgeReached(index_3, 0, COUIRecyclerView.this.mOverflingDistance);
                             }
                         } else if (COUIRecyclerView.this.mOverScroller != null) {
-                            COUIRecyclerView.this.mOverScroller.notifyHorizontalEdgeReached(i13, 0, COUIRecyclerView.this.mOverflingDistance);
+                            COUIRecyclerView.this.mOverScroller.notifyHorizontalEdgeReached(index_3, 0, COUIRecyclerView.this.mOverflingDistance);
                         }
                     }
                 }
                 if (!COUIRecyclerView.this.awakenScrollBars()) {
                     COUIRecyclerView.this.invalidate();
                 }
-                boolean z6 = cOUIIOverScroller.isCOUIFinished() || (((cOUIIOverScroller.getCOUICurrX() == cOUIIOverScroller.getCOUIFinalX()) || i13 != 0) && ((cOUIIOverScroller.getCOUICurrY() == cOUIIOverScroller.getCOUIFinalY()) || i10 != 0));
+                boolean flag = cOUIIOverScroller.isCOUIFinished() || (((cOUIIOverScroller.getCOUICurrX() == cOUIIOverScroller.getCOUIFinalX()) || index_3 != 0) && ((cOUIIOverScroller.getCOUICurrY() == cOUIIOverScroller.getCOUIFinalY()) || index_7 != 0));
                 RecyclerView.SmoothScroller a0Var2 = COUIRecyclerView.this.mLayout.mSmoothScroller;
-                if ((a0Var2 != null && a0Var2.isPendingInitialRun()) || !z6) {
+                if ((a0Var2 != null && a0Var2.isPendingInitialRun()) || !flag) {
                     requestPostOnAnimation();
                     COUIRecyclerView cOUIRecyclerView11 = COUIRecyclerView.this;
                     GapWorker iVar = cOUIRecyclerView11.mGapWorker;
                     if (iVar != null) {
-                        iVar.postFromTraversal(cOUIRecyclerView11, i6, i2);
+                        iVar.postFromTraversal(cOUIRecyclerView11, index_6, index_5);
                     }
                 } else if (RecyclerView.ALLOW_THREAD_GAP_WORK) {
                     COUIRecyclerView.this.mPrefetchRegistry.clearPrefetchPositions();
@@ -625,8 +627,8 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     public final boolean dispatchSyntheticClickToChild(View view, MotionEvent motionEvent) {
         boolean zDispatchTouchEvent = true;
         int[] iArr = {0, 1};
-        for (int i2 = 0; i2 < 2; i2++) {
-            motionEvent.setAction(iArr[i2]);
+        for (int index = 0; index < 2; index++) {
+            motionEvent.setAction(iArr[index]);
             zDispatchTouchEvent &= view.dispatchTouchEvent(motionEvent);
         }
         return zDispatchTouchEvent;
@@ -657,18 +659,18 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         return view;
     }
 
-    public final boolean shouldAcceptDispatchTouchEvent(float f2, float f10) {
-        return !(this.mEnableDispatchEventWhileScrolling || (this.mEnableDispatchEventWhileOverScrolling && isOverScrolling())) || f2 == 0.0f || ((double) Math.abs(f10 / f2)) > Math.tan(((double) this.mEventFilterAngle) * DEGREE_TO_ARC_CONSTANT);
+    public final boolean shouldAcceptDispatchTouchEvent(float value, float value_2) {
+        return !(this.mEnableDispatchEventWhileScrolling || (this.mEnableDispatchEventWhileOverScrolling && isOverScrolling())) || value == 0.0f || ((double) Math.abs(value_2 / value)) > Math.tan(((double) this.mEventFilterAngle) * DEGREE_TO_ARC_CONSTANT);
     }
 
-    public final void readCOUIRecyclerViewAttributes(Context context, AttributeSet attributeSet, int i2) {
+    public final void readCOUIRecyclerViewAttributes(Context context, AttributeSet attributeSet, int index) {
         if (attributeSet == null || attributeSet.getStyleAttribute() == 0) {
-            this.mStyle = i2;
+            this.mStyle = index;
         } else {
             this.mStyle = attributeSet.getStyleAttribute();
         }
         if (context != null) {
-            TypedArray typedArrayObtainStyledAttributes = getContext().obtainStyledAttributes(attributeSet, R.styleable.COUIRecyclerView, i2, 0);
+            TypedArray typedArrayObtainStyledAttributes = getContext().obtainStyledAttributes(attributeSet, R.styleable.COUIRecyclerView, index, 0);
             this.mScrollbars = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIRecyclerView_couiScrollbars, 0);
             this.mScrollbarsSize = typedArrayObtainStyledAttributes.getDimensionPixelSize(R.styleable.COUIRecyclerView_couiScrollbarSize, 0);
             this.mScrollbarThumbVertical = typedArrayObtainStyledAttributes.getDrawable(R.styleable.COUIRecyclerView_couiScrollbarThumbVertical);
@@ -695,9 +697,9 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     }
 
     public final void initOverScrollDistances(Context context) {
-        int i2 = context.getResources().getDisplayMetrics().heightPixels;
-        this.mOverscrollDistance = i2;
-        this.mOverflingDistance = i2;
+        int overscrollDistance = context.getResources().getDisplayMetrics().heightPixels;
+        this.mOverscrollDistance = overscrollDistance;
+        this.mOverflingDistance = overscrollDistance;
     }
 
     public final void ensureViewFlinger() {
@@ -707,27 +709,27 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     }
 
     public final boolean isTapGesture(MotionEvent motionEvent) {
-        int x6 = (int) (motionEvent.getX() - this.mInitialTouchX);
-        int y6 = (int) (motionEvent.getY() - this.mInitialTouchY);
-        int iSqrt = (int) Math.sqrt((x6 * x6) + (y6 * y6));
+        int deltaX = (int) (motionEvent.getX() - this.mInitialTouchX);
+        int deltaY = (int) (motionEvent.getY() - this.mInitialTouchY);
+        int iSqrt = (int) Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
         long jCurrentTimeMillis = System.currentTimeMillis() - this.mTouchTime;
         if (COUI_DEBUG) {
             Log.d(TAG, "onTouchEvent: ACTION_UP. touchDuration = " + jCurrentTimeMillis + ", offset = " + iSqrt);
         }
-        return jCurrentTimeMillis < ((long) OVER_SCROLL_TOUCH_DURATION_THRESHOLD) && iSqrt < 10;
+        return jCurrentTimeMillis < ((long) OVER_SCROLL_TOUCH_DURATION_THRESHOLD) && iSqrt < OVER_SCROLL_TOUCH_OFFSET_THRESHOLD;
     }
 
-    private boolean isDrawDivider(View view, int i2) {
-        return this.mCOUIRecyclerDividerManager.isDrawDivider(view, i2);
+    private boolean isDrawDivider(View view, int index) {
+        return this.mCOUIRecyclerDividerManager.isDrawDivider(view, index);
     }
 
-    public final boolean passesAccidentalTouchFilter(float f2, float f10) {
-        return !this.mAvoidAccidentalTouch || Math.abs(f2) > this.mFastFlingVelocity || Math.abs(f10) > this.mFastFlingVelocity;
+    public final boolean passesAccidentalTouchFilter(float value, float value_2) {
+        return !this.mAvoidAccidentalTouch || Math.abs(value) > this.mFastFlingVelocity || Math.abs(value_2) > this.mFastFlingVelocity;
     }
 
     public final boolean isOverScrolling() {
-        int i2;
-        return this.mOverScrollEnable && ((i2 = this.mScrollType) == 2 || i2 == 3) && hasOverScrollOffset();
+        int index;
+        return this.mOverScrollEnable && ((index = this.mScrollType) == 2 || index == 3) && hasOverScrollOffset();
     }
 
     public final boolean hasOverScrollOffset() {
@@ -765,8 +767,9 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         ViewNative.setScrollY(this, 0);
         this.mScrollType = 0;
     }
+
     public final boolean interceptTouchEventInternal(MotionEvent motionEvent) {
-        boolean z6;
+        boolean flag;
         COUIScrollBar cOUIScrollBar = this.mCOUIScrollBar;
         if (cOUIScrollBar != null && cOUIScrollBar.onInterceptTouchEvent(motionEvent)) {
             return true;
@@ -812,12 +815,12 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
                 Log.d(TAG, "onInterceptTouchEvent: ACTION_DOWN, isOverScrolling=:" + this.mIsTouchDownWhileOverScrolling + ", scrollVelocityX=:" + Math.abs(currVelocityX) + ", isFastFlingX=:" + zW + ", mFlingVelocityX=:" + this.mFlingVelocityX + ", mAbortVelocityX=:" + this.mAbortVelocityX + ", scrollVelocityY=:" + Math.abs(currVelocityY) + ", isFastFlingY=:" + zW2 + ", mFlingVelocityY=:" + this.mFlingVelocityY + ", mAbortVelocityY=:" + this.mAbortVelocityY);
             }
             this.mScrollPointerId = motionEvent.getPointerId(0);
-            int x6 = (int) (motionEvent.getX() + 0.5f);
-            this.mLastTouchX = x6;
-            this.mInitialTouchX = x6;
-            int y6 = (int) (motionEvent.getY() + 0.5f);
-            this.mLastTouchY = y6;
-            this.mInitialTouchY = y6;
+            int touchX = (int) (motionEvent.getX() + 0.5f);
+            this.mLastTouchX = touchX;
+            this.mInitialTouchX = touchX;
+            int touchY = (int) (motionEvent.getY() + 0.5f);
+            this.mLastTouchY = touchY;
+            this.mInitialTouchY = touchY;
             if (this.mScrollState == 2) {
                 getParent().requestDisallowInterceptTouchEvent(true);
                 setScrollState(1);
@@ -826,11 +829,11 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             int[] iArr = this.mNestedOffsets;
             iArr[1] = 0;
             iArr[0] = 0;
-            int i2 = zCanScrollHorizontally ? 1 : 0;
+            int index_2 = zCanScrollHorizontally ? 1 : 0;
             if (zCanScrollVertically) {
-                i2 = (zCanScrollHorizontally ? 1 : 0) | 2;
+                index_2 = (zCanScrollHorizontally ? 1 : 0) | 2;
             }
-            startNestedScroll(i2, 0);
+            startNestedScroll(index_2, 0);
             this.mSmoothScrollFlag = false;
         } else if (actionMasked == 1) {
             this.mVelocityTracker.clear();
@@ -841,26 +844,26 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
                 Log.e(TAG, "Error processing scroll; pointer index for id " + this.mScrollPointerId + " not found. Did any MotionEvents get skipped?");
                 return false;
             }
-            int x10 = (int) (motionEvent.getX(iFindPointerIndex) + 0.5f);
-            int y10 = (int) (motionEvent.getY(iFindPointerIndex) + 0.5f);
+            int touchX = (int) (motionEvent.getX(iFindPointerIndex) + 0.5f);
+            int touchY = (int) (motionEvent.getY(iFindPointerIndex) + 0.5f);
             if (this.mScrollState != 1) {
-                int i6 = x10 - this.mInitialTouchX;
-                int i10 = y10 - this.mInitialTouchY;
-                if (zCanScrollHorizontally && Math.abs(i6) > this.mTouchSlop && shouldAcceptDispatchTouchEvent(i10, i6)) {
-                    this.mLastTouchX = x10;
-                    z6 = true;
+                int index_3 = touchX - this.mInitialTouchX;
+                int index_4 = touchY - this.mInitialTouchY;
+                if (zCanScrollHorizontally && Math.abs(index_3) > this.mTouchSlop && shouldAcceptDispatchTouchEvent(index_4, index_3)) {
+                    this.mLastTouchX = touchX;
+                    flag = true;
                 } else {
-                    z6 = false;
+                    flag = false;
                 }
-                if (zCanScrollVertically && Math.abs(i10) > this.mTouchSlop && shouldAcceptDispatchTouchEvent(i6, i10)) {
-                    this.mLastTouchY = y10;
-                    z6 = true;
+                if (zCanScrollVertically && Math.abs(index_4) > this.mTouchSlop && shouldAcceptDispatchTouchEvent(index_3, index_4)) {
+                    this.mLastTouchY = touchY;
+                    flag = true;
                 }
                 // Leapy modified 2026-07-22: Match OPPO COUIRecyclerView smali.
                 // Enter dragging state only when this RecyclerView accepted movement on
                 // one of its own scroll axes. The decompiled unconditional call stole
                 // horizontal MOVE events from child controls such as the brightness SeekBar.
-                if (z6) {
+                if (flag) {
                     setScrollState(1);
                 }
                 // Leapy end
@@ -869,12 +872,12 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             cancelTouch();
         } else if (actionMasked == 5) {
             this.mScrollPointerId = motionEvent.getPointerId(adjustmentPointerIndex);
-            int x11 = (int) (motionEvent.getX(adjustmentPointerIndex) + 0.5f);
-            this.mLastTouchX = x11;
-            this.mInitialTouchX = x11;
-            int y11 = (int) (motionEvent.getY(adjustmentPointerIndex) + 0.5f);
-            this.mLastTouchY = y11;
-            this.mInitialTouchY = y11;
+            int touchX = (int) (motionEvent.getX(adjustmentPointerIndex) + 0.5f);
+            this.mLastTouchX = touchX;
+            this.mInitialTouchX = touchX;
+            int touchY = (int) (motionEvent.getY(adjustmentPointerIndex) + 0.5f);
+            this.mLastTouchY = touchY;
+            this.mInitialTouchY = touchY;
             if (!this.mEnablePointerDown) {
                 getParent().requestDisallowInterceptTouchEvent(true);
                 return true;
@@ -913,15 +916,15 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             }
         }
         if (this.mOverScrollEnable) {
-            int i2 = this.mScrollType;
-            if ((i2 == 2 || i2 == 3) && (springOverScroller = this.mSpringOverScroller) != null && springOverScroller.computeScrollOffset()) {
+            int index = this.mScrollType;
+            if ((index == 2 || index == 3) && (springOverScroller = this.mSpringOverScroller) != null && springOverScroller.computeScrollOffset()) {
                 int scrollX2 = getScrollX();
                 int scrollY2 = getScrollY();
                 int cOUICurrX = springOverScroller.getCOUICurrX();
                 int cOUICurrY = springOverScroller.getCOUICurrY();
                 if (scrollX2 != cOUICurrX || scrollY2 != cOUICurrY) {
-                    int i6 = this.mOverflingDistance;
-                    overScrollBy(cOUICurrX - scrollX2, cOUICurrY - scrollY2, scrollX2, scrollY2, 0, 0, i6, i6, false);
+                    int index_2 = this.mOverflingDistance;
+                    overScrollBy(cOUICurrX - scrollX2, cOUICurrY - scrollY2, scrollX2, scrollY2, 0, 0, index_2, index_2, false);
                     onScrollChanged(getScrollX(), getScrollY(), scrollX2, scrollY2);
                 }
                 if (springOverScroller.isCOUIFinished()) {
@@ -968,13 +971,13 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             float velocityAlongScrollableDirection = getVelocityAlongScrollableDirection();
             if (motionEvent.getActionMasked() == 0 && this.mDispatchEventVelocityThreshold >= Math.abs(velocityAlongScrollableDirection)) {
                 COUIIOverScroller cOUIIOverScroller = this.mOverScroller;
-                float f2 = 0.0f;
+                float abortVelocityY = 0.0f;
                 this.mAbortVelocityX = (cOUIIOverScroller == null || cOUIIOverScroller.getCurrVelocityX() == 0.0f) ? 0.0f : this.mFlingVelocityX;
                 COUIIOverScroller cOUIIOverScroller2 = this.mOverScroller;
                 if (cOUIIOverScroller2 != null && cOUIIOverScroller2.getCurrVelocityY() != 0.0f) {
-                    f2 = this.mFlingVelocityY;
+                    abortVelocityY = this.mFlingVelocityY;
                 }
-                this.mAbortVelocityY = f2;
+                this.mAbortVelocityY = abortVelocityY;
                 COUIIOverScroller cOUIIOverScroller3 = this.mOverScroller;
                 if (cOUIIOverScroller3 != null) {
                     cOUIIOverScroller3.abortAnimation();
@@ -996,18 +999,18 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         return true;
     }
 
-    public final void flingBackFromReverseOverScroll(float f2, float f10) {
+    public final void flingBackFromReverseOverScroll(float value, float value_2) {
         this.mIsOverScrollingReverseFling = true;
         SpringOverScroller springOverScroller = this.mSpringOverScroller;
         if (springOverScroller != null) {
-            springOverScroller.fling(getScrollX(), getScrollY(), (int) f2, (int) f10);
+            springOverScroller.fling(getScrollX(), getScrollY(), (int) value, (int) value_2);
         }
         dispatchIdleScrollStateIfNeeded();
     }
 
-    public void enableFrameRate(boolean z6) {
-        this.mSpringOverScroller.enableFrameRate(z6);
-        this.mCOUILocateOverScroller.enableFrameRate(z6);
+    public void enableFrameRate(boolean flag) {
+        this.mSpringOverScroller.enableFrameRate(flag);
+        this.mCOUILocateOverScroller.enableFrameRate(flag);
     }
 
     public final void springBackFromOverScroll() {
@@ -1017,8 +1020,9 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         }
         dispatchIdleScrollStateIfNeeded();
     }
+
     @Override
-    public boolean fling(int i2, int i6) {
+    public boolean fling(int velocityX, int velocityY) {
         RecyclerView.LayoutManager pVar = this.mLayout;
         if (pVar == null) {
             Log.e(TAG, "Cannot fling without a LayoutManager set. Call setLayoutManager with a non-null argument.");
@@ -1029,34 +1033,34 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         }
         int iCanScrollHorizontally = pVar.canScrollHorizontally() ? 1 : 0;
         boolean zCanScrollVertically = this.mLayout.canScrollVertically();
-        if (iCanScrollHorizontally == 0 || Math.abs(i2) < this.mMinFlingVelocity) {
-            i2 = 0;
+        if (iCanScrollHorizontally == 0 || Math.abs(velocityX) < this.mMinFlingVelocity) {
+            velocityX = 0;
         }
-        if (!zCanScrollVertically || Math.abs(i6) < this.mMinFlingVelocity) {
-            i6 = 0;
+        if (!zCanScrollVertically || Math.abs(velocityY) < this.mMinFlingVelocity) {
+            velocityY = 0;
         }
-        if (i2 == 0 && i6 == 0) {
+        if (velocityX == 0 && velocityY == 0) {
             return false;
         }
-        float f2 = i2;
-        float f10 = i6;
-        if (!dispatchNestedPreFling(f2, f10)) {
+        float value = velocityX;
+        float value_2 = velocityY;
+        if (!dispatchNestedPreFling(value, value_2)) {
             this.mScrollType = 1;
-            boolean z6 = iCanScrollHorizontally != 0 || zCanScrollVertically;
-            dispatchNestedFling(f2, f10, z6);
+            boolean flag = iCanScrollHorizontally != 0 || zCanScrollVertically;
+            dispatchNestedFling(value, value_2, flag);
             RecyclerView.OnFlingListener sVar = this.mOnFlingListener;
-            if (sVar != null && sVar.onFling(i2, i6)) {
+            if (sVar != null && sVar.onFling(velocityX, velocityY)) {
                 return true;
             }
-            if (z6) {
+            if (flag) {
                 if (zCanScrollVertically) {
                     iCanScrollHorizontally |= 2;
                 }
                 startNestedScroll(iCanScrollHorizontally, 1);
-                int i10 = this.mMaxFlingVelocity;
-                int iMax = Math.max(-i10, Math.min(i2, i10));
-                int i11 = this.mMaxFlingVelocity;
-                this.mViewFlinger.fling(iMax, Math.max(-i11, Math.min(i6, i11)));
+                int index = this.mMaxFlingVelocity;
+                int iMax = Math.max(-index, Math.min(velocityX, index));
+                int index_2 = this.mMaxFlingVelocity;
+                this.mViewFlinger.fling(iMax, Math.max(-index_2, Math.min(velocityY, index_2)));
                 return true;
             }
         }
@@ -1146,8 +1150,8 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     public final boolean findInterceptingOnItemTouchListener(MotionEvent motionEvent) {
         int action = motionEvent.getAction();
         int size = this.mOnItemTouchListeners.size();
-        for (int i2 = 0; i2 < size; i2++) {
-            RecyclerView.OnItemTouchListener tVar = this.mOnItemTouchListeners.get(i2);
+        for (int index = 0; index < size; index++) {
+            RecyclerView.OnItemTouchListener tVar = this.mOnItemTouchListeners.get(index);
             if (tVar.onInterceptTouchEvent(this, motionEvent) && action != MotionEvent.ACTION_CANCEL) {
                 this.mInterceptingOnItemTouchListener = tVar;
                 return true;
@@ -1190,27 +1194,27 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     }
 
     @Override
-    public void onOverScrolled(int i2, int i6, boolean z6, boolean z10) {
-        if (getScrollY() == i6 && getScrollX() == i2) {
+    public void onOverScrolled(int index, int index_2, boolean flag, boolean flag_2) {
+        if (getScrollY() == index_2 && getScrollX() == index) {
             return;
         }
         if (COUI_DEBUG) {
-            Log.d(TAG, "onOverScrolled: scrollX: " + i2 + " scrollY: " + i6);
+            Log.d(TAG, "onOverScrolled: scrollX: " + index + " scrollY: " + index_2);
         }
         if (this.mScrollType == 3) {
-            i2 = (int) (COUIPhysicalAnimationUtil.calcOverFlingDecelerateDist(0, i2, this.mScreenWidth) * this.mFlingRatio);
-            i6 = (int) (COUIPhysicalAnimationUtil.calcOverFlingDecelerateDist(0, i6, this.mScreenHeight) * this.mFlingRatio);
+            index = (int) (COUIPhysicalAnimationUtil.calcOverFlingDecelerateDist(0, index, this.mScreenWidth) * this.mFlingRatio);
+            index_2 = (int) (COUIPhysicalAnimationUtil.calcOverFlingDecelerateDist(0, index_2, this.mScreenHeight) * this.mFlingRatio);
         }
-        onScrollChanged(i2, i6, getScrollX(), getScrollY());
-        ViewNative.setScrollX(this, i2);
-        ViewNative.setScrollY(this, i6);
+        onScrollChanged(index, index_2, getScrollX(), getScrollY());
+        ViewNative.setScrollX(this, index);
+        ViewNative.setScrollY(this, index_2);
         invalidateParentIfNeeded();
         awakenScrollBars();
     }
 
     @Override
-    public void onSizeChanged(int i2, int i6, int i10, int i11) {
-        super.onSizeChanged(i2, i6, i10, i11);
+    public void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
         DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
         this.mScreenWidth = displayMetrics.widthPixels;
         this.mScreenHeight = displayMetrics.heightPixels;
@@ -1225,6 +1229,7 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             });
         }
     }
+
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
         COUIScrollBar scrollBar = this.mCOUIScrollBar;
@@ -1424,9 +1429,9 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     }
 
     @Override
-    public void onVisibilityChanged(View view, int i2) {
-        super.onVisibilityChanged(view, i2);
-        if (i2 != 0) {
+    public void onVisibilityChanged(View view, int index) {
+        super.onVisibilityChanged(view, index);
+        if (index != 0) {
             resetOverScrollState();
             SpringOverScroller springOverScroller = this.mSpringOverScroller;
             if (springOverScroller != null) {
@@ -1435,30 +1440,30 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         }
         COUIScrollBar cOUIScrollBar = this.mCOUIScrollBar;
         if (cOUIScrollBar != null) {
-            cOUIScrollBar.onVisibilityChanged(view, i2);
+            cOUIScrollBar.onVisibilityChanged(view, index);
         }
     }
 
     @Override
-    public void onWindowVisibilityChanged(int i2) {
-        super.onWindowVisibilityChanged(i2);
+    public void onWindowVisibilityChanged(int index) {
+        super.onWindowVisibilityChanged(index);
         COUIScrollBar cOUIScrollBar = this.mCOUIScrollBar;
         if (cOUIScrollBar != null) {
-            cOUIScrollBar.onWindowVisibilityChanged(i2);
+            cOUIScrollBar.onWindowVisibilityChanged(index);
         }
     }
 
     @Override
-    public boolean overScrollBy(int i2, int i6, int i10, int i11, int i12, int i13, int i14, int i15, boolean z6) {
-        int i16 = i2 + i10;
-        int i17 = i6 + i11;
-        if ((i10 < 0 && i16 > 0) || (i10 > 0 && i16 < 0)) {
-            i16 = 0;
+    public boolean overScrollBy(int deltaX, int deltaY, int scrollX, int scrollY, int scrollRangeX, int scrollRangeY, int maxOverScrollX, int maxOverScrollY, boolean isTouchEvent) {
+        int index = deltaX + scrollX;
+        int index_2 = deltaY + scrollY;
+        if ((scrollX < 0 && index > 0) || (scrollX > 0 && index < 0)) {
+            index = 0;
         }
-        if ((i11 < 0 && i17 > 0) || (i11 > 0 && i17 < 0)) {
-            i17 = 0;
+        if ((scrollY < 0 && index_2 > 0) || (scrollY > 0 && index_2 < 0)) {
+            index_2 = 0;
         }
-        onOverScrolled(i16, i17, false, false);
+        onOverScrolled(index, index_2, false, false);
         return false;
     }
 
@@ -1492,16 +1497,16 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     }
 
     @Override
-    public void requestDisallowInterceptTouchEvent(boolean z6) {
+    public void requestDisallowInterceptTouchEvent(boolean flag) {
         int size = this.mOnItemTouchListeners.size();
-        for (int i2 = 0; i2 < size; i2++) {
-            this.mOnItemTouchListeners.get(i2).onRequestDisallowInterceptTouchEvent(z6);
+        for (int index = 0; index < size; index++) {
+            this.mOnItemTouchListeners.get(index).onRequestDisallowInterceptTouchEvent(flag);
         }
-        super.requestDisallowInterceptTouchEvent(z6);
+        super.requestDisallowInterceptTouchEvent(flag);
     }
 
     @Override
-    public void scrollBy(int i2, int i6) {
+    public void scrollBy(int x, int y) {
         RecyclerView.LayoutManager pVar = this.mLayout;
         if (pVar == null) {
             Log.e(TAG, "Cannot scroll without a LayoutManager set. Call setLayoutManager with a non-null argument.");
@@ -1514,54 +1519,54 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         boolean zCanScrollVertically = this.mLayout.canScrollVertically();
         if (zCanScrollHorizontally || zCanScrollVertically) {
             if (!zCanScrollHorizontally) {
-                i2 = 0;
+                x = 0;
             }
             if (!zCanScrollVertically) {
-                i6 = 0;
+                y = 0;
             }
-            scrollByInternal(i2, i6, null);
+            scrollByInternal(x, y, null);
         }
     }
 
-    public boolean scrollByInternal(int i2, int i6, MotionEvent motionEvent) {
-        int i10;
-        int i11;
-        int i12;
-        int i13;
-        int i14;
-        int i15;
-        int i16;
-        int i17;
+    public boolean scrollByInternal(int index, int index_2, MotionEvent motionEvent) {
+        int index_10;
+        int index_11;
+        int index_12;
+        int index_13;
+        int index_14;
+        int index_15;
+        int index_16;
+        int index_17;
         consumePendingUpdateOperations();
-        if (this.mAdapter == null || (i2 == 0 && i6 == 0)) {
-            i10 = 0;
-            i11 = 0;
-            i12 = 0;
-            i13 = 0;
+        if (this.mAdapter == null || (index == 0 && index_2 == 0)) {
+            index_10 = 0;
+            index_11 = 0;
+            index_12 = 0;
+            index_13 = 0;
         } else {
-            if (!this.mOverScrollEnable || ((getScrollY() >= 0 || i6 <= 0) && ((getScrollY() <= 0 || i6 >= 0) && ((getScrollX() >= 0 || i2 <= 0) && (getScrollX() <= 0 || i2 >= 0))))) {
+            if (!this.mOverScrollEnable || ((getScrollY() >= 0 || index_2 <= 0) && ((getScrollY() <= 0 || index_2 >= 0) && ((getScrollX() >= 0 || index <= 0) && (getScrollX() <= 0 || index >= 0))))) {
                 int[] iArr = this.mReusableIntPair;
                 iArr[0] = 0;
                 iArr[1] = 0;
-                scrollStep(i2, i6, iArr);
+                scrollStep(index, index_2, iArr);
                 int[] iArr2 = this.mReusableIntPair;
-                i14 = iArr2[0];
-                i15 = iArr2[1];
-                i16 = i2 - i14;
-                i17 = i6 - i15;
+                index_14 = iArr2[0];
+                index_15 = iArr2[1];
+                index_16 = index - index_14;
+                index_17 = index_2 - index_15;
             } else {
-                i15 = 0;
-                i14 = 0;
-                i16 = 0;
-                i17 = 0;
+                index_15 = 0;
+                index_14 = 0;
+                index_16 = 0;
+                index_17 = 0;
             }
             if (COUI_DEBUG) {
-                Log.d(TAG, "scrollByInternal: y: " + i6 + " consumedY: " + i15 + " unconsumedY: " + i17);
+                Log.d(TAG, "scrollByInternal: y: " + index_2 + " consumedY: " + index_15 + " unconsumedY: " + index_17);
             }
-            i10 = i15;
-            i11 = i14;
-            i12 = i16;
-            i13 = i17;
+            index_10 = index_15;
+            index_11 = index_14;
+            index_12 = index_16;
+            index_13 = index_17;
         }
         if (!this.mItemDecorations.isEmpty()) {
             invalidate();
@@ -1569,39 +1574,39 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         int[] iArr3 = this.mReusableIntPair;
         iArr3[0] = 0;
         iArr3[1] = 0;
-        dispatchNestedScroll(i11, i10, i12, i13, this.mScrollOffset, 0, iArr3);
+        dispatchNestedScroll(index_11, index_10, index_12, index_13, this.mScrollOffset, 0, iArr3);
         int[] iArr4 = this.mReusableIntPair;
-        int i18 = i12 - iArr4[0];
-        int i19 = i13 - iArr4[1];
-        int i20 = this.mLastTouchX;
+        int index_3 = index_12 - iArr4[0];
+        int index_4 = index_13 - iArr4[1];
+        int lastTouchX = this.mLastTouchX;
         int[] iArr5 = this.mScrollOffset;
-        int i21 = iArr5[0];
-        this.mLastTouchX = i20 - i21;
-        int i22 = this.mLastTouchY;
-        int i23 = iArr5[1];
-        this.mLastTouchY = i22 - i23;
+        int index_5 = iArr5[0];
+        this.mLastTouchX = lastTouchX - index_5;
+        int lastTouchY = this.mLastTouchY;
+        int index_6 = iArr5[1];
+        this.mLastTouchY = lastTouchY - index_6;
         if (motionEvent != null) {
-            motionEvent.offsetLocation(i21, i23);
+            motionEvent.offsetLocation(index_5, index_6);
         }
         int[] iArr6 = this.mNestedOffsets;
-        int i24 = iArr6[0];
+        int index_7 = iArr6[0];
         int[] iArr7 = this.mScrollOffset;
-        iArr6[0] = i24 + iArr7[0];
+        iArr6[0] = index_7 + iArr7[0];
         iArr6[1] = iArr6[1] + iArr7[1];
         if (getOverScrollMode() != 2 && motionEvent != null && this.mOverScrollEnable && (MotionEventCompat.isFromSource(motionEvent, 4098) || MotionEventCompat.isFromSource(motionEvent, 8194))) {
-            if (i19 != 0 || i18 != 0) {
+            if (index_4 != 0 || index_3 != 0) {
                 this.mScrollType = 2;
             }
-            if (Math.abs(i19) == 0 && Math.abs(i10) < 2 && Math.abs(i6) < 2 && Math.abs(getScrollY()) > 2) {
+            if (Math.abs(index_4) == 0 && Math.abs(index_10) < 2 && Math.abs(index_2) < 2 && Math.abs(getScrollY()) > 2) {
                 this.mScrollType = 2;
             }
-            if (i19 == 0 && i10 == 0 && Math.abs(i6) > 2) {
+            if (index_4 == 0 && index_10 == 0 && Math.abs(index_2) > 2) {
                 this.mScrollType = 2;
             }
-            if (Math.abs(i18) == 0 && Math.abs(i11) < 2 && Math.abs(i2) < 2 && Math.abs(getScrollX()) > 2) {
+            if (Math.abs(index_3) == 0 && Math.abs(index_11) < 2 && Math.abs(index) < 2 && Math.abs(getScrollX()) > 2) {
                 this.mScrollType = 2;
             }
-            if (i18 == 0 && i11 == 0 && Math.abs(i2) > 2) {
+            if (index_3 == 0 && index_11 == 0 && Math.abs(index) > 2) {
                 this.mScrollType = 2;
             }
             if (this.mFixScrollTypeForOverScrolling && (getScrollX() != 0 || getScrollY() != 0)) {
@@ -1609,33 +1614,33 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             }
             int scrollX = getScrollX();
             int scrollY = getScrollY();
-            int iCalcRealOverScrollDist = (int) (COUIPhysicalAnimationUtil.calcRealOverScrollDist(i19, scrollY, this.mOverscrollDistance) * this.mFlingRatio);
-            int iCalcRealOverScrollDist2 = (int) (COUIPhysicalAnimationUtil.calcRealOverScrollDist(i18, scrollX, this.mOverscrollDistance) * this.mFlingRatio);
-            if ((scrollY < 0 && i6 > 0) || (scrollY > 0 && i6 < 0)) {
-                iCalcRealOverScrollDist = (int) (COUIPhysicalAnimationUtil.calcRealOverScrollDist(i6, scrollX, this.mOverscrollDistance) * this.mFlingRatio);
+            int iCalcRealOverScrollDist = (int) (COUIPhysicalAnimationUtil.calcRealOverScrollDist(index_4, scrollY, this.mOverscrollDistance) * this.mFlingRatio);
+            int iCalcRealOverScrollDist2 = (int) (COUIPhysicalAnimationUtil.calcRealOverScrollDist(index_3, scrollX, this.mOverscrollDistance) * this.mFlingRatio);
+            if ((scrollY < 0 && index_2 > 0) || (scrollY > 0 && index_2 < 0)) {
+                iCalcRealOverScrollDist = (int) (COUIPhysicalAnimationUtil.calcRealOverScrollDist(index_2, scrollX, this.mOverscrollDistance) * this.mFlingRatio);
             }
-            int i25 = iCalcRealOverScrollDist;
-            if ((scrollX < 0 && i2 > 0) || (scrollX > 0 && i2 < 0)) {
-                iCalcRealOverScrollDist2 = (int) (COUIPhysicalAnimationUtil.calcRealOverScrollDist(i2, scrollX, this.mOverscrollDistance) * this.mFlingRatio);
+            int index_8 = iCalcRealOverScrollDist;
+            if ((scrollX < 0 && index > 0) || (scrollX > 0 && index < 0)) {
+                iCalcRealOverScrollDist2 = (int) (COUIPhysicalAnimationUtil.calcRealOverScrollDist(index, scrollX, this.mOverscrollDistance) * this.mFlingRatio);
             }
-            if (i25 != 0 || iCalcRealOverScrollDist2 != 0) {
-                int i26 = this.mOverscrollDistance;
-                overScrollBy(iCalcRealOverScrollDist2, i25, scrollX, scrollY, 0, 0, i26, i26, true);
+            if (index_8 != 0 || iCalcRealOverScrollDist2 != 0) {
+                int index_9 = this.mOverscrollDistance;
+                overScrollBy(iCalcRealOverScrollDist2, index_8, scrollX, scrollY, 0, 0, index_9, index_9, true);
             }
         }
-        if (i11 != 0 || i10 != 0) {
-            dispatchOnScrolled(i11, i10);
+        if (index_11 != 0 || index_10 != 0) {
+            dispatchOnScrolled(index_11, index_10);
         }
         if (!awakenScrollBars()) {
             invalidate();
         }
-        return (i11 == 0 && i10 == 0) ? false : true;
+        return (index_11 == 0 && index_10 == 0) ? false : true;
     }
 
     @Override
-    public void scrollToPosition(int i2) {
+    public void scrollToPosition(int index) {
         resetOverScrollState();
-        super.scrollToPosition(i2);
+        super.scrollToPosition(index);
     }
 
     @Override
@@ -1643,96 +1648,96 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         super.setAdapter(hVar);
     }
 
-    public void setAvoidAccidentalTouch(boolean z6) {
-        this.mAvoidAccidentalTouch = z6;
+    public void setAvoidAccidentalTouch(boolean avoidAccidentalTouch) {
+        this.mAvoidAccidentalTouch = avoidAccidentalTouch;
     }
 
-    public void setCustomTouchSlop(int i2) {
-        Log.w(TAG, "setTouchSlop: set touchSlop from " + this.mTouchSlop + " to " + i2);
-        this.mTouchSlop = i2;
+    public void setCustomTouchSlop(int customTouchSlop) {
+        Log.w(TAG, "setTouchSlop: set touchSlop from " + this.mTouchSlop + " to " + customTouchSlop);
+        this.mTouchSlop = customTouchSlop;
     }
 
-    public void setDispatchEventWhileOverScrolling(boolean z6) {
-        this.mEnableDispatchEventWhileOverScrolling = z6;
+    public void setDispatchEventWhileOverScrolling(boolean dispatchEventWhileOverScrolling) {
+        this.mEnableDispatchEventWhileOverScrolling = dispatchEventWhileOverScrolling;
     }
 
-    public void setDispatchEventWhileScrolling(boolean z6) {
-        this.mEnableDispatchEventWhileScrolling = z6;
+    public void setDispatchEventWhileScrolling(boolean dispatchEventWhileScrolling) {
+        this.mEnableDispatchEventWhileScrolling = dispatchEventWhileScrolling;
     }
 
-    public void setDispatchEventWhileScrollingThreshold(int i2) {
-        this.mDispatchEventVelocityThreshold = i2;
+    public void setDispatchEventWhileScrollingThreshold(int dispatchEventWhileScrollingThreshold) {
+        this.mDispatchEventVelocityThreshold = dispatchEventWhileScrollingThreshold;
     }
 
-    public void setEnableFlingSpeedIncrease(boolean z6) {
+    public void setEnableFlingSpeedIncrease(boolean enableFlingSpeedIncrease) {
         SpringOverScroller springOverScroller = this.mSpringOverScroller;
         if (springOverScroller != null) {
-            springOverScroller.setEnableFlingSpeedIncrease(z6);
+            springOverScroller.setEnableFlingSpeedIncrease(enableFlingSpeedIncrease);
         }
     }
 
-    public void setEnablePointerDownAction(boolean z6) {
-        this.mEnablePointerDown = z6;
+    public void setEnablePointerDownAction(boolean enablePointerDownAction) {
+        this.mEnablePointerDown = enablePointerDownAction;
     }
 
-    public void setEnableVibrator(boolean z6) {
-        this.mEnableVibrator = z6;
+    public void setEnableVibrator(boolean enableVibrator) {
+        this.mEnableVibrator = enableVibrator;
     }
 
-    public void setEventFilterTangent(float f2) {
-        this.mEventFilterAngle = f2;
+    public void setEventFilterTangent(float eventFilterTangent) {
+        this.mEventFilterAngle = eventFilterTangent;
     }
 
-    public void setFastFlingThreshold(float f2) {
-        this.mFastFlingVelocity = Math.max(f2, 0.0f);
+    public void setFastFlingThreshold(float fastFlingThreshold) {
+        this.mFastFlingVelocity = Math.max(fastFlingThreshold, 0.0f);
     }
 
-    public void setFlingRatio(float f2) {
-        this.mFlingRatio = f2;
+    public void setFlingRatio(float flingRatio) {
+        this.mFlingRatio = flingRatio;
     }
 
-    public void setHorizontalFlingDurationRatio(float f2) {
-        this.mCOUILocateOverScroller.setDurationRatio(f2);
+    public void setHorizontalFlingDurationRatio(float horizontalFlingDurationRatio) {
+        this.mCOUILocateOverScroller.setDurationRatio(horizontalFlingDurationRatio);
     }
 
-    public void setHorizontalFlingFriction(float f2) {
+    public void setHorizontalFlingFriction(float horizontalFlingFriction) {
         COUILocateOverScroller cOUILocateOverScroller = this.mCOUILocateOverScroller;
         if (cOUILocateOverScroller != null) {
-            cOUILocateOverScroller.setFlingFriction(f2);
+            cOUILocateOverScroller.setFlingFriction(horizontalFlingFriction);
         }
     }
 
-    public void setHorizontalFlingVelocityRatio(float f2) {
-        this.mCOUILocateOverScroller.setVelocityXRatio(f2);
-        this.mCOUILocateOverScroller.setVelocityYRatio(f2);
+    public void setHorizontalFlingVelocityRatio(float horizontalFlingVelocityRatio) {
+        this.mCOUILocateOverScroller.setVelocityXRatio(horizontalFlingVelocityRatio);
+        this.mCOUILocateOverScroller.setVelocityYRatio(horizontalFlingVelocityRatio);
     }
 
-    public void setHorizontalItemAlign(int i2) {
+    public void setHorizontalItemAlign(int horizontalItemAlign) {
         if (isHorizontalLinearLayout()) {
             setIsUseNativeOverScroll(true);
-            this.mLocateHelper.setHorizontalItemAlign(i2);
+            this.mLocateHelper.setHorizontalItemAlign(horizontalItemAlign);
         }
     }
 
-    public void setIsUseNativeOverScroll(boolean z6) {
-        this.mIsUseNativeOverScroll = z6;
-        if (z6) {
+    public void setIsUseNativeOverScroll(boolean isUseNativeOverScroll) {
+        this.mIsUseNativeOverScroll = isUseNativeOverScroll;
+        if (isUseNativeOverScroll) {
             this.mOverScroller = this.mCOUILocateOverScroller;
         } else {
             this.mOverScroller = this.mSpringOverScroller;
         }
     }
 
-    public void setIsUseOptimizedScroll(boolean z6) {
-        this.mEnableOptimizedScroll = z6;
+    public void setIsUseOptimizedScroll(boolean isUseOptimizedScroll) {
+        this.mEnableOptimizedScroll = isUseOptimizedScroll;
     }
 
-    public void setItemClickableWhileOverScrolling(boolean z6) {
-        this.mItemClickableWhileOverScrolling = z6;
+    public void setItemClickableWhileOverScrolling(boolean itemClickableWhileOverScrolling) {
+        this.mItemClickableWhileOverScrolling = itemClickableWhileOverScrolling;
     }
 
-    public void setItemClickableWhileSlowScrolling(boolean z6) {
-        this.mItemClickableWhileSlowScrolling = z6;
+    public void setItemClickableWhileSlowScrolling(boolean itemClickableWhileSlowScrolling) {
+        this.mItemClickableWhileSlowScrolling = itemClickableWhileSlowScrolling;
     }
 
     @Override
@@ -1769,79 +1774,79 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         this.mOnFlingListener = sVar;
     }
 
-    public void setOverScrollEnable(boolean z6) {
-        this.mOverScrollEnable = z6;
+    public void setOverScrollEnable(boolean overScrollEnable) {
+        this.mOverScrollEnable = overScrollEnable;
     }
 
-    public void setOverScrollingFixed(boolean z6) {
-        this.mFixScrollTypeForOverScrolling = z6;
+    public void setOverScrollingFixed(boolean overScrollingFixed) {
+        this.mFixScrollTypeForOverScrolling = overScrollingFixed;
     }
 
-    public void setPressHideDivider(boolean z6) {
-        this.mCOUIRecyclerDividerManager.setEnablePressHideDivider(z6);
+    public void setPressHideDivider(boolean pressHideDivider) {
+        this.mCOUIRecyclerDividerManager.setEnablePressHideDivider(pressHideDivider);
     }
 
     @Override
-    public void setScrollState(int i2) {
-        if (i2 == this.mScrollState) {
+    public void setScrollState(int scrollState) {
+        if (scrollState == this.mScrollState) {
             return;
         }
-        this.mScrollState = i2;
-        if (i2 != 2) {
+        this.mScrollState = scrollState;
+        if (scrollState != 2) {
             stopScrollersAndSmoothScroller();
         }
-        super.setScrollState(i2);
+        super.setScrollState(scrollState);
     }
 
     @Override
-    public void setScrollingTouchSlop(int i2) {
+    public void setScrollingTouchSlop(int scrollingTouchSlop) {
         ViewConfiguration viewConfiguration = ViewConfiguration.get(getContext());
-        if (i2 != 0) {
-            if (i2 == 1) {
+        if (scrollingTouchSlop != 0) {
+            if (scrollingTouchSlop == 1) {
                 this.mTouchSlop = viewConfiguration.getScaledPagingTouchSlop();
                 return;
             }
-            Log.w(TAG, "setScrollingTouchSlop(): bad argument constant " + i2 + "; using default value");
+            Log.w(TAG, "setScrollingTouchSlop(): bad argument constant " + scrollingTouchSlop + "; using default value");
         }
         this.mTouchSlop = viewConfiguration.getScaledTouchSlop();
     }
 
-    public void setSlowScrollThreshold(int i2) {
-        Log.d(TAG, "Slow scroll threshold set to " + i2);
-        this.mSlowScrollThreshold = i2;
+    public void setSlowScrollThreshold(int slowScrollThreshold) {
+        Log.d(TAG, "Slow scroll threshold set to " + slowScrollThreshold);
+        this.mSlowScrollThreshold = slowScrollThreshold;
     }
 
-    public void setSpringBackFriction(float f2) {
+    public void setSpringBackFriction(float springBackFriction) {
         SpringOverScroller springOverScroller = this.mSpringOverScroller;
         if (springOverScroller != null) {
-            springOverScroller.setSpringBackFriction(f2);
+            springOverScroller.setSpringBackFriction(springBackFriction);
         }
     }
 
-    public void setSpringBackTension(float f2) {
-        this.mVerticalSpringOverTension = f2;
+    public void setSpringBackTension(float springBackTension) {
+        this.mVerticalSpringOverTension = springBackTension;
         SpringOverScroller springOverScroller = this.mSpringOverScroller;
         if (springOverScroller != null) {
-            springOverScroller.setSpringBackTensionMultiple(f2);
+            springOverScroller.setSpringBackTensionMultiple(springBackTension);
         }
     }
 
-    public void setSpringOverScrollerDebug(boolean z6) {
+    public void setSpringOverScrollerDebug(boolean springOverScrollerDebug) {
         SpringOverScroller springOverScroller = this.mSpringOverScroller;
         if (springOverScroller != null) {
-            springOverScroller.setDebug(z6);
+            springOverScroller.setDebug(springOverScrollerDebug);
         }
     }
 
     @Override
-    public void smoothScrollBy(int i2, int i6) {
-        smoothScrollBy(i2, i6, null);
+    public void smoothScrollBy(int index, int index_2) {
+        smoothScrollBy(index, index_2, null);
     }
 
     @Override
-    public void smoothScrollToPosition(int i2) {
+    public void smoothScrollToPosition(int index) {
         resetOverScrollState();
-        super.smoothScrollToPosition(i2);
+        super.smoothScrollToPosition(index);
     }
 
     @Override
@@ -1874,14 +1879,14 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     public final void onPointerUp(MotionEvent motionEvent) {
         int adjustmentPointerIndex = UIUtil.getAdjustmentPointerIndex(motionEvent, motionEvent.getActionIndex());
         if (motionEvent.getPointerId(adjustmentPointerIndex) == this.mScrollPointerId) {
-            int i2 = adjustmentPointerIndex == 0 ? 1 : 0;
-            this.mScrollPointerId = motionEvent.getPointerId(i2);
-            int x6 = (int) (motionEvent.getX(i2) + 0.5f);
-            this.mLastTouchX = x6;
-            this.mInitialTouchX = x6;
-            int y6 = (int) (motionEvent.getY(i2) + 0.5f);
-            this.mLastTouchY = y6;
-            this.mInitialTouchY = y6;
+            int index = adjustmentPointerIndex == 0 ? 1 : 0;
+            this.mScrollPointerId = motionEvent.getPointerId(index);
+            int touchX = (int) (motionEvent.getX(index) + 0.5f);
+            this.mLastTouchX = touchX;
+            this.mInitialTouchX = touchX;
+            int touchY = (int) (motionEvent.getY(index) + 0.5f);
+            this.mLastTouchY = touchY;
+            this.mInitialTouchY = touchY;
         }
     }
 
@@ -1890,12 +1895,12 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     }
 
     @Override
-    public void smoothScrollBy(int i2, int i6, Interpolator interpolator) {
-        smoothScrollBy(i2, i6, interpolator, Integer.MIN_VALUE);
+    public void smoothScrollBy(int index, int index_2, Interpolator interpolator) {
+        smoothScrollBy(index, index_2, interpolator, Integer.MIN_VALUE);
     }
 
-    public COUIRecyclerView(Context context, AttributeSet attributeSet, int i2) {
-        super(context, attributeSet, i2);
+    public COUIRecyclerView(Context context, AttributeSet attributeSet, int index) {
+        super(context, attributeSet, index);
         this.SCROLLBARS_NONE = 0;
         this.SCROLLBARS_VERTICAL = 512;
         this.mFixScrollTypeForOverScrolling = true;
@@ -1917,26 +1922,26 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         this.mSmoothScrollFlag = false;
         this.mEnableDispatchEventWhileScrolling = false;
         this.mEnableDispatchEventWhileOverScrolling = false;
-        this.mDispatchEventVelocityThreshold = 2500;
+        this.mDispatchEventVelocityThreshold = DEFAULT_INTERACTING_NESTED_SCROLL_VELOCITY_THRESHOLD;
         this.mEventFilterAngle = DEFAULT_INTERACTING_NESTED_SCROLL_ANGLE;
         this.mScrollbars = 0;
-        this.mSlowScrollThreshold = 2500;
+        this.mSlowScrollThreshold = SLOW_SCROLL_THRESHOLD;
         this.mScrollState = 0;
-        this.mScrollPointerId = -1;
+        this.mScrollPointerId = INVALID_POINTER;
         this.mScrollOffset = new int[2];
         this.mNestedOffsets = new int[2];
         this.mVerticalSpringOverTension = VERTICAL_SPRING_BACK_TENSION_MULTIPLE;
         this.mEnablePointerDown = true;
         this.mFlingRatio = 1.0f;
         this.mEnableVibrator = true;
-        readCOUIRecyclerViewAttributes(context, attributeSet, i2);
+        readCOUIRecyclerViewAttributes(context, attributeSet, index);
         ensureViewFlinger();
         ensureOnItemTouchListeners();
         ViewConfiguration viewConfiguration = ViewConfiguration.get(context);
         this.mTouchSlop = viewConfiguration.getScaledTouchSlop();
         this.mMinFlingVelocity = viewConfiguration.getScaledMinimumFlingVelocity();
         this.mMaxFlingVelocity = viewConfiguration.getScaledMaximumFlingVelocity();
-        setSlowScrollThreshold(2500);
+        setSlowScrollThreshold(SLOW_SCROLL_THRESHOLD);
         initOverScrollDistances(context);
         if (COUI_DEBUG) {
             Log.d(TAG, "COUIRecyclerView: overscroll_mode: " + getOverScrollMode() + " mOverScrollEnable: " + this.mOverScrollEnable);
@@ -1951,9 +1956,9 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         this.mCOUIRecyclerDividerManager = new COUIRecyclerDividerManager(this, this.mTouchSlop);
         if (this.mScrollbars == 512) {
             initCOUIScrollBar(context);
-            int i6 = this.mScrollbarsSize;
-            if (i6 != 0) {
-                this.mCOUIScrollBar.setThumbSize(i6);
+            int index_2 = this.mScrollbarsSize;
+            if (index_2 != 0) {
+                this.mCOUIScrollBar.setThumbSize(index_2);
             }
             Drawable drawable = this.mScrollbarThumbVertical;
             if (drawable != null) {
@@ -1963,8 +1968,8 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     }
 
     @Override
-    public void smoothScrollBy(int i2, int i6, Interpolator interpolator, int i10) {
-        smoothScrollBy(i2, i6, interpolator, i10, false);
+    public void smoothScrollBy(int index, int index_2, Interpolator interpolator, int index_3) {
+        smoothScrollBy(index, index_2, interpolator, index_3, false);
     }
 
     public static class COUIRecyclerViewItemDecoration extends COUIDividerItemDecoration {
@@ -1978,24 +1983,24 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
         }
 
         @Override
-        public int getDividerInsetEnd(RecyclerView recyclerView, int i2) {
-            View childAt = recyclerView.getChildAt(i2);
-            return childAt != null ? getDividerInsetEnd(recyclerView.getChildViewHolder(childAt)) : super.getDividerInsetEnd(recyclerView, i2);
+        public int getDividerInsetEnd(RecyclerView recyclerView, int index) {
+            View childAt = recyclerView.getChildAt(index);
+            return childAt != null ? getDividerInsetEnd(recyclerView.getChildViewHolder(childAt)) : super.getDividerInsetEnd(recyclerView, index);
         }
 
         @Override
-        public int getDividerInsetStart(RecyclerView recyclerView, int i2) {
-            View childAt = recyclerView.getChildAt(i2);
-            return childAt != null ? getDividerInsetStart(recyclerView.getChildViewHolder(childAt)) : super.getDividerInsetStart(recyclerView, i2);
+        public int getDividerInsetStart(RecyclerView recyclerView, int index) {
+            View childAt = recyclerView.getChildAt(index);
+            return childAt != null ? getDividerInsetStart(recyclerView.getChildViewHolder(childAt)) : super.getDividerInsetStart(recyclerView, index);
         }
 
         @Override
-        public boolean shouldDrawDivider(RecyclerView recyclerView, int i2) {
-            View childAt = recyclerView.getChildAt(i2);
+        public boolean shouldDrawDivider(RecyclerView recyclerView, int index) {
+            View childAt = recyclerView.getChildAt(index);
             if (childAt == null) {
                 return true;
             }
-            if ((recyclerView instanceof COUIRecyclerView) && !((COUIRecyclerView) recyclerView).isDrawDivider(childAt, i2)) {
+            if ((recyclerView instanceof COUIRecyclerView) && !((COUIRecyclerView) recyclerView).isDrawDivider(childAt, index)) {
                 return false;
             }
             Object childViewHolder = recyclerView.getChildViewHolder(childAt);
@@ -2004,19 +2009,20 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             }
             return true;
         }
+
         @Override
         public int getDividerInsetEnd(RecyclerView.ViewHolder viewHolder) {
             int width;
             int width2;
             if (viewHolder instanceof ICOUIDividerDecorationInterface) {
                 View view = viewHolder.itemView;
-                boolean z6 = view.getLayoutDirection() == 1;
+                boolean layoutDirection = view.getLayoutDirection() == 1;
                 ICOUIDividerDecorationInterface dividerProvider = (ICOUIDividerDecorationInterface) viewHolder;
                 View dividerEndAlignView = dividerProvider.getDividerEndAlignView();
                 if (dividerEndAlignView != null) {
                     view.getLocationInWindow(this.mItemLocation);
                     dividerEndAlignView.getLocationInWindow(this.mAlignedViewLocation);
-                    if (z6) {
+                    if (layoutDirection) {
                         width = this.mAlignedViewLocation[0] + dividerEndAlignView.getPaddingEnd();
                         width2 = this.mItemLocation[0];
                     } else {
@@ -2029,19 +2035,20 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             }
             return super.getDividerInsetEnd(viewHolder);
         }
+
         @Override
         public int getDividerInsetStart(RecyclerView.ViewHolder viewHolder) {
             int paddingStart;
             int width;
             if (viewHolder instanceof ICOUIDividerDecorationInterface) {
                 View view = viewHolder.itemView;
-                boolean z6 = view.getLayoutDirection() == 1;
+                boolean layoutDirection = view.getLayoutDirection() == 1;
                 ICOUIDividerDecorationInterface dividerProvider = (ICOUIDividerDecorationInterface) viewHolder;
                 View dividerStartAlignView = dividerProvider.getDividerStartAlignView();
                 if (dividerStartAlignView != null) {
                     view.getLocationInWindow(this.mItemLocation);
                     dividerStartAlignView.getLocationInWindow(this.mAlignedViewLocation);
-                    if (z6) {
+                    if (layoutDirection) {
                         paddingStart = this.mItemLocation[0] + view.getWidth();
                         width = (this.mAlignedViewLocation[0] + dividerStartAlignView.getWidth()) - dividerStartAlignView.getPaddingStart();
                     } else {
@@ -2057,7 +2064,7 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
     }
 
     @Override
-    public void smoothScrollBy(int i2, int i6, Interpolator interpolator, int i10, boolean z6) {
+    public void smoothScrollBy(int index, int index_2, Interpolator interpolator, int index_3, boolean flag) {
         if (isOverScrolling()) {
             resetOverScrollState();
         }
@@ -2071,27 +2078,27 @@ public class COUIRecyclerView extends RecyclerView implements COUIScrollBar.COUI
             return;
         }
         if (!pVar.canScrollHorizontally()) {
-            i2 = 0;
+            index = 0;
         }
         if (!this.mLayout.canScrollVertically()) {
-            i6 = 0;
+            index_2 = 0;
         }
-        if (i2 == 0 && i6 == 0) {
+        if (index == 0 && index_2 == 0) {
             return;
         }
         this.mScrollType = 0;
-        if (i10 != Integer.MIN_VALUE && i10 <= 0) {
-            scrollBy(i2, i6);
+        if (index_3 != Integer.MIN_VALUE && index_3 <= 0) {
+            scrollBy(index, index_2);
             return;
         }
-        if (z6) {
-            int i11 = i2 != 0 ? 1 : 0;
-            if (i6 != 0) {
-                i11 |= 2;
+        if (flag) {
+            int index_4 = index != 0 ? 1 : 0;
+            if (index_2 != 0) {
+                index_4 |= 2;
             }
-            startNestedScroll(i11, 1);
+            startNestedScroll(index_4, 1);
         }
-        this.mViewFlinger.smoothScrollBy(i2, i6, i10, interpolator);
+        this.mViewFlinger.smoothScrollBy(index, index_2, index_3, interpolator);
     }
 }
 

@@ -1,7 +1,5 @@
 package com.coui.appcompat.grid;
 
-import com.coui.appcompat.R;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -9,6 +7,8 @@ import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.util.Log;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.list.COUIListView;
 
 public class COUIPercentWidthListView extends COUIListView {
@@ -43,9 +43,9 @@ public class COUIPercentWidthListView extends COUIListView {
             int gridNumberStyleable = R.styleable.COUIPercentWidthListView_couiListGridNumber;
             this.mGridNumberResourceId = typedArrayObtainStyledAttributes.getResourceId(gridNumberStyleable, 0);
             this.mGridNumber = typedArrayObtainStyledAttributes.getInteger(gridNumberStyleable, getContext().getResources().getInteger(R.integer.grid_guide_column_preference));
-            this.mMode = typedArrayObtainStyledAttributes.getInt(R.styleable.COUIPercentWidthListView_percentMode, 0);
-            this.mPaddingType = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthListView_paddingType, 1);
-            this.mPaddingSize = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthListView_paddingSize, 0);
+            this.mMode = typedArrayObtainStyledAttributes.getInt(R.styleable.COUIPercentWidthListView_percentMode, PADDING_MODE);
+            this.mPaddingType = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthListView_paddingType, LIST_FLAG);
+            this.mPaddingSize = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthListView_paddingSize, LARGE_PADDING);
             this.mIsParentChildHierarchy = typedArrayObtainStyledAttributes.getBoolean(R.styleable.COUIPercentWidthRecyclerView_isParentChildHierarchy, false);
             this.mPercentEnabled = typedArrayObtainStyledAttributes.getBoolean(R.styleable.COUIPercentWidthLinearLayout_percentIndentEnabled, true);
             typedArrayObtainStyledAttributes.recycle();

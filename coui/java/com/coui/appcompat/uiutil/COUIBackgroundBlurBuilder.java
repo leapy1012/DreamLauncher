@@ -10,6 +10,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
@@ -17,6 +18,7 @@ import com.coui.appcompat.log.COUILog;
 import com.coui.appcompat.roundcorner.RoundCornerUtil;
 import com.oplus.graphics.OplusBlurParam;
 import com.oplus.view.ViewRootManager;
+
 import java.util.function.Consumer;
 
 @Deprecated
@@ -40,7 +42,7 @@ public class COUIBackgroundBlurBuilder {
     private WindowManager mWindowManager;
     private final ContentObserver mBlurSettingObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
         @Override
-        public void onChange(boolean z6) {
+        public void onChange(boolean flag) {
             boolean zIsMaterialBlurEnabled = COUIBackgroundBlurBuilder.this.isMaterialBlurEnabled();
             if (COUIBackgroundBlurBuilder.this.mSettingBlurState != zIsMaterialBlurEnabled) {
                 COUIBackgroundBlurBuilder.this.mSettingBlurState = zIsMaterialBlurEnabled;
@@ -66,16 +68,16 @@ public class COUIBackgroundBlurBuilder {
         float[] fArr2;
         OplusBlurParam oplusBlurParam = new OplusBlurParam();
         oplusBlurParam.setBlurType(2);
-        boolean z6 = this.mIsDarkMode;
-        int i2 = z6 ? 2 : 3;
-        if (z6) {
+        boolean flag = this.mIsDarkMode;
+        int index = flag ? 2 : 3;
+        if (flag) {
             fArr = this.mBlendColorDark;
             fArr2 = this.mMixColorDark;
         } else {
             fArr = this.mBlendColorLight;
             fArr2 = this.mMixColorLight;
         }
-        oplusBlurParam.setMaterialParams(i2, fArr, fArr2);
+        oplusBlurParam.setMaterialParams(index, fArr, fArr2);
         if (RoundCornerUtil.isSupportRoundCornerWhenBlur()) {
             oplusBlurParam.setSmoothCornerWeight(this.mSmoothWeight);
             COUILog.i(TAG, "Current version supports roundCorner when using blur");
@@ -196,16 +198,16 @@ public class COUIBackgroundBlurBuilder {
         this.mBlendColorLight = fArr;
     }
 
-    public COUIBackgroundBlurBuilder setBlurRadius(int i2) {
-        this.mBlurRadius = i2;
+    public COUIBackgroundBlurBuilder setBlurRadius(int blurRadius) {
+        this.mBlurRadius = blurRadius;
         return this;
     }
 
-    public COUIBackgroundBlurBuilder setCornerRadius(float f2) {
-        this.mCornerRadiusTopLeft = f2;
-        this.mCornerRadiusTopRight = f2;
-        this.mCornerRadiusBottomLeft = f2;
-        this.mCornerRadiusBottomRight = f2;
+    public COUIBackgroundBlurBuilder setCornerRadius(float cornerRadius) {
+        this.mCornerRadiusTopLeft = cornerRadius;
+        this.mCornerRadiusTopRight = cornerRadius;
+        this.mCornerRadiusBottomLeft = cornerRadius;
+        this.mCornerRadiusBottomRight = cornerRadius;
         return this;
     }
 
@@ -222,8 +224,8 @@ public class COUIBackgroundBlurBuilder {
         return this;
     }
 
-    public COUIBackgroundBlurBuilder setSmoothWeight(float f2) {
-        this.mSmoothWeight = f2;
+    public COUIBackgroundBlurBuilder setSmoothWeight(float smoothWeight) {
+        this.mSmoothWeight = smoothWeight;
         return this;
     }
 
@@ -232,25 +234,25 @@ public class COUIBackgroundBlurBuilder {
         return this;
     }
 
-    public COUIBackgroundBlurBuilder setUseBackgroundBlur(boolean z6, AnimLevel animLevel) {
-        return setUseBackgroundBlur(z6, animLevel, this.mContext.getResources().getBoolean(R.bool.coui_blur_enable));
+    public COUIBackgroundBlurBuilder setUseBackgroundBlur(boolean useBackgroundBlur, AnimLevel animLevel) {
+        return setUseBackgroundBlur(useBackgroundBlur, animLevel, this.mContext.getResources().getBoolean(R.bool.coui_blur_enable));
     }
 
     public boolean useBackgroundBlur() {
         return this.mUseBackgroundBlur;
     }
 
-    public COUIBackgroundBlurBuilder setCornerRadius(float f2, float f10, float f11, float f12) {
-        this.mCornerRadiusTopLeft = f2;
-        this.mCornerRadiusTopRight = f10;
-        this.mCornerRadiusBottomLeft = f11;
-        this.mCornerRadiusBottomRight = f12;
+    public COUIBackgroundBlurBuilder setCornerRadius(float value, float value_2, float value_3, float value_4) {
+        this.mCornerRadiusTopLeft = value;
+        this.mCornerRadiusTopRight = value_2;
+        this.mCornerRadiusBottomLeft = value_3;
+        this.mCornerRadiusBottomRight = value_4;
         return this;
     }
 
-    public COUIBackgroundBlurBuilder setUseBackgroundBlur(boolean z6, AnimLevel animLevel, boolean z10) {
-        if (ShadowUtils.checkOPlusViewElevationSDK() && UIUtil.confirmLevelAnim(animLevel) && z10) {
-            this.mUseBackgroundBlur = z6;
+    public COUIBackgroundBlurBuilder setUseBackgroundBlur(boolean flag, AnimLevel animLevel, boolean flag_2) {
+        if (ShadowUtils.checkOPlusViewElevationSDK() && UIUtil.confirmLevelAnim(animLevel) && flag_2) {
+            this.mUseBackgroundBlur = flag;
         } else {
             Log.e(TAG, "Machines below V do not support setting blurred backgrounds or current animLevel is too low or is in third party theme");
             this.mUseBackgroundBlur = false;

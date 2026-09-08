@@ -1,7 +1,5 @@
 package com.coui.appcompat.statement;
 
-import com.coui.appcompat.R;
-
 import android.content.Context;
 import android.content.res.Configuration;
 import android.view.LayoutInflater;
@@ -9,6 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.button.COUIButton;
 import com.coui.appcompat.checkbox.COUICheckBox;
 import com.coui.appcompat.contextutil.COUIContextUtil;
@@ -17,7 +17,9 @@ import com.coui.appcompat.panel.COUIBottomSheetDialog;
 import com.coui.appcompat.panel.COUIPanelMultiWindowUtils;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 import com.coui.appcompat.textviewcompatutil.COUITextViewCompatUtil;
+
 import java.util.ArrayList;
+
 import kotlin.jvm.internal.DefaultConstructorMarker;
 import kotlin.jvm.internal.Intrinsics;
 import kotlin.jvm.internal.SourceDebugExtension;
@@ -68,7 +70,7 @@ public class COUIIndividualStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public static final void addPrivacyList$lambda$16$lambda$15$lambda$14(COUIIndividualStatementDialog this$0, COUICheckBox cOUICheckBox, int i2) {
+    public static final void addPrivacyList$lambda$16$lambda$15$lambda$14(COUIIndividualStatementDialog this$0, COUICheckBox cOUICheckBox, int index) {
         Intrinsics.checkNotNullParameter(this$0, "this$0");
         this$0.resetBottomButton();
     }
@@ -78,8 +80,8 @@ public class COUIIndividualStatementDialog extends COUIBottomSheetDialog {
         LinearLayout linearLayout = this.scrollViewLayout;
         if (linearLayout.getChildCount() > 1) {
             int childCount = linearLayout.getChildCount();
-            for (int i2 = 1; i2 < childCount; i2++) {
-                View childAt = linearLayout.getChildAt(i2);
+            for (int index = 1; index < childCount; index++) {
+                View childAt = linearLayout.getChildAt(index);
                 Intrinsics.checkNotNull(childAt, "null cannot be cast to non-null type com.coui.appcompat.statement.COUICheckBoxItemView");
                 COUICheckBoxItemView cOUICheckBoxItemView = (COUICheckBoxItemView) childAt;
                 if (cOUICheckBoxItemView.isChecked()) {
@@ -167,44 +169,44 @@ public class COUIIndividualStatementDialog extends COUIBottomSheetDialog {
     }
 
     private final boolean isSmallScreen(Configuration configuration) {
-        return configuration.smallestScreenWidthDp < 480;
+        return configuration.smallestScreenWidthDp < MEDIUM_LARGE_SCREEN_SW_THRESHOLD;
     }
 
     private final void resetBottomButton() {
         LinearLayout linearLayout = this.scrollViewLayout;
-        boolean z6 = false;
+        boolean flag = false;
         if (linearLayout.getChildCount() > 1) {
             int childCount = linearLayout.getChildCount();
-            for (int i2 = 1; i2 < childCount; i2++) {
-                View childAt = linearLayout.getChildAt(i2);
+            for (int index = 1; index < childCount; index++) {
+                View childAt = linearLayout.getChildAt(index);
                 Intrinsics.checkNotNull(childAt, "null cannot be cast to non-null type com.coui.appcompat.statement.COUICheckBoxItemView");
                 if (((COUICheckBoxItemView) childAt).isChecked()) {
-                    z6 = true;
+                    flag = true;
                 }
             }
         }
-        this.bottomButton.setEnabled(z6);
-        this.smallLandConfirmButton.setEnabled(z6);
+        this.bottomButton.setEnabled(flag);
+        this.smallLandConfirmButton.setEnabled(flag);
     }
 
-    private final void updateBottomButton(boolean z6) {
-        this.exitButton.setVisibility(z6 ? 8 : 0);
-        this.bottomButton.setVisibility(z6 ? 8 : 0);
-        this.smallLandButtonLayout.setVisibility(z6 ? 0 : 8);
+    private final void updateBottomButton(boolean flag) {
+        this.exitButton.setVisibility(flag ? 8 : 0);
+        this.bottomButton.setVisibility(flag ? 8 : 0);
+        this.smallLandButtonLayout.setVisibility(flag ? 0 : 8);
     }
 
     private final void updateUI(Configuration configuration) {
-        boolean z6 = false;
-        boolean z10 = isSmallScreen(configuration) && !COUIPanelMultiWindowUtils.isPortrait(configuration);
-        if (this.isInSmallLand != z10) {
-            this.isInSmallLand = z10;
-            updateBottomButton(z10);
+        boolean isInSmallPortrait_2 = false;
+        boolean isInSmallLand_2 = isSmallScreen(configuration) && !COUIPanelMultiWindowUtils.isPortrait(configuration);
+        if (this.isInSmallLand != isInSmallLand_2) {
+            this.isInSmallLand = isInSmallLand_2;
+            updateBottomButton(isInSmallLand_2);
         }
         if (isSmallScreen(configuration) && COUIPanelMultiWindowUtils.isPortrait(configuration)) {
-            z6 = true;
+            isInSmallPortrait_2 = true;
         }
-        if (this.isInSmallPortrait != z6) {
-            this.isInSmallPortrait = z6;
+        if (this.isInSmallPortrait != isInSmallPortrait_2) {
+            this.isInSmallPortrait = isInSmallPortrait_2;
             COUIButton cOUIButton = this.bottomButton;
             ViewGroup.LayoutParams layoutParams = cOUIButton.getLayoutParams();
             layoutParams.width = this.isInSmallPortrait ? cOUIButton.getContext().getResources().getDimensionPixelOffset(R.dimen.coui_component_statement_button_width) : cOUIButton.getContext().getResources().getDimensionPixelOffset(R.dimen.coui_component_statement_large_button_width);
@@ -214,31 +216,31 @@ public class COUIIndividualStatementDialog extends COUIBottomSheetDialog {
 
     public final void addPrivacyList(ArrayList<PrivacyItem> arrayList) {
         if (arrayList != null) {
-            int i2 = 0;
+            int index = 0;
             for (Object obj : arrayList) {
-                int i6 = i2 + 1;
+                int index_2 = index + 1;
                 Context context = getContext();
                 Intrinsics.checkNotNullExpressionValue(context, "context");
                 COUICheckBoxItemView cOUICheckBoxItemView = new COUICheckBoxItemView(context, (PrivacyItem) obj);
                 cOUICheckBoxItemView.setOnStateChangeListener(new COUICheckBox.OnStateChangeListener() {
                     @Override
-                    public final void onStateChanged(COUICheckBox cOUICheckBox, int i10) {
-                        COUIIndividualStatementDialog.addPrivacyList$lambda$16$lambda$15$lambda$14(COUIIndividualStatementDialog.this, cOUICheckBox, i10);
+                    public final void onStateChanged(COUICheckBox cOUICheckBox, int index_3) {
+                        COUIIndividualStatementDialog.addPrivacyList$lambda$16$lambda$15$lambda$14(COUIIndividualStatementDialog.this, cOUICheckBox, index_3);
                     }
                 });
                 this.scrollViewLayout.addView(cOUICheckBoxItemView, -1, -2);
                 this.bottomButton.setEnabled(false);
                 this.smallLandConfirmButton.setEnabled(false);
-                if (i2 == arrayList.size() - 1) {
+                if (index == arrayList.size() - 1) {
                     cOUICheckBoxItemView.findViewById(R.id.checkbox_line).setVisibility(8);
                 }
-                i2 = i6;
+                index = index_2;
             }
         }
         COUIComponentMaxHeightScrollView cOUIComponentMaxHeightScrollView = this.mScrollViewComponent;
         cOUIComponentMaxHeightScrollView.setPadding(cOUIComponentMaxHeightScrollView.getPaddingLeft(), (arrayList == null || arrayList.isEmpty()) ? cOUIComponentMaxHeightScrollView.getResources().getDimensionPixelOffset(R.dimen.coui_component_individual_padding_top) : cOUIComponentMaxHeightScrollView.getResources().getDimensionPixelOffset(R.dimen.coui_component_individual_padding_top_with_checkbox), cOUIComponentMaxHeightScrollView.getPaddingRight(), cOUIComponentMaxHeightScrollView.getPaddingBottom());
         TextView textView = this.appStatement;
-        textView.setTextSize((arrayList == null || arrayList.isEmpty()) ? 14.0f : 12.0f);
+        textView.setTextSize((arrayList == null || arrayList.isEmpty()) ? ORIGIN_STATEMENT_TEXT_SIZE : STATEMENT_TEXT_SIZE_WITH_CHECKBOX);
         textView.setPadding(textView.getPaddingLeft(), textView.getPaddingTop(), textView.getPaddingRight(), (arrayList == null || arrayList.isEmpty()) ? textView.getResources().getDimensionPixelOffset(R.dimen.coui_component_individual_padding_bottom) : textView.getResources().getDimensionPixelOffset(R.dimen.coui_component_individual_padding_bottom_with_checkbox));
     }
 
@@ -304,40 +306,40 @@ public class COUIIndividualStatementDialog extends COUIBottomSheetDialog {
     }
 
 
-    public COUIIndividualStatementDialog(Context context, int i2) {
-        this(context, i2, 0.0f, 0.0f, 12, null);
+    public COUIIndividualStatementDialog(Context context, int index) {
+        this(context, index, 0.0f, 0.0f, 12, null);
         Intrinsics.checkNotNullParameter(context, "context");
     }
 
-    public final void setStatement(int i2) {
-        setStatement(getContext().getString(i2));
+    public final void setStatement(int statement) {
+        setStatement(getContext().getString(statement));
     }
 
-    public final void setTitleText(int i2) {
-        setTitleText(getContext().getString(i2));
+    public final void setTitleText(int titleText) {
+        setTitleText(getContext().getString(titleText));
     }
 
 
-    public COUIIndividualStatementDialog(Context context, int i2, float f2) {
-        this(context, i2, f2, 0.0f, 8, null);
+    public COUIIndividualStatementDialog(Context context, int index, float value) {
+        this(context, index, value, 0.0f, 8, null);
         Intrinsics.checkNotNullParameter(context, "context");
     }
 
-    public final void setBottomButtonText(int i2) {
-        setBottomButtonText(getContext().getString(i2));
+    public final void setBottomButtonText(int bottomButtonText) {
+        setBottomButtonText(getContext().getString(bottomButtonText));
     }
 
-    public final void setExitButtonText(int i2) {
-        setExitButtonText(getContext().getString(i2));
+    public final void setExitButtonText(int exitButtonText) {
+        setExitButtonText(getContext().getString(exitButtonText));
     }
 
-    public COUIIndividualStatementDialog(Context context, int i2, float f2, float f10, int i6, DefaultConstructorMarker defaultConstructorMarker) {
-        this(context, (i6 & 2) != 0 ? R.style.DefaultBottomSheetDialog : i2, (i6 & 4) != 0 ? Float.MIN_VALUE : f2, (i6 & 8) != 0 ? Float.MIN_VALUE : f10);
+    public COUIIndividualStatementDialog(Context context, int index, float value, float value_2, int index_2, DefaultConstructorMarker defaultConstructorMarker) {
+        this(context, (index_2 & 2) != 0 ? R.style.DefaultBottomSheetDialog : index, (index_2 & 4) != 0 ? Float.MIN_VALUE : value, (index_2 & 8) != 0 ? Float.MIN_VALUE : value_2);
     }
 
 
-    public COUIIndividualStatementDialog(Context context, int i2, float f2, float f10) {
-        super(context, i2, f2, f10);
+    public COUIIndividualStatementDialog(Context context, int index, float value, float value_2) {
+        super(context, index, value, value_2);
         Intrinsics.checkNotNullParameter(context, "context");
         View viewInflate = LayoutInflater.from(context).inflate(R.layout.coui_component_full_page_function_privacy, (ViewGroup) null);
         View viewFindViewById = viewInflate.findViewById(R.id.txt_statement);

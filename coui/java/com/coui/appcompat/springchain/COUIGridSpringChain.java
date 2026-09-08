@@ -1,12 +1,14 @@
 package com.coui.appcompat.springchain;
 
 import android.util.Log;
+
 import com.coui.appcompat.springchain.api.IChainItem;
 import com.coui.appcompat.springchain.api.ISpringUpdateListener;
 import com.facebook.rebound.OrigamiValueConverter;
 import com.facebook.rebound.SimpleSpringListener;
 import com.facebook.rebound.Spring;
 import com.facebook.rebound.SpringSystem;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -105,96 +107,96 @@ public final class COUIGridSpringChain {
                 MAX_X, MAX_Y);
     }
 
-    private final float calculateTranslation(int i2, float f2, int i6) {
-        int i10 = i6 == 4 ? this.currentMaxX - i2 : i2;
-        if (i6 == 2) {
-            i10 = this.currentMaxY - i2;
+    private final float calculateTranslation(int position, float velocity, int direction) {
+        int index = direction == 4 ? this.currentMaxX - position : position;
+        if (direction == 2) {
+            index = this.currentMaxY - position;
         }
         if (!this.enableAutoAcc) {
-            return getTrans(i10, f2, i6);
+            return getTrans(index, velocity, direction);
         }
         float trans = 0.0f;
-        if (i10 < 0) {
+        if (index < 0) {
             return 0.0f;
         }
-        int i11 = 0;
+        int index_2 = 0;
         while (true) {
-            if (!skipCumulativeCalculate(i11, i10, i6)) {
-                trans += getTrans(i11, f2, i6);
+            if (!skipCumulativeCalculate(index_2, index, direction)) {
+                trans += getTrans(index_2, velocity, direction);
             }
-            if (i11 == i10) {
+            if (index_2 == index) {
                 return trans;
             }
-            i11++;
+            index_2++;
         }
     }
 
-    private final boolean checkItemsCount(int i2, int i6) {
-        return this.allItems.size() > i2 && this.allItems.get(i2).size() > i6;
+    private final boolean checkItemsCount(int index, int index_2) {
+        return this.allItems.size() > index && this.allItems.get(index).size() > index_2;
     }
 
-    private final int getCurrentMaxSize(int i2) {
-        return isPortrait(i2) ? this.currentMaxY : this.currentMaxX;
+    private final int getCurrentMaxSize(int index) {
+        return isPortrait(index) ? this.currentMaxY : this.currentMaxX;
     }
 
-    private final float getTrans(int i2, float f2, int i6) {
-        if (i6 == 1) {
+    private final float getTrans(int position, float velocity, int direction_2) {
+        if (direction_2 == 1) {
             TransCalculator transCalculator = this.backToTopTC;
             if (transCalculator != null) {
-                return transCalculator.getTrans(i2, f2, i6);
+                return transCalculator.getTrans(position, velocity, direction_2);
             }
             return 0.0f;
         }
-        if (i6 == 2) {
+        if (direction_2 == 2) {
             TransCalculator transCalculator2 = this.backToBottomTC;
             if (transCalculator2 != null) {
-                return transCalculator2.getTrans(i2, f2, i6);
+                return transCalculator2.getTrans(position, velocity, direction_2);
             }
             return 0.0f;
         }
-        if (i6 == 3) {
+        if (direction_2 == 3) {
             TransCalculator transCalculator3 = this.backToLeftTC;
             if (transCalculator3 != null) {
-                return transCalculator3.getTrans(i2, f2, i6);
+                return transCalculator3.getTrans(position, velocity, direction_2);
             }
             return 0.0f;
         }
-        if (i6 == 4) {
+        if (direction_2 == 4) {
             TransCalculator transCalculator4 = this.backToRightTC;
             if (transCalculator4 != null) {
-                return transCalculator4.getTrans(i2, f2, i6);
+                return transCalculator4.getTrans(position, velocity, direction_2);
             }
             return 0.0f;
         }
-        Log.e(TAG, "getDelta: error direction=" + i6);
+        Log.e(TAG, "getDelta: error direction=" + direction_2);
         return 0.0f;
     }
 
-    private final float getTranslation(float f2, IChainItem iChainItem, int i2) {
+    private final float getTranslation(float value, IChainItem iChainItem, int index) {
         int itemIndex;
-        if (i2 == BACK_TO_TOP) {
+        if (index == BACK_TO_TOP) {
             itemIndex = iChainItem.getItemY();
-        } else if (i2 == BACK_TO_BOTTOM) {
+        } else if (index == BACK_TO_BOTTOM) {
             itemIndex = (iChainItem.getItemY() + iChainItem.getItemHeight()) - 1;
-        } else if (i2 == BACK_TO_LEFT) {
+        } else if (index == BACK_TO_LEFT) {
             itemIndex = iChainItem.getItemX();
-        } else if (i2 == BACK_TO_RIGHT) {
+        } else if (index == BACK_TO_RIGHT) {
             itemIndex = (iChainItem.getItemX() + iChainItem.getItemWidth()) - 1;
         } else {
             itemIndex = 0;
         }
-        return calculateTranslation(itemIndex, f2, i2);
+        return calculateTranslation(itemIndex, value, index);
     }
 
 
-    public final boolean isPortrait(int i2) {
-        if (i2 == 1 || i2 == 2) {
+    public final boolean isPortrait(int index) {
+        if (index == 1 || index == 2) {
             return true;
         }
-        if (i2 == 3 || i2 == 4) {
+        if (index == 3 || index == 4) {
             return false;
         }
-        throw new IllegalArgumentException("isPortrait: wrong dir=" + i2);
+        throw new IllegalArgumentException("isPortrait: wrong dir=" + index);
     }
 
     private final void removeItem(IChainItem iChainItem) {
@@ -207,78 +209,78 @@ public final class COUIGridSpringChain {
             return;
         }
         while (itemY < itemHeight) {
-            for (int i2 = itemX; i2 < itemWidth; i2++) {
-                if (checkItemsCount(itemY, i2)) {
-                    this.allItems.get(itemY).set(i2, null);
+            for (int index = itemX; index < itemWidth; index++) {
+                if (checkItemsCount(itemY, index)) {
+                    this.allItems.get(itemY).set(index, null);
                 }
             }
             itemY++;
         }
-        boolean z6 = itemWidth == this.currentMaxX;
-        boolean z10 = itemHeight == this.currentMaxY;
-        if (z6) {
-            while (z6 && this.currentMaxX > 0) {
-                int i6 = this.currentMaxY;
-                int i10 = 0;
+        boolean flag = itemWidth == this.currentMaxX;
+        boolean flag_2 = itemHeight == this.currentMaxY;
+        if (flag) {
+            while (flag && this.currentMaxX > 0) {
+                int index_2 = this.currentMaxY;
+                int index_3 = 0;
                 while (true) {
-                    if (i10 >= i6) {
+                    if (index_3 >= index_2) {
                         break;
                     }
-                    if (checkItemsCount(i10, this.currentMaxX - 1) && this.allItems.get(i10).get(this.currentMaxX - 1) != null) {
-                        z6 = false;
+                    if (checkItemsCount(index_3, this.currentMaxX - 1) && this.allItems.get(index_3).get(this.currentMaxX - 1) != null) {
+                        flag = false;
                         break;
                     }
-                    i10++;
+                    index_3++;
                 }
-                if (z6) {
+                if (flag) {
                     this.currentMaxX--;
                 }
             }
         }
-        if (z10) {
-            while (z10 && this.currentMaxY > 0) {
-                int i11 = this.currentMaxX;
-                int i12 = 0;
+        if (flag_2) {
+            while (flag_2 && this.currentMaxY > 0) {
+                int index_4 = this.currentMaxX;
+                int index_5 = 0;
                 while (true) {
-                    if (i12 >= i11) {
+                    if (index_5 >= index_4) {
                         break;
                     }
-                    if (checkItemsCount(this.currentMaxY - 1, i12) && this.allItems.get(this.currentMaxY - 1).get(i12) != null) {
-                        z10 = false;
+                    if (checkItemsCount(this.currentMaxY - 1, index_5) && this.allItems.get(this.currentMaxY - 1).get(index_5) != null) {
+                        flag_2 = false;
                         break;
                     }
-                    i12++;
+                    index_5++;
                 }
-                if (z10) {
+                if (flag_2) {
                     this.currentMaxY--;
                 }
             }
         }
     }
 
-    private final boolean skipCumulativeCalculate(int i2, int i6, int i10) {
-        if (i2 != i6) {
-            if (isPortrait(i10)) {
-                if (i10 == 2) {
-                    i2 = this.currentMaxY - i2;
+    private final boolean skipCumulativeCalculate(int index, int position, int direction) {
+        if (index != position) {
+            if (isPortrait(direction)) {
+                if (direction == 2) {
+                    index = this.currentMaxY - index;
                 }
-                int i11 = this.currentMaxX;
-                for (int i12 = 0; i12 < i11; i12++) {
-                    if (checkItemsCount(i2, i12) && this.allItems.get(i2).get(i12) != null) {
-                        IChainItem iChainItem = this.allItems.get(i2).get(i12);
+                int index_4 = this.currentMaxX;
+                for (int index_2 = 0; index_2 < index_4; index_2++) {
+                    if (checkItemsCount(index, index_2) && this.allItems.get(index).get(index_2) != null) {
+                        IChainItem iChainItem = this.allItems.get(index).get(index_2);
                         if (iChainItem.getSkipSpringChainCalc()) {
                             return true;
                         }
                     }
                 }
             } else {
-                if (i10 == 4) {
-                    i2 = this.currentMaxX - i2;
+                if (direction == 4) {
+                    index = this.currentMaxX - index;
                 }
-                int i13 = this.currentMaxY;
-                for (int i14 = 0; i14 < i13; i14++) {
-                    if (checkItemsCount(i14, i2) && this.allItems.get(i14).get(i2) != null) {
-                        IChainItem iChainItem2 = this.allItems.get(i14).get(i2);
+                int index_5 = this.currentMaxY;
+                for (int index_3 = 0; index_3 < index_5; index_3++) {
+                    if (checkItemsCount(index_3, index) && this.allItems.get(index_3).get(index) != null) {
+                        IChainItem iChainItem2 = this.allItems.get(index_3).get(index);
                         if (iChainItem2.getSkipSpringChainCalc()) {
                             return true;
                         }
@@ -289,28 +291,28 @@ public final class COUIGridSpringChain {
         return false;
     }
 
-    private final void updateSpring(float f2, IChainItem iChainItem, int i2) {
-        float translation = getTranslation(f2, iChainItem, i2);
-        if (isPortrait(i2)) {
+    private final void updateSpring(float value, IChainItem iChainItem, int index) {
+        float translation = getTranslation(value, iChainItem, index);
+        if (isPortrait(index)) {
             int itemY = iChainItem.getItemY();
             float[] fArr = this.curSpringYArray;
-            float f10 = translation + this.lastSpringYArray[itemY];
-            fArr[itemY] = f10;
-            iChainItem.updateSpringY(f10);
+            float value_2 = translation + this.lastSpringYArray[itemY];
+            fArr[itemY] = value_2;
+            iChainItem.updateSpringY(value_2);
             return;
         }
         int itemX = iChainItem.getItemX();
         float[] fArr2 = this.curSpringXArray;
-        float f11 = translation + this.lastSpringXArray[itemX];
-        fArr2[itemX] = f11;
-        iChainItem.updateSpringX(f11);
+        float value_3 = translation + this.lastSpringXArray[itemX];
+        fArr2[itemX] = value_3;
+        iChainItem.updateSpringX(value_3);
     }
 
-    private final void updateSpringChain(int i2) {
-        COUISpringChain cOUISpringChain = isPortrait(i2) ? this.springChainY : this.springChainX;
-        int currentMaxSize = getCurrentMaxSize(i2);
+    private final void updateSpringChain(int index) {
+        COUISpringChain cOUISpringChain = isPortrait(index) ? this.springChainY : this.springChainX;
+        int currentMaxSize = getCurrentMaxSize(index);
         for (int size = cOUISpringChain.getAllSprings().size(); size < currentMaxSize; size++) {
-            cOUISpringChain.addSpring(new GridSpringListener(size, i2));
+            cOUISpringChain.addSpring(new GridSpringListener(size, index));
         }
     }
 
@@ -325,22 +327,22 @@ public final class COUIGridSpringChain {
             Log.d(TAG, "can not addItem for the gridSpringChain is full");
             return;
         }
-        for (int i2 = itemY; i2 < itemHeight; i2++) {
-            for (int i6 = itemX; i6 < itemWidth; i6++) {
-                if (checkItemsCount(i2, i6) && (iChainItem = this.allItems.get(i2).get(i6)) != null) {
+        for (int index = itemY; index < itemHeight; index++) {
+            for (int index_2 = itemX; index_2 < itemWidth; index_2++) {
+                if (checkItemsCount(index, index_2) && (iChainItem = this.allItems.get(index).get(index_2)) != null) {
                     removeItem(iChainItem);
                 }
             }
         }
         while (itemY < itemHeight) {
-            for (int i10 = itemX; i10 < itemWidth; i10++) {
+            for (int index_3 = itemX; index_3 < itemWidth; index_3++) {
                 while (this.allItems.size() <= itemY) {
                     this.allItems.add(new ArrayList());
                 }
-                while (this.allItems.get(itemY).size() <= i10) {
+                while (this.allItems.get(itemY).size() <= index_3) {
                     this.allItems.get(itemY).add(null);
                 }
-                this.allItems.get(itemY).set(i10, gridSpringItem);
+                this.allItems.get(itemY).set(index_3, gridSpringItem);
             }
             itemY++;
         }
@@ -354,11 +356,11 @@ public final class COUIGridSpringChain {
 
     public final void clearAllItems() {
         IChainItem iChainItem;
-        int i2 = this.currentMaxY;
-        for (int i6 = 0; i6 < i2; i6++) {
-            int i10 = this.currentMaxX;
-            for (int i11 = 0; i11 < i10; i11++) {
-                if (checkItemsCount(i6, i11) && (iChainItem = this.allItems.get(i6).get(i11)) != null) {
+        int index_3 = this.currentMaxY;
+        for (int index = 0; index < index_3; index++) {
+            int index_4 = this.currentMaxX;
+            for (int index_2 = 0; index_2 < index_4; index_2++) {
+                if (checkItemsCount(index, index_2) && (iChainItem = this.allItems.get(index).get(index_2)) != null) {
                     removeItem(iChainItem);
                 }
             }
@@ -367,24 +369,24 @@ public final class COUIGridSpringChain {
         this.currentMaxY = 0;
     }
 
-    public final float getCurrentSpringX(int i2) {
-        if (i2 <= -1) {
+    public final float getCurrentSpringX(int index) {
+        if (index <= -1) {
             return -1.0f;
         }
         float[] fArr = this.curSpringXArray;
-        if (i2 < fArr.length) {
-            return fArr[i2];
+        if (index < fArr.length) {
+            return fArr[index];
         }
         return -1.0f;
     }
 
-    public final float getCurrentSpringY(int i2) {
-        if (i2 <= -1) {
+    public final float getCurrentSpringY(int index) {
+        if (index <= -1) {
             return -1.0f;
         }
         float[] fArr = this.curSpringYArray;
-        if (i2 < fArr.length) {
-            return fArr[i2];
+        if (index < fArr.length) {
+            return fArr[index];
         }
         return -1.0f;
     }
@@ -462,26 +464,26 @@ public final class COUIGridSpringChain {
         updateMoveTranslation(0.0f, 3);
     }
 
-    public final void setCurrentSpringX(int i2, float f2) {
-        if (i2 > -1) {
+    public final void setCurrentSpringX(int index, float value) {
+        if (index > -1) {
             float[] fArr = this.curSpringXArray;
-            if (i2 < fArr.length) {
-                fArr[i2] = f2;
+            if (index < fArr.length) {
+                fArr[index] = value;
             }
         }
     }
 
-    public final void setCurrentSpringY(int i2, float f2) {
-        if (i2 > -1) {
+    public final void setCurrentSpringY(int index, float value) {
+        if (index > -1) {
             float[] fArr = this.curSpringYArray;
-            if (i2 < fArr.length) {
-                fArr[i2] = f2;
+            if (index < fArr.length) {
+                fArr[index] = value;
             }
         }
     }
 
-    public final void setEnableAutoAcc(boolean z6) {
-        this.enableAutoAcc = z6;
+    public final void setEnableAutoAcc(boolean enableAutoAcc_2) {
+        this.enableAutoAcc = enableAutoAcc_2;
     }
 
     public final void setSpringUpdateListener(ISpringUpdateListener springUpdateListener) {
@@ -489,189 +491,189 @@ public final class COUIGridSpringChain {
                 "springUpdateListener");
     }
 
-    public final void setTranCalculator(int i2) {
-        if (i2 == 1) {
+    public final void setTranCalculator(int tranCalculator) {
+        if (tranCalculator == 1) {
             this.backToTopTC = new DefaultTransCalculator();
             return;
         }
-        if (i2 == 2) {
+        if (tranCalculator == 2) {
             this.backToBottomTC = new DefaultTransCalculator();
             return;
         }
-        if (i2 == 3) {
+        if (tranCalculator == 3) {
             this.backToLeftTC = new DefaultTransCalculator();
-        } else if (i2 != 4) {
+        } else if (tranCalculator != 4) {
             Log.e(TAG, "the direction is not illegal!");
         } else {
             this.backToRightTC = new DefaultTransCalculator();
         }
     }
 
-    public final void springUpdateTranslation(int i2, float f2, int i6) {
+    public final void springUpdateTranslation(int index, float value, int index_2) {
         IChainItem iChainItem;
         IChainItem iChainItem2;
         IChainItem iChainItem3;
         IChainItem iChainItem4;
-        int i10 = 0;
-        if (!isPortrait(i6)) {
-            if (i6 == 4) {
-                while (i10 < this.currentMaxY) {
-                    if (checkItemsCount(i10, i2) && (iChainItem2 = this.allItems.get(i10).get(i2)) != null && iChainItem2.getItemY() == i10 && (iChainItem2.getItemX() + iChainItem2.getItemWidth()) - 1 == i2) {
-                        iChainItem2.updateSpringX(f2);
+        int index_3 = 0;
+        if (!isPortrait(index_2)) {
+            if (index_2 == 4) {
+                while (index_3 < this.currentMaxY) {
+                    if (checkItemsCount(index_3, index) && (iChainItem2 = this.allItems.get(index_3).get(index)) != null && iChainItem2.getItemY() == index_3 && (iChainItem2.getItemX() + iChainItem2.getItemWidth()) - 1 == index) {
+                        iChainItem2.updateSpringX(value);
                     }
-                    i10++;
+                    index_3++;
                 }
             } else {
-                while (i10 < this.currentMaxY) {
-                    if (checkItemsCount(i10, i2) && (iChainItem = this.allItems.get(i10).get(i2)) != null && iChainItem.getItemY() == i10 && iChainItem.getItemX() == i2) {
-                        iChainItem.updateSpringX(f2);
+                while (index_3 < this.currentMaxY) {
+                    if (checkItemsCount(index_3, index) && (iChainItem = this.allItems.get(index_3).get(index)) != null && iChainItem.getItemY() == index_3 && iChainItem.getItemX() == index) {
+                        iChainItem.updateSpringX(value);
                     }
-                    i10++;
+                    index_3++;
                 }
             }
-            this.curSpringXArray[i2] = f2;
-            this.lastSpringXArray[i2] = f2;
+            this.curSpringXArray[index] = value;
+            this.lastSpringXArray[index] = value;
             return;
         }
-        if (i6 == 2) {
-            while (i10 < this.currentMaxX) {
-                if (checkItemsCount(i2, i10) && (iChainItem4 = this.allItems.get(i2).get(i10)) != null && (iChainItem4.getItemY() + iChainItem4.getItemHeight()) - 1 == i2 && iChainItem4.getItemX() == i10) {
-                    iChainItem4.updateSpringY(f2);
+        if (index_2 == 2) {
+            while (index_3 < this.currentMaxX) {
+                if (checkItemsCount(index, index_3) && (iChainItem4 = this.allItems.get(index).get(index_3)) != null && (iChainItem4.getItemY() + iChainItem4.getItemHeight()) - 1 == index && iChainItem4.getItemX() == index_3) {
+                    iChainItem4.updateSpringY(value);
                     ISpringUpdateListener iSpringUpdateListener = this.springUpdateListener;
                     if (iSpringUpdateListener != null) {
-                        iSpringUpdateListener.onUpdate(i2, f2, i6, iChainItem4);
+                        iSpringUpdateListener.onUpdate(index, value, index_2, iChainItem4);
                     }
                 }
-                i10++;
+                index_3++;
             }
         } else {
-            while (i10 < this.currentMaxX) {
-                if (checkItemsCount(i2, i10) && (iChainItem3 = this.allItems.get(i2).get(i10)) != null && iChainItem3.getItemY() == i2 && iChainItem3.getItemX() == i10) {
-                    iChainItem3.updateSpringY(f2);
+            while (index_3 < this.currentMaxX) {
+                if (checkItemsCount(index, index_3) && (iChainItem3 = this.allItems.get(index).get(index_3)) != null && iChainItem3.getItemY() == index && iChainItem3.getItemX() == index_3) {
+                    iChainItem3.updateSpringY(value);
                     ISpringUpdateListener iSpringUpdateListener2 = this.springUpdateListener;
                     if (iSpringUpdateListener2 != null) {
-                        iSpringUpdateListener2.onUpdate(i2, f2, i6, iChainItem3);
+                        iSpringUpdateListener2.onUpdate(index, value, index_2, iChainItem3);
                     }
                 }
-                i10++;
+                index_3++;
             }
         }
-        this.curSpringYArray[i2] = f2;
-        this.lastSpringYArray[i2] = f2;
+        this.curSpringYArray[index] = value;
+        this.lastSpringYArray[index] = value;
     }
 
-    public final void startRebound(int i2) {
-        if (i2 != 0) {
-            this.lastReboundDirection = i2;
+    public final void startRebound(int index) {
+        if (index != 0) {
+            this.lastReboundDirection = index;
         } else {
-            i2 = this.lastReboundDirection;
-            if (i2 == 0) {
+            index = this.lastReboundDirection;
+            if (index == 0) {
                 return;
             }
         }
-        boolean zIsPortrait = isPortrait(i2);
+        boolean zIsPortrait = isPortrait(index);
         updateSpringChain(4);
         updateSpringChain(2);
         COUISpringChain cOUISpringChain = zIsPortrait ? this.springChainY : this.springChainX;
-        int i6 = zIsPortrait ? this.currentMaxY : this.currentMaxX;
+        int index_3 = zIsPortrait ? this.currentMaxY : this.currentMaxX;
         float[] fArr = zIsPortrait ? this.curSpringYArray : this.curSpringXArray;
         if (zIsPortrait) {
-            this.yDirection = i2;
+            this.yDirection = index;
         } else {
-            this.xDirection = i2;
+            this.xDirection = index;
         }
         List<Spring> allSprings = cOUISpringChain.getAllSprings();
-        int i10 = -1;
-        for (int i11 = 0; i11 < i6; i11++) {
-            Spring spring = allSprings.get(i11);
-            double d2 = fArr[i11];
-            if ((d2 >= 0.0d || i11 == i6 - 1) && i10 == -1) {
-                i10 = i11;
+        int index_4 = -1;
+        for (int index_2 = 0; index_2 < index_3; index_2++) {
+            Spring spring = allSprings.get(index_2);
+            double doubleValue = fArr[index_2];
+            if ((doubleValue >= 0.0d || index_2 == index_3 - 1) && index_4 == -1) {
+                index_4 = index_2;
             }
-            spring.setCurrentValue(d2, false);
+            spring.setCurrentValue(doubleValue, false);
             spring.setVelocity(0.0d);
         }
-        if (i10 == -1) {
+        if (index_4 == -1) {
             Log.d(TAG, "startRebound failed : chain is empty");
             return;
         }
-        Log.d(TAG, "startRebound : ctrIndex=:" + i10 + " ,endValue=:0.0");
-        cOUISpringChain.setControlSpringIndex(i10).getControlSpring().setEndValue(0.0d);
+        Log.d(TAG, "startRebound : ctrIndex=:" + index_4 + " ,endValue=:0.0");
+        cOUISpringChain.setControlSpringIndex(index_4).getControlSpring().setEndValue(0.0d);
     }
 
-    public final void updateMoveTranslation(float f2, int i2) {
+    public final void updateMoveTranslation(float value, int index) {
         IChainItem iChainItem;
-        if (i2 != 0) {
-            this.lastMoveDirection = i2;
+        if (index != 0) {
+            this.lastMoveDirection = index;
         } else {
-            i2 = this.lastMoveDirection;
+            index = this.lastMoveDirection;
         }
         updateSpringChain(4);
         updateSpringChain(2);
-        if (isPortrait(i2)) {
-            this.yDirection = i2;
+        if (isPortrait(index)) {
+            this.yDirection = index;
         } else {
-            this.xDirection = i2;
+            this.xDirection = index;
         }
-        int i6 = this.currentMaxY;
-        for (int i10 = 0; i10 < i6; i10++) {
-            int i11 = this.currentMaxX;
-            for (int i12 = 0; i12 < i11; i12++) {
-                if (checkItemsCount(i10, i12) && (iChainItem = this.allItems.get(i10).get(i12)) != null && iChainItem.getItemY() == i10 && iChainItem.getItemX() == i12) {
-                    updateSpring(f2, iChainItem, i2);
+        int index_4 = this.currentMaxY;
+        for (int index_2 = 0; index_2 < index_4; index_2++) {
+            int index_5 = this.currentMaxX;
+            for (int index_3 = 0; index_3 < index_5; index_3++) {
+                if (checkItemsCount(index_2, index_3) && (iChainItem = this.allItems.get(index_2).get(index_3)) != null && iChainItem.getItemY() == index_2 && iChainItem.getItemX() == index_3) {
+                    updateSpring(value, iChainItem, index);
                 }
             }
         }
     }
 
-    public final void updateSpringChainConfig(double d2, double d7, boolean z6) {
-        COUISpringChain cOUISpringChain = z6 ? this.springChainX : this.springChainY;
-        cOUISpringChain.getMainSpringConfig().friction = OrigamiValueConverter.frictionFromOrigamiValue(d2);
-        cOUISpringChain.getMainSpringConfig().tension = OrigamiValueConverter.tensionFromOrigamiValue(d7);
-        cOUISpringChain.getAttachmentSpringConfig().friction = OrigamiValueConverter.frictionFromOrigamiValue(d2);
-        cOUISpringChain.getAttachmentSpringConfig().friction = OrigamiValueConverter.frictionFromOrigamiValue(d7);
+    public final void updateSpringChainConfig(double doubleValue, double doubleValue_2, boolean flag) {
+        COUISpringChain cOUISpringChain = flag ? this.springChainX : this.springChainY;
+        cOUISpringChain.getMainSpringConfig().friction = OrigamiValueConverter.frictionFromOrigamiValue(doubleValue);
+        cOUISpringChain.getMainSpringConfig().tension = OrigamiValueConverter.tensionFromOrigamiValue(doubleValue_2);
+        cOUISpringChain.getAttachmentSpringConfig().friction = OrigamiValueConverter.frictionFromOrigamiValue(doubleValue);
+        cOUISpringChain.getAttachmentSpringConfig().friction = OrigamiValueConverter.frictionFromOrigamiValue(doubleValue_2);
     }
 
-    public COUIGridSpringChain(int i2, int i6, int i10, int i11, int i12, int i13, int i14, int i15, int i16, int i17) {
+    public COUIGridSpringChain(int index, int index_2, int index_3, int index_4, int index_5, int index_6, int index_7, int index_8, int index_9, int index_10) {
         this.xDirection = -1;
         this.yDirection = -1;
-        this.curSpringYArray = new float[i17];
-        this.curSpringXArray = new float[i16];
-        this.lastSpringYArray = new float[i17];
-        this.lastSpringXArray = new float[i16];
+        this.curSpringYArray = new float[index_10];
+        this.curSpringXArray = new float[index_9];
+        this.lastSpringYArray = new float[index_10];
+        this.lastSpringXArray = new float[index_9];
         this.allItems = new ArrayList();
         this.springSystem = SpringSystem.create();
         this.enableAutoAcc = true;
-        COUISpringChain cOUISpringChainCreate = COUISpringChain.create(this.springSystem, i12, i13, i14, i15);
+        COUISpringChain cOUISpringChainCreate = COUISpringChain.create(this.springSystem, index_5, index_6, index_7, index_8);
         this.springChainX = cOUISpringChainCreate;
-        COUISpringChain cOUISpringChainCreate2 = COUISpringChain.create(this.springSystem, i2, i6, i10, i11);
+        COUISpringChain cOUISpringChainCreate2 = COUISpringChain.create(this.springSystem, index, index_2, index_3, index_4);
         this.springChainY = cOUISpringChainCreate2;
-        this.maxXSize = i16;
-        this.maxYSize = i17;
+        this.maxXSize = index_9;
+        this.maxYSize = index_10;
         this.lastMoveDirection = 2;
     }
 
-    public final void setTranCalculator(TransCalculator transCalculator, int i2) {
+    public final void setTranCalculator(TransCalculator transCalculator, int tranCalculator) {
         Objects.requireNonNull(transCalculator, "transCalculator");
-        if (i2 == 1) {
+        if (tranCalculator == 1) {
             this.backToTopTC = transCalculator;
             return;
         }
-        if (i2 == 2) {
+        if (tranCalculator == 2) {
             this.backToBottomTC = transCalculator;
             return;
         }
-        if (i2 == 3) {
+        if (tranCalculator == 3) {
             this.backToLeftTC = transCalculator;
-        } else if (i2 != 4) {
+        } else if (tranCalculator != 4) {
             Log.e(TAG, "the direction is not illegal!");
         } else {
             this.backToRightTC = transCalculator;
         }
     }
 
-    public final void releaseSpring(int i2) {
-        if (isPortrait(i2)) {
+    public final void releaseSpring(int index) {
+        if (isPortrait(index)) {
             for (Spring spring : this.springChainY.getAllSprings()) {
                 spring.setEndValue(spring.getCurrentValue());
                 spring.setAtRest();

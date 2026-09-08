@@ -1,13 +1,14 @@
 package com.coui.appcompat.grid;
 
-import com.coui.appcompat.R;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
+
 import androidx.recyclerview.widget.COUIRecyclerView;
+
+import com.coui.appcompat.R;
 
 public class COUIPercentWidthRecyclerView extends COUIRecyclerView {
     private static final int CARD_LIST_FLAG = 2;
@@ -37,8 +38,8 @@ public class COUIPercentWidthRecyclerView extends COUIRecyclerView {
             int gridNumberStyleable = R.styleable.COUIPercentWidthRecyclerView_couiRecyclerGridNumber;
             this.mGridNumberResourceId = typedArrayObtainStyledAttributes.getResourceId(gridNumberStyleable, 0);
             this.mGridNumber = typedArrayObtainStyledAttributes.getInteger(gridNumberStyleable, getContext().getResources().getInteger(R.integer.grid_guide_column_preference));
-            this.mPaddingType = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthRecyclerView_paddingType, 1);
-            this.mPaddingSize = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthRecyclerView_paddingSize, 0);
+            this.mPaddingType = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthRecyclerView_paddingType, LIST_FLAG);
+            this.mPaddingSize = typedArrayObtainStyledAttributes.getInteger(R.styleable.COUIPercentWidthRecyclerView_paddingSize, LARGE_PADDING);
             this.mIsParentChildHierarchy = typedArrayObtainStyledAttributes.getBoolean(R.styleable.COUIPercentWidthRecyclerView_isParentChildHierarchy, false);
             typedArrayObtainStyledAttributes.recycle();
         }

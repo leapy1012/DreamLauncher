@@ -1,7 +1,6 @@
 package com.coui.appcompat.searchview;
 
 
-import com.coui.appcompat.R;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -36,19 +35,22 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.appcompat.widget.SearchView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.ViewCompat;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIEaseInterpolator;
 import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.roundRect.COUIShapePath;
-import com.coui.appcompat.searchview.ImeInsetsAnimationCallback;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 import com.coui.appcompat.textviewcompatutil.COUITextViewCompatUtil;
 import com.coui.appcompat.toolbar.COUIToolbar;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
@@ -177,7 +179,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                 if (COUISearchViewAnimate.this.mOnAnimationListener != null) {
                     COUISearchViewAnimate.this.mOnAnimationListener.onAnimationStart(1);
                 }
-                COUISearchViewAnimate.this.notifyOnStateChange(0, 1);
+                COUISearchViewAnimate.this.notifyOnStateChange(STATE_NORMAL, STATE_EDIT);
             }
         };
         private Runnable mToEditEndRunnable = new Runnable() {
@@ -198,7 +200,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                 if (COUISearchViewAnimate.this.mOnAnimationListener != null) {
                     COUISearchViewAnimate.this.mOnAnimationListener.onAnimationStart(0);
                 }
-                COUISearchViewAnimate.this.notifyOnStateChange(1, 0);
+                COUISearchViewAnimate.this.notifyOnStateChange(STATE_EDIT, STATE_NORMAL);
             }
         };
         private Runnable mToNormalEndRunnable = new Runnable() {
@@ -220,12 +222,12 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
             COUISearchViewAnimate.this.mFunctionalButton.setAlpha(0.0f);
             COUISearchViewAnimate.this.mFunctionalButton.setVisibility(0);
             ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
-            valueAnimatorOfFloat.setDuration(450L);
+            valueAnimatorOfFloat.setDuration(DEFAULT_BUTTON_MOVE_DURATION);
             valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator valueAnimator) {
                     float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-                    if (COUISearchViewAnimate.this.mSearchViewType == 0) {
+                    if (COUISearchViewAnimate.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                         COUISearchViewAnimate.this.mFunctionalButton.setAlpha(fFloatValue);
                         COUISearchViewAnimate.this.mSearchViewShrinkWidth = (int) (fFloatValue * (COUISearchViewAnimate.this.getOriginWidth() - COUISearchViewAnimate.this.getShrinkWidth()));
                         ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) COUISearchViewAnimate.this.mSearchView.getLayoutParams();
@@ -258,22 +260,22 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
 
         private void startCancelButtonExitValueAnimator() {
             ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
-            valueAnimatorOfFloat.setDuration(450L);
+            valueAnimatorOfFloat.setDuration(DEFAULT_BUTTON_MOVE_DURATION);
             valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator valueAnimator) {
                     float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-                    if (COUISearchViewAnimate.this.mSearchViewType == 0) {
-                        float f2 = 1.0f - fFloatValue;
-                        COUISearchViewAnimate.this.mFunctionalButton.setAlpha(f2);
-                        COUISearchViewAnimate.this.mSearchViewShrinkWidth = (int) (f2 * (COUISearchViewAnimate.this.getOriginWidth() - COUISearchViewAnimate.this.getShrinkWidth()));
+                    if (COUISearchViewAnimate.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
+                        float fraction = 1.0f - fFloatValue;
+                        COUISearchViewAnimate.this.mFunctionalButton.setAlpha(fraction);
+                        COUISearchViewAnimate.this.mSearchViewShrinkWidth = (int) (fraction * (COUISearchViewAnimate.this.getOriginWidth() - COUISearchViewAnimate.this.getShrinkWidth()));
                         ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) COUISearchViewAnimate.this.mSearchView.getLayoutParams();
                         marginLayoutParams.setMarginEnd(COUISearchViewAnimate.this.mSearchViewShrinkWidth);
                         COUISearchViewAnimate.this.mSearchView.setLayoutParams(marginLayoutParams);
                     } else if (COUISearchViewAnimate.this.mSearchViewType == 1) {
-                        float f10 = 1.0f - fFloatValue;
-                        COUISearchViewAnimate.this.mButtonDivider.setAlpha(f10);
-                        COUISearchViewAnimate.this.mFunctionalButton.setAlpha(f10);
+                        float ratio = 1.0f - fFloatValue;
+                        COUISearchViewAnimate.this.mButtonDivider.setAlpha(ratio);
+                        COUISearchViewAnimate.this.mFunctionalButton.setAlpha(ratio);
                     }
                     if (COUISearchViewAnimate.this.mOnAnimationListener != null) {
                         COUISearchViewAnimate.this.mOnAnimationListener.onUpdate(0, valueAnimator);
@@ -287,7 +289,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                     if (COUISearchViewAnimate.this.mSearchViewType == 1) {
                         COUISearchViewAnimate.this.mButtonDivider.setVisibility(8);
                         COUISearchViewAnimate.this.mFunctionalButton.setVisibility(8);
-                    } else if (COUISearchViewAnimate.this.mSearchViewType == 0) {
+                    } else if (COUISearchViewAnimate.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                         COUISearchViewAnimate.this.mFunctionalButton.setVisibility(4);
                     }
                     AnimatorHelper.this.mToNormalEndRunnable.run();
@@ -307,7 +309,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                 COUISearchViewAnimate.this.mSearchIcon.setPivotX(0.0f);
                 COUISearchViewAnimate.this.mSearchIcon.setRotationY(0.0f);
                 COUISearchViewAnimate.this.mSearchIcon.setVisibility(0);
-                COUISearchViewAnimate.this.mSearchIcon.animate().setDuration(150L).alpha(1.0f).setListener(new AnimatorListenerAdapter() {
+                COUISearchViewAnimate.this.mSearchIcon.animate().setDuration(DEFAULT_FADE_DURATION).alpha(1.0f).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animator) {
                         super.onAnimationEnd(animator);
@@ -321,7 +323,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
             if (COUISearchViewAnimate.this.mSearchIcon != null) {
                 COUISearchViewAnimate.this.mSearchIcon.setPivotX(0.0f);
                 COUISearchViewAnimate.this.mSearchIcon.setRotationY(0.0f);
-                COUISearchViewAnimate.this.mSearchIcon.animate().setDuration(150L).alpha(0.0f).setListener(new AnimatorListenerAdapter() {
+                COUISearchViewAnimate.this.mSearchIcon.animate().setDuration(DEFAULT_FADE_DURATION).alpha(0.0f).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animator) {
                         super.onAnimationEnd(animator);
@@ -331,14 +333,14 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
             }
         }
 
-        public void runStateChangeAnimation(int i2) {
-            if (COUISearchViewAnimate.this.mState.get() == i2) {
-                Log.d(COUISearchViewAnimate.TAG, "runStateChangeAnimation: same state , return. targetState = " + i2);
+        public void runStateChangeAnimation(int targetState) {
+            if (COUISearchViewAnimate.this.mState.get() == targetState) {
+                Log.d(COUISearchViewAnimate.TAG, "runStateChangeAnimation: same state , return. targetState = " + targetState);
                 return;
             }
-            if (i2 == 1) {
+            if (targetState == STATE_EDIT) {
                 startToEditAnimator();
-            } else if (i2 == 0) {
+            } else if (targetState == STATE_NORMAL) {
                 startToNormalAnimator();
             }
         }
@@ -385,7 +387,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                 COUISearchViewAnimate.this.mSearchIcon.setVisibility(0);
                 COUISearchViewAnimate.this.mSearchIcon.setPivotX(this.mIconTranslation);
                 COUISearchViewAnimate.this.mSearchIcon.setRotationY(80.0f);
-                COUISearchViewAnimate.this.mSearchIcon.animate().setDuration(150L).rotationY(0.0f).setListener(new AnimatorListenerAdapter() {
+                COUISearchViewAnimate.this.mSearchIcon.animate().setDuration(DEFAULT_FADE_DURATION).rotationY(0.0f).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animator) {
                         super.onAnimationEnd(animator);
@@ -405,7 +407,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                     }
                 }
                 COUISearchViewAnimate.this.mSearchIcon.setPivotX(this.mIconTranslation);
-                COUISearchViewAnimate.this.mSearchIcon.animate().setDuration(150L).rotationY(80.0f).setListener(new AnimatorListenerAdapter() {
+                COUISearchViewAnimate.this.mSearchIcon.animate().setDuration(DEFAULT_FADE_DURATION).rotationY(80.0f).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animator) {
                         super.onAnimationEnd(animator);
@@ -420,7 +422,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                 try {
                     if (this.mAnimatingAtomic.compareAndSet(false, true)) {
                         if (!COUISearchViewAnimate.this.mIsAtLeastR || COUISearchViewAnimate.this.mShowImeAnimDuration == 0 || COUISearchViewAnimate.this.isInMultiWindowMode()) {
-                            COUISearchViewAnimate.this.mState.set(1);
+                            COUISearchViewAnimate.this.mState.set(STATE_EDIT);
                             COUISearchViewAnimate.this.mSearchViewSmoothEnterAnimatorSet.start();
                         } else {
                             COUISearchViewAnimate.this.setSearchAutoCompleteUnFocus();
@@ -456,8 +458,8 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
 
 
             @Override
-            public COUISavedState[] newArray(int i2) {
-                return new COUISavedState[i2];
+            public COUISavedState[] newArray(int size) {
+                return new COUISavedState[size];
             }
         };
         float mCollapsingHeightPercent;
@@ -476,8 +478,8 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         }
 
         @Override
-        public void writeToParcel(Parcel parcel, int i2) {
-            super.writeToParcel(parcel, i2);
+        public void writeToParcel(Parcel parcel, int flags) {
+            super.writeToParcel(parcel, flags);
             parcel.writeFloat(this.mCollapsingHeightPercent);
         }
 
@@ -488,11 +490,11 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     }
 
     public interface OnAnimationListener {
-        void onAnimationEnd(int i2);
+        void onAnimationEnd(int state);
 
-        void onAnimationStart(int i2);
+        void onAnimationStart(int state);
 
-        void onUpdate(int i2, ValueAnimator valueAnimator);
+        void onUpdate(int state, ValueAnimator valueAnimator);
     }
 
     public interface OnCancelButtonClickListener {
@@ -504,7 +506,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     }
 
     public interface OnStateChangeListener {
-        void onStateChange(int i2, int i6);
+        void onStateChange(int fromState, int toState);
     }
 
     public static class SearchFunctionalButton extends AppCompatButton {
@@ -537,19 +539,19 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
             this.mPerformClickCallback = performClickCallback;
         }
 
-        public void setPerformClicked(boolean z6) {
-            this.mIsPerformClicked = z6;
+        public void setPerformClicked(boolean isPerformClicked) {
+            this.mIsPerformClicked = isPerformClicked;
         }
 
         public SearchFunctionalButton(Context context, AttributeSet attributeSet) {
             this(context, attributeSet, 0);
         }
 
-        public SearchFunctionalButton(Context context, AttributeSet attributeSet, int i2) {
-            super(context, attributeSet, i2);
+        public SearchFunctionalButton(Context context, AttributeSet attributeSet, int index) {
+            super(context, attributeSet, index);
             this.mPerformClickCallback = null;
             this.mIsPerformClicked = false;
-            setMaxLines(1);
+            setMaxLines(DEFAULT_MAX_LINES);
             setMaxWidth(context.getResources().getDimensionPixelOffset(R.dimen.coui_search_function_button_max_width));
             setEllipsize(TextUtils.TruncateAt.END);
         }
@@ -568,23 +570,23 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     }
 
 
-    public void changeStateWithOutAnimation(int i2) {
-        if (this.mState.get() == i2) {
-            Log.d(TAG, "changeStateWithOutAnimation: same state , return. targetState = " + i2);
+    public void changeStateWithOutAnimation(int targetState) {
+        if (this.mState.get() == targetState) {
+            Log.d(TAG, "changeStateWithOutAnimation: same state , return. targetState = " + targetState);
             return;
         }
-        this.mState.set(i2);
-        Log.d(TAG, "changeStateWithOutAnimation: " + i2);
-        if (i2 == 1) {
+        this.mState.set(targetState);
+        Log.d(TAG, "changeStateWithOutAnimation: " + targetState);
+        if (targetState == STATE_EDIT) {
             this.mSearchView.setAlpha(1.0f);
             this.mFunctionalButton.setAlpha(1.0f);
             this.mSearchView.setVisibility(0);
             this.mFunctionalButton.setVisibility(0);
             this.mSearchIcon.setVisibility(0);
-            int i6 = this.mSearchViewType;
-            if (i6 == 1) {
+            int count = this.mSearchViewType;
+            if (count == 1) {
                 this.mButtonDivider.setAlpha(1.0f);
-            } else if (i6 == 0) {
+            } else if (count == 0) {
                 int originWidth = getOriginWidth() - getShrinkWidth();
                 ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) this.mSearchView.getLayoutParams();
                 marginLayoutParams.setMarginEnd(originWidth);
@@ -596,11 +598,11 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
             this.mSearchIcon.setAlpha(1.0f);
             this.mSearchIcon.setRotationY(0.0f);
             this.mSearchView.setQuery("", false);
-            int i10 = this.mSearchViewType;
-            if (i10 == 1) {
+            int value = this.mSearchViewType;
+            if (value == 1) {
                 this.mButtonDivider.setAlpha(0.0f);
                 this.mFunctionalButton.setVisibility(8);
-            } else if (i10 == 0) {
+            } else if (value == 0) {
                 ViewGroup.MarginLayoutParams marginLayoutParams2 = (ViewGroup.MarginLayoutParams) this.mSearchView.getLayoutParams();
                 marginLayoutParams2.setMarginEnd(0);
                 this.mSearchView.setLayoutParams(marginLayoutParams2);
@@ -613,16 +615,16 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         requestLayout();
     }
 
-    private float clampMarginValue(float f2) {
-        return Math.max(0.0f, Math.min(1.0f, f2 / 0.3f));
+    private float clampMarginValue(float fraction) {
+        return Math.max(0.0f, Math.min(1.0f, fraction / CLAMP_ANIMATION_PERCENT));
     }
 
-    private float clampProgress(float f2, float f10, float f11) {
-        return Float.max(0.0f, Float.min((f11 / (f10 - f2)) + (f2 / (f2 - f10)), 1.0f));
+    private float clampProgress(float fraction, float ratio, float scale) {
+        return Float.max(0.0f, Float.min((scale / (ratio - fraction)) + (fraction / (fraction - ratio)), 1.0f));
     }
 
-    private float clampSearchViewHeight(float f2) {
-        return (f2 / 0.7f) - 0.42857146f;
+    private float clampSearchViewHeight(float fraction) {
+        return (fraction / 0.7f) - 0.42857146f;
     }
 
     private void ensureAddedToToolBar() {
@@ -664,8 +666,8 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
 
 
     public int getShrinkWidth() {
-        int i2 = this.mSearchViewType;
-        return i2 == 0 ? ((getOriginWidth() - this.mCancelButtonLargeStartMargin) - this.mFunctionalButton.getMeasuredWidth()) + this.mFunctionalButton.getPaddingEnd() : i2 == 1 ? (((getOriginWidth() - this.mCancelButtonSmallStartMargin) - this.mBackgroundEndGap) - this.mFunctionalButton.getMeasuredWidth()) - this.mButtonDivider.getMeasuredWidth() : getOriginWidth();
+        int index = this.mSearchViewType;
+        return index == 0 ? ((getOriginWidth() - this.mCancelButtonLargeStartMargin) - this.mFunctionalButton.getMeasuredWidth()) + this.mFunctionalButton.getPaddingEnd() : index == 1 ? (((getOriginWidth() - this.mCancelButtonSmallStartMargin) - this.mBackgroundEndGap) - this.mFunctionalButton.getMeasuredWidth()) - this.mButtonDivider.getMeasuredWidth() : getOriginWidth();
     }
 
     private void inflateView(Context context, AttributeSet attributeSet) {
@@ -689,14 +691,14 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     private void initButtonEnterAnimator() {
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
         this.mButtonAlphaEnterAnimator = valueAnimatorOfFloat;
-        valueAnimatorOfFloat.setDuration(this.mSearchViewType == 0 ? DEFAULT_BUTTON_ALPHA_CHANGE_DURATION : 100L);
+        valueAnimatorOfFloat.setDuration(this.mSearchViewType == TYPE_INSTANT_SEARCH ? DEFAULT_BUTTON_ALPHA_CHANGE_DURATION : NON_INSTANT_SEARCH_BUTTON_ALPHA_CHANGE_DURATION);
         this.mButtonAlphaEnterAnimator.setInterpolator(DEFAULT_BUTTON_ALPHA_CHANGE_INTERPOLATOR);
         this.mButtonAlphaEnterAnimator.setStartDelay(this.mSearchViewType != 0 ? 0L : 100L);
         this.mButtonAlphaEnterAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-                if (COUISearchViewAnimate.this.mSearchViewType == 0) {
+                if (COUISearchViewAnimate.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                     COUISearchViewAnimate.this.mFunctionalButton.setAlpha(fFloatValue);
                 } else if (COUISearchViewAnimate.this.mSearchViewType == 1) {
                     COUISearchViewAnimate.this.mButtonDivider.setAlpha(fFloatValue);
@@ -733,18 +735,18 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     private void initButtonExitAnimator() {
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
         this.mButtonAlphaExitAnimator = valueAnimatorOfFloat;
-        valueAnimatorOfFloat.setDuration(this.mSearchViewType == 0 ? DEFAULT_BUTTON_ALPHA_CHANGE_DURATION : 100L);
+        valueAnimatorOfFloat.setDuration(this.mSearchViewType == TYPE_INSTANT_SEARCH ? DEFAULT_BUTTON_ALPHA_CHANGE_DURATION : NON_INSTANT_SEARCH_BUTTON_ALPHA_CHANGE_DURATION);
         this.mButtonAlphaExitAnimator.setInterpolator(DEFAULT_BUTTON_ALPHA_CHANGE_INTERPOLATOR);
         this.mButtonAlphaExitAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-                if (COUISearchViewAnimate.this.mSearchViewType == 0) {
+                if (COUISearchViewAnimate.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                     COUISearchViewAnimate.this.mFunctionalButton.setAlpha(1.0f - fFloatValue);
                 } else if (COUISearchViewAnimate.this.mSearchViewType == 1) {
-                    float f2 = 1.0f - fFloatValue;
-                    COUISearchViewAnimate.this.mButtonDivider.setAlpha(f2);
-                    COUISearchViewAnimate.this.mFunctionalButton.setAlpha(f2);
+                    float fraction = 1.0f - fFloatValue;
+                    COUISearchViewAnimate.this.mButtonDivider.setAlpha(fraction);
+                    COUISearchViewAnimate.this.mFunctionalButton.setAlpha(fraction);
                 }
             }
         });
@@ -753,7 +755,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     private void initSearchViewEnterAnimator() {
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
         this.mSearchViewOffsetEnterAnimator = valueAnimatorOfFloat;
-        valueAnimatorOfFloat.setDuration(450L);
+        valueAnimatorOfFloat.setDuration(DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_DURATION);
         this.mSearchViewOffsetEnterAnimator.setInterpolator(DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_INTERPOLATOR);
         this.mSearchViewOffsetEnterAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -783,7 +785,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         });
         ValueAnimator valueAnimatorOfFloat2 = ValueAnimator.ofFloat(0.0f, 1.0f);
         this.mSearchViewScaleEnterAnimator = valueAnimatorOfFloat2;
-        valueAnimatorOfFloat2.setDuration(450L);
+        valueAnimatorOfFloat2.setDuration(DEFAULT_SEARCH_VIEW_SCALE_CHANGE_DURATION);
         this.mSearchViewScaleEnterAnimator.setInterpolator(DEFAULT_SEARCH_VIEW_SCALE_CHANGE_INTERPOLATOR);
         this.mSearchViewScaleEnterAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -815,7 +817,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     private void initSearchViewExitAnimator() {
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
         this.mSearchViewOffsetExitAnimator = valueAnimatorOfFloat;
-        valueAnimatorOfFloat.setDuration(450L);
+        valueAnimatorOfFloat.setDuration(DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_DURATION);
         ValueAnimator valueAnimator = this.mSearchViewOffsetExitAnimator;
         Interpolator interpolator = DEFAULT_SEARCH_VIEW_OFFSET_CHANGE_INTERPOLATOR;
         valueAnimator.setInterpolator(interpolator);
@@ -823,23 +825,23 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator2) {
                 float fFloatValue = ((Float) valueAnimator2.getAnimatedValue()).floatValue();
-                if (COUISearchViewAnimate.this.mSearchViewType == 0) {
-                    int i2 = (int) (fFloatValue * (COUISearchViewAnimate.this.mStartY - COUISearchViewAnimate.this.mExtraY));
-                    ((ViewGroup.MarginLayoutParams) COUISearchViewAnimate.this.getLayoutParams()).topMargin += i2 - COUISearchViewAnimate.this.mTopOffset;
+                if (COUISearchViewAnimate.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
+                    int topOffset = (int) (fFloatValue * (COUISearchViewAnimate.this.mStartY - COUISearchViewAnimate.this.mExtraY));
+                    ((ViewGroup.MarginLayoutParams) COUISearchViewAnimate.this.getLayoutParams()).topMargin += topOffset - COUISearchViewAnimate.this.mTopOffset;
                     COUISearchViewAnimate.this.requestLayout();
-                    COUISearchViewAnimate.this.mTopOffset = i2;
+                    COUISearchViewAnimate.this.mTopOffset = topOffset;
                 }
             }
         });
         ValueAnimator valueAnimatorOfFloat2 = ValueAnimator.ofFloat(0.0f, 1.0f);
         this.mSearchViewScaleExitAnimator = valueAnimatorOfFloat2;
-        valueAnimatorOfFloat2.setDuration(450L);
+        valueAnimatorOfFloat2.setDuration(DEFAULT_SEARCH_VIEW_SCALE_CHANGE_DURATION);
         this.mSearchViewScaleExitAnimator.setInterpolator(interpolator);
         this.mSearchViewScaleExitAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator2) {
                 float fFloatValue = ((Float) valueAnimator2.getAnimatedValue()).floatValue();
-                if (COUISearchViewAnimate.this.mSearchViewType == 0) {
+                if (COUISearchViewAnimate.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                     COUISearchViewAnimate.this.mSearchViewShrinkWidth = (int) ((1.0f - fFloatValue) * (COUISearchViewAnimate.this.getOriginWidth() - COUISearchViewAnimate.this.getShrinkWidth()));
                     ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) COUISearchViewAnimate.this.mSearchView.getLayoutParams();
                     marginLayoutParams.setMarginEnd(COUISearchViewAnimate.this.mSearchViewShrinkWidth);
@@ -883,12 +885,12 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                     COUISearchViewAnimate.this.mButtonDivider.setVisibility(0);
                 }
                 COUISearchViewAnimate.this.mFunctionalButton.setVisibility(0);
-                COUISearchViewAnimate.this.mState.set(1);
+                COUISearchViewAnimate.this.mState.set(STATE_EDIT);
                 if (!COUISearchViewAnimate.this.mIsAtLeastR || COUISearchViewAnimate.this.mShowImeAnimDuration == 0 || COUISearchViewAnimate.this.isInMultiWindowMode()) {
                     COUISearchViewAnimate.this.setSearchAutoCompleteUnFocus();
                     COUISearchViewAnimate.this.openSoftInput(true);
                 }
-                COUISearchViewAnimate.this.notifyOnStateChange(0, 1);
+                COUISearchViewAnimate.this.notifyOnStateChange(STATE_NORMAL, STATE_EDIT);
                 COUISearchViewAnimate cOUISearchViewAnimate = COUISearchViewAnimate.this;
                 cOUISearchViewAnimate.mStartY = cOUISearchViewAnimate.getTop();
                 if (COUISearchViewAnimate.this.mOnAnimationListener != null) {
@@ -915,7 +917,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                     COUISearchViewAnimate.this.mDivideBackground = false;
                     COUISearchViewAnimate.this.mButtonDivider.setVisibility(8);
                     COUISearchViewAnimate.this.mFunctionalButton.setVisibility(8);
-                } else if (COUISearchViewAnimate.this.mSearchViewType == 0) {
+                } else if (COUISearchViewAnimate.this.mSearchViewType == TYPE_INSTANT_SEARCH) {
                     COUISearchViewAnimate.this.mFunctionalButton.setVisibility(4);
                 }
                 COUISearchViewAnimate.this.updateBackgroundRect();
@@ -937,8 +939,8 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                 COUISearchViewAnimate.this.mSearchView.getSearchAutoComplete().setText((CharSequence) null);
                 COUISearchViewAnimate.this.mSearchView.getSearchAutoComplete().clearFocus();
                 COUISearchViewAnimate.this.openSoftInput(false);
-                COUISearchViewAnimate.this.mState.set(0);
-                COUISearchViewAnimate.this.notifyOnStateChange(1, 0);
+                COUISearchViewAnimate.this.mState.set(STATE_NORMAL);
+                COUISearchViewAnimate.this.notifyOnStateChange(STATE_EDIT, STATE_NORMAL);
                 if (COUISearchViewAnimate.this.mOnAnimationListener != null) {
                     COUISearchViewAnimate.this.mOnAnimationListener.onAnimationStart(0);
                 }
@@ -947,19 +949,19 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         this.mSearchViewSmoothExitAnimatorSet.playTogether(this.mSearchViewOffsetExitAnimator, this.mSearchViewScaleExitAnimator, this.mButtonAlphaExitAnimator);
     }
 
-    private boolean isInButton(float f2, float f10) {
-        return this.mButtonHitRect.contains(f2, f10);
+    private boolean isInButton(float fraction, float ratio) {
+        return this.mButtonHitRect.contains(fraction, ratio);
     }
 
-    private boolean isInIcon(float f2, float f10) {
+    private boolean isInIcon(float fraction, float ratio) {
         getGlobalVisibleRect(this.mRect);
         this.mMainIcon.getGlobalVisibleRect(this.mMainIconRect);
         this.mSubIcon.getGlobalVisibleRect(this.mSubIconRect);
         this.mMainIconRect.offset(0, -this.mRect.top);
         this.mSubIconRect.offset(0, -this.mRect.top);
-        int i2 = (int) f2;
-        int i6 = (int) f10;
-        return this.mMainIconRect.contains(i2, i6) || this.mSubIconRect.contains(i2, i6);
+        int index = (int) fraction;
+        int count = (int) ratio;
+        return this.mMainIconRect.contains(index, count) || this.mSubIconRect.contains(index, count);
     }
 
 
@@ -971,10 +973,10 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         return false;
     }
 
-    private boolean isInView(float f2, float f10) {
-        float f11 = (int) f2;
-        float f12 = (int) f10;
-        return this.mPressFeedbackBackgroundRect.contains(f11, f12) || this.mNormalBackgroundRect.contains(f11, f12);
+    private boolean isInView(float fraction, float ratio) {
+        float scale = (int) fraction;
+        float y = (int) ratio;
+        return this.mPressFeedbackBackgroundRect.contains(scale, y) || this.mNormalBackgroundRect.contains(scale, y);
     }
 
 
@@ -985,18 +987,18 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
 
     public void lambda$initSearchViewEnterAnimator$0(ValueAnimator valueAnimator) {
         float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-        if (this.mSearchViewType == 0) {
-            int i2 = (int) (fFloatValue * (this.mStartY - this.mExtraY));
-            ((ViewGroup.MarginLayoutParams) getLayoutParams()).topMargin -= i2 - this.mTopOffset;
+        if (this.mSearchViewType == TYPE_INSTANT_SEARCH) {
+            int topOffset = (int) (fFloatValue * (this.mStartY - this.mExtraY));
+            ((ViewGroup.MarginLayoutParams) getLayoutParams()).topMargin -= topOffset - this.mTopOffset;
             requestLayout();
-            this.mTopOffset = i2;
+            this.mTopOffset = topOffset;
         }
     }
 
 
     public void lambda$initSearchViewEnterAnimator$1(ValueAnimator valueAnimator) {
         float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-        if (this.mSearchViewType == 0) {
+        if (this.mSearchViewType == TYPE_INSTANT_SEARCH) {
             this.mSearchViewShrinkWidth = (int) (fFloatValue * (getOriginWidth() - getShrinkWidth()));
             ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) this.mSearchView.getLayoutParams();
             marginLayoutParams.setMarginEnd(this.mSearchViewShrinkWidth);
@@ -1009,16 +1011,16 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         ViewCompat.setWindowInsetsAnimationCallback(this.mSearchView.getRootView(), imeInsetsAnimationCallback);
     }
 
-    private void loadAttr(Context context, AttributeSet attributeSet, int i2, int i6) {
+    private void loadAttr(Context context, AttributeSet attributeSet, int style, int index) {
         Drawable drawable;
         if (attributeSet != null) {
             int styleAttribute = attributeSet.getStyleAttribute();
             this.mStyle = styleAttribute;
             if (styleAttribute == 0) {
-                this.mStyle = i2;
+                this.mStyle = style;
             }
         } else {
-            this.mStyle = i2;
+            this.mStyle = style;
         }
         this.mBackgroundEndGap = context.getResources().getDimensionPixelOffset(R.dimen.coui_search_view_background_end_gap);
         this.mBackgroundStartGap = context.getResources().getDimensionPixelOffset(R.dimen.coui_search_view_background_start_gap);
@@ -1046,8 +1048,8 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         this.mPressedBackgroundColor = context.getResources().getColor(R.color.coui_search_view_selector_color_pressed);
         this.mCurrentBackgroundColor = this.mNormalBackgroundColor;
         this.mHorizontalDividerColor = context.getResources().getColor(R.color.coui_color_divider);
-        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISearchViewAnimate, i2, i6);
-        float f2 = context.getResources().getConfiguration().fontScale;
+        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISearchViewAnimate, style, index);
+        float fraction = context.getResources().getConfiguration().fontScale;
         this.mSearchView.getSearchAutoComplete().setTextSize(0, typedArrayObtainStyledAttributes.getDimensionPixelSize(R.styleable.COUISearchViewAnimate_inputTextSize, getResources().getDimensionPixelSize(R.dimen.coui_search_view_input_text_size)));
         SearchView.SearchAutoComplete searchAutoComplete = this.mSearchView.getSearchAutoComplete();
         searchAutoComplete.setPaddingRelative(0, 0, getResources().getDimensionPixelSize(R.dimen.coui_search_view_auto_complete_padding_end), 0);
@@ -1055,24 +1057,24 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         this.mSearchIcon.setImageDrawable(typedArrayObtainStyledAttributes.getDrawable(R.styleable.COUISearchViewAnimate_couiSearchIcon));
         this.mSearchView.getSearchAutoComplete().setHintTextColor(typedArrayObtainStyledAttributes.getColorStateList(R.styleable.COUISearchViewAnimate_normalHintColor));
         this.mSearchViewType = typedArrayObtainStyledAttributes.getInt(R.styleable.COUISearchViewAnimate_couiSearchViewAnimateType, 0);
-        int i10 = R.styleable.COUISearchViewAnimate_searchHint;
-        if (typedArrayObtainStyledAttributes.hasValue(i10)) {
-            setQueryHint(typedArrayObtainStyledAttributes.getString(i10));
+        int value = R.styleable.COUISearchViewAnimate_searchHint;
+        if (typedArrayObtainStyledAttributes.hasValue(value)) {
+            setQueryHint(typedArrayObtainStyledAttributes.getString(value));
         }
-        int i11 = R.styleable.COUISearchViewAnimate_functionalButtonTextColor;
-        if (typedArrayObtainStyledAttributes.hasValue(i11)) {
-            this.mFunctionalButton.setTextColor(typedArrayObtainStyledAttributes.getColor(i11, 0));
+        int offset = R.styleable.COUISearchViewAnimate_functionalButtonTextColor;
+        if (typedArrayObtainStyledAttributes.hasValue(offset)) {
+            this.mFunctionalButton.setTextColor(typedArrayObtainStyledAttributes.getColor(offset, 0));
         }
-        int i12 = R.styleable.COUISearchViewAnimate_functionalButtonText;
-        if (typedArrayObtainStyledAttributes.hasValue(i12)) {
-            this.mFunctionalButton.setText(typedArrayObtainStyledAttributes.getString(i12));
+        int delta = R.styleable.COUISearchViewAnimate_functionalButtonText;
+        if (typedArrayObtainStyledAttributes.hasValue(delta)) {
+            this.mFunctionalButton.setText(typedArrayObtainStyledAttributes.getString(delta));
         } else {
             this.mFunctionalButton.setText(R.string.coui_search_view_cancel);
         }
-        this.mFunctionalButton.setTextSize(0, COUIChangeTextUtil.getSuitableFontSize(this.mFunctionalButton.getTextSize(), f2, 2));
+        this.mFunctionalButton.setTextSize(0, COUIChangeTextUtil.getSuitableFontSize(this.mFunctionalButton.getTextSize(), fraction, 2));
         COUITextViewCompatUtil.setPressRippleDrawable(this.mFunctionalButton);
-        int i13 = R.styleable.COUISearchViewAnimate_buttonDivider;
-        if (typedArrayObtainStyledAttributes.hasValue(i13) && (drawable = typedArrayObtainStyledAttributes.getDrawable(i13)) != null) {
+        int start = R.styleable.COUISearchViewAnimate_buttonDivider;
+        if (typedArrayObtainStyledAttributes.hasValue(start) && (drawable = typedArrayObtainStyledAttributes.getDrawable(start)) != null) {
             this.mButtonDivider.setImageDrawable(drawable);
         }
         this.mSearchView.setBackgroundColor(typedArrayObtainStyledAttributes.getColor(R.styleable.COUISearchViewAnimate_searchBackground, 0));
@@ -1086,9 +1088,9 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         if (imageView != null) {
             imageView.setImageResource(resourceId);
         }
-        int i14 = typedArrayObtainStyledAttributes.getInt(R.styleable.COUISearchViewAnimate_android_gravity, 16);
-        Log.i(TAG, "gravity " + i14);
-        setGravity(i14);
+        int end = typedArrayObtainStyledAttributes.getInt(R.styleable.COUISearchViewAnimate_android_gravity, 16);
+        Log.i(TAG, "gravity " + end);
+        setGravity(end);
         typedArrayObtainStyledAttributes.recycle();
     }
 
@@ -1106,12 +1108,12 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     }
 
 
-    public void notifyOnStateChange(int i2, int i6) {
+    public void notifyOnStateChange(int index, int count) {
         List<OnStateChangeListener> list = this.mOnStateChangeListeners;
         if (list != null) {
             for (OnStateChangeListener onStateChangeListener : list) {
                 if (onStateChangeListener != null) {
-                    onStateChangeListener.onStateChange(i2, i6);
+                    onStateChangeListener.onStateChange(index, count);
                 }
             }
         }
@@ -1132,7 +1134,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         }
         animator = createBackgroundColorAnimator(this.mCurrentBackgroundColor, this.mPressedBackgroundColor);
         this.mPressFeedbackAnimator = animator;
-        animator.setDuration(150L);
+        animator.setDuration(DEFAULT_PRESS_FEEDBACK_DURATION);
         this.mPressFeedbackAnimator.setInterpolator(DEFAULT_PRESS_FEEDBACK_INTERPOLATOR);
         this.mPressFeedbackAnimator.setEvaluator(DEFAULT_PRESS_FEEDBACK_EVALUATOR);
         this.mPressFeedbackAnimator.start();
@@ -1145,7 +1147,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         }
         animator = createBackgroundColorAnimator(this.mCurrentBackgroundColor, this.mNormalBackgroundColor);
         this.mPressFeedbackAnimator = animator;
-        animator.setDuration(150L);
+        animator.setDuration(DEFAULT_PRESS_FEEDBACK_DURATION);
         this.mPressFeedbackAnimator.setInterpolator(DEFAULT_PRESS_FEEDBACK_INTERPOLATOR);
         this.mPressFeedbackAnimator.setEvaluator(DEFAULT_PRESS_FEEDBACK_EVALUATOR);
         this.mPressFeedbackAnimator.start();
@@ -1159,16 +1161,16 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
 
     private void removeLast() {
         int childCount = this.mToolBar.getChildCount();
-        for (int i2 = 0; i2 < childCount; i2++) {
-            if (getClass().isInstance(this.mToolBar.getChildAt(i2))) {
-                this.mToolBar.removeViewAt(i2);
+        for (int i = 0; i < childCount; i++) {
+            if (getClass().isInstance(this.mToolBar.getChildAt(i))) {
+                this.mToolBar.removeViewAt(i);
                 return;
             }
         }
     }
 
-    private void setCurrentBackgroundColor(int i2) {
-        this.mCurrentBackgroundColor = i2;
+    private void setCurrentBackgroundColor(int color) {
+        this.mCurrentBackgroundColor = color;
         invalidate();
     }
 
@@ -1180,7 +1182,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         this.mMenuItem.setActionView((View) null);
     }
 
-    private void setRelativeVerticalGravity(View view, int i2) {
+    private void setRelativeVerticalGravity(View view, int index) {
         ViewGroup.LayoutParams layoutParams;
         if (view == null || (layoutParams = view.getLayoutParams()) == null || !(layoutParams instanceof RelativeLayout.LayoutParams)) {
             return;
@@ -1188,16 +1190,16 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         RelativeLayout.LayoutParams layoutParams2 = (RelativeLayout.LayoutParams) layoutParams;
         Arrays.fill(layoutParams2.getRules(), 0);
         layoutParams2.alignWithParent = true;
-        int i6 = i2 & 112;
-        int i10 = 15;
-        if (i6 != 16) {
-            if (i6 == 48) {
-                i10 = 10;
-            } else if (i6 == 80) {
-                i10 = 12;
+        int count = index & 112;
+        int offset = 15;
+        if (count != 16) {
+            if (count == 48) {
+                offset = 10;
+            } else if (count == 80) {
+                offset = 12;
             }
         }
-        layoutParams2.addRule(i10);
+        layoutParams2.addRule(offset);
         view.requestLayout();
     }
 
@@ -1228,28 +1230,28 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     }
 
 
-    public void setToolBarAlpha(float f2) {
+    public void setToolBarAlpha(float fraction) {
         COUIToolbar cOUIToolbar = this.mToolBar;
         if (cOUIToolbar != null) {
             int childCount = cOUIToolbar.getChildCount();
-            for (int i2 = 0; i2 < childCount; i2++) {
-                View childAt = this.mToolBar.getChildAt(i2);
+            for (int i = 0; i < childCount; i++) {
+                View childAt = this.mToolBar.getChildAt(i);
                 if (childAt != this) {
-                    childAt.setAlpha(f2);
+                    childAt.setAlpha(fraction);
                 }
             }
         }
     }
 
 
-    public void setToolBarChildVisibility(int i2) {
+    public void setToolBarChildVisibility(int index) {
         COUIToolbar cOUIToolbar = this.mToolBar;
         if (cOUIToolbar != null) {
             int childCount = cOUIToolbar.getChildCount();
-            for (int i6 = 0; i6 < childCount; i6++) {
-                View childAt = this.mToolBar.getChildAt(i6);
+            for (int i = 0; i < childCount; i++) {
+                View childAt = this.mToolBar.getChildAt(i);
                 if (childAt != this) {
-                    childAt.setVisibility(i2);
+                    childAt.setVisibility(index);
                 }
             }
         }
@@ -1264,8 +1266,8 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         this.mSearchView.getWindowInsetsController().controlWindowInsetsAnimation(WindowInsets.Type.ime(), this.mShowImeAnimDuration, this.mShowImeInterpolator, null, customWindowInsetsAnimationControlListener);
     }
 
-    private static String state2String(int i2) {
-        return i2 != 0 ? i2 != 1 ? String.valueOf(i2) : "state edit" : "state normal";
+    private static String state2String(int index) {
+        return index != 0 ? index != 1 ? String.valueOf(index) : "state edit" : "state normal";
     }
 
 
@@ -1273,18 +1275,18 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         if (!this.mDivideBackground) {
             if (isRtl()) {
                 this.mPressFeedbackBackgroundRect.right = this.mSearchViewWrapper.getRight();
-                int i2 = this.mSearchViewType;
-                if (i2 == 0) {
+                int index = this.mSearchViewType;
+                if (index == 0) {
                     this.mPressFeedbackBackgroundRect.left = this.mSearchView.getLeft() + getPaddingEnd();
-                } else if (i2 == 1) {
+                } else if (index == 1) {
                     this.mPressFeedbackBackgroundRect.left = this.mSearchViewWrapper.getLeft();
                 }
             } else {
                 this.mPressFeedbackBackgroundRect.left = this.mSearchViewWrapper.getLeft();
-                int i6 = this.mSearchViewType;
-                if (i6 == 0) {
+                int count = this.mSearchViewType;
+                if (count == 0) {
                     this.mPressFeedbackBackgroundRect.right = this.mSearchView.getRight() + getPaddingStart();
-                } else if (i6 == 1) {
+                } else if (count == 1) {
                     this.mPressFeedbackBackgroundRect.right = this.mSearchViewWrapper.getRight();
                 }
             }
@@ -1334,26 +1336,26 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                 COUISearchViewAnimate.this.mWrapperBounds.top += COUISearchViewAnimate.this.mSearchViewWrapper.getTop();
                 COUISearchViewAnimate.this.mWrapperBounds.bottom += COUISearchViewAnimate.this.mSearchViewWrapper.getTop();
                 float fMax = Float.max(0.0f, COUISearchViewAnimate.this.mSearchViewWrapper.getMeasuredHeight() - COUISearchViewAnimate.this.mWrapperBounds.height());
-                float f2 = fMax / 2.0f;
-                COUISearchViewAnimate.this.mWrapperBounds.top = (int) (COUISearchViewAnimate.this.mWrapperBounds.top - f2);
-                COUISearchViewAnimate.this.mWrapperBounds.bottom = (int) (COUISearchViewAnimate.this.mWrapperBounds.bottom + f2);
+                float fraction = fMax / 2.0f;
+                COUISearchViewAnimate.this.mWrapperBounds.top = (int) (COUISearchViewAnimate.this.mWrapperBounds.top - fraction);
+                COUISearchViewAnimate.this.mWrapperBounds.bottom = (int) (COUISearchViewAnimate.this.mWrapperBounds.bottom + fraction);
             }
         });
     }
 
     private void updatePath() {
         RectF rectF = this.mPressFeedbackBackgroundRect;
-        float f2 = (rectF.bottom - rectF.top) / 2.0f;
+        float fraction = (rectF.bottom - rectF.top) / 2.0f;
         boolean zIsRtl = isRtl();
         if (this.mNeedUpdateNormalRectPath) {
-            COUIShapePath.getRoundRectPath(this.mNormalBackgroundPath, this.mNormalBackgroundRect, f2, zIsRtl, !zIsRtl, zIsRtl, !zIsRtl);
+            COUIShapePath.getRoundRectPath(this.mNormalBackgroundPath, this.mNormalBackgroundRect, fraction, zIsRtl, !zIsRtl, zIsRtl, !zIsRtl);
             this.mNeedUpdateNormalRectPath = false;
         }
         if (this.mNeedUpdatePressFeedbackRectPath) {
             if (this.mDivideBackground) {
-                COUIShapePath.getRoundRectPath(this.mPressFeedbackBackgroundPath, this.mPressFeedbackBackgroundRect, f2, !zIsRtl, zIsRtl, !zIsRtl, zIsRtl);
+                COUIShapePath.getRoundRectPath(this.mPressFeedbackBackgroundPath, this.mPressFeedbackBackgroundRect, fraction, !zIsRtl, zIsRtl, !zIsRtl, zIsRtl);
             } else {
-                COUIShapePath.getRoundRectPath(this.mPressFeedbackBackgroundPath, this.mPressFeedbackBackgroundRect, f2, true, true, true, true);
+                COUIShapePath.getRoundRectPath(this.mPressFeedbackBackgroundPath, this.mPressFeedbackBackgroundRect, fraction, true, true, true, true);
             }
             this.mNeedUpdatePressFeedbackRectPath = false;
         }
@@ -1377,19 +1379,19 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         super.addView(view);
     }
 
-    public void changeStateImmediately(final int i2) {
-        Log.d(TAG, "changeStateImmediately: " + state2String(i2));
+    public void changeStateImmediately(final int index) {
+        Log.d(TAG, "changeStateImmediately: " + state2String(index));
         post(new Runnable() {
             @Override
             public void run() {
-                COUISearchViewAnimate.this.changeStateWithOutAnimation(i2);
+                COUISearchViewAnimate.this.changeStateWithOutAnimation(index);
             }
         });
     }
 
-    public void changeStateWithAnimation(int i2) {
-        if (this.mState.get() == i2) {
-            Log.d(TAG, "changeStateWithAnimation: same state , return. targetState = " + i2);
+    public void changeStateWithAnimation(int index) {
+        if (this.mState.get() == index) {
+            Log.d(TAG, "changeStateWithAnimation: same state , return. targetState = " + index);
             return;
         }
         if (this.mState.get() == 1) {
@@ -1399,8 +1401,8 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         }
     }
 
-    public void controlImeShowAnim(int i2, Interpolator interpolator) {
-        this.mShowImeAnimDuration = i2;
+    public void controlImeShowAnim(int showImeAnimDuration, Interpolator interpolator) {
+        this.mShowImeAnimDuration = showImeAnimDuration;
         this.mShowImeInterpolator = interpolator;
     }
 
@@ -1488,8 +1490,8 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         }
         this.mToolBarAnimationRunning = true;
         ensureAddedToToolBar();
-        if (this.mAddToToolbarWay == 1) {
-            animate().alpha(0.0f).setDuration(150L).setListener(new AnimatorListenerAdapter() {
+        if (this.mAddToToolbarWay == WAY_AT_BEHIND) {
+            animate().alpha(0.0f).setDuration(DEFAULT_FADE_DURATION).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animator) {
                     super.onAnimationEnd(animator);
@@ -1498,7 +1500,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
             }).start();
         }
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(0.0f, 1.0f);
-        valueAnimatorOfFloat.setDuration(150L);
+        valueAnimatorOfFloat.setDuration(DEFAULT_FADE_DURATION);
         valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -1563,7 +1565,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     @Override
     public void onImeAnimStart() {
         if (this.mSearchView.getRootWindowInsets() != null && this.mSearchView.getRootWindowInsets().isVisible(WindowInsets.Type.ime()) && this.mState.get() == 0) {
-            this.mState.set(1);
+            this.mState.set(STATE_EDIT);
             this.mSearchViewSmoothEnterAnimatorSet.start();
         }
     }
@@ -1580,15 +1582,15 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     }
 
     @Override
-    public void onLayout(boolean z6, int i2, int i6, int i10, int i11) {
-        super.onLayout(z6, i2, i6, i10, i11);
+    public void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
         updateBackgroundRect();
         updateBounds();
     }
 
     @Override
-    public void onMeasure(int i2, int i6) {
-        super.onMeasure(i2, i6);
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         if (this.mSearchViewType == 1) {
             int measuredWidth = (this.mBackgroundEndGap * 2) + this.mFunctionalButton.getMeasuredWidth() + this.mButtonDivider.getMeasuredWidth();
             ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) this.mSearchView.getLayoutParams();
@@ -1623,14 +1625,14 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         return zOnTouchEvent;
     }
 
-    public void openSoftInput(boolean z6) {
+    public void openSoftInput(boolean enabled) {
         COUISearchView cOUISearchView = this.mSearchView;
         if (cOUISearchView == null || cOUISearchView.getSearchAutoComplete() == null) {
             return;
         }
         InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService("input_method");
-        Log.d(TAG, "openSoftInput: " + z6);
-        if (!z6) {
+        Log.d(TAG, "openSoftInput: " + enabled);
+        if (!enabled) {
             if (inputMethodManager == null || !inputMethodManager.isActive()) {
                 return;
             }
@@ -1660,9 +1662,9 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
             this.mPressedBackgroundColor = getContext().getResources().getColor(R.color.coui_search_view_selector_color_pressed);
             this.mCurrentBackgroundColor = this.mNormalBackgroundColor;
             this.mSearchView.getSearchAutoComplete().setTextColor(typedArrayObtainStyledAttributes.getColor(R.styleable.COUISearchViewAnimate_inputTextColor, 0));
-            int i2 = R.styleable.COUISearchViewAnimate_couiSearchIcon;
-            Drawable drawable = typedArrayObtainStyledAttributes.getDrawable(i2);
-            if (typedArrayObtainStyledAttributes.hasValue(i2)) {
+            int index = R.styleable.COUISearchViewAnimate_couiSearchIcon;
+            Drawable drawable = typedArrayObtainStyledAttributes.getDrawable(index);
+            if (typedArrayObtainStyledAttributes.hasValue(index)) {
                 this.mSearchIcon.setImageDrawable(drawable);
             } else {
                 this.mSearchIcon.setImageDrawable(drawable);
@@ -1694,20 +1696,20 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     public void removeHintViewLayoutOnClickListener() {
     }
 
-    public void setAtBehindToolBar(COUIToolbar cOUIToolbar, int i2, MenuItem menuItem) {
+    public void setAtBehindToolBar(COUIToolbar cOUIToolbar, int gravityInToolBar, MenuItem menuItem) {
         this.mToolBar = cOUIToolbar;
-        this.mGravityInToolBar = i2;
-        this.mAddToToolbarWay = 1;
+        this.mGravityInToolBar = gravityInToolBar;
+        this.mAddToToolbarWay = WAY_AT_BEHIND;
         setMenuItem(menuItem);
         this.mShouldClearFocus = false;
-        changeStateImmediately(1);
+        changeStateImmediately(STATE_EDIT);
         setVisibility(8);
     }
 
-    public void setAtFrontToolBar(COUIToolbar cOUIToolbar, int i2, MenuItem menuItem) {
+    public void setAtFrontToolBar(COUIToolbar cOUIToolbar, int gravityInToolBar, MenuItem menuItem) {
         this.mToolBar = cOUIToolbar;
-        this.mGravityInToolBar = i2;
-        this.mAddToToolbarWay = 2;
+        this.mGravityInToolBar = gravityInToolBar;
+        this.mAddToToolbarWay = WAY_AT_FRONT;
         setMenuItem(menuItem);
         ensureAddedToToolBar();
         menuItem.setVisible(false);
@@ -1731,24 +1733,24 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     }
 
     @Override
-    public void setEnabled(boolean z6) {
-        super.setEnabled(z6);
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
         ImageView imageView = this.mSearchIcon;
         if (imageView != null) {
-            imageView.setEnabled(z6);
+            imageView.setEnabled(enabled);
         }
         COUISearchView cOUISearchView = this.mSearchView;
         if (cOUISearchView != null) {
-            cOUISearchView.setEnabled(z6);
+            cOUISearchView.setEnabled(enabled);
         }
         SearchFunctionalButton searchFunctionalButton = this.mFunctionalButton;
         if (searchFunctionalButton != null) {
-            searchFunctionalButton.setEnabled(z6);
+            searchFunctionalButton.setEnabled(enabled);
         }
     }
 
-    public void setExtraActivateMarginTop(int i2) {
-        this.mExtraY = i2;
+    public void setExtraActivateMarginTop(int extraY) {
+        this.mExtraY = extraY;
     }
 
     public void setFunctionalButtonText(String str) {
@@ -1756,24 +1758,24 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     }
 
     @Override
-    public void setGravity(int i2) {
-        if (this.mGravity != i2) {
-            if ((8388615 & i2) == 0) {
-                i2 |= 8388611;
+    public void setGravity(int gravity) {
+        if (this.mGravity != gravity) {
+            if ((8388615 & gravity) == 0) {
+                gravity |= 8388611;
             }
-            if ((i2 & 112) == 0) {
-                i2 |= 16;
+            if ((gravity & 112) == 0) {
+                gravity |= 16;
             }
-            this.mGravity = i2;
+            this.mGravity = gravity;
         }
     }
 
     @Deprecated
-    public void setHintTextViewHintTextColor(int i2) {
+    public void setHintTextViewHintTextColor(int index) {
     }
 
     @Deprecated
-    public void setHintTextViewTextColor(int i2) {
+    public void setHintTextViewTextColor(int index) {
     }
 
     @Deprecated
@@ -1785,8 +1787,8 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
     }
 
     @Deprecated
-    public void setIconCanAnimate(boolean z6) {
-        this.mSearchIconCanAnimate = z6;
+    public void setIconCanAnimate(boolean searchIconCanAnimate) {
+        this.mSearchIconCanAnimate = searchIconCanAnimate;
     }
 
     public void setImeInsetsAnimationCallback() {
@@ -1804,16 +1806,16 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         }
     }
 
-    public void setInputHintTextColor(int i2) {
-        this.mSearchView.getSearchAutoComplete().setHintTextColor(i2);
+    public void setInputHintTextColor(int index) {
+        this.mSearchView.getSearchAutoComplete().setHintTextColor(index);
     }
 
-    public void setInputMethodAnimationEnabled(boolean z6) {
-        this.mInputMethodAnimationEnabled = z6;
+    public void setInputMethodAnimationEnabled(boolean inputMethodAnimationEnabled) {
+        this.mInputMethodAnimationEnabled = inputMethodAnimationEnabled;
     }
 
-    public void setInputTextColor(int i2) {
-        this.mSearchView.getSearchAutoComplete().setTextColor(i2);
+    public void setInputTextColor(int index) {
+        this.mSearchView.getSearchAutoComplete().setTextColor(index);
     }
 
     public void setMainIconDrawable(Drawable drawable) {
@@ -1835,13 +1837,13 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         }
     }
 
-    public void setSearchAnimateType(int i2) {
+    public void setSearchAnimateType(int searchViewType) {
         if (this.mState.get() == 1) {
-            Log.d(TAG, "setSearchAnimateType to " + TYPE_NAME[i2] + " is not allowed in STATE_EDIT");
+            Log.d(TAG, "setSearchAnimateType to " + TYPE_NAME[searchViewType] + " is not allowed in STATE_EDIT");
             return;
         }
-        this.mSearchViewType = i2;
-        if (i2 == 0) {
+        this.mSearchViewType = searchViewType;
+        if (searchViewType == 0) {
             this.mButtonDivider.setVisibility(8);
             this.mFunctionalButton.setVisibility(4);
             this.mFunctionalButton.setAlpha(0.0f);
@@ -1851,7 +1853,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
             this.mSearchView.setLayoutParams(marginLayoutParams);
             return;
         }
-        if (i2 == 1) {
+        if (searchViewType == 1) {
             this.mButtonDivider.setVisibility(8);
             this.mFunctionalButton.setVisibility(8);
             ((ViewGroup.MarginLayoutParams) this.mFunctionalButton.getLayoutParams()).setMarginStart(this.mCancelButtonSmallStartMargin);
@@ -1863,33 +1865,33 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
 
     public void setSearchBackgroundColor(ColorStateList colorStateList) {
         if (colorStateList != null) {
-            int i2 = this.mNormalBackgroundColor;
+            int index = this.mNormalBackgroundColor;
             int defaultColor = colorStateList.getDefaultColor();
             this.mNormalBackgroundColor = defaultColor;
             this.mPressedBackgroundColor = colorStateList.getColorForState(new int[]{16842919}, defaultColor);
-            if (this.mCurrentBackgroundColor == i2) {
+            if (this.mCurrentBackgroundColor == index) {
                 this.mCurrentBackgroundColor = this.mNormalBackgroundColor;
             }
             invalidate();
         }
     }
 
-    public void setSearchViewAnimateHeightPercent(float f2) {
-        this.mCollapsingHeightPercent = f2;
+    public void setSearchViewAnimateHeightPercent(float collapsingHeightPercent) {
+        this.mCollapsingHeightPercent = collapsingHeightPercent;
         ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) getChildAt(0).getLayoutParams();
-        marginLayoutParams.height = (int) Float.max(this.mCollapsedMinHeight, this.mInitSearchViewWrapperHeight * clampSearchViewHeight(f2));
-        marginLayoutParams.setMarginStart((int) (getPaddingStart() * (1.0f - clampMarginValue(f2)) * (-1.0f)));
-        marginLayoutParams.setMarginEnd((int) (getPaddingEnd() * (1.0f - clampMarginValue(f2)) * (-1.0f)));
+        marginLayoutParams.height = (int) Float.max(this.mCollapsedMinHeight, this.mInitSearchViewWrapperHeight * clampSearchViewHeight(collapsingHeightPercent));
+        marginLayoutParams.setMarginStart((int) (getPaddingStart() * (1.0f - clampMarginValue(collapsingHeightPercent)) * (-1.0f)));
+        marginLayoutParams.setMarginEnd((int) (getPaddingEnd() * (1.0f - clampMarginValue(collapsingHeightPercent)) * (-1.0f)));
         getChildAt(0).setLayoutParams(marginLayoutParams);
-        setTranslationY((this.mInitSearchViewAnimateHeight / 2.0f) * (1.0f - f2));
-        float f10 = (f2 - 0.5f) * 2.0f;
-        this.mSearchView.setAlpha(f10);
-        this.mSearchIcon.setAlpha(f10);
-        this.mCurrentBackgroundColor = ((Integer) this.mEvaluator.evaluate(clampMarginValue(f2), Integer.valueOf(this.mHorizontalDividerColor), Integer.valueOf(this.mNormalBackgroundColor))).intValue();
+        setTranslationY((this.mInitSearchViewAnimateHeight / 2.0f) * (1.0f - collapsingHeightPercent));
+        float fraction = (collapsingHeightPercent - 0.5f) * 2.0f;
+        this.mSearchView.setAlpha(fraction);
+        this.mSearchIcon.setAlpha(fraction);
+        this.mCurrentBackgroundColor = ((Integer) this.mEvaluator.evaluate(clampMarginValue(collapsingHeightPercent), Integer.valueOf(this.mHorizontalDividerColor), Integer.valueOf(this.mNormalBackgroundColor))).intValue();
     }
 
-    public void setSearchViewBackgroundColor(int i2) {
-        this.mSearchView.setBackgroundColor(i2);
+    public void setSearchViewBackgroundColor(int index) {
+        this.mSearchView.setBackgroundColor(index);
     }
 
     public void setSearchViewIcon(Drawable drawable) {
@@ -1906,14 +1908,14 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         }
         this.mToolBarAnimationRunning = true;
         ensureAddedToToolBar();
-        if (this.mAddToToolbarWay == 1) {
+        if (this.mAddToToolbarWay == WAY_AT_BEHIND) {
             setVisibility(0);
             setAlpha(0.0f);
-            int i2 = this.mSearchViewType;
-            if (i2 == 0) {
+            int index = this.mSearchViewType;
+            if (index == 0) {
                 this.mFunctionalButton.setVisibility(0);
                 this.mButtonDivider.setVisibility(8);
-            } else if (i2 == 1) {
+            } else if (index == 1) {
                 this.mFunctionalButton.setVisibility(0);
                 this.mButtonDivider.setVisibility(0);
             }
@@ -1925,11 +1927,11 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
                     COUISearchViewAnimate.this.mSearchView.setLayoutParams(marginLayoutParams);
                 }
             });
-            animate().alpha(1.0f).setDuration(150L).setListener(null).start();
+            animate().alpha(1.0f).setDuration(DEFAULT_FADE_DURATION).setListener(null).start();
         }
         setToolBarChildVisibility(8);
         ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(1.0f, 0.0f);
-        valueAnimatorOfFloat.setDuration(150L);
+        valueAnimatorOfFloat.setDuration(DEFAULT_FADE_DURATION);
         valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -1955,12 +1957,12 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         this(context, attributeSet, R.attr.couiSearchViewAnimateStyle);
     }
 
-    public COUISearchViewAnimate(Context context, AttributeSet attributeSet, int i2) {
-        this(context, attributeSet, i2, COUIContextUtil.isCOUIDarkTheme(context) ? R.style.Widget_COUI_COUISearchViewAnimate_Dark : R.style.Widget_COUI_COUISearchViewAnimate);
+    public COUISearchViewAnimate(Context context, AttributeSet attributeSet, int index) {
+        this(context, attributeSet, index, COUIContextUtil.isCOUIDarkTheme(context) ? R.style.Widget_COUI_COUISearchViewAnimate_Dark : R.style.Widget_COUI_COUISearchViewAnimate);
     }
 
-    public COUISearchViewAnimate(Context context, AttributeSet attributeSet, int i2, int i6) {
-        super(context, attributeSet, i2, i6);
+    public COUISearchViewAnimate(Context context, AttributeSet attributeSet, int index, int count) {
+        super(context, attributeSet, index, count);
         this.mPressFeedbackBackgroundPath = new Path();
         this.mNormalBackgroundPath = new Path();
         this.mPressFeedbackPaint = new Paint(1);
@@ -1973,7 +1975,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         this.mWrapperBounds = rect;
         this.mState = new AtomicInteger(0);
         this.mGravityInToolBar = 48;
-        this.mAddToToolbarWay = 0;
+        this.mAddToToolbarWay = WAY_NONE;
         this.mSearchIconCanAnimate = true;
         this.mShouldClearFocus = true;
         this.mInputMethodAnimationEnabled = true;
@@ -1989,10 +1991,10 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         this.mPressed = false;
         this.mAtToolbarFrontStateChangeListener = new OnStateChangeListener() {
             @Override
-            public void onStateChange(int i10, int i11) {
-                if (i11 == 1) {
+            public void onStateChange(int delta, int start) {
+                if (start == 1) {
                     COUISearchViewAnimate.this.showInToolBar();
-                } else if (i11 == 0) {
+                } else if (start == 0) {
                     COUISearchViewAnimate.this.hideInToolBar();
                 }
             }
@@ -2002,7 +2004,7 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
         COUIDarkModeUtil.setForceDarkAllow(this, false);
         this.mIsAtLeastR = true;
         inflateView(context, attributeSet);
-        loadAttr(context, attributeSet, i2, i6);
+        loadAttr(context, attributeSet, index, count);
         setClipToPadding(false);
         setClipChildren(false);
         setWillNotDraw(false);
@@ -2023,11 +2025,11 @@ public class COUISearchViewAnimate extends LinearLayout implements android.view.
             }
 
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i10, int i11, int i12) {
+            public void beforeTextChanged(CharSequence charSequence, int delta, int start, int end) {
             }
 
             @Override
-            public void onTextChanged(CharSequence charSequence, int i10, int i11, int i12) {
+            public void onTextChanged(CharSequence charSequence, int delta, int start, int end) {
             }
         });
     }

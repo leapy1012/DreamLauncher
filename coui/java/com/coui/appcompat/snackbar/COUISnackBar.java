@@ -1,7 +1,5 @@
 package com.coui.appcompat.snackbar;
 
-import com.coui.appcompat.R;
-
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
@@ -22,8 +20,11 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
@@ -126,24 +127,24 @@ public class COUISnackBar extends RelativeLayout {
         this.mLastLayoutType = -1;
         this.mSnackBarProperty = new FloatPropertyCompat<Float>("snackBarProperty") {
             @Override
-            public float getValue(Float f2) {
+            public float getValue(Float value) {
                 return COUISnackBar.this.mSnackBarAnimationProgress;
             }
 
             @Override
-            public void setValue(Float f2, float f10) {
-                COUISnackBar.this.setSnackBarProgress(f10);
+            public void setValue(Float value, float value_2) {
+                COUISnackBar.this.setSnackBarProgress(value_2);
             }
         };
         initCOUISnackBar(context, null);
     }
 
-    private void alignCenter(View view, int i2) {
-        if (view == null || getViewTotalHeight(view) == i2) {
+    private void alignCenter(View view, int index) {
+        if (view == null || getViewTotalHeight(view) == index) {
             return;
         }
         RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) view.getLayoutParams();
-        int measuredHeight = (i2 - view.getMeasuredHeight()) / 2;
+        int measuredHeight = (index - view.getMeasuredHeight()) / 2;
         if (this.mLastLayoutType != 0) {
             view.offsetTopAndBottom(measuredHeight - layoutParams.topMargin);
         }
@@ -151,28 +152,28 @@ public class COUISnackBar extends RelativeLayout {
         layoutParams.bottomMargin = measuredHeight;
     }
 
-    private void animateSpring(final boolean z6) {
-        this.mIsEntering = z6;
+    private void animateSpring(final boolean flag) {
+        this.mIsEntering = flag;
         this.mSpringAnimation = new COUISpringAnimation(Float.valueOf(this.mSnackBarAnimationProgress), this.mSnackBarProperty);
         COUISpringForce cOUISpringForce = new COUISpringForce();
-        cOUISpringForce.setBounce(0.0f);
-        if (z6) {
-            cOUISpringForce.setResponse(0.3f);
+        cOUISpringForce.setBounce(DEFAULT_SNACKBAR_SPRING_BOUNCE);
+        if (flag) {
+            cOUISpringForce.setResponse(DEFAULT_SNACKBAR_SHOW_SPRING_RESPONSE);
         } else {
             cOUISpringForce.setResponse(DEFAULT_SNACKBAR_DISMISS_SPRING_RESPONSE);
         }
         this.mSpringAnimation.setSpring(cOUISpringForce);
         this.mSpringAnimation.addEndListener(new COUIDynamicAnimation.OnAnimationEndListener() {
             @Override
-            public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z10, float f2, float f10) {
-                if (z6) {
+            public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean flag_2, float value, float value_2) {
+                if (flag) {
                     return;
                 }
                 COUISnackBar.this.dismissView();
             }
         });
         this.mSpringAnimation.setStartValue(0.0f);
-        this.mSpringAnimation.animateToFinalPosition(10000.0f);
+        this.mSpringAnimation.animateToFinalPosition(DEFAULT_SPRING_FACTOR);
     }
 
     private void animationIn() {
@@ -187,9 +188,9 @@ public class COUISnackBar extends RelativeLayout {
         if (viewGroup != null) {
             viewGroup.setVisibility(8);
         }
-        ViewGroup viewGroup2 = this.mCOUISnackBarParent;
-        if (viewGroup2 != null) {
-            viewGroup2.removeView(this.mRootView);
+        ViewGroup view = this.mCOUISnackBarParent;
+        if (view != null) {
+            view.removeView(this.mRootView);
         }
         OnStatusChangeListener onStatusChangeListener = this.mOnStatusChangeListener;
         if (onStatusChangeListener != null) {
@@ -246,17 +247,17 @@ public class COUISnackBar extends RelativeLayout {
     private boolean isInSecondaryDisplay(Context context) {
         try {
             return context.getDisplay().getDisplayId() == 1;
-        } catch (UnsupportedOperationException e2) {
-            Log.w(TAG, e2.toString());
+        } catch (UnsupportedOperationException e) {
+            Log.w(TAG, e.toString());
             return AppFeatureUtil.isSecondaryScreen(context);
-        } catch (RuntimeException e10) {
-            Log.w(TAG, e10.toString());
+        } catch (RuntimeException e) {
+            Log.w(TAG, e.toString());
             return AppFeatureUtil.isSecondaryScreen(context);
         }
     }
 
-    private boolean isVertical(int i2) {
-        return this.mContentView.getLineCount() > 1 || (getContainerWidth() > i2);
+    private boolean isVertical(int index) {
+        return this.mContentView.getLineCount() > 1 || (getContainerWidth() > index);
     }
 
     private void layoutHorizontally() {
@@ -276,7 +277,7 @@ public class COUISnackBar extends RelativeLayout {
 
     private void layoutVertically() {
         Resources resources;
-        int i2;
+        int index;
         int dimensionPixelSize = getResources().getDimensionPixelSize(R.dimen.coui_snack_bar_child_margin_vertical_multi_lines);
         if (isCOUISnackBarHasIcon()) {
             RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) this.mIconDrawableView.getLayoutParams();
@@ -296,17 +297,17 @@ public class COUISnackBar extends RelativeLayout {
             marginLayoutParams2.topMargin = dimensionPixelSize;
             this.mContentView.setLayoutParams(marginLayoutParams2);
         }
-        RelativeLayout.LayoutParams layoutParams2 = (RelativeLayout.LayoutParams) this.mActionView.getLayoutParams();
-        layoutParams2.topMargin = dimensionPixelSize + this.mContentView.getMeasuredHeight() + (this.mIsTiny ? this.DEFAULT_ACTION_MARGIN_TOP_HORIZONTAL_TINY : this.DEFAULT_ACTION_MARGIN_TOP_HORIZONTAL);
+        RelativeLayout.LayoutParams layoutParams_2 = (RelativeLayout.LayoutParams) this.mActionView.getLayoutParams();
+        layoutParams_2.topMargin = dimensionPixelSize + this.mContentView.getMeasuredHeight() + (this.mIsTiny ? this.DEFAULT_ACTION_MARGIN_TOP_HORIZONTAL_TINY : this.DEFAULT_ACTION_MARGIN_TOP_HORIZONTAL);
         if (this.mIsTiny) {
             resources = getResources();
-            i2 = R.dimen.coui_snack_bar_action_margin_bottom_multi_lines_tiny;
+            index = R.dimen.coui_snack_bar_action_margin_bottom_multi_lines_tiny;
         } else {
             resources = getResources();
-            i2 = R.dimen.coui_snack_bar_action_margin_bottom_multi_lines;
+            index = R.dimen.coui_snack_bar_action_margin_bottom_multi_lines;
         }
-        layoutParams2.bottomMargin = resources.getDimensionPixelSize(i2);
-        this.mActionView.setLayoutParams(layoutParams2);
+        layoutParams_2.bottomMargin = resources.getDimensionPixelSize(index);
+        this.mActionView.setLayoutParams(layoutParams_2);
         if (this.mIsTiny) {
             int dimensionPixelSize2 = getResources().getDimensionPixelSize(R.dimen.coui_snack_bar_action_padding_tiny);
             TextView textView = this.mActionView;
@@ -314,29 +315,29 @@ public class COUISnackBar extends RelativeLayout {
         }
     }
 
-    public static COUISnackBar make(View view, String str, int i2) {
-        return make(view.getContext(), view, str, i2);
+    public static COUISnackBar make(View view, String str, int index) {
+        return make(view.getContext(), view, str, index);
     }
 
     private void resetMarginHorizontal() {
         RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) this.mIconDrawableView.getLayoutParams();
         Resources resources = getResources();
-        int i2 = R.dimen.coui_snack_bar_icon_margin_top_horizontal;
-        layoutParams.topMargin = resources.getDimensionPixelSize(i2);
-        layoutParams.bottomMargin = getResources().getDimensionPixelSize(i2);
+        int index = R.dimen.coui_snack_bar_icon_margin_top_horizontal;
+        layoutParams.topMargin = resources.getDimensionPixelSize(index);
+        layoutParams.bottomMargin = getResources().getDimensionPixelSize(index);
         this.mIconDrawableView.setLayoutParams(layoutParams);
-        RelativeLayout.LayoutParams layoutParams2 = (RelativeLayout.LayoutParams) this.mContentView.getLayoutParams();
+        RelativeLayout.LayoutParams layoutParams_2 = (RelativeLayout.LayoutParams) this.mContentView.getLayoutParams();
         Resources resources2 = getResources();
-        int i6 = R.dimen.coui_snack_bar_child_margin_vertical;
-        layoutParams2.topMargin = resources2.getDimensionPixelSize(i6);
-        layoutParams2.bottomMargin = getResources().getDimensionPixelSize(i6);
-        this.mContentView.setLayoutParams(layoutParams2);
-        RelativeLayout.LayoutParams layoutParams3 = (RelativeLayout.LayoutParams) this.mActionView.getLayoutParams();
+        int index_2 = R.dimen.coui_snack_bar_child_margin_vertical;
+        layoutParams_2.topMargin = resources2.getDimensionPixelSize(index_2);
+        layoutParams_2.bottomMargin = getResources().getDimensionPixelSize(index_2);
+        this.mContentView.setLayoutParams(layoutParams_2);
+        RelativeLayout.LayoutParams layoutParams_3 = (RelativeLayout.LayoutParams) this.mActionView.getLayoutParams();
         Resources resources3 = getResources();
-        int i10 = R.dimen.coui_snack_bar_action_margin_vertical;
-        layoutParams3.topMargin = resources3.getDimensionPixelSize(i10);
-        layoutParams3.bottomMargin = getResources().getDimensionPixelSize(i10);
-        this.mActionView.setLayoutParams(layoutParams3);
+        int index_3 = R.dimen.coui_snack_bar_action_margin_vertical;
+        layoutParams_3.topMargin = resources3.getDimensionPixelSize(index_3);
+        layoutParams_3.bottomMargin = getResources().getDimensionPixelSize(index_3);
+        this.mActionView.setLayoutParams(layoutParams_3);
     }
 
     private void setActionText(String str) {
@@ -344,33 +345,33 @@ public class COUISnackBar extends RelativeLayout {
     }
 
 
-    public void setSnackBarProgress(float f2) {
-        float f10;
-        this.mSnackBarAnimationProgress = f2;
-        float f11 = f2 / 10000.0f;
-        boolean z6 = this.mIsEntering;
-        float f12 = POINT_EIGHT;
-        float f13 = 0.0f;
-        float f14 = 1.0f;
-        if (z6) {
-            f10 = 1.0f;
+    public void setSnackBarProgress(float snackBarProgress) {
+        float value_5;
+        this.mSnackBarAnimationProgress = snackBarProgress;
+        float value = snackBarProgress / DEFAULT_SPRING_FACTOR;
+        boolean flag = this.mIsEntering;
+        float value_2 = POINT_EIGHT;
+        float value_3 = 0.0f;
+        float value_4 = 1.0f;
+        if (flag) {
+            value_5 = 1.0f;
         } else {
-            f10 = 0.0f;
-            f13 = 1.0f;
-            f14 = 0.8f;
-            f12 = 1.0f;
+            value_5 = 0.0f;
+            value_3 = 1.0f;
+            value_4 = POINT_EIGHT;
+            value_2 = 1.0f;
         }
-        this.mSnackBarLayout.setScaleX(UIUtil.getConvertedFraction(f12, f14, f11));
-        this.mSnackBarLayout.setScaleY(UIUtil.getConvertedFraction(f12, f14, f11));
-        this.mSnackBarLayout.setAlpha(UIUtil.getConvertedFraction(f13, f10, f11));
+        this.mSnackBarLayout.setScaleX(UIUtil.getConvertedFraction(value_2, value_4, value));
+        this.mSnackBarLayout.setScaleY(UIUtil.getConvertedFraction(value_2, value_4, value));
+        this.mSnackBarLayout.setAlpha(UIUtil.getConvertedFraction(value_3, value_5, value));
     }
 
     private void setTinyParams(TextView textView) {
         ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) textView.getLayoutParams();
         Resources resources = getResources();
-        int i2 = R.dimen.coui_snack_bar_action_margin_bottom_single_lines_tiny;
-        marginLayoutParams.topMargin = resources.getDimensionPixelSize(i2);
-        marginLayoutParams.bottomMargin = getResources().getDimensionPixelSize(i2);
+        int index = R.dimen.coui_snack_bar_action_margin_bottom_single_lines_tiny;
+        marginLayoutParams.topMargin = resources.getDimensionPixelSize(index);
+        marginLayoutParams.bottomMargin = getResources().getDimensionPixelSize(index);
         textView.setLayoutParams(marginLayoutParams);
         textView.setPadding(textView.getPaddingStart(), 0, textView.getPaddingEnd(), 0);
     }
@@ -434,14 +435,14 @@ public class COUISnackBar extends RelativeLayout {
         TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUISnackBar, 0, 0);
         try {
             try {
-                int i2 = R.styleable.COUISnackBar_defaultSnackBarContentText;
-                if (typedArrayObtainStyledAttributes.getString(i2) != null) {
-                    setContentText(typedArrayObtainStyledAttributes.getString(i2));
+                int index = R.styleable.COUISnackBar_defaultSnackBarContentText;
+                if (typedArrayObtainStyledAttributes.getString(index) != null) {
+                    setContentText(typedArrayObtainStyledAttributes.getString(index));
                     setDuration(typedArrayObtainStyledAttributes.getInt(R.styleable.COUISnackBar_snackBarDisappearTime, 0));
                 }
                 setIconDrawable(typedArrayObtainStyledAttributes.getDrawable(R.styleable.COUISnackBar_couiSnackBarIcon));
-            } catch (Exception e2) {
-                Log.e(TAG, "Failure setting COUISnackBar " + e2.getMessage());
+            } catch (Exception e) {
+                Log.e(TAG, "Failure setting COUISnackBar " + e.getMessage());
             }
             typedArrayObtainStyledAttributes.recycle();
             this.mIsSupportSmoothRoundCorner = RoundCornerUtil.isVersionSupport();
@@ -468,9 +469,9 @@ public class COUISnackBar extends RelativeLayout {
             this.mSnackBarLayout.setClipToOutline(true);
             ShadowUtils.setElevationToView(this.mSnackBarLayout, 2, getContext().getResources().getDimensionPixelOffset(R.dimen.coui_snack_bar_shadow_size), context.getResources().getDimensionPixelOffset(R.dimen.support_shadow_size_level_one), getContext().getResources().getColor(R.color.coui_snack_bar_background_shadow_color));
             Resources resources = getResources();
-            int i6 = R.dimen.grid_guide_column_card_margin_start;
-            this.mCardMarginStart = resources.getDimensionPixelOffset(i6) - this.mSnackBarLayout.getPaddingStart();
-            this.mCardMarginEnd = getResources().getDimensionPixelOffset(i6) - this.mSnackBarLayout.getPaddingEnd();
+            int index_2 = R.dimen.grid_guide_column_card_margin_start;
+            this.mCardMarginStart = resources.getDimensionPixelOffset(index_2) - this.mSnackBarLayout.getPaddingStart();
+            this.mCardMarginEnd = getResources().getDimensionPixelOffset(index_2) - this.mSnackBarLayout.getPaddingEnd();
         } catch (Throwable th) {
             typedArrayObtainStyledAttributes.recycle();
             throw th;
@@ -485,18 +486,18 @@ public class COUISnackBar extends RelativeLayout {
     }
 
     @Override
-    public void onLayout(boolean z6, int i2, int i6, int i10, int i11) {
-        super.onLayout(z6, i2, i6, i10, i11);
-        if (z6 && this.isAdjustLayout) {
+    public void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (changed && this.isAdjustLayout) {
             adjustLayout();
         }
     }
 
     @Override
-    public void onMeasure(int i2, int i6) {
-        int i10;
-        int mode = View.MeasureSpec.getMode(i2);
-        int size = View.MeasureSpec.getSize(i2);
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int index_2;
+        int mode = View.MeasureSpec.getMode(widthMeasureSpec);
+        int size = View.MeasureSpec.getSize(widthMeasureSpec);
         this.mContentTextWidth = ((int) this.mContentView.getPaint().measureText(this.mContentText)) + (this.DEFAULT_CONTENT_MARGIN_HORIZONTAL << 1);
         int maxWidth = getMaxWidth() + this.mSnackBarLayout.getPaddingLeft() + this.mSnackBarLayout.getPaddingRight();
         if (maxWidth > size) {
@@ -504,25 +505,25 @@ public class COUISnackBar extends RelativeLayout {
             layoutParams.setMarginStart(this.mCardMarginStart);
             layoutParams.setMarginEnd(this.mCardMarginEnd);
             this.mSnackBarLayout.setLayoutParams(layoutParams);
-            i10 = (size - this.mCardMarginStart) - this.mCardMarginEnd;
+            index_2 = (size - this.mCardMarginStart) - this.mCardMarginEnd;
         } else {
-            i10 = (maxWidth <= 0 || mode == 0) ? size : maxWidth;
+            index_2 = (maxWidth <= 0 || mode == 0) ? size : maxWidth;
         }
-        if (!isVertical(i10) && this.mLastLayoutType == 1) {
+        if (!isVertical(index_2) && this.mLastLayoutType == 1) {
             resetMarginHorizontal();
         }
         if (maxWidth > 0 && mode != 0) {
-            i2 = View.MeasureSpec.makeMeasureSpec(Math.min(maxWidth, size), mode);
+            widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(Math.min(maxWidth, size), mode);
         }
         if (this.mIsTiny) {
-            RelativeLayout.LayoutParams layoutParams2 = (RelativeLayout.LayoutParams) this.mSnackBarLayout.getLayoutParams();
+            RelativeLayout.LayoutParams layoutParams_2 = (RelativeLayout.LayoutParams) this.mSnackBarLayout.getLayoutParams();
             Resources resources = getResources();
-            int i11 = R.dimen.coui_snack_bar_layout_margin_tiny;
-            layoutParams2.setMarginStart(resources.getDimensionPixelOffset(i11));
-            layoutParams2.setMarginEnd(getResources().getDimensionPixelOffset(i11));
-            this.mSnackBarLayout.setLayoutParams(layoutParams2);
+            int index = R.dimen.coui_snack_bar_layout_margin_tiny;
+            layoutParams_2.setMarginStart(resources.getDimensionPixelOffset(index));
+            layoutParams_2.setMarginEnd(getResources().getDimensionPixelOffset(index));
+            this.mSnackBarLayout.setLayoutParams(layoutParams_2);
         }
-        super.onMeasure(i2, i6);
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
     @Override
@@ -543,25 +544,25 @@ public class COUISnackBar extends RelativeLayout {
         return true;
     }
 
-    public void setContentText(int i2) {
-        setContentText(getResources().getString(i2));
+    public void setContentText(int contentText) {
+        setContentText(getResources().getString(contentText));
     }
 
-    public void setDismissWithoutAnimate(boolean z6) {
-        this.mWithoutAnima = z6;
+    public void setDismissWithoutAnimate(boolean dismissWithoutAnimate) {
+        this.mWithoutAnima = dismissWithoutAnimate;
     }
 
-    public void setDuration(int i2) {
-        this.mDuration = i2;
+    public void setDuration(int duration) {
+        this.mDuration = duration;
     }
 
     @Override
-    public void setEnabled(boolean z6) {
+    public void setEnabled(boolean enabled) {
         Runnable runnable;
-        super.setEnabled(z6);
-        this.mActionView.setEnabled(z6);
-        this.mContentView.setEnabled(z6);
-        this.mIconDrawableView.setEnabled(z6);
+        super.setEnabled(enabled);
+        this.mActionView.setEnabled(enabled);
+        this.mContentView.setEnabled(enabled);
+        this.mIconDrawableView.setEnabled(enabled);
         if (getDuration() == 0 || (runnable = this.mAutoDismissRunnable) == null) {
             return;
         }
@@ -570,12 +571,12 @@ public class COUISnackBar extends RelativeLayout {
     }
 
     @Deprecated
-    public void setIconDrawable(int i2) {
-        setIconDrawable(getResources().getDrawable(i2, getContext().getTheme()));
+    public void setIconDrawable(int iconDrawable) {
+        setIconDrawable(getResources().getDrawable(iconDrawable, getContext().getTheme()));
     }
 
-    public void setOnAction(int i2, View.OnClickListener onClickListener) {
-        setOnAction(getResources().getString(i2), onClickListener);
+    public void setOnAction(int onAction, View.OnClickListener onClickListener) {
+        setOnAction(getResources().getString(onAction), onClickListener);
     }
 
     public void setOnStatusChangeListener(OnStatusChangeListener onStatusChangeListener) {
@@ -602,8 +603,8 @@ public class COUISnackBar extends RelativeLayout {
         }
     }
 
-    public static COUISnackBar make(Context context, View view, String str, int i2) {
-        return make(context, view, str, i2, context.getResources().getDimensionPixelSize(R.dimen.coui_snack_bar_margin_bottom));
+    public static COUISnackBar make(Context context, View view, String str, int index) {
+        return make(context, view, str, index, context.getResources().getDimensionPixelSize(R.dimen.coui_snack_bar_margin_bottom));
     }
 
     public void setContentText(String str) {
@@ -657,11 +658,11 @@ public class COUISnackBar extends RelativeLayout {
         }
     }
 
-    public static COUISnackBar make(View view, String str, int i2, int i6) {
-        return make(view.getContext(), view, str, i2, i6);
+    public static COUISnackBar make(View view, String str, int index, int index_2) {
+        return make(view.getContext(), view, str, index, index_2);
     }
 
-    public static COUISnackBar make(Context context, View view, String str, int i2, int i6) {
+    public static COUISnackBar make(Context context, View view, String str, int index, int index_2) {
         ViewGroup viewGroupFindSuitableParent = findSuitableParent(view);
         if (viewGroupFindSuitableParent != null) {
             TypedValue typedValue = new TypedValue();
@@ -672,19 +673,19 @@ public class COUISnackBar extends RelativeLayout {
             }
             COUISnackBar cOUISnackBar = (COUISnackBar) LayoutInflater.from(context).inflate(R.layout.coui_snack_bar_show_layout, viewGroupFindSuitableParent, false);
             cOUISnackBar.setContentText(str);
-            cOUISnackBar.setDuration(i2);
+            cOUISnackBar.setDuration(index);
             cOUISnackBar.setParent(viewGroupFindSuitableParent);
             ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) cOUISnackBar.getLayoutParams();
-            marginLayoutParams.bottomMargin = i6;
-            mCOUISnackBarBottomMargin = i6;
-            cOUISnackBar.setTranslationY(cOUISnackBar.getHeight() + i6);
-            boolean z6 = false;
-            for (int i10 = 0; i10 < viewGroupFindSuitableParent.getChildCount(); i10++) {
-                if (viewGroupFindSuitableParent.getChildAt(i10) instanceof COUISnackBar) {
-                    z6 = viewGroupFindSuitableParent.getChildAt(i10).getVisibility() != 8;
+            marginLayoutParams.bottomMargin = index_2;
+            mCOUISnackBarBottomMargin = index_2;
+            cOUISnackBar.setTranslationY(cOUISnackBar.getHeight() + index_2);
+            boolean flag = false;
+            for (int index_3 = 0; index_3 < viewGroupFindSuitableParent.getChildCount(); index_3++) {
+                if (viewGroupFindSuitableParent.getChildAt(index_3) instanceof COUISnackBar) {
+                    flag = viewGroupFindSuitableParent.getChildAt(index_3).getVisibility() != 8;
                 }
             }
-            if (!z6) {
+            if (!flag) {
                 viewGroupFindSuitableParent.addView(cOUISnackBar, marginLayoutParams);
             }
             return cOUISnackBar;
@@ -692,8 +693,8 @@ public class COUISnackBar extends RelativeLayout {
         throw new IllegalArgumentException("No suitable parent found from the given view. Please provide a valid view.");
     }
 
-    public void dismiss(boolean z6) {
-        if (z6) {
+    public void dismiss(boolean flag) {
+        if (flag) {
             COUISpringAnimation cOUISpringAnimation = this.mSpringAnimation;
             if (cOUISpringAnimation != null && cOUISpringAnimation.isRunning() && !this.mIsEntering) {
                 this.mSpringAnimation.cancel();
@@ -730,13 +731,13 @@ public class COUISnackBar extends RelativeLayout {
         this.mLastLayoutType = -1;
         this.mSnackBarProperty = new FloatPropertyCompat<Float>("snackBarProperty") {
             @Override
-            public float getValue(Float f2) {
+            public float getValue(Float value) {
                 return COUISnackBar.this.mSnackBarAnimationProgress;
             }
 
             @Override
-            public void setValue(Float f2, float f10) {
-                COUISnackBar.this.setSnackBarProgress(f10);
+            public void setValue(Float value, float value_2) {
+                COUISnackBar.this.setSnackBarProgress(value_2);
             }
         };
         initCOUISnackBar(context, attributeSet);

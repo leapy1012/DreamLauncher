@@ -32,7 +32,7 @@ public class COUIIntentSeekBar extends COUISeekBarDeprecate {
     }
 
     public COUIIntentSeekBar(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                             int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.COUIIntentSeekBar, defStyleAttr,
                 defStyleRes);
@@ -96,7 +96,7 @@ public class COUIIntentSeekBar extends COUISeekBarDeprecate {
         float centerY = getSeekBarCenterY();
         float thumbCenter = isLayoutRtl()
                 ? ((getStart() + mAnimatedProgressPaddingHorizontal) + seekBarWidth)
-                        - (mScale * seekBarWidth)
+                  - (mScale * seekBarWidth)
                 : getStart() + mAnimatedProgressPaddingHorizontal + (mScale * seekBarWidth);
         float left = thumbCenter - mCurThumbRadius;
         float right = thumbCenter + mCurThumbRadius;

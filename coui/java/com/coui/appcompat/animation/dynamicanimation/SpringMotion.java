@@ -2,9 +2,9 @@ package com.coui.appcompat.animation.dynamicanimation;
 
 import android.os.Looper;
 import android.util.AndroidRuntimeException;
+
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.FloatValueHolder;
-import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 
 public abstract class SpringMotion extends COUIDynamicAnimation<SpringMotion> {
     private static final int LOGIC_END_EXTRA_TIME_MS = 50;

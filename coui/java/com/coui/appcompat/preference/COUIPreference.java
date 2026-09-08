@@ -181,22 +181,74 @@ public class COUIPreference extends Preference implements COUICardSupportInterfa
         return positionInGroup == COUICardListHelper.HEAD || positionInGroup == COUICardListHelper.MIDDLE;
     }
 
-    public int getAssignRedDotMode() { return mAssignRedDotMode; }
-    public CharSequence getAssignment() { return mAssignment; }
-    public int getBorderRectRadius(int position) { return (position == 1 || position == 2 || position != 3) ? 14 : 16; }
-    public int getClickStyle() { return mClickStyle; }
-    @Override public View getDividerEndAlignView() { return null; }
-    @Override public int getDividerEndInset() { return mDividerDefaultHorizontalPadding; }
-    @Override public View getDividerStartAlignView() { return mTitleView; }
-    @Override public int getDividerStartInset() { return mDividerDefaultHorizontalPadding; }
-    public int getEndRedDotMode() { return mEndRedDotMode; }
-    public int getEndRedDotNum() { return mEndRedDotNum; }
-    public int getIconRedDotMode() { return mIconRedDotMode; }
-    public int getIconStyle() { return mIconStyle; }
-    public boolean getIsSelected() { return mIsSelected; }
-    public CharSequence getStatusText1() { return mStatusText1; }
-    public boolean isShowDivider() { return mShowDivider; }
-    @Override public boolean isSupportCardUse() { return mIsSupportCardUse; }
+    public int getAssignRedDotMode() {
+        return mAssignRedDotMode;
+    }
+
+    public CharSequence getAssignment() {
+        return mAssignment;
+    }
+
+    public int getBorderRectRadius(int position) {
+        return (position == 1 || position == 2 || position != 3) ? MIN_RADIUS : 16;
+    }
+
+    public int getClickStyle() {
+        return mClickStyle;
+    }
+
+    @Override
+    public View getDividerEndAlignView() {
+        return null;
+    }
+
+    @Override
+    public int getDividerEndInset() {
+        return mDividerDefaultHorizontalPadding;
+    }
+
+    @Override
+    public View getDividerStartAlignView() {
+        return mTitleView;
+    }
+
+    @Override
+    public int getDividerStartInset() {
+        return mDividerDefaultHorizontalPadding;
+    }
+
+    public int getEndRedDotMode() {
+        return mEndRedDotMode;
+    }
+
+    public int getEndRedDotNum() {
+        return mEndRedDotNum;
+    }
+
+    public int getIconRedDotMode() {
+        return mIconRedDotMode;
+    }
+
+    public int getIconStyle() {
+        return mIconStyle;
+    }
+
+    public boolean getIsSelected() {
+        return mIsSelected;
+    }
+
+    public CharSequence getStatusText1() {
+        return mStatusText1;
+    }
+
+    public boolean isShowDivider() {
+        return mShowDivider;
+    }
+
+    @Override
+    public boolean isSupportCardUse() {
+        return mIsSupportCardUse;
+    }
 
     @Override
     public void onBindViewHolder(PreferenceViewHolder holder) {
@@ -311,31 +363,171 @@ public class COUIPreference extends Preference implements COUICardSupportInterfa
         }
     }
 
-    public void setAssignIconRes(Drawable drawable) { if (mAssignIconRes != drawable) { mAssignIconRes = drawable; notifyChanged(); } }
-    public void setAssignRedDotMode(int mode) { if (mAssignRedDotMode != mode) { mAssignRedDotMode = mode; notifyChanged(); } }
-    public void setAssignment(CharSequence assignment) { if (!TextUtils.equals(mAssignment, assignment)) { mAssignment = assignment; notifyChanged(); } }
-    public void setAssignmentColor(int color) { if (mAssignmentColor != color) { mAssignmentColor = color; notifyChanged(); } }
-    public void setBackgroundAnimationEnabled(boolean enabled) { if (mIsBackgroundAnimationEnabled != enabled) { mIsBackgroundAnimationEnabled = enabled; notifyChanged(); } }
-    public void setBorderRectRadius(int radius) { if (mRadius != radius) { mRadius = radius; notifyChanged(); } }
-    public void setClickStyle(int style) { mClickStyle = style; }
-    public void setCouiSummaryLine(int lineLimit) { if (mCouiSummaryLineLimit != lineLimit) { mCouiSummaryLineLimit = lineLimit; notifyChanged(); } }
-    public void setEndRedDotMode(int mode) { if (mEndRedDotMode != mode) { mEndRedDotMode = mode; notifyChanged(); } }
-    public void setEndRedDotNum(int number) { if (mEndRedDotNum != number) { mEndRedDotNum = number; notifyChanged(); } }
-    public void setIconRedDotMode(int mode) { if (mIconRedDotMode != mode) { mIconRedDotMode = mode; notifyChanged(); } }
-    public void setIconStyle(int style) { if (style == CIRCLE || style == ROUND) { mIconStyle = style; notifyChanged(); } }
-    public void setIsCustomIconRadius(boolean custom) { mIsCustom = custom; }
-    public void setIsEnableClickSpan(boolean enable) { mIsEnableClickSpan = enable; }
-    @Override public void setIsSupportCardUse(boolean support) { mIsSupportCardUse = support; }
-    public void setJump(Drawable drawable) { if (mJumpRes != drawable) { mJumpRes = drawable; notifyChanged(); } }
-    public void setJump(int resId) { setJump(mContext.getResources().getDrawable(resId)); }
-    public void setOnPreciseClickListener(PreciseClickHelper.OnPreciseClickListener listener) { mPreciseListener = listener; initPreciseHelper(); }
-    public void setSelected(boolean selected) { if (mIsSelected != selected) { mIsSelected = selected; notifyChanged(); } }
-    public void setSelectedState(boolean selected) { mIsSelected = selected; }
-    public void setShowDivider(boolean show) { if (mShowDivider != show) { mShowDivider = show; notifyChanged(); } }
-    public void setStatusText1(CharSequence statusText) { if (!TextUtils.equals(mStatusText1, statusText)) { mStatusText1 = statusText; notifyChanged(); } }
-    public void setSummaryTextColor(ColorStateList color) { mSummaryTextColor = color; notifyChanged(); }
-    public void setTitleColor(ColorStateList color) { if (mTitleTextColor != color) { mTitleTextColor = color; notifyChanged(); } }
-    public void showAssignRedDot() { if (assignRedDot != null) { assignRedDot.executeScaleAnim(true); notifyChanged(); } }
-    public void showEndRedDot() { if (endRedDot != null) { endRedDot.executeScaleAnim(true); notifyChanged(); } }
-    public void showIconRedDot() { if (iconRedDot instanceof COUIHintRedDot) { ((COUIHintRedDot) iconRedDot).executeScaleAnim(true); notifyChanged(); } }
+    public void setAssignIconRes(Drawable drawable) {
+        if (mAssignIconRes != drawable) {
+            mAssignIconRes = drawable;
+            notifyChanged();
+        }
+    }
+
+    public void setAssignRedDotMode(int mode) {
+        if (mAssignRedDotMode != mode) {
+            mAssignRedDotMode = mode;
+            notifyChanged();
+        }
+    }
+
+    public void setAssignment(CharSequence assignment) {
+        if (!TextUtils.equals(mAssignment, assignment)) {
+            mAssignment = assignment;
+            notifyChanged();
+        }
+    }
+
+    public void setAssignmentColor(int color) {
+        if (mAssignmentColor != color) {
+            mAssignmentColor = color;
+            notifyChanged();
+        }
+    }
+
+    public void setBackgroundAnimationEnabled(boolean enabled) {
+        if (mIsBackgroundAnimationEnabled != enabled) {
+            mIsBackgroundAnimationEnabled = enabled;
+            notifyChanged();
+        }
+    }
+
+    public void setBorderRectRadius(int radius) {
+        if (mRadius != radius) {
+            mRadius = radius;
+            notifyChanged();
+        }
+    }
+
+    public void setClickStyle(int style) {
+        mClickStyle = style;
+    }
+
+    public void setCouiSummaryLine(int lineLimit) {
+        if (mCouiSummaryLineLimit != lineLimit) {
+            mCouiSummaryLineLimit = lineLimit;
+            notifyChanged();
+        }
+    }
+
+    public void setEndRedDotMode(int mode) {
+        if (mEndRedDotMode != mode) {
+            mEndRedDotMode = mode;
+            notifyChanged();
+        }
+    }
+
+    public void setEndRedDotNum(int number) {
+        if (mEndRedDotNum != number) {
+            mEndRedDotNum = number;
+            notifyChanged();
+        }
+    }
+
+    public void setIconRedDotMode(int mode) {
+        if (mIconRedDotMode != mode) {
+            mIconRedDotMode = mode;
+            notifyChanged();
+        }
+    }
+
+    public void setIconStyle(int style) {
+        if (style == CIRCLE || style == ROUND) {
+            mIconStyle = style;
+            notifyChanged();
+        }
+    }
+
+    public void setIsCustomIconRadius(boolean custom) {
+        mIsCustom = custom;
+    }
+
+    public void setIsEnableClickSpan(boolean enable) {
+        mIsEnableClickSpan = enable;
+    }
+
+    @Override
+    public void setIsSupportCardUse(boolean support) {
+        mIsSupportCardUse = support;
+    }
+
+    public void setJump(Drawable drawable) {
+        if (mJumpRes != drawable) {
+            mJumpRes = drawable;
+            notifyChanged();
+        }
+    }
+
+    public void setJump(int resId) {
+        setJump(mContext.getResources().getDrawable(resId));
+    }
+
+    public void setOnPreciseClickListener(PreciseClickHelper.OnPreciseClickListener listener) {
+        mPreciseListener = listener;
+        initPreciseHelper();
+    }
+
+    public void setSelected(boolean selected) {
+        if (mIsSelected != selected) {
+            mIsSelected = selected;
+            notifyChanged();
+        }
+    }
+
+    public void setSelectedState(boolean selected) {
+        mIsSelected = selected;
+    }
+
+    public void setShowDivider(boolean show) {
+        if (mShowDivider != show) {
+            mShowDivider = show;
+            notifyChanged();
+        }
+    }
+
+    public void setStatusText1(CharSequence statusText) {
+        if (!TextUtils.equals(mStatusText1, statusText)) {
+            mStatusText1 = statusText;
+            notifyChanged();
+        }
+    }
+
+    public void setSummaryTextColor(ColorStateList color) {
+        mSummaryTextColor = color;
+        notifyChanged();
+    }
+
+    public void setTitleColor(ColorStateList color) {
+        if (mTitleTextColor != color) {
+            mTitleTextColor = color;
+            notifyChanged();
+        }
+    }
+
+    public void showAssignRedDot() {
+        if (assignRedDot != null) {
+            assignRedDot.executeScaleAnim(true);
+            notifyChanged();
+        }
+    }
+
+    public void showEndRedDot() {
+        if (endRedDot != null) {
+            endRedDot.executeScaleAnim(true);
+            notifyChanged();
+        }
+    }
+
+    public void showIconRedDot() {
+        if (iconRedDot instanceof COUIHintRedDot) {
+            ((COUIHintRedDot) iconRedDot).executeScaleAnim(true);
+            notifyChanged();
+        }
+    }
 }

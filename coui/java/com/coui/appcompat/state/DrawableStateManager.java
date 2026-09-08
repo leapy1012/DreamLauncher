@@ -87,23 +87,89 @@ public final class DrawableStateManager implements DrawableStateProxy {
         }
     }
 
-    @Override public int getTouchType() { return mTouchType; }
-    @Override public boolean isDrawableEnabled() { return mDrawableEnabled; }
-    @Override public boolean isEnabled() { return (mStateFlag & STATE_ENABLED_FLAG) != 0; }
-    @Override public boolean isFocused() { return (mStateFlag & STATE_FOCUSED_FLAG) != 0; }
-    @Override public boolean isHovered() { return (mStateFlag & STATE_HOVERED_FLAG) != 0; }
-    @Override public boolean isNativeStateEnabled(int stateFlag) { return (mNativeStateDisabledFlag & stateFlag) == 0; }
-    @Override public boolean isPressed() { return (mStateFlag & STATE_PRESSED_FLAG) != 0; }
-    @Override public boolean isSelected() { return (mStateFlag & STATE_SELECTED_FLAG) != 0; }
-    @Override public boolean isStateLocked(int state) { return (mStateLockedFlag & mStateMap.get(state)) != 0; }
-    @Override public boolean isTouchEntered() { return (mStateFlag & STATE_TOUCH_ENTERED_FLAG) != 0; }
-    public boolean isStateful() { return true; }
-    @Override public void onViewStateChanged(int state) { mCallback.onViewStateChanged(state); }
-    @Override public void setDrawableEnabled(boolean enabled) { mDrawableEnabled = enabled; }
-    @Override public void setFocusEntered() { notifyStateChanged(STATE_FOCUSED, true); }
-    @Override public void setFocusExited() { notifyStateChanged(STATE_FOCUSED, false); }
-    @Override public void setHoverEntered() { notifyStateChanged(STATE_HOVERED, true); }
-    @Override public void setHoverExited() { notifyStateChanged(STATE_HOVERED, false); }
+    @Override
+    public int getTouchType() {
+        return mTouchType;
+    }
+
+    @Override
+    public boolean isDrawableEnabled() {
+        return mDrawableEnabled;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return (mStateFlag & STATE_ENABLED_FLAG) != 0;
+    }
+
+    @Override
+    public boolean isFocused() {
+        return (mStateFlag & STATE_FOCUSED_FLAG) != 0;
+    }
+
+    @Override
+    public boolean isHovered() {
+        return (mStateFlag & STATE_HOVERED_FLAG) != 0;
+    }
+
+    @Override
+    public boolean isNativeStateEnabled(int stateFlag) {
+        return (mNativeStateDisabledFlag & stateFlag) == 0;
+    }
+
+    @Override
+    public boolean isPressed() {
+        return (mStateFlag & STATE_PRESSED_FLAG) != 0;
+    }
+
+    @Override
+    public boolean isSelected() {
+        return (mStateFlag & STATE_SELECTED_FLAG) != 0;
+    }
+
+    @Override
+    public boolean isStateLocked(int state) {
+        return (mStateLockedFlag & mStateMap.get(state)) != 0;
+    }
+
+    @Override
+    public boolean isTouchEntered() {
+        return (mStateFlag & STATE_TOUCH_ENTERED_FLAG) != 0;
+    }
+
+    public boolean isStateful() {
+        return true;
+    }
+
+    @Override
+    public void onViewStateChanged(int state) {
+        mCallback.onViewStateChanged(state);
+    }
+
+    @Override
+    public void setDrawableEnabled(boolean enabled) {
+        mDrawableEnabled = enabled;
+    }
+
+    @Override
+    public void setFocusEntered() {
+        notifyStateChanged(STATE_FOCUSED, true);
+    }
+
+    @Override
+    public void setFocusExited() {
+        notifyStateChanged(STATE_FOCUSED, false);
+    }
+
+    @Override
+    public void setHoverEntered() {
+        notifyStateChanged(STATE_HOVERED, true);
+    }
+
+    @Override
+    public void setHoverExited() {
+        notifyStateChanged(STATE_HOVERED, false);
+    }
 
     @Override
     public void setNativeStateEnabled(int stateFlag, boolean disabled) {
@@ -114,8 +180,15 @@ public final class DrawableStateManager implements DrawableStateProxy {
         }
     }
 
-    @Override public void setSelectedEntered() { notifyStateChanged(STATE_SELECTED, true); }
-    @Override public void setSelectedExited() { notifyStateChanged(STATE_SELECTED, false); }
+    @Override
+    public void setSelectedEntered() {
+        notifyStateChanged(STATE_SELECTED, true);
+    }
+
+    @Override
+    public void setSelectedExited() {
+        notifyStateChanged(STATE_SELECTED, false);
+    }
 
     @Override
     public void setStateLocked(int state, boolean locked, boolean entered, boolean animated) {
@@ -123,8 +196,27 @@ public final class DrawableStateManager implements DrawableStateProxy {
         mStateLockedFlag = locked ? mStateLockedFlag | flag : mStateLockedFlag & ~flag;
     }
 
-    @Override public void setTouchEntered() { mTouchType = TOUCH_TYPE_PRESSED; notifyStateChanged(STATE_TOUCH_ENTERED, true); }
-    @Override public void setTouchExited() { mTouchType = TOUCH_TYPE_PRESSED; notifyStateChanged(STATE_TOUCH_ENTERED, false); }
-    @Override public void setTouchSelectEntered() { mTouchType = TOUCH_TYPE_SELECTED; notifyStateChanged(STATE_TOUCH_ENTERED, true); }
-    @Override public void setTouchSelectExited() { mTouchType = TOUCH_TYPE_SELECTED; notifyStateChanged(STATE_TOUCH_ENTERED, false); }
+    @Override
+    public void setTouchEntered() {
+        mTouchType = TOUCH_TYPE_PRESSED;
+        notifyStateChanged(STATE_TOUCH_ENTERED, true);
+    }
+
+    @Override
+    public void setTouchExited() {
+        mTouchType = TOUCH_TYPE_PRESSED;
+        notifyStateChanged(STATE_TOUCH_ENTERED, false);
+    }
+
+    @Override
+    public void setTouchSelectEntered() {
+        mTouchType = TOUCH_TYPE_SELECTED;
+        notifyStateChanged(STATE_TOUCH_ENTERED, true);
+    }
+
+    @Override
+    public void setTouchSelectExited() {
+        mTouchType = TOUCH_TYPE_SELECTED;
+        notifyStateChanged(STATE_TOUCH_ENTERED, false);
+    }
 }

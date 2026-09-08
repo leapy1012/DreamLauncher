@@ -1,7 +1,6 @@
 package com.coui.appcompat.searchview;
 
 
-import com.coui.appcompat.R;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -16,9 +15,12 @@ import android.view.ContextThemeWrapper;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.google.android.material.internal.TextWatcherAdapter;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,7 +55,7 @@ public class COUIHintAnimationLayout extends FrameLayout {
     private static final COUIEaseInterpolator EASEINTERPOLATOR = new COUIEaseInterpolator();
 
     public interface COUIHintAnimationChangeListener {
-        void hintAnimationChange(int i2, String str, TextView textView);
+        void hintAnimationChange(int hintIndex, String hint, TextView textView);
     }
 
     public COUIHintAnimationLayout(Context context) {
@@ -62,53 +64,53 @@ public class COUIHintAnimationLayout extends FrameLayout {
 
     private boolean animationIsRunning() {
         AnimatorSet animatorSet;
-        AnimatorSet animatorSet2 = this.mAnimatorSetIn;
-        return (animatorSet2 != null && animatorSet2.isRunning()) || ((animatorSet = this.mAnimatorSetOut) != null && animatorSet.isRunning());
+        AnimatorSet animatorSetIn = this.mAnimatorSetIn;
+        return (animatorSetIn != null && animatorSetIn.isRunning()) || ((animatorSet = this.mAnimatorSetOut) != null && animatorSet.isRunning());
     }
 
 
-    public void applyHintChangeAnimation(String str) {
+    public void applyHintChangeAnimation(String hint) {
         if (this.mCurrentHintTextView == null) {
             return;
         }
-        int i2 = this.mCurrentPlayTime + 1;
-        this.mCurrentPlayTime = i2;
-        int i6 = this.mRepeatCount;
-        if (i6 != -1 && i2 > i6) {
+        int playTime = this.mCurrentPlayTime + 1;
+        this.mCurrentPlayTime = playTime;
+        int repeatCount = this.mRepeatCount;
+        if (repeatCount != -1 && playTime > repeatCount) {
             pauseHintsAnimation();
             return;
         }
-        this.mTempQueryHint = str;
+        this.mTempQueryHint = hint;
         int measuredHeight = ((getMeasuredHeight() - this.mCurrentHintTextView.getLineHeight()) / 2) + this.mCouiSearchBarAnimationTranslateExtra;
         if (this.mAnimatorSetOut == null || this.mAnimatorSetIn == null) {
-            ObjectAnimator objectAnimatorOfFloat = ObjectAnimator.ofFloat(this.mCurrentHintTextView, "translationY", 0.0f, -measuredHeight);
-            this.mMoveOut = objectAnimatorOfFloat;
-            TimeInterpolator timeInterpolator = TRANSLATEINTERPOLATOR;
-            objectAnimatorOfFloat.setInterpolator(timeInterpolator);
-            ObjectAnimator objectAnimatorOfFloat2 = ObjectAnimator.ofFloat(this.mCurrentHintTextView, "alpha", 1.0f, 0.0f);
-            this.mFadeOut = objectAnimatorOfFloat2;
-            COUIEaseInterpolator cOUIEaseInterpolator = EASEINTERPOLATOR;
-            objectAnimatorOfFloat2.setInterpolator(cOUIEaseInterpolator);
-            AnimatorSet animatorSet = new AnimatorSet();
-            this.mAnimatorSetOut = animatorSet;
-            animatorSet.playTogether(this.mMoveOut, this.mFadeOut);
-            this.mAnimatorSetOut.setDuration(600L);
-            ObjectAnimator objectAnimatorOfFloat3 = ObjectAnimator.ofFloat(getNextHintTextView(), "translationY", measuredHeight, 0.0f);
-            this.mMoveIn = objectAnimatorOfFloat3;
-            objectAnimatorOfFloat3.setInterpolator(timeInterpolator);
-            ObjectAnimator objectAnimatorOfFloat4 = ObjectAnimator.ofFloat(getNextHintTextView(), "alpha", 0.0f, 1.0f);
-            this.mFadeIn = objectAnimatorOfFloat4;
-            objectAnimatorOfFloat4.setInterpolator(cOUIEaseInterpolator);
-            AnimatorSet animatorSet2 = new AnimatorSet();
-            this.mAnimatorSetIn = animatorSet2;
-            animatorSet2.playTogether(this.mMoveIn, this.mFadeIn);
-            this.mAnimatorSetIn.setDuration(600L);
+            ObjectAnimator moveOut = ObjectAnimator.ofFloat(this.mCurrentHintTextView, "translationY", 0.0f, -measuredHeight);
+            this.mMoveOut = moveOut;
+            TimeInterpolator translateInterpolator = TRANSLATEINTERPOLATOR;
+            moveOut.setInterpolator(translateInterpolator);
+            ObjectAnimator fadeOut = ObjectAnimator.ofFloat(this.mCurrentHintTextView, "alpha", 1.0f, 0.0f);
+            this.mFadeOut = fadeOut;
+            COUIEaseInterpolator easeInterpolator = EASEINTERPOLATOR;
+            fadeOut.setInterpolator(easeInterpolator);
+            AnimatorSet animatorSetOut = new AnimatorSet();
+            this.mAnimatorSetOut = animatorSetOut;
+            animatorSetOut.playTogether(this.mMoveOut, this.mFadeOut);
+            this.mAnimatorSetOut.setDuration(DURATION_TIME);
+            ObjectAnimator moveIn = ObjectAnimator.ofFloat(getNextHintTextView(), "translationY", measuredHeight, 0.0f);
+            this.mMoveIn = moveIn;
+            moveIn.setInterpolator(translateInterpolator);
+            ObjectAnimator fadeIn = ObjectAnimator.ofFloat(getNextHintTextView(), "alpha", 0.0f, 1.0f);
+            this.mFadeIn = fadeIn;
+            fadeIn.setInterpolator(easeInterpolator);
+            AnimatorSet animatorSetIn = new AnimatorSet();
+            this.mAnimatorSetIn = animatorSetIn;
+            animatorSetIn.playTogether(this.mMoveIn, this.mFadeIn);
+            this.mAnimatorSetIn.setDuration(DURATION_TIME);
             this.mAnimatorSetIn.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animator) {
                     super.onAnimationEnd(animator);
-                    COUIHintAnimationLayout cOUIHintAnimationLayout = COUIHintAnimationLayout.this;
-                    cOUIHintAnimationLayout.mCurrentHintTextView = cOUIHintAnimationLayout.getNextHintTextView();
+                    COUIHintAnimationLayout layout = COUIHintAnimationLayout.this;
+                    layout.mCurrentHintTextView = layout.getNextHintTextView();
                     if (COUIHintAnimationLayout.this.mNeedStopAnimation) {
                         COUIHintAnimationLayout.this.pauseHintsAnimation();
                         COUIHintAnimationLayout.this.mNeedStopAnimation = false;
@@ -133,22 +135,22 @@ public class COUIHintAnimationLayout extends FrameLayout {
             public void run() {
                 COUIHintAnimationLayout.this.mAnimatorSetIn.start();
             }
-        }, 150L);
+        }, IN_DELAY_TIME);
         this.mAnimatorSetOut.start();
-        COUIHintAnimationChangeListener cOUIHintAnimationChangeListener = this.mCOUIHintAnimationChangeListener;
-        if (cOUIHintAnimationChangeListener != null) {
-            cOUIHintAnimationChangeListener.hintAnimationChange(this.mCurrentHintIndex, str, this.mCurrentHintTextView);
+        COUIHintAnimationChangeListener listener = this.mCOUIHintAnimationChangeListener;
+        if (listener != null) {
+            listener.hintAnimationChange(this.mCurrentHintIndex, hint, this.mCurrentHintTextView);
         }
     }
 
 
     public void cancelAnimation() {
-        AnimatorSet animatorSet = this.mAnimatorSetIn;
-        if (animatorSet != null && animatorSet.isRunning()) {
+        AnimatorSet animatorSetIn = this.mAnimatorSetIn;
+        if (animatorSetIn != null && animatorSetIn.isRunning()) {
             this.mAnimatorSetIn.cancel();
         }
-        AnimatorSet animatorSet2 = this.mAnimatorSetOut;
-        if (animatorSet2 == null || !animatorSet2.isRunning()) {
+        AnimatorSet animatorSetOut = this.mAnimatorSetOut;
+        if (animatorSetOut == null || !animatorSetOut.isRunning()) {
             return;
         }
         this.mAnimatorSetOut.cancel();
@@ -156,28 +158,28 @@ public class COUIHintAnimationLayout extends FrameLayout {
 
 
     public TextView getNextHintTextView() {
-        TextView textView = this.mCurrentHintTextView;
-        TextView textView2 = this.mHintTextViewFirst;
-        return textView == textView2 ? this.mHintTextViewThen : textView2;
+        TextView current = this.mCurrentHintTextView;
+        TextView first = this.mHintTextViewFirst;
+        return current == first ? this.mHintTextViewThen : first;
     }
 
     private void initHintAnimationTextView() {
         if (this.mHintTextViewFirst == null && this.mHintTextViewThen == null) {
             Context context = getContext();
-            int i2 = R.style.Widget_COUI_EditText_SearchViewStyle_HintText;
-            this.mHintTextViewFirst = new TextView(new ContextThemeWrapper(context, i2), null);
-            this.mHintTextViewThen = new TextView(new ContextThemeWrapper(getContext(), i2), null);
+            int hintStyle = R.style.Widget_COUI_EditText_SearchViewStyle_HintText;
+            this.mHintTextViewFirst = new TextView(new ContextThemeWrapper(context, hintStyle), null);
+            this.mHintTextViewThen = new TextView(new ContextThemeWrapper(getContext(), hintStyle), null);
             this.mHintTextViewFirst.setImportantForAccessibility(2);
             this.mHintTextViewThen.setImportantForAccessibility(2);
-            TextView textView = this.mHintTextViewFirst;
-            int i6 = R.style.couiTextAppearanceBodyL;
-            textView.setTextAppearance(i6);
-            this.mHintTextViewThen.setTextAppearance(i6);
-            TextView textView2 = this.mHintTextViewFirst;
-            Context context2 = getContext();
-            int i10 = R.attr.couiColorLabelSecondary;
-            textView2.setTextColor(COUIContextUtil.getAttrColor(context2, i10));
-            this.mHintTextViewThen.setTextColor(COUIContextUtil.getAttrColor(getContext(), i10));
+            TextView first = this.mHintTextViewFirst;
+            int textAppearance = R.style.couiTextAppearanceBodyL;
+            first.setTextAppearance(textAppearance);
+            this.mHintTextViewThen.setTextAppearance(textAppearance);
+            TextView firstAgain = this.mHintTextViewFirst;
+            Context colorContext = getContext();
+            int labelColorAttr = R.attr.couiColorLabelSecondary;
+            firstAgain.setTextColor(COUIContextUtil.getAttrColor(colorContext, labelColorAttr));
+            this.mHintTextViewThen.setTextColor(COUIContextUtil.getAttrColor(getContext(), labelColorAttr));
             this.mHintTextViewFirst.setId(R.id.coui_hint_text_view_first);
             this.mHintTextViewThen.setId(R.id.coui_hint_text_view_then);
             addView(this.mHintTextViewFirst);
@@ -194,13 +196,13 @@ public class COUIHintAnimationLayout extends FrameLayout {
                     if (COUIHintAnimationLayout.this.mHintStrings.isEmpty()) {
                         return;
                     }
-                    COUIHintAnimationLayout cOUIHintAnimationLayout = COUIHintAnimationLayout.this;
-                    cOUIHintAnimationLayout.mCurrentHintIndex = (cOUIHintAnimationLayout.mCurrentHintIndex + 1) % COUIHintAnimationLayout.this.mHintStrings.size();
-                    COUIHintAnimationLayout cOUIHintAnimationLayout2 = COUIHintAnimationLayout.this;
-                    if (cOUIHintAnimationLayout2.mAnimationIsWorking) {
-                        cOUIHintAnimationLayout2.applyHintChangeAnimation((String) cOUIHintAnimationLayout2.mHintStrings.get(COUIHintAnimationLayout.this.mCurrentHintIndex));
+                    COUIHintAnimationLayout layout = COUIHintAnimationLayout.this;
+                    layout.mCurrentHintIndex = (layout.mCurrentHintIndex + 1) % COUIHintAnimationLayout.this.mHintStrings.size();
+                    COUIHintAnimationLayout layout2 = COUIHintAnimationLayout.this;
+                    if (layout2.mAnimationIsWorking) {
+                        layout2.applyHintChangeAnimation((String) layout2.mHintStrings.get(COUIHintAnimationLayout.this.mCurrentHintIndex));
                     }
-                    COUIHintAnimationLayout.this.postDelayed(this, 3000L);
+                    COUIHintAnimationLayout.this.postDelayed(this, INTERVAL_TIME);
                 }
             };
             this.mSearchEditText.addTextChangedListener(new TextWatcherAdapter() {
@@ -215,8 +217,8 @@ public class COUIHintAnimationLayout extends FrameLayout {
                         COUIHintAnimationLayout.this.getNextHintTextView().setVisibility(8);
                         return;
                     }
-                    COUIHintAnimationLayout cOUIHintAnimationLayout = COUIHintAnimationLayout.this;
-                    cOUIHintAnimationLayout.removeCallbacks(cOUIHintAnimationLayout.mChangeHintRunnable);
+                    COUIHintAnimationLayout layout = COUIHintAnimationLayout.this;
+                    layout.removeCallbacks(layout.mChangeHintRunnable);
                     COUIHintAnimationLayout.this.mHintTextViewFirst.setVisibility(8);
                     COUIHintAnimationLayout.this.mHintTextViewThen.setVisibility(8);
                     COUIHintAnimationLayout.this.cancelAnimation();
@@ -254,9 +256,9 @@ public class COUIHintAnimationLayout extends FrameLayout {
     }
 
     @Override
-    public void onWindowVisibilityChanged(int i2) {
-        super.onWindowVisibilityChanged(i2);
-        if (i2 == 0) {
+    public void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        if (visibility == 0) {
             if (this.mNeedRePlay) {
                 resumeHintsAnimation();
                 this.mNeedRePlay = false;
@@ -297,12 +299,12 @@ public class COUIHintAnimationLayout extends FrameLayout {
         setHintsAnimation(this.mHintStrings);
     }
 
-    public void setCOUIHintAnimationChangeListener(COUIHintAnimationChangeListener cOUIHintAnimationChangeListener) {
-        this.mCOUIHintAnimationChangeListener = cOUIHintAnimationChangeListener;
+    public void setCOUIHintAnimationChangeListener(COUIHintAnimationChangeListener listener) {
+        this.mCOUIHintAnimationChangeListener = listener;
     }
 
-    public void setHintsAnimation(List<String> list) {
-        if (list == null || list.size() == 0) {
+    public void setHintsAnimation(List<String> hints) {
+        if (hints == null || hints.size() == 0) {
             return;
         }
         if (this.mSearchEditText == null) {
@@ -318,9 +320,9 @@ public class COUIHintAnimationLayout extends FrameLayout {
         }
         initHintAnimationTextView();
         initTextHintAnimation();
-        if (!this.mHintStrings.equals(list)) {
+        if (!this.mHintStrings.equals(hints)) {
             this.mHintStrings.clear();
-            this.mHintStrings.addAll(list);
+            this.mHintStrings.addAll(hints);
         }
         if (this.mCurrentHintTextView == null) {
             this.mCurrentHintTextView = this.mHintTextViewFirst;
@@ -332,15 +334,15 @@ public class COUIHintAnimationLayout extends FrameLayout {
         this.mCurrentHintTextView.setVisibility(0);
         removeCallbacks(this.mChangeHintRunnable);
         this.mSearchEditText.setHint("");
-        postDelayed(this.mChangeHintRunnable, 3000L);
+        postDelayed(this.mChangeHintRunnable, INTERVAL_TIME);
         this.mAnimationIsWorking = true;
     }
 
-    public void setRepeatCount(int i2) {
-        if (i2 <= 0) {
+    public void setRepeatCount(int repeatCount) {
+        if (repeatCount <= 0) {
             Log.e(TAG, "RepeatCount must be greater than zero");
         } else {
-            this.mRepeatCount = i2;
+            this.mRepeatCount = repeatCount;
         }
     }
 
@@ -353,14 +355,14 @@ public class COUIHintAnimationLayout extends FrameLayout {
         }
     }
 
-    public void setTextSize(int i2) {
-        TextView textView = this.mHintTextViewFirst;
-        if (textView == null || this.mHintTextViewThen == null) {
+    public void setTextSize(int sizePx) {
+        TextView first = this.mHintTextViewFirst;
+        if (first == null || this.mHintTextViewThen == null) {
             return;
         }
-        float f2 = i2;
-        textView.setTextSize(0, f2);
-        this.mHintTextViewThen.setTextSize(0, f2);
+        float size = sizePx;
+        first.setTextSize(0, size);
+        this.mHintTextViewThen.setTextSize(0, size);
     }
 
     public COUIHintAnimationLayout(Context context, AttributeSet attributeSet) {

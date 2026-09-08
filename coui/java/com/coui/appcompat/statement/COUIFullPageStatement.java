@@ -1,7 +1,5 @@
 package com.coui.appcompat.statement;
 
-import com.coui.appcompat.R;
-
 import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
@@ -13,7 +11,10 @@ import android.view.ViewParent;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
 import androidx.appcompat.widget.LinearLayoutCompat;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.button.COUIButton;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 
@@ -84,7 +85,7 @@ public class COUIFullPageStatement extends LinearLayout {
             this.mButtonLayoutLand = (LinearLayout) viewInflate.findViewById(R.id.button_layout_land);
             this.mButtonLayoutNormal = (LinearLayout) viewInflate.findViewById(R.id.button_layout_normal);
             this.mBottomButtonLand.setSingleLine(false);
-            this.mBottomButtonLand.setMaxLines(2);
+            this.mBottomButtonLand.setMaxLines(CONFIRM_BUTTON_MAX_LINES);
             this.mBottomButtonLand.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -110,7 +111,7 @@ public class COUIFullPageStatement extends LinearLayout {
         disableTitleScrollBeforeMaxHeight();
         COUIChangeTextUtil.adaptFontSize(this.mAppStatement, 2);
         this.mBottomButtonNormal.setSingleLine(false);
-        this.mBottomButtonNormal.setMaxLines(2);
+        this.mBottomButtonNormal.setMaxLines(CONFIRM_BUTTON_MAX_LINES);
         this.mBottomButtonNormal.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -139,7 +140,7 @@ public class COUIFullPageStatement extends LinearLayout {
     }
 
     private boolean isSmallScreen(Configuration configuration) {
-        return configuration.smallestScreenWidthDp < 480;
+        return configuration.smallestScreenWidthDp < MEDIUM_LARGE_SCREEN_SW_THRESHOLD;
     }
 
     public TextView getAppStatement() {
@@ -164,19 +165,19 @@ public class COUIFullPageStatement extends LinearLayout {
         if (this.mLayoutResourceId == R.layout.coui_full_page_statement_tiny) {
             return;
         }
-        boolean z6 = isSmallScreen(configuration) && !isPortrait(configuration);
-        if (!z6) {
+        boolean isInSmallLand_2 = isSmallScreen(configuration) && !isPortrait(configuration);
+        if (!isInSmallLand_2) {
             this.mBottomButtonNormal.getLayoutParams().width = getContext().createConfigurationContext(configuration).getResources().getDimensionPixelOffset(R.dimen.coui_full_page_statement_button_width);
         }
-        if (this.isInSmallLand != z6) {
-            this.isInSmallLand = z6;
+        if (this.isInSmallLand != isInSmallLand_2) {
+            this.isInSmallLand = isInSmallLand_2;
             refreshParams();
         }
     }
 
     @Override
-    public void onLayout(boolean z6, int i2, int i6, int i10, int i11) {
-        super.onLayout(z6, i2, i6, i10, i11);
+    public void onLayout(boolean changed, int left, int top, int right, int bottom_2) {
+        super.onLayout(changed, left, top, right, bottom_2);
         if (this.mLayoutResourceId == R.layout.coui_full_page_statement_tiny) {
             ViewParent parent = this.mScrollButton.getParent();
             if (parent instanceof LinearLayout) {
@@ -219,21 +220,21 @@ public class COUIFullPageStatement extends LinearLayout {
         this.mAppStatement.setText(charSequence);
     }
 
-    public void setAppStatementTextColor(int i2) {
-        this.mAppStatement.setTextColor(i2);
+    public void setAppStatementTextColor(int appStatementTextColor) {
+        this.mAppStatement.setTextColor(appStatementTextColor);
     }
 
-    public void setButtonDisableColor(int i2) {
-        this.mBottomButtonNormal.setDisabledColor(i2);
+    public void setButtonDisableColor(int buttonDisableColor) {
+        this.mBottomButtonNormal.setDisabledColor(buttonDisableColor);
         if (isNotTinyStyle()) {
-            this.mBottomButtonLand.setDisabledColor(i2);
+            this.mBottomButtonLand.setDisabledColor(buttonDisableColor);
         }
     }
 
-    public void setButtonDrawableColor(int i2) {
-        this.mBottomButtonNormal.setDrawableColor(i2);
+    public void setButtonDrawableColor(int buttonDrawableColor) {
+        this.mBottomButtonNormal.setDrawableColor(buttonDrawableColor);
         if (isNotTinyStyle()) {
-            this.mBottomButtonLand.setDrawableColor(i2);
+            this.mBottomButtonLand.setDrawableColor(buttonDrawableColor);
         }
     }
 
@@ -269,12 +270,12 @@ public class COUIFullPageStatement extends LinearLayout {
         this.mExitTextView.setText(charSequence);
     }
 
-    public void setExitTextColor(int i2) {
-        this.mExitTextView.setTextColor(i2);
+    public void setExitTextColor(int exitTextColor) {
+        this.mExitTextView.setTextColor(exitTextColor);
     }
 
-    public void setStatementMaxHeight(int i2) {
-        this.mScrollText.setMaxHeight(i2);
+    public void setStatementMaxHeight(int statementMaxHeight) {
+        this.mScrollText.setMaxHeight(statementMaxHeight);
     }
 
     public void setTitleText(CharSequence charSequence) {
@@ -285,23 +286,23 @@ public class COUIFullPageStatement extends LinearLayout {
         this(context, attributeSet, R.attr.couiFullPageStatementStyle);
     }
 
-    public COUIFullPageStatement(Context context, AttributeSet attributeSet, int i2) {
-        this(context, attributeSet, i2, R.style.Widget_COUI_COUIFullPageStatement);
+    public COUIFullPageStatement(Context context, AttributeSet attributeSet, int index) {
+        this(context, attributeSet, index, R.style.Widget_COUI_COUIFullPageStatement);
     }
 
-    public COUIFullPageStatement(Context context, int i2) {
-        this(context, null, 0, i2);
+    public COUIFullPageStatement(Context context, int index) {
+        this(context, null, 0, index);
     }
 
-    public COUIFullPageStatement(Context context, AttributeSet attributeSet, int i2, int i6) {
-        super(context, attributeSet, i2, i6);
+    public COUIFullPageStatement(Context context, AttributeSet attributeSet, int index, int index_2) {
+        super(context, attributeSet, index, index_2);
         this.mContext = context;
         if (attributeSet == null || attributeSet.getStyleAttribute() == 0) {
-            this.mStyle = i2;
+            this.mStyle = index;
         } else {
             this.mStyle = attributeSet.getStyleAttribute();
         }
-        TypedArray typedArrayObtainStyledAttributes = this.mContext.obtainStyledAttributes(attributeSet, R.styleable.COUIFullPageStatement, i2, i6);
+        TypedArray typedArrayObtainStyledAttributes = this.mContext.obtainStyledAttributes(attributeSet, R.styleable.COUIFullPageStatement, index, index_2);
         String string = typedArrayObtainStyledAttributes.getString(R.styleable.COUIFullPageStatement_exitButtonText);
         String string2 = typedArrayObtainStyledAttributes.getString(R.styleable.COUIFullPageStatement_bottomButtonText);
         String string3 = typedArrayObtainStyledAttributes.getString(R.styleable.COUIFullPageStatement_couiFullPageStatementTitleText);

@@ -1,6 +1,7 @@
 package com.coui.appcompat.panel;
 
 //noinspection SuspiciousImport
+
 import android.R;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -18,8 +19,10 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.appcompat.widget.AppCompatImageView;
+
 import com.coui.appcompat.buttonBar.COUIButtonBarLayout;
 import com.coui.appcompat.poplist.PopupMenuConfigRule;
 
@@ -58,7 +61,7 @@ public class COUIPanelContentLayout extends LinearLayout implements PopupMenuCon
     }
 
 
-    public boolean lambda$setDragViewPressAnim$0(View dragPressBgView, boolean enablePressAnim, View touchedView, MotionEvent motionEvent) {
+    public boolean onDragViewPressTouch(View dragPressBgView, boolean enablePressAnim, View touchedView, MotionEvent motionEvent) {
         if (motionEvent.getAction() == 0) {
             if (dragPressBgView != null) {
                 dragPressBgView.setVisibility(View.VISIBLE);
@@ -223,7 +226,7 @@ public class COUIPanelContentLayout extends LinearLayout implements PopupMenuCon
             dragPressBgView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public final boolean onTouch(View view, MotionEvent motionEvent) {
-                    return COUIPanelContentLayout.this.lambda$setDragViewPressAnim$0(dragPressBgView, enablePressAnim, view, motionEvent);
+                    return COUIPanelContentLayout.this.onDragViewPressTouch(dragPressBgView, enablePressAnim, view, motionEvent);
                 }
             });
         }

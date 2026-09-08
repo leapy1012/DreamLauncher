@@ -2,7 +2,6 @@ package androidx.recyclerview.widget;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import androidx.recyclerview.widget.RecyclerView;
 
 
 public class COUIPanelPreferenceLinearLayoutManager extends LinearLayoutManager {
@@ -20,7 +19,7 @@ public class COUIPanelPreferenceLinearLayoutManager extends LinearLayoutManager 
         return super.computeVerticalScrollRange(b0Var) + this.mRecyclerView.getScrollY();
     }
 
-    public COUIPanelPreferenceLinearLayoutManager(Context context, AttributeSet attributeSet, int i2, int i6) {
-        super(context, attributeSet, i2, i6);
+    public COUIPanelPreferenceLinearLayoutManager(Context context, AttributeSet attributeSet, int index, int index_2) {
+        super(context, attributeSet, index, index_2);
     }
 }

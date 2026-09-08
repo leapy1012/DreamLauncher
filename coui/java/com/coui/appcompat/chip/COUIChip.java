@@ -1,17 +1,15 @@
 package com.coui.appcompat.chip;
 
 import android.content.Context;
-import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
-import android.widget.TextView;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
@@ -81,7 +79,7 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
     }
 
     public COUIChip(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                    int defStyleRes) {
         super(context, attrs, defStyleAttr);
         mMaskEffectDrawable = new COUIMaskEffectDrawable(
                 context, COUIMaskEffectDrawable.MASK_EFFECT_TYPE_WIDGET_WITH_BACKGROUND);

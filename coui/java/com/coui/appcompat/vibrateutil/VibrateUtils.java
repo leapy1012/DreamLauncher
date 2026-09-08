@@ -42,6 +42,7 @@ public class VibrateUtils {
     private static long sLastVibratorTime = -1;
     private static Context sContext;
     private static boolean sHapticEnable;
+    private static Boolean sOplusFeatureManagerPresent;
     private static final ContentObserver HAPTIC_OBSERVER = new ContentObserver(null) {
         @Override
         public void onChange(boolean selfChange) {
@@ -92,7 +93,7 @@ public class VibrateUtils {
     }
 
     public static void setLinearMotorVibratorStrength(Object vibrator, int effectType, int progress,
-            int total, int minStrength, int maxStrength) {
+                                                      int total, int minStrength, int maxStrength) {
         if (vibrator == null || !sHapticEnable) {
             return;
         }
@@ -104,7 +105,7 @@ public class VibrateUtils {
     }
 
     public static void setLinearMotorVibratorStrength(Object vibrator, int effectType, int progress,
-            int total, int minStrength, int maxStrength, int level, float scale) {
+                                                      int total, int minStrength, int maxStrength, int level, float scale) {
         if (vibrator == null || !sHapticEnable || filterVibrator()) {
             return;
         }
@@ -175,14 +176,22 @@ public class VibrateUtils {
     }
 
     private static boolean hasOplusFeature(String feature) {
+        if (!com.coui.appcompat.compat.CouiPlatform.isColorOsRuntime()) {
+            return false;
+        }
+        if (sOplusFeatureManagerPresent != null && !sOplusFeatureManagerPresent) {
+            return false;
+        }
         try {
             Class<?> managerClass = Class.forName("com.oplus.content.OplusFeatureConfigManager");
+            sOplusFeatureManagerPresent = true;
             Method getInstance = managerClass.getMethod("getInstance");
             Object manager = getInstance.invoke(null);
             Method hasFeature = managerClass.getMethod("hasFeature", String.class);
             Object result = hasFeature.invoke(manager, feature);
             return result instanceof Boolean && (Boolean) result;
         } catch (Throwable throwable) {
+            sOplusFeatureManagerPresent = false;
             return false;
         }
     }

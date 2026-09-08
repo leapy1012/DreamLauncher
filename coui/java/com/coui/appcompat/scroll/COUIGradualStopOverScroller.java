@@ -2,8 +2,8 @@ package com.coui.appcompat.scroll;
 
 import android.content.Context;
 import android.util.Log;
+
 import com.coui.appcompat.log.COUILog;
-import com.coui.appcompat.scroll.SpringOverScroller;
 
 
 public class COUIGradualStopOverScroller extends SpringOverScroller {
@@ -18,18 +18,18 @@ public class COUIGradualStopOverScroller extends SpringOverScroller {
         private double mRestSpeedThreshold = 5.0d;
         private double mDisplacementFromRestThreshold = 0.05d;
 
-        public GradualStopReboundOverScroller(COUIGradualStopHelper cOUIGradualStopHelper) {
-            this.mGradualStopHelper = cOUIGradualStopHelper;
+        public GradualStopReboundOverScroller(COUIGradualStopHelper gradualStopHelper) {
+            this.mGradualStopHelper = gradualStopHelper;
         }
 
-        private void adjustSplineDistance(int i2) {
+        private void adjustSplineDistance(int velocity) {
             int simulateSplineDistance = getSimulateSplineDistance();
             if (simulateSplineDistance == 0) {
                 return;
             }
-            float centerToEdgeOffsetInVelocityDirection = this.mGradualStopHelper.getCenterToEdgeOffsetInVelocityDirection(i2);
-            boolean z6 = COUIGradualStopOverScroller.DEBUG;
-            if (z6) {
+            float centerToEdgeOffsetInVelocityDirection = this.mGradualStopHelper.getCenterToEdgeOffsetInVelocityDirection(velocity);
+            boolean debug = COUIGradualStopOverScroller.DEBUG;
+            if (debug) {
                 Log.d(COUIGradualStopOverScroller.TAG, this + "[ simulateSplineDistance = " + simulateSplineDistance + " edgeDistance = " + centerToEdgeOffsetInVelocityDirection + " ]");
             }
             if (centerToEdgeOffsetInVelocityDirection != 0.0f && Math.abs(simulateSplineDistance) <= Math.abs(centerToEdgeOffsetInVelocityDirection)) {
@@ -37,8 +37,8 @@ public class COUIGradualStopOverScroller extends SpringOverScroller {
                 springBack();
                 return;
             }
-            float displacementToAlignCenter = this.mGradualStopHelper.getDisplacementToAlignCenter(i2, simulateSplineDistance);
-            if (z6) {
+            float displacementToAlignCenter = this.mGradualStopHelper.getDisplacementToAlignCenter(velocity, simulateSplineDistance);
+            if (debug) {
                 Log.d(COUIGradualStopOverScroller.TAG, this + "[ adaptDistance = " + displacementToAlignCenter + " ]");
             }
             if (displacementToAlignCenter != 0.0f) {
@@ -47,9 +47,9 @@ public class COUIGradualStopOverScroller extends SpringOverScroller {
         }
 
         @Override
-        public void fling(int i2, int i6, int i10, int i11, int i12) {
-            super.fling(i2, i6, i10, i11, i12);
-            adjustSplineDistance(i11);
+        public void fling(int start, int min, int max, int velocity, int over) {
+            super.fling(start, min, max, velocity, over);
+            adjustSplineDistance(velocity);
         }
 
         @Override
@@ -63,7 +63,7 @@ public class COUIGradualStopOverScroller extends SpringOverScroller {
         }
 
         @Override
-        public double getSplineMinDelta(float f2) {
+        public double getSplineMinDelta(float unused) {
             return DELTA_POSITION_MID;
         }
 
@@ -80,23 +80,23 @@ public class COUIGradualStopOverScroller extends SpringOverScroller {
         DEBUG = COUILog.LOG_DEBUG || COUILog.isLoggable(TAG, 3);
     }
 
-    public COUIGradualStopOverScroller(Context context, COUIGradualStopHelper cOUIGradualStopHelper) {
+    public COUIGradualStopOverScroller(Context context, COUIGradualStopHelper gradualStopHelper) {
         super(context, null);
         this.mMaxFlingDistance = 10000;
-        this.mGradualStopHelper = cOUIGradualStopHelper;
-        this.mScrollerX = new GradualStopReboundOverScroller(cOUIGradualStopHelper);
-        this.mScrollerY = new GradualStopReboundOverScroller(cOUIGradualStopHelper);
+        this.mGradualStopHelper = gradualStopHelper;
+        this.mScrollerX = new GradualStopReboundOverScroller(gradualStopHelper);
+        this.mScrollerY = new GradualStopReboundOverScroller(gradualStopHelper);
     }
 
     public double getMaxFlingDistance() {
         return 10000.0d;
     }
 
-    public boolean springBackToCenter(int i2) {
-        int i6;
-        int i10;
-        int i11;
-        int i12;
+    public boolean springBackToCenter(int orientation) {
+        int startY;
+        int minY;
+        int startX;
+        int minX;
         int centerToItemCenterOffsetUnderCenter = (int) this.mGradualStopHelper.getCenterToItemCenterOffsetUnderCenter();
         if (centerToItemCenterOffsetUnderCenter == 0) {
             return false;
@@ -104,18 +104,18 @@ public class COUIGradualStopOverScroller extends SpringOverScroller {
         if (DEBUG) {
             Log.d(TAG, this + " childCenterDiff " + centerToItemCenterOffsetUnderCenter + " ]");
         }
-        if (i2 == 0) {
-            i11 = centerToItemCenterOffsetUnderCenter;
-            i12 = i11;
-            i6 = 0;
-            i10 = 0;
+        if (orientation == 0) {
+            startX = centerToItemCenterOffsetUnderCenter;
+            minX = startX;
+            startY = 0;
+            minY = 0;
         } else {
-            i6 = centerToItemCenterOffsetUnderCenter;
-            i10 = i6;
-            i11 = 0;
-            i12 = 0;
+            startY = centerToItemCenterOffsetUnderCenter;
+            minY = startY;
+            startX = 0;
+            minX = 0;
         }
-        springBack(0, 0, i11, i12, i6, i10);
+        springBack(0, 0, startX, minX, startY, minY);
         return true;
     }
 }

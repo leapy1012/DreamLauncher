@@ -23,21 +23,24 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+
+import androidx.core.util.Pools.Pool;
+import androidx.core.util.Pools.SynchronizedPool;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.viewpager.widget.ViewPager;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.hapticfeedback.COUIHapticFeedbackConstants;
 import com.coui.appcompat.scrollview.COUIHorizontalScrollView;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
-import androidx.core.util.Pools.Pool;
-import androidx.core.util.Pools.SynchronizedPool;
-import androidx.viewpager.widget.ViewPager;
-import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
-import com.coui.appcompat.R;
 
 
 public class COUITabLayout extends COUIHorizontalScrollView {
@@ -154,8 +157,8 @@ public class COUITabLayout extends COUIHorizontalScrollView {
             }
         }
 
-        public void setAutoRefresh(boolean z6) {
-            this.mAutoRefresh = z6;
+        public void setAutoRefresh(boolean autoRefresh) {
+            this.mAutoRefresh = autoRefresh;
         }
     }
 
@@ -210,33 +213,33 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         }
 
         @Override
-        public void onPageScrollStateChanged(int i2) {
+        public void onPageScrollStateChanged(int state) {
             this.mPreviousScrollState = this.mScrollState;
-            this.mScrollState = i2;
+            this.mScrollState = state;
         }
 
         @Override
-        public void onPageScrolled(int i2, float f2, int i6) {
+        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
             COUITabLayout cOUITabLayout = this.mTabLayoutRef.get();
             if (cOUITabLayout != null) {
-                int i10 = this.mScrollState;
-                cOUITabLayout.setScrollPosition(i2, f2, i10 != 2 || this.mPreviousScrollState == 1, (i10 == 2 && this.mPreviousScrollState == 0) ? false : true);
+                int index = this.mScrollState;
+                cOUITabLayout.setScrollPosition(position, positionOffset, index != SCROLL_STATE_SETTLING || this.mPreviousScrollState == SCROLL_STATE_DRAGGING, (index == SCROLL_STATE_SETTLING && this.mPreviousScrollState == SCROLL_STATE_IDLE) ? false : true);
             }
         }
 
         @Override
-        public void onPageSelected(int i2) {
+        public void onPageSelected(int position) {
             COUITabLayout cOUITabLayout = this.mTabLayoutRef.get();
-            if (cOUITabLayout == null || cOUITabLayout.getSelectedTabPosition() == i2 || i2 >= cOUITabLayout.getTabCount()) {
+            if (cOUITabLayout == null || cOUITabLayout.getSelectedTabPosition() == position || position >= cOUITabLayout.getTabCount()) {
                 return;
             }
-            int i6 = this.mScrollState;
-            cOUITabLayout.selectTab(cOUITabLayout.getTabAt(i2), i6 == 0 || (i6 == 2 && this.mPreviousScrollState == 0));
+            int index = this.mScrollState;
+            cOUITabLayout.selectTab(cOUITabLayout.getTabAt(position), index == SCROLL_STATE_IDLE || (index == SCROLL_STATE_SETTLING && this.mPreviousScrollState == SCROLL_STATE_IDLE));
         }
 
         public void reset() {
-            this.mPreviousScrollState = 0;
-            this.mScrollState = 0;
+            this.mPreviousScrollState = SCROLL_STATE_IDLE;
+            this.mScrollState = SCROLL_STATE_IDLE;
         }
     }
 
@@ -275,9 +278,9 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         if (drawable != null) {
             cOUITabNewTab.setIcon(drawable);
         }
-        int i2 = cOUITabItem.mCustomLayout;
-        if (i2 != 0) {
-            cOUITabNewTab.setCustomView(i2);
+        int index = cOUITabItem.mCustomLayout;
+        if (index != 0) {
+            cOUITabNewTab.setCustomView(index);
         }
         if (!TextUtils.isEmpty(cOUITabItem.getContentDescription())) {
             cOUITabNewTab.setContentDescription(cOUITabItem.getContentDescription());
@@ -296,37 +299,37 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         addTabFromItemView((COUITabItem) view);
     }
 
-    private void animateToTab(int i2) {
-        if (i2 == -1) {
+    private void animateToTab(int index) {
+        if (index == -1) {
             return;
         }
         if (getWindowToken() == null || !ViewCompat.isLaidOut(this) || this.mTabStrip.childrenNeedLayout()) {
-            setScrollPosition(i2, 0.0f, true);
+            setScrollPosition(index, 0.0f, true);
             return;
         }
         int scrollX = getScrollX();
-        int iCalculateScrollXForTab = calculateScrollXForTab(i2, 0.0f);
+        int iCalculateScrollXForTab = calculateScrollXForTab(index, 0.0f);
         if (scrollX != iCalculateScrollXForTab) {
             ensureScrollAnimator();
             this.mScrollAnimator.setIntValues(scrollX, iCalculateScrollXForTab);
             this.mScrollAnimator.start();
         }
-        this.mTabStrip.animateIndicatorToPosition(i2, 300);
+        this.mTabStrip.animateIndicatorToPosition(index, 300);
     }
 
     private void applyModeAndGravity() {
         updateTabViews(true);
     }
 
-    private int calculateScrollXForTab(int i2, float f2) {
+    private int calculateScrollXForTab(int index, float value) {
         int width;
         int width2 = 0;
         if (getWidth() == 0) {
             return 0;
         }
-        View childAt = this.mTabStrip.getChildAt(i2);
-        int i6 = i2 + 1;
-        View childAt2 = i6 < this.mTabStrip.getChildCount() ? this.mTabStrip.getChildAt(i6) : null;
+        View childAt = this.mTabStrip.getChildAt(index);
+        int index_2 = index + 1;
+        View childAt2 = index_2 < this.mTabStrip.getChildCount() ? this.mTabStrip.getChildAt(index_2) : null;
         if (childAt != null) {
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) childAt.getLayoutParams();
             width = childAt.getWidth() + layoutParams.leftMargin + layoutParams.rightMargin;
@@ -334,34 +337,34 @@ public class COUITabLayout extends COUIHorizontalScrollView {
             width = 0;
         }
         if (childAt2 != null) {
-            LinearLayout.LayoutParams layoutParams2 = (LinearLayout.LayoutParams) childAt2.getLayoutParams();
-            width2 = layoutParams2.rightMargin + childAt2.getWidth() + layoutParams2.leftMargin;
+            LinearLayout.LayoutParams layoutParams_2 = (LinearLayout.LayoutParams) childAt2.getLayoutParams();
+            width2 = layoutParams_2.rightMargin + childAt2.getWidth() + layoutParams_2.leftMargin;
         }
         int width3 = (width / 2) - (getWidth() / 2);
         if (childAt != null) {
-            LinearLayout.LayoutParams layoutParams3 = (LinearLayout.LayoutParams) childAt.getLayoutParams();
-            width3 += ViewCompat.getLayoutDirection(this) == 0 ? (childAt.getLeft() - layoutParams3.leftMargin) + (getPaddingLeft() / 2) + (getPaddingRight() / 2) : ((childAt.getRight() + layoutParams3.rightMargin) - (getPaddingLeft() / 2)) - (getPaddingRight() / 2);
+            LinearLayout.LayoutParams layoutParams_3 = (LinearLayout.LayoutParams) childAt.getLayoutParams();
+            width3 += ViewCompat.getLayoutDirection(this) == 0 ? (childAt.getLeft() - layoutParams_3.leftMargin) + (getPaddingLeft() / 2) + (getPaddingRight() / 2) : ((childAt.getRight() + layoutParams_3.rightMargin) - (getPaddingLeft() / 2)) - (getPaddingRight() / 2);
         }
-        int i10 = (int) ((width + width2) * 0.5f * f2);
-        return ViewCompat.getLayoutDirection(this) == 0 ? width3 + i10 : width3 - i10;
+        int index_3 = (int) ((width + width2) * 0.5f * value);
+        return ViewCompat.getLayoutDirection(this) == 0 ? width3 + index_3 : width3 - index_3;
     }
 
-    private void configureTab(COUITab cOUITab, int i2) {
-        cOUITab.setPosition(i2);
-        this.mTabs.add(i2, cOUITab);
+    private void configureTab(COUITab cOUITab, int index) {
+        cOUITab.setPosition(index);
+        this.mTabs.add(index, cOUITab);
         int size = this.mTabs.size();
         while (true) {
-            i2++;
-            if (i2 >= size) {
+            index++;
+            if (index >= size) {
                 return;
             } else {
-                this.mTabs.get(i2).setPosition(i2);
+                this.mTabs.get(index).setPosition(index);
             }
         }
     }
 
-    private static ColorStateList createColorStateList(int i2, int i6, int i10) {
-        return new ColorStateList(new int[][]{new int[]{16842913, 16842910}, new int[]{-16842913, -16842910}, HorizontalScrollView.EMPTY_STATE_SET}, new int[]{i10, i6, i2});
+    private static ColorStateList createColorStateList(int index, int index_2, int index_3) {
+        return new ColorStateList(new int[][]{new int[]{16842913, 16842910}, new int[]{-16842913, -16842910}, HorizontalScrollView.EMPTY_STATE_SET}, new int[]{index_3, index_2, index});
     }
 
     private LinearLayout.LayoutParams createLayoutParamsForTabs() {
@@ -421,34 +424,34 @@ public class COUITabLayout extends COUIHorizontalScrollView {
                 width3 = getWidth() - dimensionPixelSize2;
                 scrollX2 = getScrollX();
             }
-            int i2 = width3 + scrollX2;
+            int index_2 = width3 + scrollX2;
             int height = getHeight() / 2;
             Resources resources = getResources();
-            int i6 = R.dimen.coui_tab_layout_button_default_vertical_margin;
-            drawable.setBounds(width2, height - resources.getDimensionPixelSize(i6), i2, (getHeight() / 2) + getResources().getDimensionPixelSize(i6));
+            int index_3 = R.dimen.coui_tab_layout_button_default_vertical_margin;
+            drawable.setBounds(width2, height - resources.getDimensionPixelSize(index_3), index_2, (getHeight() / 2) + getResources().getDimensionPixelSize(index_3));
             drawable.draw(canvas);
             return;
         }
         if (this.mButtons.size() >= 2) {
-            for (int i10 = 0; i10 < this.mButtons.size(); i10++) {
+            for (int index = 0; index < this.mButtons.size(); index++) {
                 int dimensionPixelSize3 = this.mButtonMarginEnd;
                 if (dimensionPixelSize3 == -1) {
                     dimensionPixelSize3 = getResources().getDimensionPixelSize(R.dimen.coui_tab_layout_multi_button_default_horizontal_margin);
                 }
                 if (ViewCompat.getLayoutDirection(this) == 1) {
-                    scrollX = dimensionPixelSize3 + (getResources().getDimensionPixelSize(R.dimen.coui_tab_layout_multi_button_default_padding) * i10);
+                    scrollX = dimensionPixelSize3 + (getResources().getDimensionPixelSize(R.dimen.coui_tab_layout_multi_button_default_padding) * index);
                     width = getScrollX();
                 } else {
-                    width = getWidth() - ((dimensionPixelSize3 + dimensionPixelSize) + (getResources().getDimensionPixelSize(R.dimen.coui_tab_layout_multi_button_default_padding) * i10));
+                    width = getWidth() - ((dimensionPixelSize3 + dimensionPixelSize) + (getResources().getDimensionPixelSize(R.dimen.coui_tab_layout_multi_button_default_padding) * index));
                     scrollX = getScrollX();
                 }
-                int i11 = scrollX + width;
-                Drawable drawable2 = this.mButtons.get(i10).mButtonDrawable;
+                int index_4 = scrollX + width;
+                Drawable doubleValue = this.mButtons.get(index).mButtonDrawable;
                 int height2 = getHeight() / 2;
                 Resources resources2 = getResources();
-                int i12 = R.dimen.coui_tab_layout_button_default_vertical_margin;
-                drawable2.setBounds(i11, height2 - resources2.getDimensionPixelSize(i12), i11 + dimensionPixelSize, (getHeight() / 2) + getResources().getDimensionPixelSize(i12));
-                drawable2.draw(canvas);
+                int index_5 = R.dimen.coui_tab_layout_button_default_vertical_margin;
+                doubleValue.setBounds(index_4, height2 - resources2.getDimensionPixelSize(index_5), index_4 + dimensionPixelSize, (getHeight() / 2) + getResources().getDimensionPixelSize(index_5));
+                doubleValue.draw(canvas);
             }
         }
     }
@@ -458,11 +461,11 @@ public class COUITabLayout extends COUIHorizontalScrollView {
             ValueAnimator valueAnimator = new ValueAnimator();
             this.mScrollAnimator = valueAnimator;
             valueAnimator.setInterpolator(new COUIEaseInterpolator());
-            this.mScrollAnimator.setDuration(300L);
+            this.mScrollAnimator.setDuration(ANIMATION_DURATION);
             this.mScrollAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
-                public void onAnimationUpdate(ValueAnimator valueAnimator2) {
-                    COUITabLayout.this.scrollTo(((Integer) valueAnimator2.getAnimatedValue()).intValue(), 0);
+                public void onAnimationUpdate(ValueAnimator valueAnimator_2) {
+                    COUITabLayout.this.scrollTo(((Integer) valueAnimator_2.getAnimatedValue()).intValue(), 0);
                 }
             });
         }
@@ -470,13 +473,13 @@ public class COUITabLayout extends COUIHorizontalScrollView {
 
     private int getDefaultHeight() {
         int size = this.mTabs.size();
-        for (int i2 = 0; i2 < size; i2++) {
-            COUITab cOUITab = this.mTabs.get(i2);
+        for (int index = 0; index < size; index++) {
+            COUITab cOUITab = this.mTabs.get(index);
             if (cOUITab != null && cOUITab.getIcon() != null && !TextUtils.isEmpty(cOUITab.getText())) {
-                return 72;
+                return DEFAULT_HEIGHT_WITH_TEXT_ICON;
             }
         }
-        return 48;
+        return DEFAULT_HEIGHT;
     }
 
     private float getScrollPosition() {
@@ -491,9 +494,9 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         return Math.max(0, ((this.mTabStrip.getWidth() - getWidth()) - getPaddingLeft()) - getPaddingRight());
     }
 
-    private void removeTabViewAt(int i2) {
-        COUITabView cOUITabView = (COUITabView) this.mTabStrip.getChildAt(i2);
-        this.mTabStrip.removeViewAt(i2);
+    private void removeTabViewAt(int index) {
+        COUITabView cOUITabView = (COUITabView) this.mTabStrip.getChildAt(index);
+        this.mTabStrip.removeViewAt(index);
         if (cOUITabView != null) {
             cOUITabView.reset();
             this.mTabViewPool.release(cOUITabView);
@@ -501,21 +504,21 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         requestLayout();
     }
 
-    private void setSelectedTabView(int i2) {
+    private void setSelectedTabView(int selectedTabView) {
         int childCount = this.mTabStrip.getChildCount();
-        if (i2 < childCount) {
-            int i6 = 0;
-            while (i6 < childCount) {
-                this.mTabStrip.getChildAt(i6).setSelected(i6 == i2);
-                i6++;
+        if (selectedTabView < childCount) {
+            int index = 0;
+            while (index < childCount) {
+                this.mTabStrip.getChildAt(index).setSelected(index == selectedTabView);
+                index++;
             }
         }
     }
 
     private void updateAllTabs() {
         int size = this.mTabs.size();
-        for (int i2 = 0; i2 < size; i2++) {
-            this.mTabs.get(i2).updateView();
+        for (int index = 0; index < size; index++) {
+            this.mTabs.get(index).updateView();
         }
     }
 
@@ -528,8 +531,8 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         this.mTextColorBlue = Math.abs(Color.blue(this.mSelectedTextColor) - Color.blue(this.mNormalTextColor));
     }
 
-    public void addButton(int i2, View.OnClickListener onClickListener) {
-        addButton(getContext().getDrawable(i2), onClickListener);
+    public void addButton(int index, View.OnClickListener onClickListener) {
+        addButton(getContext().getDrawable(index), onClickListener);
     }
 
     public void addOnTabSelectedListener(OnTabSelectedListener onTabSelectedListener) {
@@ -549,7 +552,7 @@ public class COUITabLayout extends COUIHorizontalScrollView {
     }
 
     @Deprecated
-    public void changeTabTextFont(COUITabView cOUITabView, boolean z6) {
+    public void changeTabTextFont(COUITabView cOUITabView, boolean flag) {
     }
 
     public void clearOnTabSelectedListeners() {
@@ -589,17 +592,17 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         drawButton(canvas);
     }
 
-    public int dpToPx(int i2) {
-        return Math.round(getResources().getDisplayMetrics().density * i2);
+    public int dpToPx(int index) {
+        return Math.round(getResources().getDisplayMetrics().density * index);
     }
 
-    public boolean enableTab(int i2, boolean z6) {
+    public boolean enableTab(int index, boolean flag) {
         COUITabView cOUITabView;
-        COUITab tabAt = getTabAt(i2);
+        COUITab tabAt = getTabAt(index);
         if (tabAt == null || (cOUITabView = tabAt.mView) == null) {
             return false;
         }
-        cOUITabView.setEnabled(z6);
+        cOUITabView.setEnabled(flag);
         return true;
     }
 
@@ -607,8 +610,8 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         return this.mDefaultIndicatorRatio;
     }
 
-    public int getIndicatorAnimTime(int i2, int i6) {
-        return Math.min(300, (Math.abs(i2 - i6) * 50) + 150);
+    public int getIndicatorAnimTime(int index, int index_2) {
+        return Math.min(THREE_HUNDRED, (Math.abs(index - index_2) * FIFTY) + HUNDRED_FIFTY);
     }
 
     public int getIndicatorBackgroundHeight() {
@@ -675,11 +678,11 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         return -1;
     }
 
-    public COUITab getTabAt(int i2) {
-        if (i2 < 0 || i2 >= getTabCount()) {
+    public COUITab getTabAt(int index) {
+        if (index < 0 || index >= getTabCount()) {
             return null;
         }
-        return this.mTabs.get(i2);
+        return this.mTabs.get(index);
     }
 
     public int getTabCount() {
@@ -784,8 +787,8 @@ public class COUITabLayout extends COUIHorizontalScrollView {
     @Override
     public boolean onInterceptTouchEvent(MotionEvent motionEvent) {
         if (motionEvent.getAction() == 0) {
-            for (int i2 = 0; i2 < this.mButtons.size(); i2++) {
-                if (this.mButtons.get(i2).mButtonClicklistener != null && this.mButtons.get(i2).mButtonDrawable.getBounds().contains(((int) motionEvent.getX()) + getScrollX(), (int) motionEvent.getY())) {
+            for (int index = 0; index < this.mButtons.size(); index++) {
+                if (this.mButtons.get(index).mButtonClicklistener != null && this.mButtons.get(index).mButtonDrawable.getBounds().contains(((int) motionEvent.getX()) + getScrollX(), (int) motionEvent.getY())) {
                     return true;
                 }
             }
@@ -794,10 +797,10 @@ public class COUITabLayout extends COUIHorizontalScrollView {
     }
 
     @Override
-    public void onLayout(boolean z6, int i2, int i6, int i10, int i11) {
-        int i12;
-        super.onLayout(z6, i2, i6, i10, i11);
-        if (!this.mNeedAdjust || (i12 = this.mSelectedPosition) < 0 || i12 >= this.mTabStrip.getChildCount()) {
+    public void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        int index;
+        super.onLayout(changed, left, top, right, bottom);
+        if (!this.mNeedAdjust || (index = this.mSelectedPosition) < 0 || index >= this.mTabStrip.getChildCount()) {
             return;
         }
         this.mNeedAdjust = false;
@@ -805,27 +808,27 @@ public class COUITabLayout extends COUIHorizontalScrollView {
     }
 
     @Override
-    public void onMeasure(int i2, int i6) {
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int iDpToPx = dpToPx(getDefaultHeight()) + getPaddingTop() + getPaddingBottom();
-        int mode = View.MeasureSpec.getMode(i6);
+        int mode = View.MeasureSpec.getMode(heightMeasureSpec);
         if (mode == Integer.MIN_VALUE) {
-            i6 = View.MeasureSpec.makeMeasureSpec(Math.min(iDpToPx, View.MeasureSpec.getSize(i6)), MeasureSpec.EXACTLY);
+            heightMeasureSpec = View.MeasureSpec.makeMeasureSpec(Math.min(iDpToPx, View.MeasureSpec.getSize(heightMeasureSpec)), MeasureSpec.EXACTLY);
         } else if (mode == 0) {
-            i6 = View.MeasureSpec.makeMeasureSpec(iDpToPx, MeasureSpec.EXACTLY);
+            heightMeasureSpec = View.MeasureSpec.makeMeasureSpec(iDpToPx, MeasureSpec.EXACTLY);
         }
-        int size = View.MeasureSpec.getSize(i2);
-        if (this.mOriginalRequestedTabMaxWidth == -1) {
+        int size = View.MeasureSpec.getSize(widthMeasureSpec);
+        if (this.mOriginalRequestedTabMaxWidth == INVALID_WIDTH) {
             this.mRequestedTabMaxWidth = (int) (size * DEFAULT_MAXIMUM_WIDTH_RATIO);
         }
-        if (View.MeasureSpec.getMode(i2) != MeasureSpec.EXACTLY) {
+        if (View.MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.EXACTLY) {
             setMeasuredDimension(0, 0);
             return;
         }
-        int i10 = this.mMode;
-        if (i10 == 0) {
-            getChildAt(0).measure(View.MeasureSpec.makeMeasureSpec(536870911, MeasureSpec.AT_MOST), i6);
-        } else if (i10 == 1) {
-            getChildAt(0).measure(View.MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY), i6);
+        int index = this.mMode;
+        if (index == 0) {
+            getChildAt(0).measure(View.MeasureSpec.makeMeasureSpec(536870911, MeasureSpec.AT_MOST), heightMeasureSpec);
+        } else if (index == 1) {
+            getChildAt(0).measure(View.MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY), heightMeasureSpec);
         }
         setMeasuredDimension(size, getChildAt(0).getMeasuredHeight());
     }
@@ -833,9 +836,9 @@ public class COUITabLayout extends COUIHorizontalScrollView {
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
         if (motionEvent.getAction() == 1) {
-            for (int i2 = 0; i2 < this.mButtons.size(); i2++) {
-                if (this.mButtons.get(i2).mButtonClicklistener != null && this.mButtons.get(i2).mButtonDrawable.getBounds().contains(((int) motionEvent.getX()) + getScrollX(), (int) motionEvent.getY())) {
-                    this.mButtons.get(i2).mButtonClicklistener.onClick(this);
+            for (int index = 0; index < this.mButtons.size(); index++) {
+                if (this.mButtons.get(index).mButtonClicklistener != null && this.mButtons.get(index).mButtonDrawable.getBounds().contains(((int) motionEvent.getX()) + getScrollX(), (int) motionEvent.getY())) {
+                    this.mButtons.get(index).mButtonClicklistener.onClick(this);
                     return true;
                 }
             }
@@ -852,16 +855,16 @@ public class COUITabLayout extends COUIHorizontalScrollView {
             androidx.viewpager.widget.PagerAdapter aVar2 = this.mPagerAdapter;
             if (aVar2 instanceof COUIFragmentStatePagerAdapter) {
                 COUIFragmentStatePagerAdapter cOUIFragmentStatePagerAdapter = (COUIFragmentStatePagerAdapter) aVar2;
-                for (int i2 = 0; i2 < count; i2++) {
-                    if (cOUIFragmentStatePagerAdapter.getPageIcon(i2) > 0) {
-                        addTab(newTab().setIcon(cOUIFragmentStatePagerAdapter.getPageIcon(i2)), false);
+                for (int index = 0; index < count; index++) {
+                    if (cOUIFragmentStatePagerAdapter.getPageIcon(index) > 0) {
+                        addTab(newTab().setIcon(cOUIFragmentStatePagerAdapter.getPageIcon(index)), false);
                     } else {
-                        addTab(newTab().setText(cOUIFragmentStatePagerAdapter.getPageTitle(i2)), false);
+                        addTab(newTab().setText(cOUIFragmentStatePagerAdapter.getPageTitle(index)), false);
                     }
                 }
             } else {
-                for (int i6 = 0; i6 < count; i6++) {
-                    addTab(newTab().setText(this.mPagerAdapter.getPageTitle(i6)), false);
+                for (int index_2 = 0; index_2 < count; index_2++) {
+                    addTab(newTab().setText(this.mPagerAdapter.getPageTitle(index_2)), false);
                 }
             }
             ViewPager bVar = this.mViewPager;
@@ -881,13 +884,13 @@ public class COUITabLayout extends COUIHorizontalScrollView {
             typedArrayObtainStyledAttributes = getContext().getTheme().obtainStyledAttributes(null, R.styleable.COUITabLayout, 0, this.mStyle);
         }
         if (typedArrayObtainStyledAttributes != null) {
-            int i2 = R.styleable.COUITabLayout_couiTabTextColor;
-            if (typedArrayObtainStyledAttributes.hasValue(i2)) {
-                this.mTabTextColors = typedArrayObtainStyledAttributes.getColorStateList(i2);
+            int index = R.styleable.COUITabLayout_couiTabTextColor;
+            if (typedArrayObtainStyledAttributes.hasValue(index)) {
+                this.mTabTextColors = typedArrayObtainStyledAttributes.getColorStateList(index);
             }
-            int i6 = R.styleable.COUITabLayout_couiTabIndicatorColor;
-            if (typedArrayObtainStyledAttributes.hasValue(i6)) {
-                setSelectedTabIndicatorColor(typedArrayObtainStyledAttributes.getColor(i6, 0));
+            int index_2 = R.styleable.COUITabLayout_couiTabIndicatorColor;
+            if (typedArrayObtainStyledAttributes.hasValue(index_2)) {
+                setSelectedTabIndicatorColor(typedArrayObtainStyledAttributes.getColor(index_2, 0));
             }
             updateTextColor();
             typedArrayObtainStyledAttributes.recycle();
@@ -899,9 +902,9 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         }
     }
 
-    public void removeAllButtons(int i2) {
+    public void removeAllButtons(int index) {
         this.mButtons.clear();
-        setTabMode(i2);
+        setTabMode(index);
         invalidate();
     }
 
@@ -931,28 +934,28 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         removeTabAt(cOUITab.getPosition());
     }
 
-    public void removeTabAt(int i2) {
+    public void removeTabAt(int index) {
         COUITab cOUITab = this.mSelectedTab;
         int position = cOUITab != null ? cOUITab.getPosition() : 0;
-        removeTabViewAt(i2);
-        COUITab cOUITabRemove = this.mTabs.remove(i2);
+        removeTabViewAt(index);
+        COUITab cOUITabRemove = this.mTabs.remove(index);
         if (cOUITabRemove != null) {
             cOUITabRemove.reset();
             TAB_POOL.release(cOUITabRemove);
         }
         int size = this.mTabs.size();
-        for (int i6 = i2; i6 < size; i6++) {
-            this.mTabs.get(i6).setPosition(i6);
+        for (int index_2 = index; index_2 < size; index_2++) {
+            this.mTabs.get(index_2).setPosition(index_2);
         }
-        if (position == i2) {
-            selectTab(this.mTabs.isEmpty() ? null : this.mTabs.get(Math.max(0, i2 - 1)));
+        if (position == index) {
+            selectTab(this.mTabs.isEmpty() ? null : this.mTabs.get(Math.max(0, index - 1)));
         }
     }
 
     public void resetTextColorAfterAnim() {
         int childCount = this.mTabStrip.getChildCount();
-        for (int i2 = 0; i2 < childCount; i2++) {
-            View childAt = this.mTabStrip.getChildAt(i2);
+        for (int index = 0; index < childCount; index++) {
+            View childAt = this.mTabStrip.getChildAt(index);
             if (childAt instanceof COUITabView) {
                 ((COUITabView) childAt).getTextView().setTextColor(this.mTabTextColors);
             }
@@ -964,70 +967,70 @@ public class COUITabLayout extends COUIHorizontalScrollView {
     }
 
     @Override
-    public void setEnableVibrator(boolean z6) {
-        this.mEnableVibrator = z6;
+    public void setEnableVibrator(boolean enableVibrator) {
+        this.mEnableVibrator = enableVibrator;
     }
 
     @Override
-    public void setEnabled(boolean z6) {
-        super.setEnabled(z6);
-        this.mTabStrip.setSelectedIndicatorColor(z6 ? this.mSelectedIndicatorColor : this.mSelectedIndicatorDisableColor);
-        for (int i2 = 0; i2 < getTabCount(); i2++) {
-            enableTab(i2, z6);
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        this.mTabStrip.setSelectedIndicatorColor(enabled ? this.mSelectedIndicatorColor : this.mSelectedIndicatorDisableColor);
+        for (int index = 0; index < getTabCount(); index++) {
+            enableTab(index, enabled);
         }
     }
 
-    public void setIndicatorAnimTime(int i2) {
+    public void setIndicatorAnimTime(int indicatorAnimTime) {
         COUISlidingTabStrip cOUISlidingTabStrip = this.mTabStrip;
         if (cOUISlidingTabStrip != null) {
-            cOUISlidingTabStrip.setIndicatorAnimTime(i2);
+            cOUISlidingTabStrip.setIndicatorAnimTime(indicatorAnimTime);
         }
     }
 
-    public void setIndicatorBackgroundColor(int i2) {
+    public void setIndicatorBackgroundColor(int indicatorBackgroundColor) {
         COUISlidingTabStrip cOUISlidingTabStrip = this.mTabStrip;
         if (cOUISlidingTabStrip == null) {
             return;
         }
-        cOUISlidingTabStrip.getIndicatorBackgroundPaint().setColor(i2);
+        cOUISlidingTabStrip.getIndicatorBackgroundPaint().setColor(indicatorBackgroundColor);
     }
 
-    public void setIndicatorBackgroundHeight(int i2) {
+    public void setIndicatorBackgroundHeight(int indicatorBackgroundHeight) {
         COUISlidingTabStrip cOUISlidingTabStrip = this.mTabStrip;
         if (cOUISlidingTabStrip == null) {
             return;
         }
-        cOUISlidingTabStrip.setIndicatorBackgroundHeight(i2);
+        cOUISlidingTabStrip.setIndicatorBackgroundHeight(indicatorBackgroundHeight);
     }
 
-    public void setIndicatorBackgroundPaddingLeft(int i2) {
+    public void setIndicatorBackgroundPaddingLeft(int indicatorBackgroundPaddingLeft) {
         COUISlidingTabStrip cOUISlidingTabStrip = this.mTabStrip;
         if (cOUISlidingTabStrip == null) {
             return;
         }
-        cOUISlidingTabStrip.setIndicatorBackgroundPaddingLeft(i2);
+        cOUISlidingTabStrip.setIndicatorBackgroundPaddingLeft(indicatorBackgroundPaddingLeft);
     }
 
-    public void setIndicatorBackgroundPaddingRight(int i2) {
+    public void setIndicatorBackgroundPaddingRight(int indicatorBackgroundPaddingRight) {
         COUISlidingTabStrip cOUISlidingTabStrip = this.mTabStrip;
         if (cOUISlidingTabStrip == null) {
             return;
         }
-        cOUISlidingTabStrip.setIndicatorBackgroundPaddingRight(i2);
+        cOUISlidingTabStrip.setIndicatorBackgroundPaddingRight(indicatorBackgroundPaddingRight);
     }
 
-    public void setIndicatorPadding(int i2) {
-        this.mIndicatorPadding = i2;
+    public void setIndicatorPadding(int indicatorPadding) {
+        this.mIndicatorPadding = indicatorPadding;
         requestLayout();
     }
 
-    public void setIndicatorWidthRatio(float f2) {
+    public void setIndicatorWidthRatio(float indicatorWidthRatio) {
         COUISlidingTabStrip cOUISlidingTabStrip = this.mTabStrip;
         if (cOUISlidingTabStrip == null) {
             return;
         }
-        this.mDefaultIndicatorRatio = f2;
-        cOUISlidingTabStrip.setIndicatorWidthRatio(f2);
+        this.mDefaultIndicatorRatio = indicatorWidthRatio;
+        cOUISlidingTabStrip.setIndicatorWidthRatio(indicatorWidthRatio);
     }
 
     @Deprecated
@@ -1042,18 +1045,18 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         }
     }
 
-    public void setPaddingLeftAndRight(int i2, int i6) {
-        ViewCompat.setPaddingRelative(this, i2, 0, i6, 0);
+    public void setPaddingLeftAndRight(int index, int index_2) {
+        ViewCompat.setPaddingRelative(this, index, 0, index_2, 0);
     }
 
-    public void setPagerAdapter(androidx.viewpager.widget.PagerAdapter aVar, boolean z6) {
+    public void setPagerAdapter(androidx.viewpager.widget.PagerAdapter aVar, boolean pagerAdapter) {
         DataSetObserver dataSetObserver;
         androidx.viewpager.widget.PagerAdapter aVar2 = this.mPagerAdapter;
         if (aVar2 != null && (dataSetObserver = this.mPagerAdapterObserver) != null) {
             aVar2.unregisterDataSetObserver(dataSetObserver);
         }
         this.mPagerAdapter = aVar;
-        if (z6 && aVar != null) {
+        if (pagerAdapter && aVar != null) {
             if (this.mPagerAdapterObserver == null) {
                 this.mPagerAdapterObserver = new PagerAdapterObserver();
             }
@@ -1062,14 +1065,14 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         populateFromPagerAdapter();
     }
 
-    public void setRequestedTabMaxWidth(int i2) {
-        this.mRequestedTabMaxWidth = i2;
-        this.mOriginalRequestedTabMaxWidth = i2;
+    public void setRequestedTabMaxWidth(int requestedTabMaxWidth) {
+        this.mRequestedTabMaxWidth = requestedTabMaxWidth;
+        this.mOriginalRequestedTabMaxWidth = requestedTabMaxWidth;
     }
 
-    public void setRequestedTabMinWidth(int i2) {
-        this.mRequestedTabMinWidth = i2;
-        this.mOriginalRequestedTabMinWidth = i2;
+    public void setRequestedTabMinWidth(int requestedTabMinWidth) {
+        this.mRequestedTabMinWidth = requestedTabMinWidth;
+        this.mOriginalRequestedTabMinWidth = requestedTabMinWidth;
     }
 
     public void setScrollAnimatorListener(Animator.AnimatorListener animatorListener) {
@@ -1077,57 +1080,57 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         this.mScrollAnimator.addListener(animatorListener);
     }
 
-    public void setScrollPosition(int i2, float f2, boolean z6) {
-        setScrollPosition(i2, f2, z6, true);
+    public void setScrollPosition(int index, float value, boolean flag) {
+        setScrollPosition(index, value, flag, true);
     }
 
-    public void setSelectedTabIndicatorColor(int i2) {
-        this.mTabStrip.setSelectedIndicatorColor(i2);
-        this.mSelectedIndicatorColor = i2;
+    public void setSelectedTabIndicatorColor(int selectedTabIndicatorColor) {
+        this.mTabStrip.setSelectedIndicatorColor(selectedTabIndicatorColor);
+        this.mSelectedIndicatorColor = selectedTabIndicatorColor;
     }
 
-    public void setSelectedTabIndicatorHeight(int i2) {
-        this.mTabStrip.setSelectedIndicatorHeight(i2);
+    public void setSelectedTabIndicatorHeight(int selectedTabIndicatorHeight) {
+        this.mTabStrip.setSelectedIndicatorHeight(selectedTabIndicatorHeight);
     }
 
-    public void setTabGravity(int i2) {
+    public void setTabGravity(int tabGravity) {
     }
 
-    public void setTabMinDivider(int i2) {
-        this.mTabMinDivider = i2;
+    public void setTabMinDivider(int tabMinDivider) {
+        this.mTabMinDivider = tabMinDivider;
         requestLayout();
     }
 
-    public void setTabMinMargin(int i2) {
-        this.mTabMinMargin = i2;
-        ViewCompat.setPaddingRelative(this, i2, 0, i2, 0);
+    public void setTabMinMargin(int tabMinMargin) {
+        this.mTabMinMargin = tabMinMargin;
+        ViewCompat.setPaddingRelative(this, tabMinMargin, 0, tabMinMargin, 0);
         requestLayout();
     }
 
-    public void setTabMode(int i2) {
-        if (i2 != this.mMode) {
-            this.mMode = i2;
+    public void setTabMode(int tabMode) {
+        if (tabMode != this.mMode) {
+            this.mMode = tabMode;
             applyModeAndGravity();
         }
     }
 
-    public void setTabPaddingBottom(int i2) {
-        this.mTabPaddingBottom = i2;
+    public void setTabPaddingBottom(int tabPaddingBottom) {
+        this.mTabPaddingBottom = tabPaddingBottom;
         requestLayout();
     }
 
-    public void setTabPaddingEnd(int i2) {
-        this.mTabPaddingEnd = i2;
+    public void setTabPaddingEnd(int tabPaddingEnd) {
+        this.mTabPaddingEnd = tabPaddingEnd;
         requestLayout();
     }
 
-    public void setTabPaddingStart(int i2) {
-        this.mTabPaddingStart = i2;
+    public void setTabPaddingStart(int tabPaddingStart) {
+        this.mTabPaddingStart = tabPaddingStart;
         requestLayout();
     }
 
-    public void setTabPaddingTop(int i2) {
-        this.mTabPaddingTop = i2;
+    public void setTabPaddingTop(int tabPaddingTop) {
+        this.mTabPaddingTop = tabPaddingTop;
         requestLayout();
     }
 
@@ -1139,10 +1142,10 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         }
     }
 
-    public void setTabTextSize(float f2) {
+    public void setTabTextSize(float tabTextSize) {
         if (this.mTabStrip != null) {
-            this.mDefaultTabTextSize = f2;
-            this.mTabTextSize = f2;
+            this.mDefaultTabTextSize = tabTextSize;
+            this.mTabTextSize = tabTextSize;
         }
     }
 
@@ -1151,8 +1154,8 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         setPagerAdapter(aVar, false);
     }
 
-    public void setUpdateindicatorposition(boolean z6) {
-        this.mIsUpdateindicatorposition = z6;
+    public void setUpdateindicatorposition(boolean updateindicatorposition) {
+        this.mIsUpdateindicatorposition = updateindicatorposition;
     }
 
     public void setupWithViewPager(ViewPager bVar) {
@@ -1164,14 +1167,14 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         return getTabScrollRange() > 0;
     }
 
-    public void updateTabViews(boolean z6) {
-        for (int i2 = 0; i2 < this.mTabStrip.getChildCount(); i2++) {
-            COUITabView cOUITabView = (COUITabView) this.mTabStrip.getChildAt(i2);
+    public void updateTabViews(boolean flag) {
+        for (int index = 0; index < this.mTabStrip.getChildCount(); index++) {
+            COUITabView cOUITabView = (COUITabView) this.mTabStrip.getChildAt(index);
             cOUITabView.setMinimumWidth(getTabMinWidth());
             if (cOUITabView.getTextView() != null) {
                 ViewCompat.setPaddingRelative(cOUITabView.getTextView(), this.mTabPaddingStart, this.mTabPaddingTop, this.mTabPaddingEnd, this.mTabPaddingBottom);
             }
-            if (z6) {
+            if (flag) {
                 cOUITabView.requestLayout();
             }
         }
@@ -1185,12 +1188,12 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         addButton(drawable, onClickListener, (Drawable) null, (View.OnClickListener) null);
     }
 
-    public void addTab(COUITab cOUITab, int i2) {
-        addTab(cOUITab, i2, this.mTabs.isEmpty());
+    public void addTab(COUITab cOUITab, int index) {
+        addTab(cOUITab, index, this.mTabs.isEmpty());
     }
 
     @Override
-    public void addView(View view, int i2) {
+    public void addView(View view, int index) {
         addViewInternal(view);
     }
 
@@ -1199,7 +1202,7 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         return generateDefaultLayoutParams();
     }
 
-    public void selectTab(COUITab cOUITab, boolean z6) {
+    public void selectTab(COUITab cOUITab, boolean flag) {
         COUITab cOUITab2 = this.mSelectedTab;
         if (cOUITab2 == cOUITab) {
             if (cOUITab2 != null) {
@@ -1209,7 +1212,7 @@ public class COUITabLayout extends COUIHorizontalScrollView {
             return;
         }
         int position = cOUITab != null ? cOUITab.getPosition() : -1;
-        if (z6) {
+        if (flag) {
             if ((cOUITab2 == null || cOUITab2.getPosition() == -1) && position != -1) {
                 setScrollPosition(position, 0.0f, true);
             } else {
@@ -1231,13 +1234,13 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         }
     }
 
-    public void setScrollPosition(int i2, float f2, boolean z6, boolean z10) {
-        int iRound = Math.round(i2 + f2);
+    public void setScrollPosition(int index, float value, boolean flag, boolean flag_2) {
+        int iRound = Math.round(index + value);
         if (iRound < 0 || iRound >= this.mTabStrip.getChildCount()) {
             return;
         }
-        if (z10) {
-            this.mTabStrip.setIndicatorPositionFromTabPosition(i2, f2);
+        if (flag_2) {
+            this.mTabStrip.setIndicatorPositionFromTabPosition(index, value);
         } else if (this.mTabStrip.mSelectedPosition != getSelectedTabPosition()) {
             this.mTabStrip.mSelectedPosition = getSelectedTabPosition();
             this.mTabStrip.updateIndicatorPosition();
@@ -1246,26 +1249,26 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         if (valueAnimator != null && valueAnimator.isRunning()) {
             this.mScrollAnimator.cancel();
         }
-        scrollTo(calculateScrollXForTab(i2, f2), 0);
-        if (z6) {
-            setSelectedTabView(iRound, f2);
+        scrollTo(calculateScrollXForTab(index, value), 0);
+        if (flag) {
+            setSelectedTabView(iRound, value);
         }
     }
 
     @Deprecated
-    public void setTabTextSize(float f2, boolean z6) {
-        setTabTextSize(f2);
+    public void setTabTextSize(float width, boolean height) {
+        setTabTextSize(width);
     }
 
-    public void setupWithViewPager(ViewPager bVar, boolean z6) {
-        setupWithViewPager(bVar, z6, false);
+    public void setupWithViewPager(ViewPager bVar, boolean upWithViewPager) {
+        setupWithViewPager(bVar, upWithViewPager, false);
     }
 
-    public COUITabLayout(Context context, AttributeSet attributeSet, int i2) {
-        this(context, attributeSet, i2, R.style.COUITabLayoutBaseStyle);
+    public COUITabLayout(Context context, AttributeSet attributeSet, int index) {
+        this(context, attributeSet, index, R.style.COUITabLayoutBaseStyle);
     }
 
-    private void setupWithViewPager(ViewPager bVar, boolean z6, boolean z10) {
+    private void setupWithViewPager(ViewPager bVar, boolean flag, boolean flag_2) {
         ViewPager bVar2 = this.mViewPager;
         if (bVar2 != null) {
             TabLayoutOnPageChangeListener tabLayoutOnPageChangeListener = this.mPageChangeListener;
@@ -1293,27 +1296,27 @@ public class COUITabLayout extends COUIHorizontalScrollView {
             this.mCurrentVpSelectedListener = viewPagerOnTabSelectedListener;
             addOnTabSelectedListener(viewPagerOnTabSelectedListener);
             if (bVar.getAdapter() != null) {
-                setPagerAdapter(bVar.getAdapter(), z6);
+                setPagerAdapter(bVar.getAdapter(), flag);
             }
             if (this.mAdapterChangeListener == null) {
                 this.mAdapterChangeListener = new AdapterChangeListener();
             }
-            this.mAdapterChangeListener.setAutoRefresh(z6);
+            this.mAdapterChangeListener.setAutoRefresh(flag);
             bVar.addOnAdapterChangeListener(this.mAdapterChangeListener);
             setScrollPosition(bVar.getCurrentItem(), 0.0f, true);
         } else {
             this.mViewPager = null;
             setPagerAdapter(null, false);
         }
-        this.mSetupViewPagerImplicitly = z10;
+        this.mSetupViewPagerImplicitly = flag_2;
     }
 
-    public void addButton(int i2, View.OnClickListener onClickListener, int i6, View.OnClickListener onClickListener2) {
-        addButton(getContext().getDrawable(i2), onClickListener, getContext().getDrawable(i6), onClickListener2);
+    public void addButton(int index, View.OnClickListener onClickListener, int index_2, View.OnClickListener onClickListener2) {
+        addButton(getContext().getDrawable(index), onClickListener, getContext().getDrawable(index_2), onClickListener2);
     }
 
-    public void addTab(COUITab cOUITab, boolean z6) {
-        addTab(cOUITab, this.mTabs.size(), z6);
+    public void addTab(COUITab cOUITab, boolean flag) {
+        addTab(cOUITab, this.mTabs.size(), flag);
     }
 
     @Override
@@ -1321,16 +1324,16 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         addViewInternal(view);
     }
 
-    public void setTabTextColors(int i2, int i6) {
-        setTabTextColors(createColorStateList(i2, this.mTabTextDisabledColor, i6));
+    public void setTabTextColors(int index, int index_2) {
+        setTabTextColors(createColorStateList(index, this.mTabTextDisabledColor, index_2));
     }
 
-    public COUITabLayout(Context context, AttributeSet attributeSet, int i2, int i6) {
-        super(context, attributeSet, i2, i6);
+    public COUITabLayout(Context context, AttributeSet attributeSet, int index, int index_2) {
+        super(context, attributeSet, index, index_2);
         this.mTabs = new ArrayList<>();
         this.mSelectedListeners = new ArrayList<>();
         this.mTabViewPool = new androidx.core.util.Pools.SimplePool(12);
-        this.mRequestedTabMaxWidth = -1;
+        this.mRequestedTabMaxWidth = INVALID_WIDTH;
         this.mSelectedPosition = 0;
         this.mLastOffset = 0.0f;
         this.mEvaluator = new ArgbEvaluator();
@@ -1340,18 +1343,18 @@ public class COUITabLayout extends COUIHorizontalScrollView {
             int styleAttribute = attributeSet.getStyleAttribute();
             this.mStyle = styleAttribute;
             if (styleAttribute == 0) {
-                this.mStyle = i2;
+                this.mStyle = index;
             }
         } else {
-            this.mStyle = i2;
+            this.mStyle = index;
         }
-        this.mSelectedTypeface = Typeface.create("sans-serif-medium", Typeface.NORMAL);
+        this.mSelectedTypeface = Typeface.create(MEDIUM_FONT, Typeface.NORMAL);
         this.mNormalTypeface = Typeface.create(REGULAR_FONT, Typeface.NORMAL);
         setHorizontalScrollBarEnabled(false);
         COUISlidingTabStrip cOUISlidingTabStrip = new COUISlidingTabStrip(context, this);
         this.mTabStrip = cOUISlidingTabStrip;
         super.addView(cOUISlidingTabStrip, 0, new FrameLayout.LayoutParams(-2, -1));
-        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUITabLayout, i2, i6);
+        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUITabLayout, index, index_2);
         cOUISlidingTabStrip.setSelectedIndicatorHeight(typedArrayObtainStyledAttributes.getDimensionPixelSize(R.styleable.COUITabLayout_couiTabIndicatorHeight, 0));
         int color = typedArrayObtainStyledAttributes.getColor(R.styleable.COUITabLayout_couiTabIndicatorColor, 0);
         this.mSelectedIndicatorColor = color;
@@ -1391,24 +1394,24 @@ public class COUITabLayout extends COUIHorizontalScrollView {
             this.mDefaultTabTextSize = dimensionPixelSize2;
             this.mTabTextColors = typedArrayObtainStyledAttributes2.getColorStateList(androidx.appcompat.R.styleable.TextAppearance_android_textColor);
             typedArrayObtainStyledAttributes2.recycle();
-            int i10 = R.styleable.COUITabLayout_couiTabTextColor;
-            if (typedArrayObtainStyledAttributes.hasValue(i10)) {
-                this.mTabTextColors = typedArrayObtainStyledAttributes.getColorStateList(i10);
+            int index_3 = R.styleable.COUITabLayout_couiTabTextColor;
+            if (typedArrayObtainStyledAttributes.hasValue(index_3)) {
+                this.mTabTextColors = typedArrayObtainStyledAttributes.getColorStateList(index_3);
             }
             this.mTabTextDisabledColor = COUIContextUtil.getAttrColor(getContext(), R.attr.couiColorDisabledNeutral, 0);
-            int i11 = R.styleable.COUITabLayout_couiTabSelectedTextColor;
-            if (typedArrayObtainStyledAttributes.hasValue(i11)) {
-                this.mTabTextColors = createColorStateList(this.mTabTextColors.getDefaultColor(), this.mTabTextDisabledColor, typedArrayObtainStyledAttributes.getColor(i11, 0));
+            int index_4 = R.styleable.COUITabLayout_couiTabSelectedTextColor;
+            if (typedArrayObtainStyledAttributes.hasValue(index_4)) {
+                this.mTabTextColors = createColorStateList(this.mTabTextColors.getDefaultColor(), this.mTabTextDisabledColor, typedArrayObtainStyledAttributes.getColor(index_4, 0));
             }
-            this.mRequestedTabMinWidth = typedArrayObtainStyledAttributes.getDimensionPixelSize(R.styleable.COUITabLayout_couiTabMinWidth, -1);
+            this.mRequestedTabMinWidth = typedArrayObtainStyledAttributes.getDimensionPixelSize(R.styleable.COUITabLayout_couiTabMinWidth, INVALID_WIDTH);
             this.mTabBackgroundResId = typedArrayObtainStyledAttributes.getResourceId(R.styleable.COUITabLayout_couiTabBackground, 0);
             this.mMode = typedArrayObtainStyledAttributes.getInt(R.styleable.COUITabLayout_couiTabMode, 1);
-            this.mTabGravity = typedArrayObtainStyledAttributes.getInt(R.styleable.COUITabLayout_couiTabGravity, 0);
+            this.mTabGravity = typedArrayObtainStyledAttributes.getInt(R.styleable.COUITabLayout_couiTabGravity, GRAVITY_FILL);
             this.mEnableVibrator = typedArrayObtainStyledAttributes.getBoolean(R.styleable.COUITabLayout_couiTabEnableVibrator, true);
             this.mSelectedIndicatorDisableColor = typedArrayObtainStyledAttributes.getColor(R.styleable.COUITabLayout_couiTabIndicatorDisableColor, getResources().getColor(R.color.couiTabIndicatorDisableColor));
-            int i12 = R.styleable.COUITabLayout_couiTabTextSize;
-            if (typedArrayObtainStyledAttributes.hasValue(i12)) {
-                float dimension = typedArrayObtainStyledAttributes.getDimension(i12, 0.0f);
+            int index_5 = R.styleable.COUITabLayout_couiTabTextSize;
+            if (typedArrayObtainStyledAttributes.hasValue(index_5)) {
+                float dimension = typedArrayObtainStyledAttributes.getDimension(index_5, 0.0f);
                 this.mTabTextSize = dimension;
                 this.mDefaultTabTextSize = dimension;
             }
@@ -1428,58 +1431,58 @@ public class COUITabLayout extends COUIHorizontalScrollView {
         }
     }
 
-    private void setSelectedTabView(int i2, float f2) {
+    private void setSelectedTabView(int index, float value) {
         COUITabView cOUITabView;
-        float f10;
-        if (Math.abs(f2 - this.mLastOffset) > 0.5f || f2 == 0.0f) {
-            this.mSelectedPosition = i2;
+        float value_3;
+        if (Math.abs(value - this.mLastOffset) > 0.5f || value == 0.0f) {
+            this.mSelectedPosition = index;
         }
-        this.mLastOffset = f2;
-        if (i2 != this.mSelectedPosition && isEnabled()) {
-            COUITabView cOUITabView2 = (COUITabView) this.mTabStrip.getChildAt(i2);
-            if (f2 >= 0.5f) {
-                cOUITabView = (COUITabView) this.mTabStrip.getChildAt(i2 - 1);
-                f10 = f2 - 0.5f;
+        this.mLastOffset = value;
+        if (index != this.mSelectedPosition && isEnabled()) {
+            COUITabView cOUITabView2 = (COUITabView) this.mTabStrip.getChildAt(index);
+            if (value >= 0.5f) {
+                cOUITabView = (COUITabView) this.mTabStrip.getChildAt(index - 1);
+                value_3 = value - 0.5f;
             } else {
-                cOUITabView = (COUITabView) this.mTabStrip.getChildAt(i2 + 1);
-                f10 = 0.5f - f2;
+                cOUITabView = (COUITabView) this.mTabStrip.getChildAt(index + 1);
+                value_3 = 0.5f - value;
             }
-            float f11 = f10 / 0.5f;
+            float value_2 = value_3 / 0.5f;
             if (cOUITabView.getTextView() != null) {
-                cOUITabView.getTextView().setTextColor(((Integer) this.mEvaluator.evaluate(f11, Integer.valueOf(this.mSelectedTextColor), Integer.valueOf(this.mNormalTextColor))).intValue());
+                cOUITabView.getTextView().setTextColor(((Integer) this.mEvaluator.evaluate(value_2, Integer.valueOf(this.mSelectedTextColor), Integer.valueOf(this.mNormalTextColor))).intValue());
             }
             if (cOUITabView2.getTextView() != null) {
-                cOUITabView2.getTextView().setTextColor(((Integer) this.mEvaluator.evaluate(f11, Integer.valueOf(this.mNormalTextColor), Integer.valueOf(this.mSelectedTextColor))).intValue());
+                cOUITabView2.getTextView().setTextColor(((Integer) this.mEvaluator.evaluate(value_2, Integer.valueOf(this.mNormalTextColor), Integer.valueOf(this.mSelectedTextColor))).intValue());
             }
         }
-        if (f2 != 0.0f || i2 >= getTabCount()) {
+        if (value != 0.0f || index >= getTabCount()) {
             return;
         }
-        int i6 = 0;
+        int index_2 = 0;
         while (true) {
-            boolean z6 = true;
-            if (i6 >= getTabCount()) {
+            boolean flag = true;
+            if (index_2 >= getTabCount()) {
                 this.mNeedAdjust = true;
                 return;
             }
-            View childAt = this.mTabStrip.getChildAt(i6);
+            View childAt = this.mTabStrip.getChildAt(index_2);
             COUITabView cOUITabView3 = (COUITabView) childAt;
             if (cOUITabView3.getTextView() != null) {
                 cOUITabView3.getTextView().setTextColor(this.mTabTextColors);
             }
-            if (i6 != i2) {
-                z6 = false;
+            if (index_2 != index) {
+                flag = false;
             }
-            childAt.setSelected(z6);
-            i6++;
+            childAt.setSelected(flag);
+            index_2++;
         }
     }
 
-    public void addTab(COUITab cOUITab, int i2, boolean z6) {
+    public void addTab(COUITab cOUITab, int index, boolean flag) {
         if (cOUITab.mParent == this) {
-            configureTab(cOUITab, i2);
+            configureTab(cOUITab, index);
             addTabView(cOUITab);
-            if (z6) {
+            if (flag) {
                 cOUITab.select();
                 return;
             }
@@ -1489,15 +1492,15 @@ public class COUITabLayout extends COUIHorizontalScrollView {
     }
 
     @Override
-    public void addView(View view, int i2, ViewGroup.LayoutParams layoutParams) {
+    public void addView(View view, int index, ViewGroup.LayoutParams layoutParams) {
         addViewInternal(view);
     }
 
-    public void addButton(Drawable drawable, View.OnClickListener onClickListener, Drawable drawable2, View.OnClickListener onClickListener2) {
+    public void addButton(Drawable drawable, View.OnClickListener onClickListener, Drawable doubleValue, View.OnClickListener onClickListener2) {
         this.mButtons.clear();
         this.mButtons.add(new PrivateButton(drawable, onClickListener));
-        if (drawable2 != null) {
-            this.mButtons.add(new PrivateButton(drawable2, onClickListener2));
+        if (doubleValue != null) {
+            this.mButtons.add(new PrivateButton(doubleValue, onClickListener2));
         }
         setTabMode(0);
         invalidate();

@@ -18,12 +18,12 @@ public class OplusPathAdapter {
     }
 
     public void addSmoothRoundRect(float left, float top, float right, float bottom, float rx,
-            float ry, float weight, Path.Direction dir) {
+                                   float ry, float weight, Path.Direction dir) {
         mPath.addSmoothRoundRect(left, top, right, bottom, rx, ry, weight, dir);
     }
 
     public void addSmoothRoundRect(float left, float top, float right, float bottom, float rx,
-            float ry, Path.Direction dir) {
+                                   float ry, Path.Direction dir) {
         mPath.addSmoothRoundRect(left, top, right, bottom, rx, ry, dir);
     }
 

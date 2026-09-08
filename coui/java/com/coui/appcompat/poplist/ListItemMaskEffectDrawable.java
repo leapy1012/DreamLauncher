@@ -1,8 +1,7 @@
 package com.coui.appcompat.poplist;
 
-import com.coui.appcompat.R;
-
 import android.content.Context;
+
 import com.coui.appcompat.state.COUIMaskEffectDrawable;
 
 
@@ -10,12 +9,12 @@ public class ListItemMaskEffectDrawable extends COUIMaskEffectDrawable {
     public ListItemMaskEffectDrawable mChild;
     public ListItemMaskEffectDrawable mParent;
 
-    public ListItemMaskEffectDrawable(Context context, int i2, ListItemMaskEffectDrawable listItemMaskEffectDrawable) {
-        super(context, i2);
+    public ListItemMaskEffectDrawable(Context context, int index, ListItemMaskEffectDrawable listItemMaskEffectDrawable) {
+        super(context, index);
         this.mChild = null;
         this.mParent = null;
         if (listItemMaskEffectDrawable == null) {
-            this.mChild = new ListItemMaskEffectDrawable(context, i2, this);
+            this.mChild = new ListItemMaskEffectDrawable(context, index, this);
         } else {
             this.mParent = listItemMaskEffectDrawable;
         }

@@ -115,7 +115,7 @@ public final class COUIEmptyStateView extends LinearLayout {
     private Size getAnimTargetSize(int sizeType) {
         float scale = sizeType == EMPTY_VIEW_SIZE_TYPE_SMALL ? 0.0f
                 : sizeType == EMPTY_VIEW_SIZE_TYPE_MEDIUM ? ANIM_SIZE_SCALE_VALUE_SMALL
-                : ANIM_SIZE_SCALE_VALUE_NORMAL;
+                  : ANIM_SIZE_SCALE_VALUE_NORMAL;
         return new Size((int) (mAnimWidth * scale), (int) (mAnimHeight * scale));
     }
 

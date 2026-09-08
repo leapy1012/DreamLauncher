@@ -1,6 +1,7 @@
 package com.coui.appcompat.statement;
 
 import android.content.Context;
+
 import kotlin.jvm.internal.Intrinsics;
 
 
@@ -15,14 +16,14 @@ public final class PrivacyItem {
         this.summaryText = summaryText;
     }
 
-    public static PrivacyItem copy$default(PrivacyItem privacyItem, String str, String str2, int i2, Object obj) {
-        if ((i2 & 1) != 0) {
+    public static PrivacyItem copy$default(PrivacyItem privacyItem, String str, String text, int index, Object obj) {
+        if ((index & 1) != 0) {
             str = privacyItem.titleText;
         }
-        if ((i2 & 2) != 0) {
-            str2 = privacyItem.summaryText;
+        if ((index & 2) != 0) {
+            text = privacyItem.summaryText;
         }
-        return privacyItem.copy(str, str2);
+        return privacyItem.copy(str, text);
     }
 
     public final String component1() {
@@ -66,8 +67,8 @@ public final class PrivacyItem {
         return "PrivacyItem(titleText=" + this.titleText + ", summaryText=" + this.summaryText + ')';
     }
 
-    public PrivacyItem(Context context, int i2, int i6) {
-        this(context.getString(i2), context.getString(i6));
+    public PrivacyItem(Context context, int index, int index_2) {
+        this(context.getString(index), context.getString(index_2));
         Intrinsics.checkNotNullParameter(context, "context");
     }
 }

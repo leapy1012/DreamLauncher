@@ -44,7 +44,7 @@ class LightEffectHelper {
     }
 
     public LightEffectHelper(View view, float innerRadius, float outerRadius, RadialGradient innerShader,
-            RadialGradient outerShader) {
+                             RadialGradient outerShader) {
         mTargetView = view;
         mRadialMatrix = new Matrix();
         mInnerLightRadius = innerRadius;
@@ -126,7 +126,7 @@ class LightEffectHelper {
     }
 
     public void updateLightShaderConfig(float innerRadius, float outerRadius, RadialGradient innerShader,
-            RadialGradient outerShader) {
+                                        RadialGradient outerShader) {
         mInnerLightRadius = innerRadius;
         mOuterLightRadiusStart = DEFAULT_DELAY_PERCENT * outerRadius;
         mOuterLightRadiusEnd = outerRadius;

@@ -2,6 +2,7 @@ package com.coui.component.responsiveui;
 
 import android.content.Context;
 import android.content.res.Configuration;
+
 import com.coui.component.responsiveui.layoutgrid.LayoutGridSystem;
 import com.coui.component.responsiveui.layoutgrid.MarginType;
 import com.coui.component.responsiveui.proxy.ResponsiveUIProxy;

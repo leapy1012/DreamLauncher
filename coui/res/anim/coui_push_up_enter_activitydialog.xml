@@ -8,6 +8,6 @@
         android:fillBefore="false"
         android:fillEnabled="true"
         android:fromYDelta="100.0%"
-        android:interpolator="@anim/coui_push_up_interpolator"
+        android:interpolator="@interpolator/coui_push_up_interpolator"
         android:toYDelta="0.0%" />
 </set>

@@ -14,7 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Selection coordinator matching the decoded COUI chip module contract. */
+/**
+ * Selection coordinator matching the decoded COUI chip module contract.
+ */
 final class COUICheckableGroup<T extends COUICheckable<T>> {
     interface OnCheckedStateChangeListener {
         void onCheckedStateChanged(@NonNull Set<Integer> checkedIds);

@@ -18,12 +18,14 @@ import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+
 import androidx.appcompat.view.menu.ActionMenuItemView;
 import androidx.appcompat.view.menu.MenuBuilder;
 import androidx.appcompat.view.menu.MenuItemImpl;
 import androidx.appcompat.widget.ActionMenuView;
 import androidx.appcompat.widget.TooltipCompat;
 import androidx.core.view.ViewCompat;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.accessibilityutil.COUIAccessibilityUtil;
 import com.coui.appcompat.contextutil.COUIContextUtil;
@@ -37,6 +39,7 @@ import com.coui.appcompat.state.COUIMaskRippleDrawable;
 import com.coui.appcompat.textutil.COUIChangeTextUtil;
 import com.coui.appcompat.uiutil.AnimLevel;
 import com.coui.appcompat.uiutil.UIUtil;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -131,61 +134,61 @@ public class COUIActionMenuView extends ActionMenuView {
     }
 
     private void drawRedDot(View view, int amount, Canvas canvas) {
-        int i6;
-        int i10;
-        float x6;
-        float f2;
-        float y6;
-        float f10;
-        float x10;
-        float x11;
-        int i11 = amount != -1 ? amount != 0 ? 2 : 1 : 0;
+        int index_2;
+        int index_3;
+        float iconLeft;
+        float value;
+        float top;
+        float value_2;
+        float right;
+        float left;
+        int index = amount != -1 ? amount != 0 ? 2 : 1 : 0;
         if (view != null) {
-            int viewWidth = this.mHintRedDotHelper.getViewWidth(i11, amount);
-            int viewHeight = this.mHintRedDotHelper.getViewHeight(i11);
-            if (i11 == 1) {
-                i6 = this.mRedDotHorizontalOffset;
-                i10 = this.mRedDotVerticalOffset;
+            int viewWidth = this.mHintRedDotHelper.getViewWidth(index, amount);
+            int viewHeight = this.mHintRedDotHelper.getViewHeight(index);
+            if (index == 1) {
+                index_2 = this.mRedDotHorizontalOffset;
+                index_3 = this.mRedDotVerticalOffset;
             } else if (amount < 10) {
-                i6 = this.mRedDotWithSmallNumberHorizontalOffset;
-                i10 = this.mRedDotWithNumberVerticalOffset;
+                index_2 = this.mRedDotWithSmallNumberHorizontalOffset;
+                index_3 = this.mRedDotWithNumberVerticalOffset;
             } else if (amount < 100) {
-                i6 = this.mRedDotWithNumberHorizontalOffset;
-                i10 = this.mRedDotWithNumberVerticalOffset;
+                index_2 = this.mRedDotWithNumberHorizontalOffset;
+                index_3 = this.mRedDotWithNumberVerticalOffset;
             } else {
-                i6 = this.mRedDotWithBigNumberHorizontalOffset;
-                i10 = this.mRedDotWithNumberVerticalOffset;
+                index_2 = this.mRedDotWithBigNumberHorizontalOffset;
+                index_3 = this.mRedDotWithNumberVerticalOffset;
             }
             RectF rectF = new RectF();
             if ((view instanceof ActionMenuItemView) && ((ActionMenuItemView) view).getItemData().getIcon() == null) {
                 if (isLayoutRTL()) {
-                    x10 = (view.getX() + i6) - this.mMenuViewPadding;
-                    x11 = x10 - viewWidth;
+                    right = (view.getX() + index_2) - this.mMenuViewPadding;
+                    left = right - viewWidth;
                 } else {
-                    x11 = ((view.getX() + view.getWidth()) - i6) + this.mMenuViewPadding;
-                    x10 = viewWidth + x11;
+                    left = ((view.getX() + view.getWidth()) - index_2) + this.mMenuViewPadding;
+                    right = viewWidth + left;
                 }
-                y6 = (this.mMenuIconTopPadding - i10) + this.mItemVerOffset;
-                f10 = viewHeight + y6;
+                top = (this.mMenuIconTopPadding - index_3) + this.mItemVerOffset;
+                value_2 = viewHeight + top;
             } else {
                 if (isLayoutRTL()) {
-                    x6 = (view.getX() + ((view.getWidth() - this.mMenuIconBgRadius) / 2)) - i6;
-                    f2 = viewWidth + x6;
+                    iconLeft = (view.getX() + ((view.getWidth() - this.mMenuIconBgRadius) / 2)) - index_2;
+                    value = viewWidth + iconLeft;
                 } else {
-                    float x12 = ((view.getX() + view.getWidth()) - ((view.getWidth() - this.mMenuIconBgRadius) / 2)) + i6;
-                    x6 = x12 - viewWidth;
-                    f2 = x12;
+                    float iconRight = ((view.getX() + view.getWidth()) - ((view.getWidth() - this.mMenuIconBgRadius) / 2)) + index_2;
+                    iconLeft = iconRight - viewWidth;
+                    value = iconRight;
                 }
-                y6 = (view.getY() + ((view.getHeight() - this.mMenuIconBgRadius) / 2)) - i10;
-                f10 = y6 + viewHeight;
-                x10 = f2;
-                x11 = x6;
+                top = (view.getY() + ((view.getHeight() - this.mMenuIconBgRadius) / 2)) - index_3;
+                value_2 = top + viewHeight;
+                right = value;
+                left = iconLeft;
             }
-            rectF.left = x11;
-            rectF.top = y6;
-            rectF.right = x10;
-            rectF.bottom = f10;
-            this.mHintRedDotHelper.drawRedPoint(canvas, i11, Integer.valueOf(amount), rectF);
+            rectF.left = left;
+            rectF.top = top;
+            rectF.right = right;
+            rectF.bottom = value_2;
+            this.mHintRedDotHelper.drawRedPoint(canvas, index, Integer.valueOf(amount), rectF);
         }
     }
 
@@ -212,71 +215,71 @@ public class COUIActionMenuView extends ActionMenuView {
 
     private int measureChild(int widthMeasureSpec, int heightMeasureSpec) {
         int iMeasureChildCollapseMargins;
-        int i10 = 0;
+        int index = 0;
         if (!shouldUseStrictTextMeasure()) {
             int iMeasureChildCollapseMargins2 = 0;
-            while (i10 < getChildCount()) {
-                iMeasureChildCollapseMargins2 += measureChildCollapseMargins(getChildAt(i10), widthMeasureSpec, iMeasureChildCollapseMargins2, heightMeasureSpec, 0);
-                i10++;
+            while (index < getChildCount()) {
+                iMeasureChildCollapseMargins2 += measureChildCollapseMargins(getChildAt(index), widthMeasureSpec, iMeasureChildCollapseMargins2, heightMeasureSpec, 0);
+                index++;
             }
             return iMeasureChildCollapseMargins2;
         }
         int size = View.MeasureSpec.getSize(widthMeasureSpec);
-        int i11 = this.mToolbarTitleMinWidth;
-        while (i10 < getChildCount()) {
-            View childAt = getChildAt(i10);
+        int index_2 = this.mToolbarTitleMinWidth;
+        while (index < getChildCount()) {
+            View childAt = getChildAt(index);
             if (childAt instanceof COUIActionMenuItemView) {
                 COUIActionMenuItemView cOUIActionMenuItemView = (COUIActionMenuItemView) childAt;
                 if (cOUIActionMenuItemView.isTextMenuItem()) {
                     TextView textView = (TextView) childAt;
                     int iMeasureTextLineCount = COUIChangeTextUtil.measureTextLineCount(textView, this.mTextMenuItemMaxWidth, this.mTextMenuItemHorizontalPadding * 2);
-                    if (i10 == 0) {
-                        if (iMeasureTextLineCount <= 2) {
+                    if (index == 0) {
+                        if (iMeasureTextLineCount <= MAX_TEXT_MENU_ITEM_LINE) {
                             cOUIActionMenuItemView.setMaxWidth(this.mTextMenuItemMaxWidth);
                         } else {
-                            cOUIActionMenuItemView.setMaxWidth((size - i11) / 2);
+                            cOUIActionMenuItemView.setMaxWidth((size - index_2) / 2);
                         }
-                        iMeasureChildCollapseMargins = measureChildCollapseMargins(childAt, widthMeasureSpec, ((size - i11) / 2) + i11, heightMeasureSpec, 0);
+                        iMeasureChildCollapseMargins = measureChildCollapseMargins(childAt, widthMeasureSpec, ((size - index_2) / 2) + index_2, heightMeasureSpec, 0);
                     } else {
-                        if (iMeasureTextLineCount <= 2) {
+                        if (iMeasureTextLineCount <= MAX_TEXT_MENU_ITEM_LINE) {
                             cOUIActionMenuItemView.setMaxWidth(this.mTextMenuItemMaxWidth);
                         } else {
-                            cOUIActionMenuItemView.setMaxWidth(COUIChangeTextUtil.binarySearchForOptimalTextViewWidth(textView, 2, this.mTextMenuItemMaxWidth, size - i11, this.mTextMenuItemHorizontalPadding * 2));
+                            cOUIActionMenuItemView.setMaxWidth(COUIChangeTextUtil.binarySearchForOptimalTextViewWidth(textView, 2, this.mTextMenuItemMaxWidth, size - index_2, this.mTextMenuItemHorizontalPadding * 2));
                         }
-                        iMeasureChildCollapseMargins = measureChildCollapseMargins(childAt, widthMeasureSpec, i11, heightMeasureSpec, 0);
+                        iMeasureChildCollapseMargins = measureChildCollapseMargins(childAt, widthMeasureSpec, index_2, heightMeasureSpec, 0);
                     }
-                    i11 += iMeasureChildCollapseMargins;
+                    index_2 += iMeasureChildCollapseMargins;
                 }
             }
-            i10++;
+            index++;
         }
-        return i11;
+        return index_2;
     }
 
     private int measureChildCollapseMargins(View view, int parentWidthMeasureSpec, int widthUsed, int parentHeightMeasureSpec, int heightUsed) {
         ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
-        int i12 = marginLayoutParams.leftMargin + marginLayoutParams.rightMargin;
-        view.measure(ViewGroup.getChildMeasureSpec(parentWidthMeasureSpec, getPaddingLeft() + getPaddingRight() + i12 + widthUsed, marginLayoutParams.width), ViewGroup.getChildMeasureSpec(parentHeightMeasureSpec, getPaddingTop() + getPaddingBottom() + marginLayoutParams.topMargin + marginLayoutParams.bottomMargin + heightUsed, marginLayoutParams.height));
-        return view.getMeasuredWidth() + i12;
+        int index = marginLayoutParams.leftMargin + marginLayoutParams.rightMargin;
+        view.measure(ViewGroup.getChildMeasureSpec(parentWidthMeasureSpec, getPaddingLeft() + getPaddingRight() + index + widthUsed, marginLayoutParams.width), ViewGroup.getChildMeasureSpec(parentHeightMeasureSpec, getPaddingTop() + getPaddingBottom() + marginLayoutParams.topMargin + marginLayoutParams.bottomMargin + heightUsed, marginLayoutParams.height));
+        return view.getMeasuredWidth() + index;
     }
 
     private void resetItemMargin() {
-        int i2 = -1;
-        int i6 = -1;
-        int i10 = 0;
-        for (int i11 = 0; i11 < getChildCount(); i11++) {
-            if (getChildAt(i11).getVisibility() != 8) {
-                i10++;
-                if (i10 == 1) {
-                    i2 = i11;
-                    i6 = i2;
+        int index_2 = -1;
+        int index_3 = -1;
+        int index_4 = 0;
+        for (int index = 0; index < getChildCount(); index++) {
+            if (getChildAt(index).getVisibility() != 8) {
+                index_4++;
+                if (index_4 == 1) {
+                    index_2 = index;
+                    index_3 = index_2;
                 } else {
-                    i6 = i11;
+                    index_3 = index;
                 }
             }
         }
-        if (i2 != -1 && !this.mIsSameSide && i10 > 1) {
-            View childAt = getChildAt(i2);
+        if (index_2 != -1 && !this.mIsSameSide && index_4 > 1) {
+            View childAt = getChildAt(index_2);
             if (childAt instanceof ActionMenuItemView) {
                 ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) childAt.getLayoutParams();
                 if (((ActionMenuItemView) childAt).getItemData().getIcon() == null) {
@@ -292,8 +295,8 @@ public class COUIActionMenuView extends ActionMenuView {
                 }
             }
         }
-        if (i6 != -1) {
-            View childAt2 = getChildAt(i6);
+        if (index_3 != -1) {
+            View childAt2 = getChildAt(index_3);
             if (childAt2 instanceof ActionMenuItemView) {
                 ViewGroup.MarginLayoutParams marginLayoutParams2 = (ViewGroup.MarginLayoutParams) childAt2.getLayoutParams();
                 if (((ActionMenuItemView) childAt2).getItemData().getIcon() == null) {
@@ -317,9 +320,9 @@ public class COUIActionMenuView extends ActionMenuView {
     private String setRedDotDescription(int amount) {
         return amount != -1
                 ? amount != 0
-                        ? getResources().getQuantityString(
-                                this.mRedDotWithNumberDescriptionId, amount, amount)
-                        : this.mRedDotDescription
+                  ? getResources().getQuantityString(
+                this.mRedDotWithNumberDescriptionId, amount, amount)
+                  : this.mRedDotDescription
                 : EMPTY_TITLE;
     }
 
@@ -399,13 +402,13 @@ public class COUIActionMenuView extends ActionMenuView {
             configOverflowIconBackground();
             layoutParams.height = -1;
             this.mOverFlowMenuButton.setMinimumWidth(this.mOverFlowMinWidth);
-            View view2 = this.mOverFlowMenuButton;
-            view2.setPadding(this.mOverFlowHorPadding, view2.getPaddingTop(), this.mOverFlowHorPadding, this.mOverFlowMenuButton.getPaddingBottom());
+            View view_2 = this.mOverFlowMenuButton;
+            view_2.setPadding(this.mOverFlowHorPadding, view_2.getPaddingTop(), this.mOverFlowHorPadding, this.mOverFlowMenuButton.getPaddingBottom());
             this.mOverFlowMenuButton.setOnTouchListener(null);
             this.mOverFlowMenuButton.setLongClickable(false);
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onClick(View view3) {
+                public void onClick(View view_3) {
                     if (COUIActionMenuView.this.mOverflowPopup != null
                             && COUIActionMenuView.this.mOverflowPopup.isShowing()) {
                         COUIActionMenuView.this.mOverflowPopup.forceDismiss();
@@ -450,15 +453,15 @@ public class COUIActionMenuView extends ActionMenuView {
             }
             return;
         }
-        int i2 = 0;
+        int index = 0;
         for (int childCount2 = getChildCount() - 1; childCount2 >= 0; childCount2--) {
             View childAt2 = getChildAt(childCount2);
             if (childAt2 instanceof ActionMenuItemView) {
-                i2++;
+                index++;
                 childAt2.setTextAlignment(4);
             }
         }
-        if (i2 == 1 && (getChildAt(0) instanceof COUIActionMenuItemView)) {
+        if (index == 1 && (getChildAt(0) instanceof COUIActionMenuItemView)) {
             COUIActionMenuItemView cOUIActionMenuItemView = (COUIActionMenuItemView) getChildAt(0);
             if (cOUIActionMenuItemView.isTextMenuItem()) {
                 cOUIActionMenuItemView.setTextAlignment(6);
@@ -478,16 +481,16 @@ public class COUIActionMenuView extends ActionMenuView {
     @Override
     public void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
-        for (int i2 = 0; i2 < getChildCount(); i2++) {
-            View childAt = getChildAt(i2);
+        for (int index = 0; index < getChildCount(); index++) {
+            View childAt = getChildAt(index);
             if (this.mRedDotMap.containsKey(Integer.valueOf(childAt.getId()))) {
                 Integer num = this.mRedDotMap.get(Integer.valueOf(childAt.getId()));
                 drawRedDot(childAt, num == null ? 0 : num.intValue(), canvas);
             }
             if (((ActionMenuView.LayoutParams) childAt.getLayoutParams()).isOverflowButton && this.mRedDotMap.size() > 0) {
-                int i6 = this.mNonActionRedDotCount == 0 ? -1 : this.mNonActionRedDotSum;
-                drawRedDot(childAt, i6, canvas);
-                childAt.setContentDescription(TextUtils.isEmpty(setRedDotDescription(i6)) ? this.mOverFlowButtonDescription : this.mOverFlowButtonDescription + COUIAccessibilityUtil.PAUSE_STRING + setRedDotDescription(i6));
+                int index_2 = this.mNonActionRedDotCount == 0 ? -1 : this.mNonActionRedDotSum;
+                drawRedDot(childAt, index_2, canvas);
+                childAt.setContentDescription(TextUtils.isEmpty(setRedDotDescription(index_2)) ? this.mOverFlowButtonDescription : this.mOverFlowButtonDescription + COUIAccessibilityUtil.PAUSE_STRING + setRedDotDescription(index_2));
             }
         }
     }
@@ -516,105 +519,105 @@ public class COUIActionMenuView extends ActionMenuView {
     @Override
     public void onLayout(boolean changed, int left, int top, int right, int bottom) {
         int childCount = getChildCount();
-        int i12 = 0;
-        int i13 = 0;
-        for (int i14 = 0; i14 < childCount; i14++) {
-            if (getChildAt(i14).getVisibility() != 8) {
-                i13++;
+        int index_4 = 0;
+        int index_5 = 0;
+        for (int index = 0; index < childCount; index++) {
+            if (getChildAt(index).getVisibility() != 8) {
+                index_5++;
             }
         }
         boolean zB = ViewCompat.getLayoutDirection(this) == ViewCompat.LAYOUT_DIRECTION_RTL;
-        int i15 = (bottom - top) / 2;
+        int index_6 = (bottom - top) / 2;
         if (this.mIsSameSide) {
             if (zB) {
                 int width = getWidth() - getPaddingRight();
-                while (i12 < childCount) {
-                    View childAt = getChildAt(i12);
+                while (index_4 < childCount) {
+                    View childAt = getChildAt(index_4);
                     ActionMenuView.LayoutParams cVar = (ActionMenuView.LayoutParams) childAt.getLayoutParams();
                     if (childAt.getVisibility() != 8) {
-                        int i16 = width - ((LinearLayout.LayoutParams) cVar).rightMargin;
+                        int index_7 = width - ((LinearLayout.LayoutParams) cVar).rightMargin;
                         int measuredWidth = childAt.getMeasuredWidth();
                         int measuredHeight = childAt.getMeasuredHeight();
-                        int i17 = i15 - (measuredHeight / 2);
-                        childAt.layout(i16 - measuredWidth, i17, i16, measuredHeight + i17);
-                        width = i16 - ((measuredWidth + ((LinearLayout.LayoutParams) cVar).leftMargin) + this.mItemSpacing);
+                        int index_8 = index_6 - (measuredHeight / 2);
+                        childAt.layout(index_7 - measuredWidth, index_8, index_7, measuredHeight + index_8);
+                        width = index_7 - ((measuredWidth + ((LinearLayout.LayoutParams) cVar).leftMargin) + this.mItemSpacing);
                     }
-                    i12++;
+                    index_4++;
                 }
                 return;
             }
             int paddingLeft = getPaddingLeft();
-            while (i12 < childCount) {
-                View childAt2 = getChildAt(i12);
+            while (index_4 < childCount) {
+                View childAt2 = getChildAt(index_4);
                 ActionMenuView.LayoutParams cVar2 = (ActionMenuView.LayoutParams) childAt2.getLayoutParams();
                 if (childAt2.getVisibility() != 8) {
-                    int i18 = paddingLeft + ((LinearLayout.LayoutParams) cVar2).leftMargin;
+                    int index_9 = paddingLeft + ((LinearLayout.LayoutParams) cVar2).leftMargin;
                     int measuredWidth2 = childAt2.getMeasuredWidth();
                     int measuredHeight2 = childAt2.getMeasuredHeight();
-                    int i19 = i15 - (measuredHeight2 / 2);
-                    childAt2.layout(i18, i19, i18 + measuredWidth2, measuredHeight2 + i19);
-                    paddingLeft = i18 + measuredWidth2 + ((LinearLayout.LayoutParams) cVar2).rightMargin + this.mItemSpacing;
+                    int index_10 = index_6 - (measuredHeight2 / 2);
+                    childAt2.layout(index_9, index_10, index_9 + measuredWidth2, measuredHeight2 + index_10);
+                    paddingLeft = index_9 + measuredWidth2 + ((LinearLayout.LayoutParams) cVar2).rightMargin + this.mItemSpacing;
                 }
-                i12++;
+                index_4++;
             }
             return;
         }
         if (zB) {
             int paddingLeft2 = getPaddingLeft();
-            boolean z10 = true;
-            for (int i20 = childCount - 1; i20 >= 0; i20--) {
-                View childAt3 = getChildAt(i20);
+            boolean flag = true;
+            for (int index_2 = childCount - 1; index_2 >= 0; index_2--) {
+                View childAt3 = getChildAt(index_2);
                 ActionMenuView.LayoutParams cVar3 = (ActionMenuView.LayoutParams) childAt3.getLayoutParams();
                 if (childAt3.getVisibility() != 8) {
                     paddingLeft2 += ((LinearLayout.LayoutParams) cVar3).leftMargin;
-                    if (z10) {
+                    if (flag) {
                         if ((childAt3 instanceof TextView) && !TextUtils.isEmpty(((TextView) childAt3).getText())) {
                             paddingLeft2 += this.mTextExtarPadding;
                         }
-                        z10 = false;
+                        flag = false;
                     }
                     int measuredWidth3 = childAt3.getMeasuredWidth();
                     int measuredHeight3 = childAt3.getMeasuredHeight();
-                    int i21 = i15 - (measuredHeight3 / 2);
-                    if (i20 != 0 || i13 <= 1) {
-                        childAt3.layout(paddingLeft2, i21, paddingLeft2 + measuredWidth3, measuredHeight3 + i21);
+                    int index_11 = index_6 - (measuredHeight3 / 2);
+                    if (index_2 != 0 || index_5 <= 1) {
+                        childAt3.layout(paddingLeft2, index_11, paddingLeft2 + measuredWidth3, measuredHeight3 + index_11);
                         paddingLeft2 += measuredWidth3 + ((LinearLayout.LayoutParams) cVar3).rightMargin + this.mItemSpacing;
                     } else {
                         int width2 = ((getWidth() - getPaddingRight()) - ((LinearLayout.LayoutParams) cVar3).rightMargin) - measuredWidth3;
                         if ((childAt3 instanceof TextView) && !TextUtils.isEmpty(((TextView) childAt3).getText())) {
                             width2 -= this.mMenuViewPadding;
                         }
-                        childAt3.layout(width2, i21, measuredWidth3 + width2, measuredHeight3 + i21);
+                        childAt3.layout(width2, index_11, measuredWidth3 + width2, measuredHeight3 + index_11);
                     }
                 }
             }
             return;
         }
         int width3 = getWidth() - getPaddingRight();
-        boolean z11 = true;
-        for (int i22 = childCount - 1; i22 >= 0; i22--) {
-            View childAt4 = getChildAt(i22);
+        boolean flag_2 = true;
+        for (int index_3 = childCount - 1; index_3 >= 0; index_3--) {
+            View childAt4 = getChildAt(index_3);
             ActionMenuView.LayoutParams cVar4 = (ActionMenuView.LayoutParams) childAt4.getLayoutParams();
             if (childAt4.getVisibility() != 8) {
                 width3 -= ((LinearLayout.LayoutParams) cVar4).rightMargin;
-                if (z11) {
+                if (flag_2) {
                     if ((childAt4 instanceof TextView) && !TextUtils.isEmpty(((TextView) childAt4).getText())) {
                         width3 -= this.mTextExtarPadding;
                     }
-                    z11 = false;
+                    flag_2 = false;
                 }
                 int measuredWidth4 = childAt4.getMeasuredWidth();
                 int measuredHeight4 = childAt4.getMeasuredHeight();
-                int i23 = i15 - (measuredHeight4 / 2);
-                if (i22 != 0 || i13 <= 1) {
-                    childAt4.layout(width3 - measuredWidth4, i23, width3, measuredHeight4 + i23);
+                int index_12 = index_6 - (measuredHeight4 / 2);
+                if (index_3 != 0 || index_5 <= 1) {
+                    childAt4.layout(width3 - measuredWidth4, index_12, width3, measuredHeight4 + index_12);
                     width3 -= (measuredWidth4 + ((LinearLayout.LayoutParams) cVar4).leftMargin) + this.mItemSpacing;
                 } else {
                     int paddingLeft3 = getPaddingLeft() + ((LinearLayout.LayoutParams) cVar4).leftMargin;
                     if ((childAt4 instanceof TextView) && !TextUtils.isEmpty(((TextView) childAt4).getText())) {
                         paddingLeft3 += this.mMenuViewPadding;
                     }
-                    childAt4.layout(paddingLeft3, i23, measuredWidth4 + paddingLeft3, measuredHeight4 + i23);
+                    childAt4.layout(paddingLeft3, index_12, measuredWidth4 + paddingLeft3, measuredHeight4 + index_12);
                 }
             }
         }
@@ -631,14 +634,14 @@ public class COUIActionMenuView extends ActionMenuView {
             this.mIsSameSide = false;
         }
         setPadding(0, getPaddingTop(), 0, getPaddingBottom());
-        boolean z6 = ViewCompat.getLayoutDirection(this) == ViewCompat.LAYOUT_DIRECTION_RTL;
+        boolean layoutDirection = ViewCompat.getLayoutDirection(this) == ViewCompat.LAYOUT_DIRECTION_RTL;
         int size = View.MeasureSpec.getSize(widthMeasureSpec);
         View.MeasureSpec.getSize(heightMeasureSpec);
         resetItemMargin();
         int iMeasureChild = measureChild(widthMeasureSpec, heightMeasureSpec);
         int measuredHeight = 0;
-        for (int i10 = 0; i10 < getChildCount(); i10++) {
-            View childAt = getChildAt(i10);
+        for (int index = 0; index < getChildCount(); index++) {
+            View childAt = getChildAt(index);
             if (childAt.getMeasuredHeight() > measuredHeight) {
                 measuredHeight = childAt.getMeasuredHeight();
             }
@@ -646,26 +649,26 @@ public class COUIActionMenuView extends ActionMenuView {
         if (this.mIsSameSide) {
             int childCount = getChildCount();
             if (childCount > 0) {
-                int i11 = 0;
-                int i12 = -1;
-                for (int i13 = 0; i13 < childCount; i13++) {
-                    if (getChildAt(i13).getVisibility() != 8) {
-                        i11++;
-                        i12 = i13;
+                int index_3 = 0;
+                int index_4 = -1;
+                for (int index_2 = 0; index_2 < childCount; index_2++) {
+                    if (getChildAt(index_2).getVisibility() != 8) {
+                        index_3++;
+                        index_4 = index_2;
                     }
                 }
-                int i14 = iMeasureChild + ((i11 - 1) * this.mItemSpacing);
-                if (i12 != -1) {
-                    View childAt2 = getChildAt(i12);
+                int index_5 = iMeasureChild + ((index_3 - 1) * this.mItemSpacing);
+                if (index_4 != -1) {
+                    View childAt2 = getChildAt(index_4);
                     if ((childAt2 instanceof TextView) && !TextUtils.isEmpty(((TextView) childAt2).getText())) {
-                        i14 += this.mTextExtarPadding;
+                        index_5 += this.mTextExtarPadding;
                     }
                 }
-                size = i14;
+                size = index_5;
             } else {
                 size = 0;
             }
-            if (z6) {
+            if (layoutDirection) {
                 setPadding(getPaddingLeft(), getPaddingTop(), 0, getPaddingBottom());
             }
         }

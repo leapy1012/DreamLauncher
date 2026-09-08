@@ -1,7 +1,5 @@
 package com.coui.appcompat.grid;
 
-import com.coui.appcompat.R;
-
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Point;
@@ -9,6 +7,8 @@ import android.graphics.Rect;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.dialog.AppFeatureUtil;
 import com.coui.appcompat.log.COUILog;
 import com.coui.appcompat.uiutil.UIUtil;
@@ -18,6 +18,7 @@ import com.coui.component.responsiveui.unit.Dp;
 import com.coui.component.responsiveui.window.WindowSizeClass;
 import com.coui.component.responsiveui.window.WindowTotalSizeClass;
 import com.coui.component.responsiveui.window.WindowWidthSizeClass;
+
 import java.util.Arrays;
 
 
@@ -88,12 +89,12 @@ public class COUIResponsiveUtils {
     public static int getDefaultGridNumbers(ResponsiveUIModel responsiveUIModel) {
         WindowTotalSizeClass windowTotalSizeClass = responsiveUIModel.windowSizeClass().getWindowTotalSizeClass();
         if (windowTotalSizeClass.equals(WindowTotalSizeClass.Compact)) {
-            return 4;
+            return DEFAULT_COLUMNS_FOR_COMPAT;
         }
         if (windowTotalSizeClass.equals(WindowTotalSizeClass.Expanded)) {
-            return 8;
+            return DEFAULT_COLUMNS_FOR_EXPANDED;
         }
-        return (windowTotalSizeClass.equals(WindowTotalSizeClass.MediumLandScape) || windowTotalSizeClass.equals(WindowTotalSizeClass.MediumPortrait) || windowTotalSizeClass.equals(WindowTotalSizeClass.MediumSquare) || windowTotalSizeClass.equals(WindowTotalSizeClass.ExpandedLandPortrait) || windowTotalSizeClass.equals(WindowTotalSizeClass.ExpandedPortrait)) ? 6 : 4;
+        return (windowTotalSizeClass.equals(WindowTotalSizeClass.MediumLandScape) || windowTotalSizeClass.equals(WindowTotalSizeClass.MediumPortrait) || windowTotalSizeClass.equals(WindowTotalSizeClass.MediumSquare) || windowTotalSizeClass.equals(WindowTotalSizeClass.ExpandedLandPortrait) || windowTotalSizeClass.equals(WindowTotalSizeClass.ExpandedPortrait)) ? DEFAULT_COLUMNS_FOR_MEDIUM : DEFAULT_COLUMNS_FOR_COMPAT;
     }
 
     public static int getScreenPhysicalHeight(Activity activity) {

@@ -5,6 +5,7 @@ import com.facebook.rebound.SpringConfig;
 import com.facebook.rebound.SpringConfigRegistry;
 import com.facebook.rebound.SpringListener;
 import com.facebook.rebound.SpringSystem;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -30,7 +31,7 @@ public class COUISpringChain implements SpringListener {
     }
 
     private COUISpringChain(SpringSystem springSystem, int mainTension, int mainFriction,
-            int attachmentTension, int attachmentFriction) {
+                            int attachmentTension, int attachmentFriction) {
         this.mListeners = new CopyOnWriteArrayList<>();
         this.mSprings = new CopyOnWriteArrayList<>();
         this.mControlSpringIndex = -1;
@@ -47,7 +48,7 @@ public class COUISpringChain implements SpringListener {
     }
 
     public static COUISpringChain create(SpringSystem springSystem, int mainTension, int mainFriction,
-            int attachmentTension, int attachmentFriction) {
+                                         int attachmentTension, int attachmentFriction) {
         return new COUISpringChain(springSystem, mainTension, mainFriction,
                 attachmentTension, attachmentFriction);
     }

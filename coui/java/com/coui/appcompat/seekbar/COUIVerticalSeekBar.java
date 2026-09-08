@@ -35,12 +35,6 @@ import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.hapticfeedback.COUIHapticFeedbackConstants;
-import com.oplus.physicsengine.engine.AnimationListener;
-import com.oplus.physicsengine.engine.AnimationUpdateListener;
-import com.oplus.physicsengine.engine.BaseBehavior;
-import com.oplus.physicsengine.engine.FlingBehavior;
-import com.oplus.physicsengine.engine.FloatValueHolder;
-import com.oplus.physicsengine.engine.PhysicalAnimator;
 import com.coui.appcompat.roundcorner.RoundCornerUtil;
 import com.coui.appcompat.vibrateutil.VibrateUtils;
 import com.facebook.rebound.Spring;
@@ -49,6 +43,12 @@ import com.facebook.rebound.SpringListener;
 import com.facebook.rebound.SpringSystem;
 import com.oplus.graphics.OplusCanvas;
 import com.oplus.graphics.OplusPathAdapter;
+import com.oplus.physicsengine.engine.AnimationListener;
+import com.oplus.physicsengine.engine.AnimationUpdateListener;
+import com.oplus.physicsengine.engine.BaseBehavior;
+import com.oplus.physicsengine.engine.FlingBehavior;
+import com.oplus.physicsengine.engine.FloatValueHolder;
+import com.oplus.physicsengine.engine.PhysicalAnimator;
 
 import java.math.BigDecimal;
 
@@ -192,7 +192,7 @@ public class COUIVerticalSeekBar extends AbsSeekBar
     private TextDrawable mTextDrawable;
     private float mThumbPosition;
     private VelocityTracker mVelocityTracker;
-    private float mWidthDeformedValue;
+    protected float mWidthDeformedValue;
     private float mCurBottomDeformationValue;
     private float mCurTopDeformationValue;
     private ValueAnimator mClickAnimator;
@@ -214,7 +214,7 @@ public class COUIVerticalSeekBar extends AbsSeekBar
     }
 
     public COUIVerticalSeekBar(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-            int defStyleRes) {
+                               int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         COUIDarkModeUtil.setForceDarkAllow(this, false);
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
@@ -356,7 +356,7 @@ public class COUIVerticalSeekBar extends AbsSeekBar
         mVerticalPaddingScale = mBackgroundEnlargeScale != 1.0f
                 ? (getResources().getDimensionPixelSize(
                 R.dimen.coui_vertical_seekbar_progress_pressed_padding_vertical)
-                + (mBackgroundRadius * mBackgroundRadiusEnlargeScale)) / mPaddingVertical
+                   + (mBackgroundRadius * mBackgroundRadiusEnlargeScale)) / mPaddingVertical
                 : 1.0f;
         mCurProgressRadius = mProgressRadius;
         mCurBackgroundRadius = mBackgroundRadius;
@@ -477,9 +477,9 @@ public class COUIVerticalSeekBar extends AbsSeekBar
         if (smooth) {
             new OplusPathAdapter(mBackgroundPath, RoundCornerUtil.getSmoothStyleType())
                     .addSmoothRoundRect(mBackgroundRect.left,
-                    mBackgroundRect.top, mBackgroundRect.right, mBackgroundRect.bottom,
-                    mCurBackgroundRadius, mCurBackgroundRadius, mProgressRoundCornerWeight,
-                    Path.Direction.CCW);
+                            mBackgroundRect.top, mBackgroundRect.right, mBackgroundRect.bottom,
+                            mCurBackgroundRadius, mCurBackgroundRadius, mProgressRoundCornerWeight,
+                            Path.Direction.CCW);
         } else {
             mBackgroundPath.addRoundRect(mBackgroundRect.left, mBackgroundRect.top,
                     mBackgroundRect.right, mBackgroundRect.bottom, mCurBackgroundRadius,
@@ -512,9 +512,9 @@ public class COUIVerticalSeekBar extends AbsSeekBar
         if (smooth) {
             new OplusPathAdapter(mClipProgressPath, RoundCornerUtil.getSmoothStyleType())
                     .addSmoothRoundRect(mClipProgressRect.left,
-                    mClipProgressRect.top, mClipProgressRect.right, mClipProgressRect.bottom,
-                    mCurProgressRadius, mCurProgressRadius, mProgressRoundCornerWeight,
-                    Path.Direction.CCW);
+                            mClipProgressRect.top, mClipProgressRect.right, mClipProgressRect.bottom,
+                            mCurProgressRadius, mCurProgressRadius, mProgressRoundCornerWeight,
+                            Path.Direction.CCW);
         } else {
             mClipProgressPath.addRoundRect(mClipProgressRect.left, mClipProgressRect.top,
                     mClipProgressRect.right, mClipProgressRect.bottom, mCurProgressRadius,
@@ -781,7 +781,7 @@ public class COUIVerticalSeekBar extends AbsSeekBar
         float totalHeight = height + (2.0f * progressRadius);
         float scale = totalHeight > 0.0f
                 ? (((getHeight() - getPaddingBottom()) - (mCurPaddingVertical - progressRadius))
-                - event.getY()) / totalHeight
+                   - event.getY()) / totalHeight
                 : 0.0f;
         mScale = Math.max(0.0f, Math.min(scale, 1.0f));
         int progress = getProgressLimit(Math.round(((mMax - mMin) * mScale) + mMin));
@@ -804,7 +804,7 @@ public class COUIVerticalSeekBar extends AbsSeekBar
         float totalHeight = seekBarHeight + (2.0f * progressRadius);
         float scale = totalHeight > 0.0f
                 ? (((getHeight() - getPaddingBottom()) - (mCurPaddingVertical - progressRadius))
-                - y) / totalHeight
+                   - y) / totalHeight
                 : 0.0f;
         startTransitionAnim(getProgressLimit(Math.round(
                 (scale * (getMax() - getMin())) + getMin())), true);

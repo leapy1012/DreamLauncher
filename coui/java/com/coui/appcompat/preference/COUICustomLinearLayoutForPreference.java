@@ -217,7 +217,7 @@ public class COUICustomLinearLayoutForPreference extends LinearLayout {
     private boolean setReddotAndMessageLayoutMarginEnd() {
         boolean changed;
         View view;
-        View view2;
+        View view_3;
         if (viewB == null || viewB.getVisibility() != VISIBLE) {
             changed = false;
         } else {
@@ -245,9 +245,9 @@ public class COUICustomLinearLayoutForPreference extends LinearLayout {
             }
         }
         if (mSetMessageLayoutMarginEnd && (view = viewA) != null && view.getVisibility() == VISIBLE) {
-            View view5 = viewB;
-            if ((view5 == null || view5.getVisibility() != VISIBLE)
-                    && ((view2 = viewC) == null || view2.getVisibility() != VISIBLE)) {
+            View view_2 = viewB;
+            if ((view_2 == null || view_2.getVisibility() != VISIBLE)
+                    && ((view_3 = viewC) == null || view_3.getVisibility() != VISIBLE)) {
                 LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) viewA.getLayoutParams();
                 int marginEnd = layoutParams.getMarginEnd();
                 int target = mDefaultMarginEnd;
@@ -301,16 +301,16 @@ public class COUICustomLinearLayoutForPreference extends LinearLayout {
                 ((paddingLeft + getMarginLeft(viewA)) + getRealWidthWithMargin(viewA)) - getMarginWidth(viewA),
                 ((realHeight + getMarginTop(viewA)) + getRealHeight(viewA)) - getMarginHeight(viewA)
         );
-        View view2 = viewC;
-        view2.layout(
-                getMarginLeft(view2) + realWidthWithMargin2,
+        View view_2 = viewC;
+        view_2.layout(
+                getMarginLeft(view_2) + realWidthWithMargin2,
                 getMarginTop(viewC) + realHeight2,
                 ((realWidthWithMargin2 + getMarginLeft(viewC)) + getRealWidthWithMargin(viewC)) - getMarginWidth(viewC),
                 ((realHeight2 + getMarginTop(viewC)) + getRealHeight(viewC)) - getMarginHeight(viewC)
         );
-        View view3 = viewB;
-        view3.layout(
-                getMarginLeft(view3) + realWidthWithMargin,
+        View view_3 = viewB;
+        view_3.layout(
+                getMarginLeft(view_3) + realWidthWithMargin,
                 getMarginTop(viewB) + realHeight3,
                 ((realWidthWithMargin + getMarginLeft(viewB)) + getRealWidthWithMargin(viewB)) - getMarginWidth(viewB),
                 ((realHeight3 + getMarginTop(viewB)) + getRealHeight(viewB)) - getMarginHeight(viewB)

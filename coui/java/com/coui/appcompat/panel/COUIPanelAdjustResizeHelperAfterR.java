@@ -5,10 +5,12 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+
+import androidx.dynamicanimation.animation.FloatValueHolder;
+
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
-import androidx.dynamicanimation.animation.FloatValueHolder;
 
 
 public class COUIPanelAdjustResizeHelperAfterR extends COUIAbsPanelAdjustResizeHelper {
@@ -55,7 +57,7 @@ public class COUIPanelAdjustResizeHelperAfterR extends COUIAbsPanelAdjustResizeH
             startValue.addUpdateListener(new COUIDynamicAnimation.OnAnimationUpdateListener() {
                 @Override
                 public final void onAnimationUpdate(COUIDynamicAnimation animation, float value, float velocity) {
-                    COUIPanelAdjustResizeHelperAfterR.this.lambda$doMarginBottomAnim$0(animation, value, velocity);
+                    COUIPanelAdjustResizeHelperAfterR.this.onMarginBottomAnimUpdate(animation, value, velocity);
                 }
             });
         } else {
@@ -81,13 +83,13 @@ public class COUIPanelAdjustResizeHelperAfterR extends COUIAbsPanelAdjustResizeH
         return 0;
     }
 
-    private int getCurrentBottomOffset(View view, View view2) {
+    private int getCurrentBottomOffset(View view, View contentView) {
         ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
-        return (layoutParams instanceof ViewGroup.MarginLayoutParams ? ((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin : 0) + view2.getPaddingBottom();
+        return (layoutParams instanceof ViewGroup.MarginLayoutParams ? ((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin : 0) + contentView.getPaddingBottom();
     }
 
 
-    public void lambda$doMarginBottomAnim$0(COUIDynamicAnimation animation, float value, float velocity) {
+    public void onMarginBottomAnimUpdate(COUIDynamicAnimation animation, float value, float velocity) {
         View contentLayout = this.mLastCouiPanelContentLayout;
         View bottomSheetOrPanelContentLayout = this.mLastBottomDesignSheetOrPanelContentLayout;
         if (bottomSheetOrPanelContentLayout == null || contentLayout == null) {
@@ -116,9 +118,9 @@ public class COUIPanelAdjustResizeHelperAfterR extends COUIAbsPanelAdjustResizeH
                 ((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = this.mBottomMarginOfDesignBottomSheet;
                 this.mLastBottomDesignSheetOrPanelContentLayout.setLayoutParams(layoutParams);
             }
-            View view2 = this.mLastCouiPanelContentLayout;
-            if (view2 != null) {
-                view2.setPadding(0, 0, 0, 0);
+            View contentLayout = this.mLastCouiPanelContentLayout;
+            if (contentLayout != null) {
+                contentLayout.setPadding(0, 0, 0, 0);
             }
         }
     }

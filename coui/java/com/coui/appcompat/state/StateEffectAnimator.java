@@ -41,12 +41,12 @@ public class StateEffectAnimator {
     }
 
     public StateEffectAnimator(Drawable drawable, View view, String tag, int startColor,
-            int endColor) {
+                               int endColor) {
         // Leapy added: Match OPPO's reset listener and threshold-return spring behavior.
         mResetEndListener = new COUIDynamicAnimation.OnAnimationEndListener() {
             @Override
             public void onAnimationEnd(COUIDynamicAnimation animation, boolean canceled,
-                    float value, float velocity) {
+                                       float value, float velocity) {
                 StateEffectAnimator.this.animateToProgress(0.0f, true);
                 animation.removeEndListener(StateEffectAnimator.this.mResetEndListener);
             }

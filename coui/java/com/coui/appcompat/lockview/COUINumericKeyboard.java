@@ -38,11 +38,14 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.animation.Interpolator;
 import android.view.animation.PathInterpolator;
+
 import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
 import androidx.dynamicanimation.animation.FloatValueHolder;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.accessibilityutil.COUIAccessibilityUtil;
 import com.coui.appcompat.animation.COUIEaseInterpolator;
 import com.coui.appcompat.animation.COUIInEaseInterpolator;
@@ -51,18 +54,16 @@ import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
-import com.coui.appcompat.lockview.LightEffectHelper;
 import com.coui.appcompat.log.COUILog;
 import com.coui.appcompat.pressfeedback.COUIPressFeedbackHelper;
 import com.coui.appcompat.uiutil.UIUtil;
 import com.coui.appcompat.vibrateutil.VibrateUtils;
-import com.coui.appcompat.R;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/* JADX INFO: loaded from: classes11.dex */
 public class COUINumericKeyboard extends View {
     public static final long ALPHA_DELAY = 166;
     public static final long ALPHA_DURATION = 167;
@@ -239,7 +240,6 @@ public class COUINumericKeyboard extends View {
         int row;
         ValueAnimator showAnimator;
 
-        /* JADX INFO: Access modifiers changed from: private */
         public void refreshLightEffectDrawPath() {
             if (this.mInvalidatePaths) {
                 refreshNumberPaths();
@@ -254,10 +254,10 @@ public class COUINumericKeyboard extends View {
             this.mNumberPaths.reset();
             float centerXForColumn = COUINumericKeyboard.this.getCenterXForColumn(this.column);
             float centerYForRow = COUINumericKeyboard.this.getCenterYForRow(this.row);
-            for (int i2 = 0; i2 < 4; i2++) {
-                for (int i3 = 0; i3 < 3; i3++) {
-                    if ((i2 != 3 || i3 != 0) && ((i2 != 3 || i3 != 2) && (i2 != this.row || i3 != this.column))) {
-                        this.mNumberPaths.addOval((COUINumericKeyboard.this.getCenterXForColumn(i3) - (COUINumericKeyboard.this.mNumberBackgroundRadius * COUINumericKeyboard.this.sCells[i2][i3].mButtonScale)) - centerXForColumn, (COUINumericKeyboard.this.getCenterYForRow(i2) - (COUINumericKeyboard.this.mNumberBackgroundRadius * COUINumericKeyboard.this.sCells[i2][i3].mButtonScale)) - centerYForRow, (COUINumericKeyboard.this.getCenterXForColumn(i3) + (COUINumericKeyboard.this.mNumberBackgroundRadius * COUINumericKeyboard.this.sCells[i2][i3].mButtonScale)) - centerXForColumn, (COUINumericKeyboard.this.getCenterYForRow(i2) + (COUINumericKeyboard.this.mNumberBackgroundRadius * COUINumericKeyboard.this.sCells[i2][i3].mButtonScale)) - centerYForRow, Path.Direction.CCW);
+            for (int row = 0; row < 4; row++) {
+                for (int column = 0; column < 3; column++) {
+                    if ((row != 3 || column != 0) && ((row != 3 || column != 2) && (row != this.row || column != this.column))) {
+                        this.mNumberPaths.addOval((COUINumericKeyboard.this.getCenterXForColumn(column) - (COUINumericKeyboard.this.mNumberBackgroundRadius * COUINumericKeyboard.this.sCells[row][column].mButtonScale)) - centerXForColumn, (COUINumericKeyboard.this.getCenterYForRow(row) - (COUINumericKeyboard.this.mNumberBackgroundRadius * COUINumericKeyboard.this.sCells[row][column].mButtonScale)) - centerYForRow, (COUINumericKeyboard.this.getCenterXForColumn(column) + (COUINumericKeyboard.this.mNumberBackgroundRadius * COUINumericKeyboard.this.sCells[row][column].mButtonScale)) - centerXForColumn, (COUINumericKeyboard.this.getCenterYForRow(row) + (COUINumericKeyboard.this.mNumberBackgroundRadius * COUINumericKeyboard.this.sCells[row][column].mButtonScale)) - centerYForRow, Path.Direction.CCW);
                     }
                 }
             }
@@ -285,31 +285,31 @@ public class COUINumericKeyboard extends View {
             return (this.row * 31) + this.column;
         }
 
-        public void setCellNumberAlpha(float f2) {
-            this.cellNumberAlpha = f2;
+        public void setCellNumberAlpha(float alpha) {
+            this.cellNumberAlpha = alpha;
             COUINumericKeyboard.this.invalidate();
         }
 
-        public void setCellNumberTranslateX(int i2) {
-            this.cellNumberTranslateX = i2;
+        public void setCellNumberTranslateX(int translationX) {
+            this.cellNumberTranslateX = translationX;
             COUINumericKeyboard.this.invalidate();
         }
 
-        public void setCellNumberTranslateY(int i2) {
-            this.cellNumberTranslateY = i2;
+        public void setCellNumberTranslateY(int translationY) {
+            this.cellNumberTranslateY = translationY;
             COUINumericKeyboard.this.invalidate();
         }
 
-        public void setCircleColor(int i2) {
-            if (i2 != 0) {
-                this.pressedColor = i2;
+        public void setCircleColor(int color) {
+            if (color != 0) {
+                this.pressedColor = color;
                 Drawable drawable = this.normalCircle;
                 if (drawable != null) {
-                    drawable.mutate().setTint(i2);
+                    drawable.mutate().setTint(color);
                 }
-                Drawable drawable2 = this.blurCircle;
-                if (drawable2 != null) {
-                    drawable2.mutate().setTint(i2);
+                Drawable tintDrawable = this.blurCircle;
+                if (tintDrawable != null) {
+                    tintDrawable.mutate().setTint(color);
                 }
             }
         }
@@ -318,7 +318,7 @@ public class COUINumericKeyboard extends View {
             return "row " + this.row + "column " + this.column;
         }
 
-        private Cell(int i2, int i3) {
+        private Cell(int row, int column) {
             this.cellNumberStr = "";
             this.cellLettersStr = "";
             this.cellNumberAlpha = 1.0f;
@@ -330,9 +330,9 @@ public class COUINumericKeyboard extends View {
             this.mLightEffectPath = new Path();
             this.mNumberPaths = new Path();
             this.mInvalidatePaths = true;
-            COUINumericKeyboard.this.checkRange(i2, i3);
-            this.row = i2;
-            this.column = i3;
+            COUINumericKeyboard.this.checkRange(row, column);
+            this.row = row;
+            this.column = column;
             this.normalCircle = COUINumericKeyboard.this.getContext().getDrawable(R.drawable.coui_number_keyboard_normal_circle);
             this.blurCircle = COUINumericKeyboard.this.getContext().getDrawable(R.drawable.coui_number_keyboard_blur_circle);
             this.normalCircle.setTint(COUINumericKeyboard.this.mPressedColor);
@@ -351,13 +351,13 @@ public class COUINumericKeyboard extends View {
     }
 
     public interface KeyboardDrawDelegate {
-        Paint[] getCustomKeyboardPaint(int i2, int i3, RectF rectF);
+        Paint[] getCustomKeyboardPaint(int row, int column, RectF rectF);
     }
 
     public interface OnClickItemListener {
         void onClickLeft();
 
-        void onClickNumber(int i2);
+        void onClickNumber(int number);
 
         void onClickRight();
     }
@@ -369,7 +369,7 @@ public class COUINumericKeyboard extends View {
 
     @Deprecated
     public interface OnTouchTextListener {
-        void onTouchText(int i2);
+        void onTouchText(int index);
     }
 
     @Deprecated
@@ -385,12 +385,12 @@ public class COUINumericKeyboard extends View {
             this.mTempRect = new Rect();
         }
 
-        private Rect getBoundsForVirtualView(int i2) {
+        private Rect getBoundsForVirtualView(int virtualViewId) {
             int centerXForColumn;
             int centerYForRow;
             Rect rect = this.mTempRect;
-            if (i2 != -1) {
-                Cell cellOf = COUINumericKeyboard.this.of(i2 / 3, i2 % 3);
+            if (virtualViewId != -1) {
+                Cell cellOf = COUINumericKeyboard.this.of(virtualViewId / 3, virtualViewId % 3);
                 centerXForColumn = (int) COUINumericKeyboard.this.getCenterXForColumn(cellOf.column);
                 centerYForRow = (int) COUINumericKeyboard.this.getCenterYForRow(cellOf.row);
             } else {
@@ -404,56 +404,56 @@ public class COUINumericKeyboard extends View {
             return rect;
         }
 
-        private int getVirtualViewIdForHit(float f2, float f3) {
-            Cell cellCheckForNewHit = COUINumericKeyboard.this.checkForNewHit(f2, f3);
+        private int getVirtualViewIdForHit(float x, float y) {
+            Cell cellCheckForNewHit = COUINumericKeyboard.this.checkForNewHit(x, y);
             if (cellCheckForNewHit == null) {
                 return -1;
             }
-            int row = (cellCheckForNewHit.getRow() * 3) + cellCheckForNewHit.getColumn();
-            if (row == 9) {
+            int virtualViewId = (cellCheckForNewHit.getRow() * 3) + cellCheckForNewHit.getColumn();
+            if (virtualViewId == 9) {
                 COUINumericKeyboard cOUINumericKeyboard = COUINumericKeyboard.this;
                 if (cOUINumericKeyboard.isEmptyStyle(cOUINumericKeyboard.mLeftStyle)) {
-                    row = -1;
+                    virtualViewId = -1;
                 }
             }
-            if (row == 11) {
+            if (virtualViewId == 11) {
                 COUINumericKeyboard cOUINumericKeyboard2 = COUINumericKeyboard.this;
                 if (cOUINumericKeyboard2.isEmptyStyle(cOUINumericKeyboard2.mRightStyle)) {
                     return -1;
                 }
             }
-            return row;
+            return virtualViewId;
         }
 
         public int getItemCounts() {
             return 12;
         }
 
-        public CharSequence getItemDescription(int i2) {
-            if (i2 == 9) {
+        public CharSequence getItemDescription(int virtualViewId) {
+            if (virtualViewId == 9) {
                 COUINumericKeyboard cOUINumericKeyboard = COUINumericKeyboard.this;
                 if (!cOUINumericKeyboard.isEmptyStyle(cOUINumericKeyboard.mLeftStyle)) {
                     return COUINumericKeyboard.this.mLeftStyle.mDescription;
                 }
             }
-            if (i2 == 11) {
+            if (virtualViewId == 11) {
                 COUINumericKeyboard cOUINumericKeyboard2 = COUINumericKeyboard.this;
                 if (!cOUINumericKeyboard2.isEmptyStyle(cOUINumericKeyboard2.mRightStyle)) {
                     return COUINumericKeyboard.this.mRightStyle.mDescription;
                 }
             }
-            if (i2 == -1) {
+            if (virtualViewId == -1) {
                 return PatternExploreByTouchHelper.class.getSimpleName();
             }
-            return COUINumericKeyboard.this.mKeyboardNumbers[i2] + "";
+            return COUINumericKeyboard.this.mKeyboardNumbers[virtualViewId] + "";
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public int getVirtualViewAt(float f2, float f3) {
-            return getVirtualViewIdForHit(f2, f3);
+        @Override
+        public int getVirtualViewAt(float x, float y) {
+            return getVirtualViewIdForHit(x, y);
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
+        @Override
         public void getVisibleVirtualViews(List<Integer> virtualViewIds) {
             for (int i = 0; i < getItemCounts(); i++) {
                 if (i == 9 && COUINumericKeyboard.this.isEmptyStyle(COUINumericKeyboard.this.mLeftStyle)) {
@@ -466,41 +466,41 @@ public class COUINumericKeyboard extends View {
             }
         }
 
-        public boolean onItemClicked(int i2) {
-            invalidateVirtualView(i2);
+        public boolean onItemClicked(int virtualViewId) {
+            invalidateVirtualView(virtualViewId);
             if (COUINumericKeyboard.this.isEnabled()) {
-                COUINumericKeyboard.this.callback(i2);
-                COUINumericKeyboard.this.announceForAccessibility(getItemDescription(i2));
+                COUINumericKeyboard.this.callback(virtualViewId);
+                COUINumericKeyboard.this.announceForAccessibility(getItemDescription(virtualViewId));
             }
-            sendEventForVirtualView(i2, 1);
+            sendEventForVirtualView(virtualViewId, 1);
             return true;
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public boolean onPerformActionForVirtualView(int i2, int i3, Bundle bundle) {
-            if (i3 != 16) {
+        @Override
+        public boolean onPerformActionForVirtualView(int virtualViewId, int action, Bundle bundle) {
+            if (action != 16) {
                 return false;
             }
-            return onItemClicked(i2);
+            return onItemClicked(virtualViewId);
         }
 
-        @Override // androidx.core.view.AccessibilityDelegateCompat
+        @Override
         public void onPopulateAccessibilityEvent(View view, AccessibilityEvent accessibilityEvent) {
             super.onPopulateAccessibilityEvent(view, accessibilityEvent);
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public void onPopulateEventForVirtualView(int i2, AccessibilityEvent accessibilityEvent) {
-            accessibilityEvent.getText().add(getItemDescription(i2));
+        @Override
+        public void onPopulateEventForVirtualView(int virtualViewId, AccessibilityEvent accessibilityEvent) {
+            accessibilityEvent.getText().add(getItemDescription(virtualViewId));
         }
 
-        @Override // androidx.customview.widget.ExploreByTouchHelper
-        public void onPopulateNodeForVirtualView(int i2, @NonNull AccessibilityNodeInfoCompat accessibilityNodeInfoCompat) {
-            accessibilityNodeInfoCompat.setContentDescription(getItemDescription(i2));
+        @Override
+        public void onPopulateNodeForVirtualView(int virtualViewId, @NonNull AccessibilityNodeInfoCompat accessibilityNodeInfoCompat) {
+            accessibilityNodeInfoCompat.setContentDescription(getItemDescription(virtualViewId));
             accessibilityNodeInfoCompat.setClassName(COUIAccessibilityUtil.BUTTON_CLASS_NAME);
             accessibilityNodeInfoCompat.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK);
             accessibilityNodeInfoCompat.setClickable(true);
-            accessibilityNodeInfoCompat.setBoundsInParent(getBoundsForVirtualView(i2));
+            accessibilityNodeInfoCompat.setBoundsInParent(getBoundsForVirtualView(virtualViewId));
         }
     }
 
@@ -542,18 +542,18 @@ public class COUINumericKeyboard extends View {
                 return this;
             }
 
-            public Builder textColor(int i2) {
-                this.mTextColor = i2;
+            public Builder textColor(int row) {
+                this.mTextColor = row;
                 return this;
             }
 
-            public Builder textSize(float f2) {
-                this.mTextSize = f2;
+            public Builder textSize(float x) {
+                this.mTextSize = x;
                 return this;
             }
 
-            public Builder type(int i2) {
-                this.mType = i2;
+            public Builder type(int row) {
+                this.mType = row;
                 return this;
             }
         }
@@ -575,111 +575,108 @@ public class COUINumericKeyboard extends View {
         this(context, null);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public void callback(int i2) {
+    public void callback(int row) {
         OnClickItemListener onClickItemListener = this.mOnClickItemListener;
         if (onClickItemListener != null) {
-            if (i2 >= 0 && i2 <= 8) {
-                onClickItemListener.onClickNumber(i2 + 1);
+            if (row >= 0 && row <= 8) {
+                onClickItemListener.onClickNumber(row + 1);
             }
-            if (i2 == 10) {
+            if (row == 10) {
                 this.mOnClickItemListener.onClickNumber(0);
             }
-            if (i2 == 9) {
+            if (row == 9) {
                 this.mOnClickItemListener.onClickLeft();
             }
-            if (i2 == 11) {
+            if (row == 11) {
                 this.mOnClickItemListener.onClickRight();
             }
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public Cell checkForNewHit(float f2, float f3) {
+    public Cell checkForNewHit(float x, float y) {
         int columnHit;
-        int rowHit = getRowHit(f3);
-        if (rowHit >= 0 && (columnHit = getColumnHit(f2)) >= 0) {
+        int rowHit = getRowHit(y);
+        if (rowHit >= 0 && (columnHit = getColumnHit(x)) >= 0) {
             return of(rowHit, columnHit);
         }
         return null;
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public void checkRange(int i2, int i3) {
-        if (i2 < 0 || i2 > 3) {
+    public void checkRange(int row, int column) {
+        if (row < 0 || row > 3) {
             throw new IllegalArgumentException("row must be in range 0-3");
         }
-        if (i3 < 0 || i3 > 2) {
+        if (column < 0 || column > 2) {
             throw new IllegalArgumentException("column must be in range 0-2");
         }
     }
 
-    private void drawBackground(Canvas canvas, float f2, float f3, int i2, int i3, int i4, float f4) {
-        int i5 = this.mNumberBackgroundRadius;
-        this.mNumberBackground.setBounds(((int) (f2 - (i5 * f4))) + i3, ((int) (f3 - (i5 * f4))) + i4, ((int) (f2 + (i5 * f4))) + i3, ((int) (f3 + (i5 * f4))) + i4);
-        this.mNumberBackground.setAlpha(i2);
+    private void drawBackground(Canvas canvas, float x, float y, int alpha, int translateX, int translateY, float scale) {
+        int radius = this.mNumberBackgroundRadius;
+        this.mNumberBackground.setBounds(((int) (x - (radius * scale))) + translateX, ((int) (y - (radius * scale))) + translateY, ((int) (x + (radius * scale))) + translateX, ((int) (y + (radius * scale))) + translateY);
+        this.mNumberBackground.setAlpha(alpha);
         this.mNumberBackground.draw(canvas);
     }
 
-    private void drawCell(Canvas canvas, int i2, int i3) {
+    private void drawCell(Canvas canvas, int column, int row) {
         Paint[] paintArr;
-        Cell cell = this.sCells[i3][i2];
-        float centerXForColumn = getCenterXForColumn(i2);
-        float centerYForRow = getCenterYForRow(i3);
-        int i4 = (i3 * 3) + i2;
-        if (i4 == 9) {
+        Cell cell = this.sCells[row][column];
+        float centerXForColumn = getCenterXForColumn(column);
+        float centerYForRow = getCenterYForRow(row);
+        int padding = (row * 3) + column;
+        if (padding == 9) {
             drawSide(this.mLeftStyle, canvas, centerXForColumn, centerYForRow, cell);
             return;
         }
-        if (i4 == 11) {
+        if (padding == 11) {
             drawSide(this.mRightStyle, canvas, centerXForColumn, centerYForRow, cell);
             return;
         }
-        if (i4 != -1) {
+        if (padding != -1) {
             this.mNumberTextPaint.setTextSize(this.mKeyboardNumberTextSize * cell.mButtonScale);
             float fMeasureText = this.mNumberTextPaint.measureText(cell.cellNumberStr);
             Paint.FontMetrics fontMetrics = this.mNumberTextFontMetrics;
-            float f2 = (centerYForRow - ((fontMetrics.descent + fontMetrics.ascent) / 2.0f)) - this.mNumberOffsetY;
+            float centerY = (centerYForRow - ((fontMetrics.descent + fontMetrics.ascent) / 2.0f)) - this.mNumberOffsetY;
             this.mNumberTextPaint.setAlpha((int) (cell.cellNumberAlpha * this.mKeyboardNumberTextAlpha));
-            int i5 = this.mPressEffectStyle;
-            if (i5 == 0) {
+            int pressEffectStyle = this.mPressEffectStyle;
+            if (pressEffectStyle == 0) {
                 this.mNumberBackground.setColor(this.mNumberBackgroundColor);
                 drawBackground(canvas, centerXForColumn, centerYForRow, (int) (cell.cellNumberAlpha * this.mNumberBackgroundAlpha), cell.cellNumberTranslateX, cell.cellNumberTranslateY, 1.0f);
-            } else if (i5 == 1) {
+            } else if (pressEffectStyle == 1) {
                 KeyboardDrawDelegate keyboardDrawDelegate = this.mDrawDelegate;
                 if (keyboardDrawDelegate != null) {
                     RectF rectF = this.mNumberBounds;
-                    int i6 = this.mNumberBackgroundRadius;
-                    float f3 = cell.mButtonScale;
-                    rectF.left = (int) (centerXForColumn - (i6 * f3));
-                    rectF.top = (int) (centerYForRow - (i6 * f3));
-                    rectF.right = (int) ((i6 * f3) + centerXForColumn);
-                    rectF.bottom = (int) ((i6 * f3) + centerYForRow);
-                    Paint[] customKeyboardPaint = keyboardDrawDelegate.getCustomKeyboardPaint(i3, i2, rectF);
+                    int backgroundRadius = this.mNumberBackgroundRadius;
+                    float buttonScale = cell.mButtonScale;
+                    rectF.left = (int) (centerXForColumn - (backgroundRadius * buttonScale));
+                    rectF.top = (int) (centerYForRow - (backgroundRadius * buttonScale));
+                    rectF.right = (int) ((backgroundRadius * buttonScale) + centerXForColumn);
+                    rectF.bottom = (int) ((backgroundRadius * buttonScale) + centerYForRow);
+                    Paint[] customKeyboardPaint = keyboardDrawDelegate.getCustomKeyboardPaint(row, column, rectF);
                     if (customKeyboardPaint != null && customKeyboardPaint.length > 0) {
                         canvas.save();
                         int length = customKeyboardPaint.length;
-                        int i7 = 0;
-                        while (i7 < length) {
-                            Paint paint = customKeyboardPaint[i7];
+                        int paintIndex = 0;
+                        while (paintIndex < length) {
+                            Paint paint = customKeyboardPaint[paintIndex];
                             if (paint == null) {
                                 paintArr = customKeyboardPaint;
                             } else {
                                 paint.setAlpha((int) (paint.getAlpha() * cell.cellNumberAlpha));
                                 RectF rectF2 = this.mTranslateBounds;
                                 RectF rectF3 = this.mNumberBounds;
-                                float f4 = rectF3.left;
-                                int i8 = cell.cellNumberTranslateX;
-                                rectF2.left = f4 + i8;
-                                float f5 = rectF3.top;
-                                int i9 = cell.cellNumberTranslateY;
+                                float left = rectF3.left;
+                                int translateX = cell.cellNumberTranslateX;
+                                rectF2.left = left + translateX;
+                                float top = rectF3.top;
+                                int translateY = cell.cellNumberTranslateY;
                                 paintArr = customKeyboardPaint;
-                                rectF2.top = f5 + i9;
-                                rectF2.right = rectF3.right + i8;
-                                rectF2.bottom = rectF3.bottom + i9;
+                                rectF2.top = top + translateY;
+                                rectF2.right = rectF3.right + translateX;
+                                rectF2.bottom = rectF3.bottom + translateY;
                                 canvas.drawOval(rectF2, paint);
                             }
-                            i7++;
+                            paintIndex++;
                             customKeyboardPaint = paintArr;
                         }
                         canvas.restore();
@@ -689,14 +686,14 @@ public class COUINumericKeyboard extends View {
                 drawInnerBorder(canvas, centerXForColumn, centerYForRow, cell, cell.cellNumberTranslateX, cell.cellNumberTranslateY, cell.cellNumberAlpha);
             }
             this.mNumberTextPaint.setAlpha((int) (cell.cellNumberAlpha * this.mKeyboardNumberTextAlpha));
-            canvas.drawText(cell.cellNumberStr, (centerXForColumn - (fMeasureText / 2.0f)) + cell.cellNumberTranslateX, f2 + cell.cellNumberTranslateY, this.mNumberTextPaint);
+            canvas.drawText(cell.cellNumberStr, (centerXForColumn - (fMeasureText / 2.0f)) + cell.cellNumberTranslateX, centerY + cell.cellNumberTranslateY, this.mNumberTextPaint);
         }
     }
 
-    private void drawInnerBorder(Canvas canvas, float f2, float f3, Cell cell, int i2, int i3, float f4) {
+    private void drawInnerBorder(Canvas canvas, float x, float y, Cell cell, int translateX, int translateY, float alpha) {
         int iSave = canvas.save();
         this.mButtonPath.reset();
-        this.mButtonPath.addCircle(f2 + i2, f3 + i3, this.mNumberBackgroundRadius * cell.mButtonScale, Path.Direction.CW);
+        this.mButtonPath.addCircle(x + translateX, y + translateY, this.mNumberBackgroundRadius * cell.mButtonScale, Path.Direction.CW);
         canvas.clipPath(this.mButtonPath);
         this.mBorderLinePaint.setStyle(Paint.Style.STROKE);
         this.mBorderLinePaint.setStrokeWidth(this.mButtonBorderWidth * 2.0f);
@@ -707,17 +704,17 @@ public class COUINumericKeyboard extends View {
             canvas.drawPath(this.mButtonPath, this.mBorderLinePaint);
         }
         this.mBorderLinePaint.setColor(this.mBorderLineColor);
-        this.mBorderLinePaint.setAlpha((int) (this.mBorderLineAlpha * f4));
+        this.mBorderLinePaint.setAlpha((int) (this.mBorderLineAlpha * alpha));
         canvas.drawPath(this.mButtonPath, this.mBorderLinePaint);
         canvas.restoreToCount(iSave);
     }
 
-    private void drawInnerShadowLayer(Canvas canvas, float f2, float f3, Cell cell, int i2, int i3, float f4) {
+    private void drawInnerShadowLayer(Canvas canvas, float x, float y, Cell cell, int translateX, int translateY, float alpha) {
         int iSave = canvas.save();
         if (this.mInnerShadowBitmapPaint == null) {
             this.mInnerShadowBitmapPaint = new Paint();
         }
-        this.mInnerShadowBitmapPaint.setAlpha((int) (f4 * 255.0f));
+        this.mInnerShadowBitmapPaint.setAlpha((int) (alpha * DEFAULT_ALPHA_VALUE));
         Matrix matrix = this.mInnerShadowMatrix;
         if (matrix == null) {
             this.mInnerShadowMatrix = new Matrix();
@@ -725,20 +722,20 @@ public class COUINumericKeyboard extends View {
             matrix.reset();
         }
         Matrix matrix2 = this.mInnerShadowMatrix;
-        float f5 = cell.mButtonScale;
-        matrix2.postScale(f5, f5);
+        float buttonScale = cell.mButtonScale;
+        matrix2.postScale(buttonScale, buttonScale);
         Matrix matrix3 = this.mInnerShadowMatrix;
-        float f6 = f2 + i2;
-        int i4 = this.mNumberBackgroundRadius;
-        float f7 = cell.mButtonScale;
-        matrix3.postTranslate(f6 - (i4 * f7), (f3 + i3) - (i4 * f7));
+        float translatedX = x + translateX;
+        int backgroundRadius = this.mNumberBackgroundRadius;
+        float scale = cell.mButtonScale;
+        matrix3.postTranslate(translatedX - (backgroundRadius * scale), (y + translateY) - (backgroundRadius * scale));
         canvas.drawBitmap(this.mInnerShadowBitmap, this.mInnerShadowMatrix, this.mInnerShadowBitmapPaint);
         canvas.clipPath(this.mShadowLayerPath);
         canvas.restoreToCount(iSave);
     }
 
-    private void drawLightEffect(Canvas canvas, int i2, int i3) {
-        Cell cell = this.sCells[i3][i2];
+    private void drawLightEffect(Canvas canvas, int column, int row) {
+        Cell cell = this.sCells[row][column];
         if (cell == null || getTouchIndex(cell) == -1 || cell.mInnerLightAlpha <= 0.0f) {
             return;
         }
@@ -751,34 +748,34 @@ public class COUINumericKeyboard extends View {
         canvas.restore();
     }
 
-    private void drawPressCircle(Canvas canvas, int i2, int i3) {
-        Cell cell = this.sCells[i3][i2];
+    private void drawPressCircle(Canvas canvas, int column, int row) {
+        Cell cell = this.sCells[row][column];
         if (cell != null) {
             float centerXForColumn = getCenterXForColumn(cell.column);
             float centerYForRow = getCenterYForRow(cell.row);
             if (getTouchIndex(cell) != -1) {
                 if (cell.normalAlpha >= 0.0f || cell.blurAlpha >= 0.0f) {
-                    int i4 = this.mCircleRadius;
-                    int i5 = (int) (centerXForColumn - i4);
-                    int i6 = (int) (centerYForRow - i4);
-                    int i7 = (int) (i4 + centerXForColumn);
-                    int i8 = (int) (i4 + centerYForRow);
+                    int radius = this.mCircleRadius;
+                    int left = (int) (centerXForColumn - radius);
+                    int top = (int) (centerYForRow - radius);
+                    int right = (int) (radius + centerXForColumn);
+                    int bottom = (int) (radius + centerYForRow);
                     canvas.save();
-                    int i9 = this.mPressedColor;
-                    if (i9 != cell.pressedColor) {
-                        cell.setCircleColor(i9);
+                    int pressedColor = this.mPressedColor;
+                    if (pressedColor != cell.pressedColor) {
+                        cell.setCircleColor(pressedColor);
                     }
-                    float f2 = cell.normalScale;
-                    canvas.scale(f2, f2, centerXForColumn, centerYForRow);
-                    cell.normalCircle.setAlpha((int) Math.max(0.0f, cell.normalAlpha * 255.0f));
-                    cell.normalCircle.setBounds(i5, i6, i7, i8);
+                    float normalScale = cell.normalScale;
+                    canvas.scale(normalScale, normalScale, centerXForColumn, centerYForRow);
+                    cell.normalCircle.setAlpha((int) Math.max(0.0f, cell.normalAlpha * DEFAULT_ALPHA_VALUE));
+                    cell.normalCircle.setBounds(left, top, right, bottom);
                     cell.normalCircle.draw(canvas);
                     canvas.restore();
                     canvas.save();
-                    float f3 = cell.blurScale;
-                    canvas.scale(f3, f3, centerXForColumn, centerYForRow);
-                    cell.blurCircle.setBounds(i5, i6, i7, i8);
-                    cell.blurCircle.setAlpha((int) Math.max(0.0f, cell.blurAlpha * 255.0f));
+                    float blurScale = cell.blurScale;
+                    canvas.scale(blurScale, blurScale, centerXForColumn, centerYForRow);
+                    cell.blurCircle.setBounds(left, top, right, bottom);
+                    cell.blurCircle.setAlpha((int) Math.max(0.0f, cell.blurAlpha * DEFAULT_ALPHA_VALUE));
                     cell.blurCircle.draw(canvas);
                     canvas.restore();
                     if (cell.normalAlpha == 0.0f) {
@@ -792,21 +789,21 @@ public class COUINumericKeyboard extends View {
         }
     }
 
-    private void drawSide(SideStyle sideStyle, Canvas canvas, float f2, float f3, Cell cell) {
+    private void drawSide(SideStyle sideStyle, Canvas canvas, float x, float y, Cell cell) {
         if (isEmptyStyle(sideStyle)) {
             return;
         }
         this.mNumberBackground.setColor(this.mSideBackgroundColor);
         if (sideStyle.mDrawable != null) {
-            int intrinsicWidth = (int) (f2 - ((sideStyle.mDrawable.getIntrinsicWidth() * cell.mButtonScale) / 2.0f));
+            int intrinsicWidth = (int) (x - ((sideStyle.mDrawable.getIntrinsicWidth() * cell.mButtonScale) / 2.0f));
             int intrinsicWidth2 = (int) (intrinsicWidth + (sideStyle.mDrawable.getIntrinsicWidth() * cell.mButtonScale));
-            int intrinsicHeight = (int) (f3 - ((sideStyle.mDrawable.getIntrinsicHeight() * cell.mButtonScale) / 2.0f));
+            int intrinsicHeight = (int) (y - ((sideStyle.mDrawable.getIntrinsicHeight() * cell.mButtonScale) / 2.0f));
             int intrinsicHeight2 = (int) (intrinsicHeight + (sideStyle.mDrawable.getIntrinsicHeight() * cell.mButtonScale));
-            drawBackground(canvas, f2, f3, (int) (this.mDrawableAlpha * sideStyle.mAlpha), this.mDrawableTranslateX, this.mDrawableTranslateY, cell.mButtonScale);
+            drawBackground(canvas, x, y, (int) (this.mDrawableAlpha * sideStyle.mAlpha), this.mDrawableTranslateX, this.mDrawableTranslateY, cell.mButtonScale);
             Drawable drawable = sideStyle.mDrawable;
-            int i2 = this.mDrawableTranslateX;
-            int i3 = this.mDrawableTranslateY;
-            drawable.setBounds(intrinsicWidth + i2, intrinsicHeight + i3, intrinsicWidth2 + i2, intrinsicHeight2 + i3);
+            int translateX = this.mDrawableTranslateX;
+            int translateY = this.mDrawableTranslateY;
+            drawable.setBounds(intrinsicWidth + translateX, intrinsicHeight + translateY, intrinsicWidth2 + translateX, intrinsicHeight2 + translateY);
             sideStyle.mDrawable.setAlpha((int) (this.mDrawableAlpha * sideStyle.mAlpha));
             sideStyle.mDrawable.draw(canvas);
         } else if (!TextUtils.isEmpty(sideStyle.mText)) {
@@ -815,11 +812,11 @@ public class COUINumericKeyboard extends View {
             this.mWordTextPaint.setAlpha((int) (this.mTextAlpha * sideStyle.mAlpha));
             float fMeasureText = this.mWordTextPaint.measureText(sideStyle.mText);
             this.mWordTextFontMetrics = this.mWordTextPaint.getFontMetricsInt();
-            drawBackground(canvas, f2, f3, (int) (this.mTextAlpha * sideStyle.mAlpha), this.mTextTranslateX, this.mTextTranslateY, cell.mButtonScale);
-            canvas.drawText(sideStyle.mText, (f2 - (fMeasureText / 2.0f)) + this.mTextTranslateX, (f3 - ((this.mWordTextFontMetrics.descent + this.mWordTextFontMetrics.ascent) / 2.0f)) + this.mTextTranslateY, this.mWordTextPaint);
+            drawBackground(canvas, x, y, (int) (this.mTextAlpha * sideStyle.mAlpha), this.mTextTranslateX, this.mTextTranslateY, cell.mButtonScale);
+            canvas.drawText(sideStyle.mText, (x - (fMeasureText / 2.0f)) + this.mTextTranslateX, (y - ((this.mWordTextFontMetrics.descent + this.mWordTextFontMetrics.ascent) / 2.0f)) + this.mTextTranslateY, this.mWordTextPaint);
         }
         if (this.mPressEffectStyle == 1) {
-            drawInnerBorder(canvas, f2, f3, cell, 0, 0, 0.0f);
+            drawInnerBorder(canvas, x, y, cell, 0, 0, 0.0f);
         }
     }
 
@@ -827,22 +824,22 @@ public class COUINumericKeyboard extends View {
         if (cell != null && cell.mButtonScaleHelper == null) {
             COUIPressFeedbackHelper cOUIPressFeedbackHelper = new COUIPressFeedbackHelper(getContext());
             cell.mButtonScaleHelper = cOUIPressFeedbackHelper;
-            cOUIPressFeedbackHelper.setCallback(new COUIPressFeedbackHelper.COUIPressFeedbackHelperCallback() { // from class: com.coui.appcompat.lockview.COUINumericKeyboard.5
-                @Override // com.coui.appcompat.pressfeedback.COUIPressFeedbackHelper.COUIPressFeedbackHelperCallback
+            cOUIPressFeedbackHelper.setCallback(new COUIPressFeedbackHelper.COUIPressFeedbackHelperCallback() {
+                @Override
                 public int getTargetHeight() {
                     return COUINumericKeyboard.this.mNumberBackgroundRadius * 2;
                 }
 
-                @Override // com.coui.appcompat.pressfeedback.COUIPressFeedbackHelper.COUIPressFeedbackHelperCallback
+                @Override
                 public int getTargetWidth() {
                     return COUINumericKeyboard.this.mNumberBackgroundRadius * 2;
                 }
 
-                @Override // com.coui.appcompat.pressfeedback.COUIPressFeedbackHelper.COUIPressFeedbackHelperCallback
-                public void onScaleUpdate(float f2) {
-                    Cell cell2 = cell;
-                    cell2.mButtonScale = f2;
-                    COUINumericKeyboard.this.invalidatePaths(cell2);
+                @Override
+                public void onScaleUpdate(float scale) {
+                    Cell nextCell = cell;
+                    nextCell.mButtonScale = scale;
+                    COUINumericKeyboard.this.invalidatePaths(nextCell);
                     COUINumericKeyboard.this.invalidate();
                 }
             });
@@ -853,10 +850,10 @@ public class COUINumericKeyboard extends View {
         if (cell != null && cell.mLightEffectHelper == null) {
             LightEffectHelper lightEffectHelper = new LightEffectHelper(this, this.mNumberBackgroundRadius, this.mLightShaderRadius, this.mGradient2, this.mGradient);
             cell.mLightEffectHelper = lightEffectHelper;
-            lightEffectHelper.setCallback(new LightEffectHelper.LightEffectHelperCallback() { // from class: com.coui.appcompat.lockview.COUINumericKeyboard.4
-                @Override // com.coui.appcompat.lockview.LightEffectHelper.LightEffectHelperCallback
-                public void onInnerLightUpdate(float f2) {
-                    cell.mInnerLightAlpha = f2;
+            lightEffectHelper.setCallback(new LightEffectHelper.LightEffectHelperCallback() {
+                @Override
+                public void onInnerLightUpdate(float alpha) {
+                    cell.mInnerLightAlpha = alpha;
                 }
             });
         }
@@ -866,36 +863,36 @@ public class COUINumericKeyboard extends View {
         if (sideStyle.mSideStyleAlphaAnimator == null) {
             COUISpringForce cOUISpringForce = new COUISpringForce();
             cOUISpringForce.setBounce(0.0f);
-            cOUISpringForce.setResponse(0.2f);
+            cOUISpringForce.setResponse(SIDE_STYLE_SPRING_RESPONSE);
             sideStyle.mSideStyleAlphaAnimator = new COUISpringAnimation(new FloatValueHolder(sideStyle.mAlpha));
             sideStyle.mSideStyleAlphaAnimator.setSpring(cOUISpringForce);
             sideStyle.mSideStyleAlphaAnimator.addUpdateListener(new COUIDynamicAnimation.OnAnimationUpdateListener() {
-                @Override // com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation.OnAnimationUpdateListener
-                public void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float f2, float f3) {
-                    COUINumericKeyboard.this.lambda$ensureRightStyleAnimator$0(sideStyle, cOUIDynamicAnimation, f2, f3);
+                @Override
+                public void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float x, float y) {
+                    COUINumericKeyboard.this.onRightStyleAlphaUpdate(sideStyle, cOUIDynamicAnimation, x, y);
                 }
             });
         }
     }
 
-    private void executeLightEffectAnimator(Cell cell, boolean z2) {
+    private void executeLightEffectAnimator(Cell cell, boolean partOfPattern) {
         if (cell != null) {
             ensureLightEffectAnimator(cell);
             ensureButtonScaleAnimator(cell);
-            cell.mLightEffectHelper.executeLightEffectAnimator(z2);
-            cell.mButtonScaleHelper.executeFeedbackAnimator(z2);
-            if (z2) {
+            cell.mLightEffectHelper.executeLightEffectAnimator(partOfPattern);
+            cell.mButtonScaleHelper.executeFeedbackAnimator(partOfPattern);
+            if (partOfPattern) {
                 return;
             }
             cell.pointerId = -1;
         }
     }
 
-    private Cell findCellByPointerId(int i2) {
-        for (int i3 = 0; i3 < 4; i3++) {
-            for (int i4 = 0; i4 < 3; i4++) {
-                Cell cell = this.sCells[i3][i4];
-                if (cell.pointerId == i2) {
+    private Cell findCellByPointerId(int index) {
+        for (int row = 0; row < 4; row++) {
+            for (int column = 0; column < 3; column++) {
+                Cell cell = this.sCells[row][column];
+                if (cell.pointerId == index) {
                     return cell;
                 }
             }
@@ -903,24 +900,22 @@ public class COUINumericKeyboard extends View {
         return null;
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public float getCenterXForColumn(int i2) {
-        return getPaddingLeft() + (this.mCellWidth / 2.0f) + (this.mCellWidth * i2) + (this.mHorizontalSpacing * i2);
+    public float getCenterXForColumn(int column) {
+        return getPaddingLeft() + (this.mCellWidth / 2.0f) + (this.mCellWidth * column) + (this.mHorizontalSpacing * column);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public float getCenterYForRow(int i2) {
-        return getPaddingTop() + (this.mCellHeight / 2.0f) + (this.mCellHeight * i2) + (this.mVerticalSpacing * i2);
+    public float getCenterYForRow(int row) {
+        return getPaddingTop() + (this.mCellHeight / 2.0f) + (this.mCellHeight * row) + (this.mVerticalSpacing * row);
     }
 
-    private int getColumnHit(float f2) {
-        for (int i2 = 0; i2 < 3; i2++) {
-            int centerXForColumn = (int) getCenterXForColumn(i2);
-            int iMax = Math.max(0, Math.min(this.mHorizontalSpacing / 2, this.mAdditionalPressableArea));
-            int iMax2 = Math.max((centerXForColumn - (this.mCellWidth / 2)) - iMax, 0);
-            int i3 = centerXForColumn + (this.mCellWidth / 2) + iMax;
-            if (iMax2 <= f2 && f2 <= i3) {
-                return i2;
+    private int getColumnHit(float x) {
+        for (int column = 0; column < 3; column++) {
+            int centerXForColumn = (int) getCenterXForColumn(column);
+            int halfSpacing = Math.max(0, Math.min(this.mHorizontalSpacing / 2, this.mAdditionalPressableArea));
+            int left = Math.max((centerXForColumn - (this.mCellWidth / 2)) - halfSpacing, 0);
+            int right = centerXForColumn + (this.mCellWidth / 2) + halfSpacing;
+            if (left <= x && x <= right) {
+                return column;
             }
         }
         return -1;
@@ -950,52 +945,52 @@ public class COUINumericKeyboard extends View {
         return new int[]{2, 3};
     }
 
-    private float[] getKeyboardNumberPosition(int i2) {
-        int i3;
-        int i4 = 3;
-        if (i2 >= 8 && i2 <= 16) {
-            int i5 = i2 - 8;
-            i3 = i5 % 3;
-            i4 = i5 / 3;
-        } else if (i2 >= 145 && i2 <= 153) {
-            int i6 = i2 - 145;
-            i3 = i6 % 3;
-            i4 = i6 / 3;
-        } else if (i2 == 67) {
+    private float[] getKeyboardNumberPosition(int keyCode) {
+        int column;
+        int row = 3;
+        if (keyCode >= 8 && keyCode <= 16) {
+            int mapped = keyCode - 8;
+            column = mapped % 3;
+            row = mapped / 3;
+        } else if (keyCode >= 145 && keyCode <= 153) {
+            int cellIndex = keyCode - 145;
+            column = cellIndex % 3;
+            row = cellIndex / 3;
+        } else if (keyCode == 67) {
             int[] deleteCellIndex = getDeleteCellIndex();
             if (deleteCellIndex == null || deleteCellIndex.length != 2) {
                 return new float[]{-1.0f, -1.0f};
             }
-            i3 = deleteCellIndex[0];
-            i4 = deleteCellIndex[1];
-        } else if (i2 == 7 || i2 == 144) {
-            i3 = 1;
+            column = deleteCellIndex[0];
+            row = deleteCellIndex[1];
+        } else if (keyCode == 7 || keyCode == 144) {
+            column = 1;
         } else {
-            if (i2 != 66 && i2 != FADE_ANIMATOR_TIME) {
+            if (keyCode != 66 && keyCode != FADE_ANIMATOR_TIME) {
                 return new float[]{-1.0f, -1.0f};
             }
             int[] finishCellIndex = getFinishCellIndex();
             if (finishCellIndex == null || finishCellIndex.length != 2) {
                 return new float[]{-1.0f, -1.0f};
             }
-            i3 = finishCellIndex[0];
-            i4 = finishCellIndex[1];
+            column = finishCellIndex[0];
+            row = finishCellIndex[1];
         }
-        Cell cell = this.sCells[i4][i3];
-        float centerXForColumn = getCenterXForColumn(i3);
-        float centerYForRow = getCenterYForRow(i4);
+        Cell cell = this.sCells[row][column];
+        float centerXForColumn = getCenterXForColumn(column);
+        float centerYForRow = getCenterYForRow(row);
         Paint.FontMetrics fontMetrics = this.mNumberTextFontMetrics;
         return new float[]{centerXForColumn + cell.cellNumberTranslateX, (centerYForRow - ((fontMetrics.descent + fontMetrics.ascent) / 2.0f)) + cell.cellNumberTranslateY};
     }
 
-    private int getRowHit(float f2) {
-        for (int i2 = 0; i2 < 4; i2++) {
-            int centerYForRow = (int) getCenterYForRow(i2);
-            int iMax = Math.max(0, Math.min(this.mVerticalSpacing / 2, this.mAdditionalPressableArea));
-            int iMax2 = Math.max((centerYForRow - (this.mCellHeight / 2)) - iMax, 0);
-            int i3 = centerYForRow + (this.mCellHeight / 2) + iMax;
-            if (iMax2 <= f2 && f2 <= i3) {
-                return i2;
+    private int getRowHit(float y) {
+        for (int row = 0; row < 4; row++) {
+            int centerYForRow = (int) getCenterYForRow(row);
+            int halfSpacing = Math.max(0, Math.min(this.mVerticalSpacing / 2, this.mAdditionalPressableArea));
+            int top = Math.max((centerYForRow - (this.mCellHeight / 2)) - halfSpacing, 0);
+            int bottom = centerYForRow + (this.mCellHeight / 2) + halfSpacing;
+            if (top <= y && y <= bottom) {
+                return row;
             }
         }
         return -1;
@@ -1018,13 +1013,13 @@ public class COUINumericKeyboard extends View {
         }
     }
 
-    private synchronized void handleActionCancel(int i2) {
+    private synchronized void handleActionCancel(int row) {
         try {
-            Cell cellFindCellByPointerId = findCellByPointerId(i2);
-            int i3 = this.mPressEffectStyle;
-            if (i3 == 0) {
+            Cell cellFindCellByPointerId = findCellByPointerId(row);
+            int column = this.mPressEffectStyle;
+            if (column == 0) {
                 initFadeAnimator(cellFindCellByPointerId);
-            } else if (i3 == 1) {
+            } else if (column == 1) {
                 executeLightEffectAnimator(cellFindCellByPointerId, false);
             }
             int touchIndex = getTouchIndex(cellFindCellByPointerId);
@@ -1040,25 +1035,25 @@ public class COUINumericKeyboard extends View {
         }
     }
 
-    private void handleActionDown(MotionEvent motionEvent, int i2) {
-        handleActionDown(motionEvent.getX(i2), motionEvent.getY(i2), motionEvent.getPointerId(i2));
+    private void handleActionDown(MotionEvent motionEvent, int row) {
+        handleActionDown(motionEvent.getX(row), motionEvent.getY(row), motionEvent.getPointerId(row));
     }
 
-    private void handleActionMove(MotionEvent motionEvent, int i2) {
-        int iFindPointerIndex = motionEvent.findPointerIndex(i2);
+    private void handleActionMove(MotionEvent motionEvent, int row) {
+        int iFindPointerIndex = motionEvent.findPointerIndex(row);
         if (iFindPointerIndex >= 0) {
-            handleActionMove(motionEvent.getX(iFindPointerIndex), motionEvent.getY(iFindPointerIndex), i2);
+            handleActionMove(motionEvent.getX(iFindPointerIndex), motionEvent.getY(iFindPointerIndex), row);
         }
     }
 
-    private void handleActionUp(MotionEvent motionEvent, int i2) {
-        handleActionUp(motionEvent.getX(i2), motionEvent.getY(i2), motionEvent.getPointerId(i2));
+    private void handleActionUp(MotionEvent motionEvent, int row) {
+        handleActionUp(motionEvent.getX(row), motionEvent.getY(row), motionEvent.getPointerId(row));
     }
 
-    private void handleKeyEvent(int i2, boolean z2) {
-        if (isValidKeyCode(i2)) {
-            float[] keyboardNumberPosition = getKeyboardNumberPosition(i2);
-            if (z2) {
+    private void handleKeyEvent(int row, boolean partOfPattern) {
+        if (isValidKeyCode(row)) {
+            float[] keyboardNumberPosition = getKeyboardNumberPosition(row);
+            if (partOfPattern) {
                 handleActionDown(keyboardNumberPosition[0], keyboardNumberPosition[1], -1);
             } else {
                 handleActionUp(keyboardNumberPosition[0], keyboardNumberPosition[1], -1);
@@ -1066,20 +1061,21 @@ public class COUINumericKeyboard extends View {
         }
     }
 
-    private void initCellAnim(Cell cell, List<Animator> list, int i2) {
+    private void initCellAnim(Cell cell, List<Animator> list, int animIndex) {
         cell.setCellNumberAlpha(0.0f);
         cell.setCellNumberTranslateY(this.mMaxTranslateY);
         ObjectAnimator objectAnimatorOfFloat = ObjectAnimator.ofFloat(cell, "cellNumberAlpha", 0.0f, 1.0f);
-        objectAnimatorOfFloat.setStartDelay(166 + (((long) ((i2 == 10 && isEmptyStyle(this.mLeftStyle)) ? i2 - 1 : i2)) * 16));
-        objectAnimatorOfFloat.setDuration(167L);
+        int alphaIndex = (animIndex == 10 && isEmptyStyle(this.mLeftStyle)) ? animIndex - 1 : animIndex;
+        objectAnimatorOfFloat.setStartDelay(ALPHA_DELAY + (((long) alphaIndex) * ALPHA_OFFSET));
+        objectAnimatorOfFloat.setDuration(ALPHA_DURATION);
         objectAnimatorOfFloat.setInterpolator(this.mAlphaInterpolator);
         list.add(objectAnimatorOfFloat);
         ObjectAnimator objectAnimatorOfInt = ObjectAnimator.ofInt(cell, "cellNumberTranslateY", this.mMaxTranslateY, 0);
-        if (i2 == 10 && isEmptyStyle(this.mLeftStyle)) {
-            i2--;
+        if (animIndex == 10 && isEmptyStyle(this.mLeftStyle)) {
+            animIndex--;
         }
-        objectAnimatorOfInt.setStartDelay(16 * ((long) i2));
-        objectAnimatorOfInt.setDuration(500L);
+        objectAnimatorOfInt.setStartDelay(TRANSLATE_Y_OFFSET * ((long) animIndex));
+        objectAnimatorOfInt.setDuration(TRANSLATE_Y_DURATION);
         objectAnimatorOfInt.setInterpolator(this.mTranslateYInterpolator);
         list.add(objectAnimatorOfInt);
     }
@@ -1090,17 +1086,17 @@ public class COUINumericKeyboard extends View {
         }
         cell.pointerId = -1;
         if (cell.fadeAnimator == null) {
-            ValueAnimator valueAnimatorOfPropertyValuesHolder = ValueAnimator.ofPropertyValuesHolder(PropertyValuesHolder.ofFloat("scaleHolder", 2.15f, FADE_END_SCALE), PropertyValuesHolder.ofFloat("alphaHolder", this.mCircleMaxAlpha, 0.0f));
-            valueAnimatorOfPropertyValuesHolder.setDuration(160L);
+            ValueAnimator valueAnimatorOfPropertyValuesHolder = ValueAnimator.ofPropertyValuesHolder(PropertyValuesHolder.ofFloat("scaleHolder", FADE_START_SCALE, FADE_END_SCALE), PropertyValuesHolder.ofFloat("alphaHolder", this.mCircleMaxAlpha, 0.0f));
+            valueAnimatorOfPropertyValuesHolder.setDuration(FADE_ANIMATOR_TIME);
             valueAnimatorOfPropertyValuesHolder.setInterpolator(PATH_INTERPOLATOR);
-            valueAnimatorOfPropertyValuesHolder.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUINumericKeyboard.2
-                @Override // android.animation.ValueAnimator.AnimatorUpdateListener
+            valueAnimatorOfPropertyValuesHolder.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
                 public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                    Cell cell2 = cell;
-                    if (cell2 == null) {
+                    Cell nextCell = cell;
+                    if (nextCell == null) {
                         return;
                     }
-                    cell2.normalAlpha = ((Float) valueAnimator.getAnimatedValue("alphaHolder")).floatValue();
+                    nextCell.normalAlpha = ((Float) valueAnimator.getAnimatedValue("alphaHolder")).floatValue();
                     cell.normalScale = ((Float) valueAnimator.getAnimatedValue("scaleHolder")).floatValue();
                     COUINumericKeyboard.this.invalidate();
                 }
@@ -1108,22 +1104,22 @@ public class COUINumericKeyboard extends View {
             cell.fadeAnimator = valueAnimatorOfPropertyValuesHolder;
         }
         if (cell.blurFadeAnimator == null) {
-            ValueAnimator valueAnimatorOfPropertyValuesHolder2 = ValueAnimator.ofPropertyValuesHolder(PropertyValuesHolder.ofKeyframe("blurAlpha", Keyframe.ofFloat(0.0f, 0.0f), Keyframe.ofFloat(0.5f, this.mCircleMaxAlpha), Keyframe.ofFloat(1.0f, 0.0f)), PropertyValuesHolder.ofFloat("blurScale", 1.0f, 2.0f));
-            valueAnimatorOfPropertyValuesHolder2.setDuration(400L);
-            valueAnimatorOfPropertyValuesHolder2.setInterpolator(PATH_INTERPOLATOR);
-            valueAnimatorOfPropertyValuesHolder2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUINumericKeyboard.3
-                @Override // android.animation.ValueAnimator.AnimatorUpdateListener
+            ValueAnimator animation = ValueAnimator.ofPropertyValuesHolder(PropertyValuesHolder.ofKeyframe("blurAlpha", Keyframe.ofFloat(0.0f, 0.0f), Keyframe.ofFloat(0.5f, this.mCircleMaxAlpha), Keyframe.ofFloat(1.0f, 0.0f)), PropertyValuesHolder.ofFloat("blurScale", BLUR_START_SCALE, BLUR_END_SCALE));
+            animation.setDuration(FADE_BLUR_ANIMATOR_TIME);
+            animation.setInterpolator(PATH_INTERPOLATOR);
+            animation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
                 public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                    Cell cell2 = cell;
-                    if (cell2 == null) {
+                    Cell nextCell = cell;
+                    if (nextCell == null) {
                         return;
                     }
-                    cell2.blurAlpha = ((Float) valueAnimator.getAnimatedValue("blurAlpha")).floatValue();
+                    nextCell.blurAlpha = ((Float) valueAnimator.getAnimatedValue("blurAlpha")).floatValue();
                     cell.blurScale = ((Float) valueAnimator.getAnimatedValue("blurScale")).floatValue();
                     COUINumericKeyboard.this.invalidate();
                 }
             });
-            cell.blurFadeAnimator = valueAnimatorOfPropertyValuesHolder2;
+            cell.blurFadeAnimator = animation;
         }
         ValueAnimator valueAnimator = cell.showAnimator;
         if (valueAnimator != null && valueAnimator.isRunning()) {
@@ -1141,16 +1137,16 @@ public class COUINumericKeyboard extends View {
             path.reset();
         }
         Path path2 = this.mShadowLayerPath;
-        int i2 = this.mNumberBackgroundRadius;
-        path2.addCircle(i2, i2, i2, Path.Direction.CCW);
+        int row = this.mNumberBackgroundRadius;
+        path2.addCircle(row, row, row, Path.Direction.CCW);
         InnerShadowHelper innerShadowHelper = this.mInnerShadowHelper;
         if (innerShadowHelper == null) {
             this.mInnerShadowHelper = new InnerShadowHelper(this.mCellWidth, this.mCellHeight);
         } else {
             innerShadowHelper.reset();
         }
-        this.mInnerShadowHelper.addInnerShadowLayer(32.0f, 0.0f, INNER_SHADOW_DY_1, this.mUpperInnerShadowColor, 0, 20.0f, this.mShadowLayerPath);
-        this.mInnerShadowHelper.addInnerShadowLayer(8.0f, 0.0f, 2.0f, this.mLowerInnerShadowColor, 0, 12.0f, this.mShadowLayerPath);
+        this.mInnerShadowHelper.addInnerShadowLayer(INNER_SHADOW_RADIUS_1, INNER_SHADOW_DX, INNER_SHADOW_DY_1, this.mUpperInnerShadowColor, 0, INNER_SHADOW_STROKE_WIDTH_1, this.mShadowLayerPath);
+        this.mInnerShadowHelper.addInnerShadowLayer(INNER_SHADOW_RADIUS_2, INNER_SHADOW_DX, INNER_SHADOW_DY_2, this.mLowerInnerShadowColor, 0, INNER_SHADOW_STROKE_WIDTH_2, this.mShadowLayerPath);
         this.mInnerShadowBitmap = this.mInnerShadowHelper.createInnerShadowBitmap();
     }
 
@@ -1182,10 +1178,10 @@ public class COUINumericKeyboard extends View {
     }
 
     private void initRadialGradient() {
-        float f2 = this.mLightShaderRadius;
+        float x = this.mLightShaderRadius;
         Shader.TileMode tileMode = Shader.TileMode.CLAMP;
-        this.mGradient = new RadialGradient(0.0f, 0.0f, f2, new int[]{0, this.mOuterGradientColor1, this.mOuterGradientColor2, this.mOuterGradientColor3, 0}, new float[]{0.0f, 0.3f, 0.6f, 0.8f, 1.0f}, tileMode);
-        this.mGradient2 = new RadialGradient(0.0f, 0.0f, this.mNumberBackgroundRadius, new int[]{0, this.mInnerGradientColor1, this.mInnerGradientColor2}, new float[]{0.0f, GRADIENT_INNER_STOP_1, 1.0f}, tileMode);
+        this.mGradient = new RadialGradient(0.0f, 0.0f, x, new int[]{0, this.mOuterGradientColor1, this.mOuterGradientColor2, this.mOuterGradientColor3, 0}, new float[]{GRADIENT_COLOR_STOP_START, GRADIENT_OUTER_STOP_1, GRADIENT_OUTER_STOP_2, GRADIENT_OUTER_STOP_3, GRADIENT_COLOR_STOP_END}, tileMode);
+        this.mGradient2 = new RadialGradient(0.0f, 0.0f, this.mNumberBackgroundRadius, new int[]{0, this.mInnerGradientColor1, this.mInnerGradientColor2}, new float[]{GRADIENT_COLOR_STOP_START, GRADIENT_INNER_STOP_1, GRADIENT_COLOR_STOP_END}, tileMode);
     }
 
     private void initShowAnimator(final Cell cell) {
@@ -1193,17 +1189,17 @@ public class COUINumericKeyboard extends View {
             return;
         }
         if (cell.showAnimator == null) {
-            ValueAnimator valueAnimatorOfPropertyValuesHolder = ValueAnimator.ofPropertyValuesHolder(PropertyValuesHolder.ofFloat("scaleHolder", 1.0f, 2.15f), PropertyValuesHolder.ofFloat("alphaHolder", 0.0f, this.mCircleMaxAlpha));
-            valueAnimatorOfPropertyValuesHolder.setDuration(100L);
+            ValueAnimator valueAnimatorOfPropertyValuesHolder = ValueAnimator.ofPropertyValuesHolder(PropertyValuesHolder.ofFloat("scaleHolder", SHOW_START_SCALE, SHOW_END_SCALE), PropertyValuesHolder.ofFloat("alphaHolder", 0.0f, this.mCircleMaxAlpha));
+            valueAnimatorOfPropertyValuesHolder.setDuration(SHOW_ANIMATOR_TIME);
             valueAnimatorOfPropertyValuesHolder.setInterpolator(DEFAULT_OUT_EASE_INTERPOLATOR);
-            valueAnimatorOfPropertyValuesHolder.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() { // from class: com.coui.appcompat.lockview.COUINumericKeyboard.1
-                @Override // android.animation.ValueAnimator.AnimatorUpdateListener
+            valueAnimatorOfPropertyValuesHolder.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
                 public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                    Cell cell2 = cell;
-                    if (cell2 == null) {
+                    Cell nextCell = cell;
+                    if (nextCell == null) {
                         return;
                     }
-                    cell2.normalAlpha = ((Float) valueAnimator.getAnimatedValue("alphaHolder")).floatValue();
+                    nextCell.normalAlpha = ((Float) valueAnimator.getAnimatedValue("alphaHolder")).floatValue();
                     cell.normalScale = ((Float) valueAnimator.getAnimatedValue("scaleHolder")).floatValue();
                     COUINumericKeyboard.this.invalidate();
                 }
@@ -1221,7 +1217,7 @@ public class COUINumericKeyboard extends View {
         cell.showAnimator.start();
     }
 
-    private void initSideAnim(SideStyle sideStyle, List<Animator> list, int i2) {
+    private void initSideAnim(SideStyle sideStyle, List<Animator> list, int row) {
         if (isEmptyStyle(sideStyle)) {
             return;
         }
@@ -1229,14 +1225,15 @@ public class COUINumericKeyboard extends View {
             setDrawableAlpha(0.0f);
             setDrawableTranslateY(this.mMaxTranslateY);
             ObjectAnimator objectAnimatorOfFloat = ObjectAnimator.ofFloat(this, "drawableAlpha", 0.0f, 1.0f);
-            long j2 = ((long) i2) * 16;
-            objectAnimatorOfFloat.setStartDelay(166 + j2);
-            objectAnimatorOfFloat.setDuration(167L);
+            long alphaDelay = ALPHA_DELAY + (((long) row) * ALPHA_OFFSET);
+            long translateDelay = ((long) row) * TRANSLATE_Y_OFFSET;
+            objectAnimatorOfFloat.setStartDelay(alphaDelay);
+            objectAnimatorOfFloat.setDuration(ALPHA_DURATION);
             objectAnimatorOfFloat.setInterpolator(this.mAlphaInterpolator);
             list.add(objectAnimatorOfFloat);
             ObjectAnimator objectAnimatorOfInt = ObjectAnimator.ofInt(this, "drawableTranslateY", this.mMaxTranslateY, 0);
-            objectAnimatorOfInt.setStartDelay(j2);
-            objectAnimatorOfInt.setDuration(500L);
+            objectAnimatorOfInt.setStartDelay(translateDelay);
+            objectAnimatorOfInt.setDuration(TRANSLATE_Y_DURATION);
             objectAnimatorOfInt.setInterpolator(this.mTranslateYInterpolator);
             list.add(objectAnimatorOfInt);
             return;
@@ -1247,40 +1244,39 @@ public class COUINumericKeyboard extends View {
         setTextAlpha(0.0f);
         setTextTranslateY(this.mMaxTranslateY);
         ObjectAnimator objectAnimatorOfFloat2 = ObjectAnimator.ofFloat(this, "textAlpha", 0.0f, 1.0f);
-        long j3 = ((long) i2) * 16;
-        objectAnimatorOfFloat2.setStartDelay(166 + j3);
-        objectAnimatorOfFloat2.setDuration(167L);
+        long alphaDelayMs = ALPHA_DELAY + (((long) row) * ALPHA_OFFSET);
+        long translateDelayMs = ((long) row) * TRANSLATE_Y_OFFSET;
+        objectAnimatorOfFloat2.setStartDelay(alphaDelayMs);
+        objectAnimatorOfFloat2.setDuration(ALPHA_DURATION);
         objectAnimatorOfFloat2.setInterpolator(this.mAlphaInterpolator);
         list.add(objectAnimatorOfFloat2);
         ObjectAnimator objectAnimatorOfInt2 = ObjectAnimator.ofInt(this, "textTranslateY", this.mMaxTranslateY, 0);
-        objectAnimatorOfInt2.setStartDelay(j3);
-        objectAnimatorOfInt2.setDuration(500L);
+        objectAnimatorOfInt2.setStartDelay(translateDelayMs);
+        objectAnimatorOfInt2.setDuration(TRANSLATE_Y_DURATION);
         objectAnimatorOfInt2.setInterpolator(this.mTranslateYInterpolator);
         list.add(objectAnimatorOfInt2);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
     public void invalidatePaths(Cell cell) {
-        Cell cell2;
-        int i2;
+        Cell nextCell;
+        int top;
         if (cell == null) {
             return;
         }
-        for (int i3 = 0; i3 < 4; i3++) {
-            for (int i4 = 0; i4 < 3; i4++) {
-                int i5 = cell.row;
-                if ((i3 != i5 || i4 != cell.column) && (i2 = (cell2 = this.sCells[i3][i4]).row) >= i5 - 1) {
-                    int i6 = cell2.column;
-                    int i7 = cell.column;
-                    if (i6 >= i7 - 1 && i2 <= i5 + 1 && i6 <= i7 + 1) {
-                        cell2.mInvalidatePaths = true;
+        for (int row = 0; row < 4; row++) {
+            for (int column = 0; column < 3; column++) {
+                int cellRow = cell.row;
+                if ((row != cellRow || column != cell.column) && (top = (nextCell = this.sCells[row][column]).row) >= cellRow - 1) {
+                    int nextColumn = nextCell.column;
+                    int cellColumn = cell.column;
+                    if (nextColumn >= cellColumn - 1 && top <= cellRow + 1 && nextColumn <= cellColumn + 1) {
+                        nextCell.mInvalidatePaths = true;
                     }
                 }
             }
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
     public boolean isEmptyStyle(SideStyle sideStyle) {
         return sideStyle == null || (sideStyle.mDrawable == null && TextUtils.isEmpty(sideStyle.mText)) || sideStyle.mAlpha == 0.0f;
     }
@@ -1289,18 +1285,17 @@ public class COUINumericKeyboard extends View {
         return motionEvent.getPointerId(motionEvent.getActionIndex()) > 0;
     }
 
-    private boolean isValidKeyCode(int i2) {
-        return (i2 >= 7 && i2 <= 16) || (i2 >= 144 && i2 <= 153) || i2 == 67 || i2 == 66 || i2 == FADE_ANIMATOR_TIME;
+    private boolean isValidKeyCode(int keyCode) {
+        return (keyCode >= 7 && keyCode <= 16) || (keyCode >= 144 && keyCode <= 153) || keyCode == 67 || keyCode == 66 || keyCode == FADE_ANIMATOR_TIME;
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public /* synthetic */ void lambda$ensureRightStyleAnimator$0(SideStyle sideStyle, COUIDynamicAnimation cOUIDynamicAnimation, float f2, float f3) {
-        sideStyle.mAlpha = f2;
+    public /* synthetic */ void onRightStyleAlphaUpdate(SideStyle sideStyle, COUIDynamicAnimation cOUIDynamicAnimation, float x, float y) {
+        sideStyle.mAlpha = x;
         invalidate();
     }
 
-    private boolean needFadeWhenDisabled(int i2) {
-        return this.mNormalAlpha > 0.0f && (1 == i2 || 3 == i2 || i2 == 0);
+    private boolean needFadeWhenDisabled(int row) {
+        return this.mNormalAlpha > 0.0f && (1 == row || 3 == row || row == 0);
     }
 
     private void setTouchFeedback() {
@@ -1315,13 +1310,13 @@ public class COUINumericKeyboard extends View {
         playSoundEffect(0);
     }
 
-    private void showSideStyle(SideStyle sideStyle, boolean z2) {
+    private void showSideStyle(SideStyle sideStyle, boolean partOfPattern) {
         if (sideStyle == null) {
             return;
         }
         ensureRightStyleAnimator(sideStyle);
-        sideStyle.mSideStyleAlphaAnimator.animateToFinalPosition(z2 ? 255.0f : 0.0f);
-        sideStyle.mIsDisappearing = !z2;
+        sideStyle.mSideStyleAlphaAnimator.animateToFinalPosition(partOfPattern ? DEFAULT_ALPHA_VALUE : 0.0f);
+        sideStyle.mIsDisappearing = !partOfPattern;
     }
 
     private void updateNumberTextTypeface() {
@@ -1345,7 +1340,7 @@ public class COUINumericKeyboard extends View {
         invalidate();
     }
 
-    @Override // android.view.View
+    @Override
     public boolean dispatchHoverEvent(MotionEvent motionEvent) {
         return this.mExploreByTouchHelper.dispatchHoverEvent(motionEvent) | super.dispatchHoverEvent(motionEvent);
     }
@@ -1353,20 +1348,20 @@ public class COUINumericKeyboard extends View {
     public AnimatorSet getEnterAnim() {
         AnimatorSet animatorSet = new AnimatorSet();
         ArrayList arrayList = new ArrayList();
-        for (int i2 = 0; i2 < 4; i2++) {
-            for (int i3 = 0; i3 < 3; i3++) {
-                Cell cellOf = of(i2, i3);
-                int i4 = (i2 * 3) + i3;
-                if (i4 == 9) {
-                    initSideAnim(this.mLeftStyle, arrayList, i4);
-                } else if (i4 == 11) {
+        for (int row = 0; row < 4; row++) {
+            for (int column = 0; column < 3; column++) {
+                Cell cellOf = of(row, column);
+                int animIndex = (row * 3) + column;
+                if (animIndex == 9) {
+                    initSideAnim(this.mLeftStyle, arrayList, animIndex);
+                } else if (animIndex == 11) {
                     SideStyle sideStyle = this.mRightStyle;
                     if (isEmptyStyle(this.mLeftStyle)) {
-                        i4--;
+                        animIndex--;
                     }
-                    initSideAnim(sideStyle, arrayList, i4);
+                    initSideAnim(sideStyle, arrayList, animIndex);
                 } else {
-                    initCellAnim(cellOf, arrayList, i4);
+                    initCellAnim(cellOf, arrayList, animIndex);
                 }
             }
         }
@@ -1375,15 +1370,15 @@ public class COUINumericKeyboard extends View {
     }
 
     public int[] getStatusAndVariation() {
-        int i2 = Settings.System.getInt(this.mContext.getContentResolver(), "font_variation_settings", 550);
-        int[] iArr = {(61440 & i2) >> 12, i2 & 4095};
-        int i3 = this.mPreVariation;
-        int i4 = iArr[1];
-        if (i3 == i4) {
+        int variationSettings = Settings.System.getInt(this.mContext.getContentResolver(), FONT_VARIATION_SETTINGS, FONT_VARIATION_DEFAULT);
+        int[] statusAndVariation = {(61440 & variationSettings) >> 12, variationSettings & 4095};
+        int preVariation = this.mPreVariation;
+        int variation = statusAndVariation[1];
+        if (preVariation == variation) {
             return null;
         }
-        this.mPreVariation = i4;
-        return iArr;
+        this.mPreVariation = variation;
+        return statusAndVariation;
     }
 
     @Deprecated
@@ -1395,12 +1390,12 @@ public class COUINumericKeyboard extends View {
         return this.mEnableHapticFeedback;
     }
 
-    public synchronized Cell of(int i2, int i3) {
-        checkRange(i2, i3);
-        return this.sCells[i2][i3];
+    public synchronized Cell of(int row, int column) {
+        checkRange(row, column);
+        return this.sCells[row][column];
     }
 
-    @Override // android.view.View
+    @Override
     public void onConfigurationChanged(Configuration configuration) {
         super.onConfigurationChanged(configuration);
         if (this.mHasCustomTypeface) {
@@ -1409,7 +1404,7 @@ public class COUINumericKeyboard extends View {
         updateNumberTextTypeface();
     }
 
-    @Override // android.view.View
+    @Override
     public void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         if (this.mPaint != null) {
@@ -1421,35 +1416,35 @@ public class COUINumericKeyboard extends View {
         this.mDownState = false;
     }
 
-    @Override // android.view.View
+    @Override
     public void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        int i2 = this.mPressEffectStyle;
-        if (i2 == 0) {
-            for (int i3 = 0; i3 < 4; i3++) {
-                for (int i4 = 0; i4 < 3; i4++) {
-                    drawPressCircle(canvas, i4, i3);
-                    drawCell(canvas, i4, i3);
+        int index = this.mPressEffectStyle;
+        if (index == 0) {
+            for (int row = 0; row < 4; row++) {
+                for (int column = 0; column < 3; column++) {
+                    drawPressCircle(canvas, column, row);
+                    drawCell(canvas, column, row);
                 }
             }
             return;
         }
-        if (i2 != 1) {
+        if (index != 1) {
             return;
         }
-        for (int i5 = 0; i5 < 4; i5++) {
-            for (int i6 = 0; i6 < 3; i6++) {
-                drawCell(canvas, i6, i5);
+        for (int row = 0; row < 4; row++) {
+            for (int column = 0; column < 3; column++) {
+                drawCell(canvas, column, row);
             }
         }
-        for (int i7 = 0; i7 < 4; i7++) {
-            for (int i8 = 0; i8 < 3; i8++) {
-                drawLightEffect(canvas, i8, i7);
+        for (int row = 0; row < 4; row++) {
+            for (int column = 0; column < 3; column++) {
+                drawLightEffect(canvas, column, row);
             }
         }
     }
 
-    @Override // android.view.View
+    @Override
     public boolean onHoverEvent(MotionEvent motionEvent) {
         if (this.mAccessibilityManagerService.isTouchExplorationEnabled()) {
             int action = motionEvent.getAction();
@@ -1466,55 +1461,55 @@ public class COUINumericKeyboard extends View {
         return super.onHoverEvent(motionEvent);
     }
 
-    @Override // android.view.View, android.view.KeyEvent.Callback
-    public boolean onKeyDown(int i2, KeyEvent keyEvent) {
+    @Override
+    public boolean onKeyDown(int row, KeyEvent keyEvent) {
         if (keyEvent.getRepeatCount() == 0) {
-            handleKeyEvent(i2, true);
+            handleKeyEvent(row, true);
         }
-        return super.onKeyDown(i2, keyEvent);
+        return super.onKeyDown(row, keyEvent);
     }
 
-    @Override // android.view.View, android.view.KeyEvent.Callback
-    public boolean onKeyUp(int i2, KeyEvent keyEvent) {
+    @Override
+    public boolean onKeyUp(int row, KeyEvent keyEvent) {
         if (keyEvent.getScanCode() != 0) {
-            handleKeyEvent(i2, false);
+            handleKeyEvent(row, false);
         }
-        return super.onKeyUp(i2, keyEvent);
+        return super.onKeyUp(row, keyEvent);
     }
 
-    @Override // android.view.View
-    public void onMeasure(int i2, int i3) {
-        int mode = View.MeasureSpec.getMode(i2);
-        int size = View.MeasureSpec.getSize(i2);
-        int mode2 = View.MeasureSpec.getMode(i3);
-        int size2 = View.MeasureSpec.getSize(i3);
+    @Override
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int mode = View.MeasureSpec.getMode(widthMeasureSpec);
+        int size = View.MeasureSpec.getSize(widthMeasureSpec);
+        int heightMode = View.MeasureSpec.getMode(heightMeasureSpec);
+        int heightSize = View.MeasureSpec.getSize(heightMeasureSpec);
         if (mode == View.MeasureSpec.AT_MOST || mode == View.MeasureSpec.UNSPECIFIED) {
             size = this.mDefaultWidth;
         }
-        if (mode2 == View.MeasureSpec.AT_MOST || mode2 == View.MeasureSpec.UNSPECIFIED) {
-            size2 = this.mDefaultHeight;
+        if (heightMode == View.MeasureSpec.AT_MOST || heightMode == View.MeasureSpec.UNSPECIFIED) {
+            heightSize = this.mDefaultHeight;
         }
-        setMeasuredDimension(size, size2);
+        setMeasuredDimension(size, heightSize);
     }
 
-    @Override // android.view.View
-    public void onSizeChanged(int i2, int i3, int i4, int i5) {
-        int i6 = this.mViewSize;
-        this.mCellWidth = i6;
-        this.mCellHeight = i6;
-        this.mNumberBackgroundRadius = i6 / 2;
+    @Override
+    public void onSizeChanged(int w, int h, int oldw, int oldh) {
+        int action = this.mViewSize;
+        this.mCellWidth = action;
+        this.mCellHeight = action;
+        this.mNumberBackgroundRadius = action / 2;
         this.mHorizontalSpacing = (((getWidth() - getPaddingLeft()) - getPaddingRight()) - (this.mCellWidth * 3)) / 2;
         int height = (getHeight() - getPaddingTop()) - getPaddingBottom();
-        int i7 = this.mCellHeight;
-        this.mVerticalSpacing = (height - (i7 * 4)) / 3;
-        this.mCircleRadius = i7 / 2;
+        int left = this.mCellHeight;
+        this.mVerticalSpacing = (height - (left * 4)) / 3;
+        this.mCircleRadius = left / 2;
         if (this.mPressEffectStyle == 1) {
             initRadialGradient();
             initInnerShadowBitmap();
         }
     }
 
-    @Override // android.view.View
+    @Override
     public boolean onTouchEvent(MotionEvent event) {
         final int actionIndex = event.getActionIndex();
         final int actionMasked = event.getActionMasked();
@@ -1597,12 +1592,12 @@ public class COUINumericKeyboard extends View {
         initPaint();
     }
 
-    public void setCellViewSize(int i2) {
-        this.mViewSize = i2;
+    public void setCellViewSize(int row) {
+        this.mViewSize = row;
     }
 
-    public void setCircleMaxAlpha(int i2) {
-        setCircleMaxAlpha(i2 / 255.0f);
+    public void setCircleMaxAlpha(int row) {
+        setCircleMaxAlpha(row / DEFAULT_ALPHA_VALUE);
     }
 
     public void setCustomTypeFace(Typeface typeface) {
@@ -1617,34 +1612,34 @@ public class COUINumericKeyboard extends View {
         this.mDeleteStyle = new SideStyle.Builder().drawable(drawable).description(getResources().getString(R.string.coui_number_keyboard_delete)).type(1).build();
     }
 
-    public void setDrawableAlpha(float f2) {
-        this.mDrawableAlpha = f2;
+    public void setDrawableAlpha(float x) {
+        this.mDrawableAlpha = x;
         invalidate();
     }
 
-    public void setDrawableTranslateX(int i2) {
-        this.mDrawableTranslateX = i2;
+    public void setDrawableTranslateX(int row) {
+        this.mDrawableTranslateX = row;
         invalidate();
     }
 
-    public void setDrawableTranslateY(int i2) {
-        this.mDrawableTranslateY = i2;
+    public void setDrawableTranslateY(int row) {
+        this.mDrawableTranslateY = row;
         invalidate();
     }
 
-    @Override // android.view.View
-    public void setEnabled(boolean z2) {
+    @Override
+    public void setEnabled(boolean partOfPattern) {
         Paint paint;
-        if (!z2 && this.mDownState && (paint = this.mPaint) != null) {
+        if (!partOfPattern && this.mDownState && (paint = this.mPaint) != null) {
             paint.setAlpha(0);
             this.mDownState = false;
             invalidate();
         }
-        super.setEnabled(z2);
+        super.setEnabled(partOfPattern);
     }
 
     @Deprecated
-    public void setHasFinishButton(boolean z2) {
+    public void setHasFinishButton(boolean partOfPattern) {
     }
 
     @Deprecated
@@ -1655,32 +1650,32 @@ public class COUINumericKeyboard extends View {
         this.mDrawDelegate = keyboardDrawDelegate;
     }
 
-    public void setKeyboardLineColor(int i2) {
-        this.mKeyboardLineColor = i2;
+    public void setKeyboardLineColor(int row) {
+        this.mKeyboardLineColor = row;
         initPaint();
     }
 
-    public void setKeyboardNumberTextColor(int i2) {
-        this.mKeyboardNumberTextColor = i2;
-        this.mKeyboardDelete.setTint(i2);
+    public void setKeyboardNumberTextColor(int row) {
+        this.mKeyboardNumberTextColor = row;
+        this.mKeyboardDelete.setTint(row);
     }
 
     public void setLeftStyle(SideStyle sideStyle) {
         this.mLeftStyle = sideStyle;
         this.mExploreByTouchHelper.invalidateVirtualView(9);
         if (sideStyle != null) {
-            sideStyle.mAlpha = 255.0f;
+            sideStyle.mAlpha = DEFAULT_ALPHA_VALUE;
         }
         invalidate();
     }
 
-    public void setNumberBackgroundColor(int i2) {
-        this.mNumberBackgroundColor = i2;
+    public void setNumberBackgroundColor(int row) {
+        this.mNumberBackgroundColor = row;
     }
 
-    public void setNumberOffsetY(float f2) {
-        if (this.mNumberOffsetY != f2) {
-            this.mNumberOffsetY = f2;
+    public void setNumberOffsetY(float x) {
+        if (this.mNumberOffsetY != x) {
+            this.mNumberOffsetY = x;
             invalidate();
         }
     }
@@ -1689,8 +1684,8 @@ public class COUINumericKeyboard extends View {
         this.mOnClickItemListener = onClickItemListener;
     }
 
-    public void setPressedColor(int i2) {
-        this.mPressedColor = i2;
+    public void setPressedColor(int row) {
+        this.mPressedColor = row;
         initPaint();
     }
 
@@ -1698,31 +1693,31 @@ public class COUINumericKeyboard extends View {
         this.mRightStyle = sideStyle;
         this.mExploreByTouchHelper.invalidateVirtualView(11);
         if (sideStyle != null) {
-            sideStyle.mAlpha = 255.0f;
+            sideStyle.mAlpha = DEFAULT_ALPHA_VALUE;
         }
         invalidate();
     }
 
-    public void setSideBackgroundColor(int i2) {
-        this.mSideBackgroundColor = i2;
+    public void setSideBackgroundColor(int row) {
+        this.mSideBackgroundColor = row;
     }
 
-    public void setTactileFeedbackEnabled(boolean z2) {
-        this.mEnableHapticFeedback = z2;
+    public void setTactileFeedbackEnabled(boolean enabled) {
+        this.mEnableHapticFeedback = enabled;
     }
 
-    public void setTextAlpha(float f2) {
-        this.mTextAlpha = f2;
+    public void setTextAlpha(float x) {
+        this.mTextAlpha = x;
         invalidate();
     }
 
-    public void setTextTranslateX(int i2) {
-        this.mTextTranslateX = i2;
+    public void setTextTranslateX(int row) {
+        this.mTextTranslateX = row;
         invalidate();
     }
 
-    public void setTextTranslateY(int i2) {
-        this.mTextTranslateY = i2;
+    public void setTextTranslateY(int row) {
+        this.mTextTranslateY = row;
         invalidate();
     }
 
@@ -1735,11 +1730,11 @@ public class COUINumericKeyboard extends View {
     }
 
     @Deprecated
-    public void setType(int i2) {
+    public void setType(int row) {
     }
 
-    public void setWordTextNormalColor(int i2) {
-        this.mFinishStyle.mTextColor = i2;
+    public void setWordTextNormalColor(int row) {
+        this.mFinishStyle.mTextColor = row;
     }
 
     public COUINumericKeyboard(Context context, AttributeSet attributeSet) {
@@ -1760,36 +1755,36 @@ public class COUINumericKeyboard extends View {
         return row;
     }
 
-    private void handleActionDown(float f2, float f3, int i2) {
+    private void handleActionDown(float x, float y, int column) {
         if (this.mAccessibilityManagerService.isTouchExplorationEnabled()) {
             return;
         }
-        Cell cellCheckForNewHit = checkForNewHit(f2, f3);
+        Cell cellCheckForNewHit = checkForNewHit(x, y);
         if (cellCheckForNewHit != null) {
             int touchIndex = getTouchIndex(cellCheckForNewHit);
             this.mExploreByTouchHelper.invalidateRoot();
             if (this.mEnableHapticFeedback && touchIndex != -1) {
                 setTouchFeedback();
             }
-            if (i2 != -1) {
-                cellCheckForNewHit.pointerId = i2;
+            if (column != -1) {
+                cellCheckForNewHit.pointerId = column;
             }
-            int i3 = this.mPressEffectStyle;
-            if (i3 == 0) {
+            int row = this.mPressEffectStyle;
+            if (row == 0) {
                 initShowAnimator(cellCheckForNewHit);
-            } else if (i3 == 1) {
+            } else if (row == 1) {
                 executeLightEffectAnimator(cellCheckForNewHit, true);
             }
         }
         invalidate();
     }
 
-    private void handleActionUp(float f2, float f3, int i2) {
-        int i3;
-        Cell cellCheckForNewHit = checkForNewHit(f2, f3);
+    private void handleActionUp(float x, float y, int row) {
+        int column;
+        Cell cellCheckForNewHit = checkForNewHit(x, y);
         int touchIndex = getTouchIndex(cellCheckForNewHit);
         if (this.mAccessibilityManagerService.isTouchExplorationEnabled()) {
-            if (cellCheckForNewHit == null || (i3 = cellCheckForNewHit.pointerId) == -1 || i3 != i2) {
+            if (cellCheckForNewHit == null || (column = cellCheckForNewHit.pointerId) == -1 || column != row) {
                 return;
             }
             this.mExploreByTouchHelper.invalidateRoot();
@@ -1799,16 +1794,16 @@ public class COUINumericKeyboard extends View {
             setTouchFeedback();
             return;
         }
-        if (cellCheckForNewHit != null && cellCheckForNewHit.pointerId == i2) {
+        if (cellCheckForNewHit != null && cellCheckForNewHit.pointerId == row) {
             callback(touchIndex);
         }
-        if (i2 != -1 && (cellCheckForNewHit == null || cellCheckForNewHit.pointerId != i2)) {
-            cellCheckForNewHit = findCellByPointerId(i2);
+        if (row != -1 && (cellCheckForNewHit == null || cellCheckForNewHit.pointerId != row)) {
+            cellCheckForNewHit = findCellByPointerId(row);
         }
-        int i4 = this.mPressEffectStyle;
-        if (i4 == 0) {
+        int index = this.mPressEffectStyle;
+        if (index == 0) {
             initFadeAnimator(cellCheckForNewHit);
-        } else if (i4 == 1) {
+        } else if (index == 1) {
             executeLightEffectAnimator(cellCheckForNewHit, false);
         }
         if (touchIndex != -1 && isEnabled() && !hasOnClickListeners()) {
@@ -1817,48 +1812,48 @@ public class COUINumericKeyboard extends View {
         invalidate();
     }
 
-    public void setCircleMaxAlpha(float f2) {
-        if (f2 < 0.0f || f2 > 1.0f) {
+    public void setCircleMaxAlpha(float x) {
+        if (x < 0.0f || x > 1.0f) {
             COUILog.e(TAG, "The alpha value must be greater than or equal to 0 and less than or equal to 1");
             return;
         }
-        this.mCircleMaxAlpha = f2;
-        for (int i2 = 0; i2 < 4; i2++) {
-            for (int i3 = 0; i3 < 3; i3++) {
-                Cell cell = this.sCells[i2][i3];
+        this.mCircleMaxAlpha = x;
+        for (int row = 0; row < 4; row++) {
+            for (int column = 0; column < 3; column++) {
+                Cell cell = this.sCells[row][column];
                 if (cell != null) {
                     ValueAnimator valueAnimator = cell.showAnimator;
                     if (valueAnimator != null && !valueAnimator.isRunning()) {
-                        this.sCells[i2][i3].showAnimator = null;
+                        this.sCells[row][column].showAnimator = null;
                     }
-                    ValueAnimator valueAnimator2 = this.sCells[i2][i3].fadeAnimator;
-                    if (valueAnimator2 != null && !valueAnimator2.isRunning()) {
-                        this.sCells[i2][i3].fadeAnimator = null;
+                    ValueAnimator animation = this.sCells[row][column].fadeAnimator;
+                    if (animation != null && !animation.isRunning()) {
+                        this.sCells[row][column].fadeAnimator = null;
                     }
-                    ValueAnimator valueAnimator3 = this.sCells[i2][i3].blurFadeAnimator;
-                    if (valueAnimator3 != null && !valueAnimator3.isRunning()) {
-                        this.sCells[i2][i3].blurFadeAnimator = null;
+                    ValueAnimator animator = this.sCells[row][column].blurFadeAnimator;
+                    if (animator != null && !animator.isRunning()) {
+                        this.sCells[row][column].blurFadeAnimator = null;
                     }
                 }
             }
         }
     }
 
-    public COUINumericKeyboard(Context context, AttributeSet attributeSet, int i2) {
-        this(context, attributeSet, i2, R.style.Widget_COUI_COUINumericKeyboard);
+    public COUINumericKeyboard(Context context, AttributeSet attributeSet, int row) {
+        this(context, attributeSet, row, R.style.Widget_COUI_COUINumericKeyboard);
     }
 
-    private void handleActionMove(float f2, float f3, int i2) {
-        Cell cellCheckForNewHit = checkForNewHit(f2, f3);
-        if (i2 != -1) {
-            if (cellCheckForNewHit == null || cellCheckForNewHit.pointerId != i2) {
-                handleActionCancel(i2);
+    private void handleActionMove(float x, float y, int row) {
+        Cell cellCheckForNewHit = checkForNewHit(x, y);
+        if (row != -1) {
+            if (cellCheckForNewHit == null || cellCheckForNewHit.pointerId != row) {
+                handleActionCancel(row);
             }
         }
     }
 
-    public COUINumericKeyboard(Context context, AttributeSet attributeSet, int i2, int i3) {
-        super(context, attributeSet, i2, i3);
+    public COUINumericKeyboard(Context context, AttributeSet attributeSet, int defStyleAttr, int defStyleRes) {
+        super(context, attributeSet, defStyleAttr, defStyleRes);
         this.mClipPaint = new Paint(1);
         this.mNumberBounds = new RectF();
         this.mTranslateBounds = new RectF();
@@ -1869,7 +1864,7 @@ public class COUINumericKeyboard extends View {
         this.mTouchCell = null;
         this.mDrawDelegate = null;
         this.mEnableHapticFeedback = true;
-        int i4 = 0;
+        int left = 0;
         this.mDownState = false;
         this.sCells = (Cell[][]) Array.newInstance((Class<?>) Cell.class, 4, 3);
         this.mKeyboardDelete = null;
@@ -1899,11 +1894,11 @@ public class COUINumericKeyboard extends View {
         if (attributeSet != null && attributeSet.getStyleAttribute() != 0) {
             this.mStyle = attributeSet.getStyleAttribute();
         } else {
-            this.mStyle = i2;
+            this.mStyle = defStyleAttr;
         }
         COUIDarkModeUtil.setForceDarkAllow(this, false);
         this.mContext = context;
-        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUINumericKeyboard, i2, i3);
+        TypedArray typedArrayObtainStyledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.COUINumericKeyboard, defStyleAttr, defStyleRes);
         this.mPressedColor = typedArrayObtainStyledAttributes.getColor(R.styleable.COUINumericKeyboard_couiNumPressColor, 0);
         Resources resources = context.getResources();
         this.mLightShaderRadius = resources.getDimensionPixelOffset(R.dimen.coui_numeric_light_shader_radius);
@@ -1956,22 +1951,22 @@ public class COUINumericKeyboard extends View {
         this.mNumberBackground = gradientDrawable;
         gradientDrawable.setShape(1);
         this.mNumberBackground.setCornerRadius(this.mNumberBackgroundRadius);
-        int i5 = 0;
-        while (i5 < 4) {
-            int i6 = i4;
-            while (i6 < 3) {
-                this.sCells[i5][i6] = new Cell(i5, i6);
-                Cell cell = this.sCells[i5][i6];
-                int i7 = (i5 * 3) + i6;
-                cell.cellLettersStr = stringArray[i7];
-                int i8 = this.mKeyboardNumbers[i7];
-                if (i8 > -1) {
-                    cell.cellNumberStr = String.format(Locale.getDefault(), "%d", Integer.valueOf(i8));
+        int top = 0;
+        while (top < 4) {
+            int index = left;
+            while (index < 3) {
+                this.sCells[top][index] = new Cell(top, index);
+                Cell cell = this.sCells[top][index];
+                int row = (top * 3) + index;
+                cell.cellLettersStr = stringArray[row];
+                int column = this.mKeyboardNumbers[row];
+                if (column > -1) {
+                    cell.cellNumberStr = String.format(Locale.getDefault(), "%d", Integer.valueOf(column));
                 }
-                i6++;
+                index++;
             }
-            i5++;
-            i4 = 0;
+            top++;
+            left = 0;
         }
         this.mTtfPath = getResources().getString(R.string.ttf_path);
         String string = getResources().getString(R.string.coui_numeric_keyboard_sure);
@@ -1984,8 +1979,8 @@ public class COUINumericKeyboard extends View {
         this.mBorderLinePaint = new Paint();
     }
 
-    public void setRightStyle(SideStyle sideStyle, boolean z2) {
-        if (!z2) {
+    public void setRightStyle(SideStyle sideStyle, boolean partOfPattern) {
+        if (!partOfPattern) {
             setRightStyle(sideStyle);
             return;
         }

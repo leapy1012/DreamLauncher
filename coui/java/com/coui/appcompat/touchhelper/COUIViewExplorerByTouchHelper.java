@@ -4,9 +4,11 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
+
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.core.view.accessibility.AccessibilityNodeProviderCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
+
 import java.util.List;
 
 
@@ -23,15 +25,15 @@ public class COUIViewExplorerByTouchHelper extends ExploreByTouchHelper {
 
         int getDisablePosition();
 
-        void getItemBounds(int i2, Rect rect);
+        void getItemBounds(int index, Rect rect);
 
         int getItemCounts();
 
-        CharSequence getItemDescription(int i2);
+        CharSequence getItemDescription(int index);
 
-        int getVirtualViewAt(float f2, float f10);
+        int getVirtualViewAt(float value, float value_2);
 
-        void performAction(int i2, int i6, boolean z6);
+        void performAction(int index, int index_2, boolean flag);
     }
 
     public COUIViewExplorerByTouchHelper(View view) {
@@ -41,11 +43,11 @@ public class COUIViewExplorerByTouchHelper extends ExploreByTouchHelper {
         this.mHostView = view;
     }
 
-    private void getItemBounds(int i2, Rect rect) {
-        if (i2 < 0 || i2 >= this.mCOUIViewTalkBalkInteraction.getItemCounts()) {
+    private void getItemBounds(int index, Rect rect) {
+        if (index < 0 || index >= this.mCOUIViewTalkBalkInteraction.getItemCounts()) {
             return;
         }
-        this.mCOUIViewTalkBalkInteraction.getItemBounds(i2, rect);
+        this.mCOUIViewTalkBalkInteraction.getItemBounds(index, rect);
     }
 
     public void clearFocusedVirtualView() {
@@ -57,8 +59,8 @@ public class COUIViewExplorerByTouchHelper extends ExploreByTouchHelper {
     }
 
     @Override
-    public int getVirtualViewAt(float f2, float f10) {
-        int virtualViewAt = this.mCOUIViewTalkBalkInteraction.getVirtualViewAt(f2, f10);
+    public int getVirtualViewAt(float value, float value_2) {
+        int virtualViewAt = this.mCOUIViewTalkBalkInteraction.getVirtualViewAt(value, value_2);
         if (virtualViewAt >= 0) {
             return virtualViewAt;
         }
@@ -67,38 +69,38 @@ public class COUIViewExplorerByTouchHelper extends ExploreByTouchHelper {
 
     @Override
     public void getVisibleVirtualViews(List<Integer> list) {
-        for (int i2 = 0; i2 < this.mCOUIViewTalkBalkInteraction.getItemCounts(); i2++) {
-            list.add(Integer.valueOf(i2));
+        for (int index = 0; index < this.mCOUIViewTalkBalkInteraction.getItemCounts(); index++) {
+            list.add(Integer.valueOf(index));
         }
     }
 
     @Override
-    public boolean onPerformActionForVirtualView(int i2, int i6, Bundle bundle) {
-        if (i6 != 16) {
+    public boolean onPerformActionForVirtualView(int index, int index_2, Bundle bundle) {
+        if (index_2 != 16) {
             return false;
         }
-        this.mCOUIViewTalkBalkInteraction.performAction(i2, 16, false);
+        this.mCOUIViewTalkBalkInteraction.performAction(index, 16, false);
         return true;
     }
 
     @Override
-    public void onPopulateEventForVirtualView(int i2, AccessibilityEvent accessibilityEvent) {
-        accessibilityEvent.setContentDescription(this.mCOUIViewTalkBalkInteraction.getItemDescription(i2));
+    public void onPopulateEventForVirtualView(int index, AccessibilityEvent accessibilityEvent) {
+        accessibilityEvent.setContentDescription(this.mCOUIViewTalkBalkInteraction.getItemDescription(index));
     }
 
     @Override
-    public void onPopulateNodeForVirtualView(int i2, AccessibilityNodeInfoCompat nodeInfo) {
-        getItemBounds(i2, this.mTempRect);
-        nodeInfo.setContentDescription(this.mCOUIViewTalkBalkInteraction.getItemDescription(i2));
+    public void onPopulateNodeForVirtualView(int index, AccessibilityNodeInfoCompat nodeInfo) {
+        getItemBounds(index, this.mTempRect);
+        nodeInfo.setContentDescription(this.mCOUIViewTalkBalkInteraction.getItemDescription(index));
         nodeInfo.setBoundsInParent(this.mTempRect);
         if (this.mCOUIViewTalkBalkInteraction.getClassName() != null) {
             nodeInfo.setClassName(this.mCOUIViewTalkBalkInteraction.getClassName());
         }
         nodeInfo.addAction(16);
-        if (i2 == this.mCOUIViewTalkBalkInteraction.getCurrentPosition()) {
+        if (index == this.mCOUIViewTalkBalkInteraction.getCurrentPosition()) {
             nodeInfo.setSelected(true);
         }
-        if (i2 == this.mCOUIViewTalkBalkInteraction.getDisablePosition()) {
+        if (index == this.mCOUIViewTalkBalkInteraction.getDisablePosition()) {
             nodeInfo.setEnabled(false);
         }
     }
@@ -107,8 +109,8 @@ public class COUIViewExplorerByTouchHelper extends ExploreByTouchHelper {
         this.mCOUIViewTalkBalkInteraction = cOUIViewTalkBalkInteraction;
     }
 
-    public void setFocusedVirtualView(int i2) {
+    public void setFocusedVirtualView(int focusedVirtualView) {
         AccessibilityNodeProviderCompat provider = getAccessibilityNodeProvider(this.mHostView);
-        provider.performAction(i2, 64, null);
+        provider.performAction(focusedVirtualView, 64, null);
     }
 }

@@ -27,6 +27,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.view.animation.Interpolator;
 import android.view.animation.PathInterpolator;
 import android.view.inputmethod.InputMethodManager;
@@ -35,6 +36,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.window.OnBackInvokedCallback;
 import android.window.OnBackInvokedDispatcher;
+
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -43,6 +45,7 @@ import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.animation.COUIEaseInterpolator;
 import com.coui.appcompat.animation.COUIInEaseInterpolator;
@@ -55,19 +58,19 @@ import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.edittext.COUIInputView;
 import com.coui.appcompat.grid.COUIResponsiveUtils;
 import com.coui.appcompat.log.COUILog;
-import com.coui.appcompat.panel.COUIBottomSheetBehavior;
 import com.coui.appcompat.roundcorner.RoundCornerUtil;
 import com.coui.appcompat.theme.COUIThemeOverlay;
 import com.coui.appcompat.uiutil.ShadowUtils;
 import com.coui.appcompat.uiutil.UIUtil;
 import com.coui.appcompat.version.COUIVersionUtil;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.facebook.rebound.Spring;
 import com.facebook.rebound.SpringConfig;
 import com.facebook.rebound.SpringListener;
 import com.facebook.rebound.SpringSystem;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.oplus.dynamicframerate.AnimationVelocityCalculator;
 import com.oplus.dynamicframerate.DynamicFrameRateManager;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
@@ -274,7 +277,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
     public interface DialogOffsetListener {
-        void onDialogOffsetChanged(float f2);
+        void onDialogOffsetChanged(float offset);
     }
 
     public interface OnAnimationListener {
@@ -307,8 +310,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this(context, 0);
     }
 
-    private void addAnimationFlag(int i2) {
-        this.mAnimationFlag = i2 | this.mAnimationFlag;
+    private void addAnimationFlag(int flag) {
+        this.mAnimationFlag = flag | this.mAnimationFlag;
     }
 
 
@@ -321,19 +324,19 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
 
-    public void adjustResize(WindowInsets windowInsets, boolean z6) {
-        if (z6) {
-            boolean z10 = getContext().getResources().getBoolean(com.coui.appcompat.R.bool.is_coui_bottom_sheet_ime_adjust_in_constraint_layout);
+    public void adjustResize(WindowInsets windowInsets, boolean enable) {
+        if (enable) {
+            boolean useConstraintLayout = getContext().getResources().getBoolean(com.coui.appcompat.R.bool.is_coui_bottom_sheet_ime_adjust_in_constraint_layout);
             ViewGroup viewGroup = (ViewGroup) findViewById(com.coui.appcompat.R.id.design_bottom_sheet);
             ViewGroup viewGroup2 = (ViewGroup) findViewById(com.coui.appcompat.R.id.coui_panel_content_layout);
-            if (z10) {
+            if (useConstraintLayout) {
                 viewGroup = viewGroup2;
             }
             ViewGroup viewGroup3 = this.mAdjustLayout;
-            if (viewGroup3 != (z10 ? this.mDraggableConstraintLayout : this.mDesignBottomSheetFrameLayout)) {
+            if (viewGroup3 != (useConstraintLayout ? this.mDraggableConstraintLayout : this.mDesignBottomSheetFrameLayout)) {
                 COUIViewMarginUtil.setMargin(viewGroup3, 3, 0);
             }
-            ViewGroup viewGroup4 = z10 ? this.mDraggableConstraintLayout : this.mDesignBottomSheetFrameLayout;
+            ViewGroup viewGroup4 = useConstraintLayout ? this.mDraggableConstraintLayout : this.mDesignBottomSheetFrameLayout;
             this.mAdjustLayout = viewGroup4;
             if (viewGroup4 != null) {
                 viewGroup = viewGroup4;
@@ -465,22 +468,22 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     public static COUISpringAnimation createContentChangeSpringAnimation() {
         FloatValueHolder dVar = new FloatValueHolder(0.0f);
         COUISpringForce cOUISpringForce = new COUISpringForce();
-        cOUISpringForce.setBounce(0.0f);
+        cOUISpringForce.setBounce(DEFAULT_TRANSLATION_SPRING_BOUNCE);
         cOUISpringForce.setResponse(SPRING_ANIM_CONTENT_CHANGE_RESPONSE);
         COUISpringAnimation spring = new COUISpringAnimation(dVar).setSpring(cOUISpringForce);
         spring.setMinimumVisibleChange(SPRING_ANIM_CONTENT_CHANGE_MINIMUM_VISIBLE_CHANGE);
         return spring;
     }
 
-    private ValueAnimator createNavigationColorAnimation(int i2) {
+    private ValueAnimator createNavigationColorAnimation(int color) {
         if (COUINavigationBarUtil.isNavigationBarShow(getContext()) && getWindow() != null) {
             final Window window = getWindow();
             int navigationBarColor = window.getNavigationBarColor();
-            if (Color.alpha(i2) == 0) {
-                i2 = Color.argb(1, Color.red(i2), Color.green(i2), Color.blue(i2));
+            if (Color.alpha(color) == 0) {
+                color = Color.argb(1, Color.red(color), Color.green(color), Color.blue(color));
             }
-            if (navigationBarColor != i2) {
-                ValueAnimator valueAnimatorOfObject = ValueAnimator.ofObject(new ArgbEvaluator(), Integer.valueOf(navigationBarColor), Integer.valueOf(i2));
+            if (navigationBarColor != color) {
+                ValueAnimator valueAnimatorOfObject = ValueAnimator.ofObject(new ArgbEvaluator(), Integer.valueOf(navigationBarColor), Integer.valueOf(color));
                 valueAnimatorOfObject.setDuration(NAV_COLOR_ANIM_DURATION);
                 valueAnimatorOfObject.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                     @Override
@@ -494,23 +497,23 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         return null;
     }
 
-    private ValueAnimator createOutsideAlphaAnimation(final boolean z6, float f2, PathInterpolator pathInterpolator) {
-        final float f10 = this.mCurrentOutsideAlpha;
-        final float f11 = z6 ? 1.0f : 0.0f;
-        if (f10 == f11) {
+    private ValueAnimator createOutsideAlphaAnimation(final boolean showing, float duration, PathInterpolator pathInterpolator) {
+        final float startAlpha = this.mCurrentOutsideAlpha;
+        final float endAlpha = showing ? 1.0f : 0.0f;
+        if (startAlpha == endAlpha) {
             COUILog.w(TAG, "StartAlphaValue == endAlphaValue, No need to perform transparency animation anymore");
             return null;
         }
-        ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(f10, f11);
-        valueAnimatorOfFloat.setDuration((long) f2);
+        ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(startAlpha, endAlpha);
+        valueAnimatorOfFloat.setDuration((long) duration);
         valueAnimatorOfFloat.setInterpolator(pathInterpolator);
         valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 float fFloatValue = ((Float) valueAnimator.getAnimatedValue()).floatValue();
-                float f12 = f10;
-                float f13 = f11;
-                COUIBottomSheetDialog.this.outsideAlphaChange(f12 != f13 ? (fFloatValue - f12) / (f13 - f12) : 0.0f, z6);
+                float fromAlpha = startAlpha;
+                float toAlpha = endAlpha;
+                COUIBottomSheetDialog.this.outsideAlphaChange(fromAlpha != toAlpha ? (fFloatValue - fromAlpha) / (toAlpha - fromAlpha) : 0.0f, showing);
             }
         });
         valueAnimatorOfFloat.addListener(new AnimatorListenerAdapter() {
@@ -518,7 +521,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
             public void onAnimationEnd(Animator animator) {
                 super.onAnimationEnd(animator);
                 if (COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout != null && COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getAlpha() == 0.0f) {
-                    COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.setAlpha(1.0f);
+                    COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.setAlpha(ALPHA_OPAQUE);
                 }
                 COUIBottomSheetDialog.this.mIsNeedShowKeyboard = false;
             }
@@ -546,9 +549,9 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         hideDragView();
     }
 
-    private ValueAnimator createPanelTranslateAnimation(float f2, float f10, float f11, PathInterpolator pathInterpolator) {
-        ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(f2, f10);
-        valueAnimatorOfFloat.setDuration((long) f11);
+    private ValueAnimator createPanelTranslateAnimation(float startY, float endY, float duration, PathInterpolator pathInterpolator) {
+        ValueAnimator valueAnimatorOfFloat = ValueAnimator.ofFloat(startY, endY);
+        valueAnimatorOfFloat.setDuration((long) duration);
         valueAnimatorOfFloat.setInterpolator(pathInterpolator);
         valueAnimatorOfFloat.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -629,16 +632,16 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
             this.mAlphaSpringAnimation = new COUISpringAnimation(new FloatValueHolder());
             COUISpringForce cOUISpringForce = new COUISpringForce();
             this.mSpringForceAlpha = cOUISpringForce;
-            cOUISpringForce.setBounce(0.0f);
+            cOUISpringForce.setBounce(DEFAULT_TRANSLATION_SPRING_BOUNCE);
             this.mAlphaSpringAnimation.setSpring(this.mSpringForceAlpha);
         }
-        if (hasAnimationFlag(2)) {
+        if (hasAnimationFlag(ANIMATION_TYPE_OUTSIDE_ALPHA)) {
             if (!isFadeInCenter()) {
                 this.mSpringForceAlpha.setResponse(getTranslationResponse());
             } else if (this.mIsEntering) {
-                this.mSpringForceAlpha.setResponse(0.25f);
+                this.mSpringForceAlpha.setResponse(DEFAULT_ALPHA_SHOW_SPRING_RESPONSE);
             } else {
-                this.mSpringForceAlpha.setResponse(0.25f);
+                this.mSpringForceAlpha.setResponse(DEFAULT_ALPHA_HIDE_SPRING_RESPONSE);
             }
         }
         if (animatorListener != null) {
@@ -646,8 +649,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
             this.mAlphaSpringAnimation.removeEndListener(this.mAlphaSpringEndListener);
             COUIDynamicAnimation.OnAnimationEndListener onAnimationEndListener = new COUIDynamicAnimation.OnAnimationEndListener() {
                 @Override
-                public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z6, float f2, float f10) {
-                    if (z6) {
+                public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean canceled, float value, float velocity) {
+                    if (canceled) {
                         animatorListener.onAnimationCancel(null);
                     } else {
                         animatorListener.onAnimationEnd(null);
@@ -664,13 +667,13 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mAlphaSpringAnimation.removeUpdateListener(this.mAlphaSpringUpdateListener);
         this.mAlphaSpringUpdateListener = new COUIDynamicAnimation.OnAnimationUpdateListener() {
             @Override
-            public void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float f2, float f10) {
-                float fMax = COUIBottomSheetDialog.this.mEndValueOfTranslateAnimation != COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation ? (f2 - COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation) / (COUIBottomSheetDialog.this.mEndValueOfTranslateAnimation - COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation) : 0.0f;
-                if (COUIBottomSheetDialog.this.hasAnimationFlag(2)) {
+            public void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float value, float velocity) {
+                float fMax = COUIBottomSheetDialog.this.mEndValueOfTranslateAnimation != COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation ? (value - COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation) / (COUIBottomSheetDialog.this.mEndValueOfTranslateAnimation - COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation) : 0.0f;
+                if (COUIBottomSheetDialog.this.hasAnimationFlag(ANIMATION_TYPE_OUTSIDE_ALPHA)) {
                     COUIBottomSheetDialog cOUIBottomSheetDialog = COUIBottomSheetDialog.this;
                     cOUIBottomSheetDialog.outsideAlphaChange(fMax, cOUIBottomSheetDialog.mIsEntering);
                 }
-                if (!COUIBottomSheetDialog.this.hasAnimationFlag(8) || COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout == null) {
+                if (!COUIBottomSheetDialog.this.hasAnimationFlag(ANIMATION_TYPE_DIALOG_ALPHA) || COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout == null) {
                     return;
                 }
                 COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout;
@@ -751,8 +754,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         }
         if (isFollowHand()) {
             setDefaultSpringStartEndValue();
-            if (this.mDesignBottomSheetFrameLayout.getAlpha() != 1.0f) {
-                this.mDesignBottomSheetFrameLayout.setAlpha(1.0f);
+            if (this.mDesignBottomSheetFrameLayout.getAlpha() != ALPHA_OPAQUE) {
+                this.mDesignBottomSheetFrameLayout.setAlpha(ALPHA_OPAQUE);
             }
             if (haveEnoughSpace()) {
                 addAnimationFlag(8);
@@ -761,12 +764,12 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
                 addAnimationFlag(2);
             }
         } else if (isFadeInCenter()) {
-            addAnimationFlag(4);
+            addAnimationFlag(ANIMATION_TYPE_SCALE);
             addAnimationFlag(2);
             addAnimationFlag(8);
             setDefaultSpringStartEndValue();
         } else {
-            addAnimationFlag(1);
+            addAnimationFlag(ANIMATION_TYPE_TRANSLATION);
             addAnimationFlag(2);
             this.mStartValueOfTranslateAnimation = (int) this.mCurrentParentViewTranslationY;
             this.mEndValueOfTranslateAnimation = getTranslationDistance();
@@ -777,7 +780,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
 
-    public void doParentViewTranslationShowingAnim(int i2, Animator.AnimatorListener animatorListener) {
+    public void doParentViewTranslationShowingAnim(int extraOffset, Animator.AnimatorListener animatorListener) {
         this.mCurrentOutSideAlphaStateShow = 0.0f;
         if (reversalAnimation(animatorListener, true)) {
             this.mIsExecutingDismissAnim = false;
@@ -798,35 +801,35 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         getContentViewHeightWithMargins();
         this.mPanelViewTranslationAnimationSet = new AnimatorSet();
         if (this.mIsInTinyScreen) {
-            startShowingAnimInTinyScreen(i2, animatorListener);
+            startShowingAnimInTinyScreen(extraOffset, animatorListener);
             return;
         }
         if (isFollowHand()) {
             COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = this.mDesignBottomSheetFrameLayout;
             if (cOUIPanelPercentFrameLayout != null && cOUIPanelPercentFrameLayout.getAlpha() != 0.0f) {
-                this.mDesignBottomSheetFrameLayout.setAlpha(0.0f);
-                this.mDesignBottomSheetFrameLayout.setScaleX(0.8f);
-                this.mDesignBottomSheetFrameLayout.setScaleY(0.8f);
+                this.mDesignBottomSheetFrameLayout.setAlpha(ALPHA_TRANSPARENT);
+                this.mDesignBottomSheetFrameLayout.setScaleX(DIALOG_SHOW_SCALE_START);
+                this.mDesignBottomSheetFrameLayout.setScaleY(DIALOG_SHOW_SCALE_START);
             }
             setDefaultSpringStartEndValue();
             if (haveEnoughSpace()) {
                 offsetViewTo();
                 addAnimationFlag(8);
-                addAnimationFlag(4);
+                addAnimationFlag(ANIMATION_TYPE_SCALE);
             } else {
                 updateBottomSheetCenterVertical();
                 addAnimationFlag(8);
-                addAnimationFlag(4);
+                addAnimationFlag(ANIMATION_TYPE_SCALE);
                 addAnimationFlag(2);
             }
         } else if (isFadeInCenter()) {
             COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout2 = this.mDesignBottomSheetFrameLayout;
             if (cOUIPanelPercentFrameLayout2 != null) {
-                cOUIPanelPercentFrameLayout2.setAlpha(0.0f);
-                this.mDesignBottomSheetFrameLayout.setScaleX(0.8f);
-                this.mDesignBottomSheetFrameLayout.setScaleY(0.8f);
+                cOUIPanelPercentFrameLayout2.setAlpha(ALPHA_TRANSPARENT);
+                this.mDesignBottomSheetFrameLayout.setScaleX(DIALOG_SHOW_SCALE_START);
+                this.mDesignBottomSheetFrameLayout.setScaleY(DIALOG_SHOW_SCALE_START);
             }
-            addAnimationFlag(4);
+            addAnimationFlag(ANIMATION_TYPE_SCALE);
             addAnimationFlag(2);
             addAnimationFlag(8);
             setDefaultSpringStartEndValue();
@@ -837,7 +840,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
                 this.mDesignBottomSheetFrameLayout.setScaleX(1.0f);
                 this.mDesignBottomSheetFrameLayout.setScaleY(1.0f);
             }
-            addAnimationFlag(1);
+            addAnimationFlag(ANIMATION_TYPE_TRANSLATION);
             addAnimationFlag(2);
             this.mStartValueOfTranslateAnimation = getTranslationDistance();
             this.mEndValueOfTranslateAnimation = 0.0f;
@@ -851,10 +854,10 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
 
-    public void doSpringBackReboundAnim(final int i2) {
+    public void doSpringBackReboundAnim(final int endPadding) {
         Spring spring = SpringSystem.create().createSpring();
         this.mPanelSpringBackAnim = spring;
-        spring.setSpringConfig(SpringConfig.fromBouncinessAndSpeed(6.0d, 42.0d));
+        spring.setSpringConfig(SpringConfig.fromBouncinessAndSpeed(PULL_UP_REBOUND_BOUNCINESS, PULL_UP_REBOUND_SPEED));
         this.mCurrentSpringTotalOffset = 0;
         this.mPanelSpringBackAnim.addListener(new SpringListener() {
             @Override
@@ -887,28 +890,28 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
                 int currentValue = (int) spring.getCurrentValue();
                 COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.offsetTopAndBottom(currentValue - COUIBottomSheetDialog.this.mCurrentSpringTotalOffset);
                 COUIBottomSheetDialog.this.mCurrentSpringTotalOffset = currentValue;
-                COUIBottomSheetDialog.this.setPulledUpViewPaddingBottom(i2 - currentValue);
+                COUIBottomSheetDialog.this.setPulledUpViewPaddingBottom(endPadding - currentValue);
             }
         });
-        this.mPanelSpringBackAnim.setEndValue(i2);
+        this.mPanelSpringBackAnim.setEndValue(endPadding);
     }
 
     private void doTranslationAndScaleSpringAnimaion(final Animator.AnimatorListener animatorListener) {
         initTranslationAndScaleSpringAnimation();
-        if (hasAnimationFlag(1)) {
+        if (hasAnimationFlag(ANIMATION_TYPE_TRANSLATION)) {
             this.mSpringForceTranslationAndScale.setResponse(getTranslationResponse());
-        } else if (hasAnimationFlag(4)) {
+        } else if (hasAnimationFlag(ANIMATION_TYPE_SCALE)) {
             if (this.mIsEntering) {
-                this.mSpringForceTranslationAndScale.setResponse(0.25f);
+                this.mSpringForceTranslationAndScale.setResponse(DEFAULT_CENTER_SHOW_SPRING_RESPONSE);
             } else {
-                this.mSpringForceTranslationAndScale.setResponse(0.25f);
+                this.mSpringForceTranslationAndScale.setResponse(DEFAULT_CENTER_HIDE_SPRING_RESPONSE);
             }
         }
         this.mTranslationAndScaleSpringAnimation.removeEndListener(this.mTranslationAndScaleEndListener);
         COUIDynamicAnimation.OnAnimationEndListener onAnimationEndListener = new COUIDynamicAnimation.OnAnimationEndListener() {
             @Override
-            public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z6, float f2, float f10) {
-                if (z6) {
+            public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean canceled, float value, float velocity) {
+                if (canceled) {
                     animatorListener.onAnimationCancel(null);
                 } else {
                     animatorListener.onAnimationEnd(null);
@@ -927,24 +930,24 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mTranslationAndScaleSpringAnimation.removeUpdateListener(this.mTranslationAndScaleUpdateListener);
         this.mTranslationAndScaleUpdateListener = new COUIDynamicAnimation.OnAnimationUpdateListener() {
             @Override
-            public void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float f2, float f10) {
-                float f11 = COUIBottomSheetDialog.this.mEndValueOfTranslateAnimation != COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation ? (f2 - COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation) / (COUIBottomSheetDialog.this.mEndValueOfTranslateAnimation - COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation) : 0.0f;
-                if (COUIBottomSheetDialog.this.hasAnimationFlag(1)) {
-                    COUIBottomSheetDialog.this.translateUpdate(f2);
+            public void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float value, float velocity) {
+                float progress = COUIBottomSheetDialog.this.mEndValueOfTranslateAnimation != COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation ? (value - COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation) / (COUIBottomSheetDialog.this.mEndValueOfTranslateAnimation - COUIBottomSheetDialog.this.mStartValueOfTranslateAnimation) : 0.0f;
+                if (COUIBottomSheetDialog.this.hasAnimationFlag(ANIMATION_TYPE_TRANSLATION)) {
+                    COUIBottomSheetDialog.this.translateUpdate(value);
                 }
-                if (!COUIBottomSheetDialog.this.hasAnimationFlag(4) || COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout == null) {
+                if (!COUIBottomSheetDialog.this.hasAnimationFlag(ANIMATION_TYPE_SCALE) || COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout == null) {
                     return;
                 }
-                float f12 = COUIBottomSheetDialog.this.mIsEntering ? (f11 * 0.2f) + 0.8f : ((1.0f - f11) * 0.2f) + 0.8f;
-                COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.setScaleX(f12);
-                COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.setScaleY(f12);
+                float scale = COUIBottomSheetDialog.this.mIsEntering ? (progress * DIALOG_SHOW_SCALE_DELTA) + DIALOG_SHOW_SCALE_START : ((1.0f - progress) * DIALOG_SHOW_SCALE_DELTA) + DIALOG_SHOW_SCALE_START;
+                COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.setScaleX(scale);
+                COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.setScaleY(scale);
             }
         };
         if (!this.mSupportExitBlockingAnimation) {
             if (this.mIsEntering) {
-                this.mTranslationAndScaleSpringAnimation.setMinimumVisibleChange(1.0f);
+                this.mTranslationAndScaleSpringAnimation.setMinimumVisibleChange(DEFAULT_MINIMUM_VISIBLE_CHANGE_SHOW);
             } else {
-                this.mTranslationAndScaleSpringAnimation.setMinimumVisibleChange(10.0f);
+                this.mTranslationAndScaleSpringAnimation.setMinimumVisibleChange(DEFAULT_MINIMUM_VISIBLE_CHANGE_DISMISS);
             }
         }
         this.mTranslationAndScaleSpringAnimation.addUpdateListener(this.mTranslationAndScaleUpdateListener);
@@ -999,24 +1002,24 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     private Rect getLocationRectInScreen(View view) {
         int[] iArr = new int[2];
         view.getLocationOnScreen(iArr);
-        int i2 = iArr[0];
-        return new Rect(i2, iArr[1], view.getMeasuredWidth() + i2, iArr[1] + view.getMeasuredHeight());
+        int left = iArr[0];
+        return new Rect(left, iArr[1], view.getMeasuredWidth() + left, iArr[1] + view.getMeasuredHeight());
     }
 
     private int getNavColor() {
         COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout;
-        int i2 = this.mNavColor;
-        return i2 != Integer.MAX_VALUE ? i2 : (this.mIsHandlePanel || ((cOUIPanelPercentFrameLayout = this.mDesignBottomSheetFrameLayout) != null && cOUIPanelPercentFrameLayout.getRatio() == 1.0f)) ? this.mPanelBackgroundTintColor : this.mColorMask;
+        int navColor = this.mNavColor;
+        return navColor != Integer.MAX_VALUE ? navColor : (this.mIsHandlePanel || ((cOUIPanelPercentFrameLayout = this.mDesignBottomSheetFrameLayout) != null && cOUIPanelPercentFrameLayout.getRatio() == 1.0f)) ? this.mPanelBackgroundTintColor : this.mColorMask;
     }
 
-    private Drawable getNavigationDrawable(int i2) {
+    private Drawable getNavigationDrawable(int color) {
         if (this.mGradientDrawable == null) {
             GradientDrawable gradientDrawable = new GradientDrawable();
             this.mGradientDrawable = gradientDrawable;
             gradientDrawable.setShape(0);
             this.mGradientDrawable.setOrientation(GradientDrawable.Orientation.BOTTOM_TOP);
         }
-        this.mGradientDrawable.setColors(new int[]{i2, i2, getSpecifiedTransparencyColor(i2, 0.75f), getSpecifiedTransparencyColor(i2, 0.5f), getSpecifiedTransparencyColor(i2, 0.25f), 0});
+        this.mGradientDrawable.setColors(new int[]{color, color, getSpecifiedTransparencyColor(color, FIRST_TIER_ALPHA), getSpecifiedTransparencyColor(color, SECOND_TIER_ALPHA), getSpecifiedTransparencyColor(color, 0.25f), 0});
         return this.mGradientDrawable;
     }
 
@@ -1030,12 +1033,12 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
             }
 
             @Override
-            public int onDragging(int i2, int i6) {
+            public int onDragging(int dy, int expandedOffset) {
                 if (COUIBottomSheetDialog.this.mPanelSpringBackAnim != null && COUIBottomSheetDialog.this.mPanelSpringBackAnim.getVelocity() != 0.0d) {
                     COUIBottomSheetDialog.this.mPanelSpringBackAnim.setAtRest();
                     return COUIBottomSheetDialog.this.mParentViewPaddingBottom;
                 }
-                int iB = androidx.core.math.MathUtils.clamp((int) ((COUIBottomSheetDialog.this.mPulledUpView.getPaddingBottom() - COUIBottomSheetDialog.this.mPanelPaddingBottom) - (i2 * 0.19999999f)), 0, Math.min(COUIBottomSheetDialog.this.mPullUpMaxOffset, COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getTop()));
+                int iB = androidx.core.math.MathUtils.clamp((int) ((COUIBottomSheetDialog.this.mPulledUpView.getPaddingBottom() - COUIBottomSheetDialog.this.mPanelPaddingBottom) - (dy * 0.19999999f)), 0, Math.min(COUIBottomSheetDialog.this.mPullUpMaxOffset, COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getTop()));
                 if (COUIBottomSheetDialog.this.mParentViewPaddingBottom != iB) {
                     COUIBottomSheetDialog.this.mParentViewPaddingBottom = iB;
                     COUIBottomSheetDialog cOUIBottomSheetDialog = COUIBottomSheetDialog.this;
@@ -1050,7 +1053,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
             }
 
             @Override
-            public void onOffsetChanged(float f2) {
+            public void onOffsetChanged(float slideOffset) {
                 if (this.mLastPosition == -1) {
                     this.mLastPosition = COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getHeight();
                 }
@@ -1058,24 +1061,24 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
                     COUIBottomSheetDialog.this.mDialogOffsetListener.onDialogOffsetChanged(COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getTop());
                 }
                 if (COUIBottomSheetDialog.this.mIsNeedOutsideViewAnim && !COUIBottomSheetDialog.this.mIsExecutingDismissAnim) {
-                    float fMax = Math.max(0.0f, COUIBottomSheetDialog.this.getOutsideViewAlpha(f2));
+                    float fMax = Math.max(0.0f, COUIBottomSheetDialog.this.getOutsideViewAlpha(slideOffset));
                     COUIBottomSheetDialog.this.mOutsideView.setAlpha(fMax);
                     COUIBottomSheetDialog.this.mCurrentOutsideAlpha = fMax;
-                    if ((!COUIPanelMultiWindowUtils.isSmallScreen(COUIBottomSheetDialog.this.getContext(), null)) && COUINavigationBarUtil.isNavigationBarShow(COUIBottomSheetDialog.this.getContext()) && ((!COUIBottomSheetDialog.this.mIsHandlePanel || COUIBottomSheetDialog.this.shouldHandlePanelUpdateNavBarColor()) && COUIBottomSheetDialog.this.getWindow() != null && ((int) (COUIBottomSheetDialog.this.mOutsideViewBackgroundAlpha * f2)) != 0 && !COUINavigationBarUtil.isGestureNavigation(COUIBottomSheetDialog.this.getContext()))) {
+                    if ((!COUIPanelMultiWindowUtils.isSmallScreen(COUIBottomSheetDialog.this.getContext(), null)) && COUINavigationBarUtil.isNavigationBarShow(COUIBottomSheetDialog.this.getContext()) && ((!COUIBottomSheetDialog.this.mIsHandlePanel || COUIBottomSheetDialog.this.shouldHandlePanelUpdateNavBarColor()) && COUIBottomSheetDialog.this.getWindow() != null && ((int) (COUIBottomSheetDialog.this.mOutsideViewBackgroundAlpha * slideOffset)) != 0 && !COUINavigationBarUtil.isGestureNavigation(COUIBottomSheetDialog.this.getContext()))) {
                         COUIBottomSheetDialog.this.setNavigationBarColorAlpha(fMax);
                     }
                 }
-                if (COUIBottomSheetDialog.this.mPanelBarView == null || f2 == 1.0f || !COUIBottomSheetDialog.this.mIsInTinyScreen) {
+                if (COUIBottomSheetDialog.this.mPanelBarView == null || slideOffset == 1.0f || !COUIBottomSheetDialog.this.mIsInTinyScreen) {
                     return;
                 }
-                COUIBottomSheetDialog.this.mPanelBarView.setPanelOffset(this.mLastPosition - ((int) (COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getHeight() * f2)));
-                this.mLastPosition = (int) (COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getHeight() * f2);
+                COUIBottomSheetDialog.this.mPanelBarView.setPanelOffset(this.mLastPosition - ((int) (COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getHeight() * slideOffset)));
+                this.mLastPosition = (int) (COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getHeight() * slideOffset);
             }
 
             @Override
-            public void onReleased(int i2) {
+            public void onReleased(int paddingBottom) {
                 COUIBottomSheetDialog.this.setCanPullUp(false);
-                int top = COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getTop() - (i2 - COUIBottomSheetDialog.this.mParentViewPaddingBottom);
+                int top = COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getTop() - (paddingBottom - COUIBottomSheetDialog.this.mParentViewPaddingBottom);
                 COUIBottomSheetDialog cOUIBottomSheetDialog = COUIBottomSheetDialog.this;
                 cOUIBottomSheetDialog.doSpringBackReboundAnim(cOUIBottomSheetDialog.mParentViewPaddingBottom - top);
             }
@@ -1110,15 +1113,15 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         return this.mIsAnimationInFirst ? this.mEndValueOfTranslateAnimation : this.mStartValueOfTranslateAnimation;
     }
 
-    private int getSpecifiedTransparencyColor(int i2, float f2) {
-        return Color.argb((int) ((Color.alpha(i2) / MAX_ALPHA) * f2 * MAX_ALPHA), Color.red(i2), Color.green(i2), Color.blue(i2));
+    private int getSpecifiedTransparencyColor(int color, float alphaFactor) {
+        return Color.argb((int) ((Color.alpha(color) / MAX_ALPHA) * alphaFactor * MAX_ALPHA), Color.red(color), Color.green(color), Color.blue(color));
     }
 
     private int getTranslationDistance() {
         int height = this.mDesignBottomSheetFrameLayout.getHeight() - this.mPanelPaddingBottom;
         InputMethodManager inputMethodManager = this.mInputMethodManager;
-        boolean z6 = inputMethodManager != null && inputMethodManager.isAcceptingText();
-        if (!this.mIsEntering && isInMultiWindowMode() && z6) {
+        boolean imeAccepting = inputMethodManager != null && inputMethodManager.isAcceptingText();
+        if (!this.mIsEntering && isInMultiWindowMode() && imeAccepting) {
             this.mDesignBottomSheetFrameLayout.getGlobalVisibleRect(this.mTemtRect);
             height = Math.max(height, UIUtil.getScreenHeightMetrics(getContext()) - this.mTemtRect.top);
         }
@@ -1152,36 +1155,36 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         return minResponse + ((maxResponse - minResponse) * clampedFraction);
     }
 
-    private Drawable getTypedArrayDrawable(TypedArray typedArray, int i2, int i6) {
-        Drawable drawable = typedArray != null ? typedArray.getDrawable(i2) : null;
-        return drawable == null ? getContext().getResources().getDrawable(i6, getContext().getTheme()) : drawable;
+    private Drawable getTypedArrayDrawable(TypedArray typedArray, int index, int fallbackResId) {
+        Drawable drawable = typedArray != null ? typedArray.getDrawable(index) : null;
+        return drawable == null ? getContext().getResources().getDrawable(fallbackResId, getContext().getTheme()) : drawable;
     }
 
 
-    public void handleBehaviorStateChange(View view, int i2) {
-        if (i2 == 3 || i2 == 6 || i2 == 4) {
-            this.mLastStaticState = i2;
+    public void handleBehaviorStateChange(View view, int state) {
+        if (state == 3 || state == 6 || state == 4) {
+            this.mLastStaticState = state;
         }
-        if (i2 == 2) {
+        if (state == 2) {
             if (needHideKeyboardWhenSettling()) {
                 hideKeyboard();
             }
-        } else if (i2 == 3) {
+        } else if (state == 3) {
             this.mAdjustResizeEnable = true;
             this.mWindowInsetsAnimEnable = false;
-        } else if (i2 == 5 && !this.mIsRevertAnimationFromSettlingAnimation) {
+        } else if (state == 5 && !this.mIsRevertAnimationFromSettlingAnimation) {
             dismiss();
         }
     }
 
 
-    public boolean hasAnimationFlag(int i2) {
-        return (this.mAnimationFlag & i2) > 0;
+    public boolean hasAnimationFlag(int flag) {
+        return (this.mAnimationFlag & flag) > 0;
     }
 
     private boolean hasEditText(ViewGroup viewGroup) {
-        for (int i2 = 0; i2 < viewGroup.getChildCount(); i2++) {
-            View childAt = viewGroup.getChildAt(i2);
+        for (int index = 0; index < viewGroup.getChildCount(); index++) {
+            View childAt = viewGroup.getChildAt(index);
             if ((childAt instanceof EditText) || (childAt instanceof COUIInputView)) {
                 return true;
             }
@@ -1217,7 +1220,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mDesignBottomSheetFrameLayout.setTop(0);
         this.mDesignBottomSheetFrameLayout.setBottom(measuredHeight);
         ShadowUtils.setElevationToView(this.mDesignBottomSheetFrameLayout, 3, getContext().getResources().getDimensionPixelOffset(com.coui.appcompat.R.dimen.coui_bottom_sheet_dialog_elevation), androidx.core.content.ContextCompat.getColor(getContext(), com.coui.appcompat.R.color.coui_panel_follow_hand_spot_shadow_color));
-        this.mOutsideView.setAlpha(0.0f);
+        this.mOutsideView.setAlpha(ALPHA_TRANSPARENT);
         setCanPullUp(false);
         getBehavior().setDraggable(false);
         return true;
@@ -1238,8 +1241,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
     private void initBehavior() {
-        int i2;
-        boolean z6;
+        int state;
+        boolean fitToContents;
         if (!(getBehavior() instanceof COUIBottomSheetBehavior)) {
             throw new IllegalArgumentException("Must use COUIBottomSheetBehavior, check value of bottom_sheet_behavior in strings.xml");
         }
@@ -1254,36 +1257,36 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         cOUIBottomSheetBehavior.setPanelPaddingBottom(this.mPanelPaddingBottom);
         if (this.mIsHandlePanel) {
             if (COUIPanelMultiWindowUtils.isNormalLandScreen(getContext(), this.mConfiguration)) {
-                i2 = 4;
-                z6 = true;
+                state = 4;
+                fitToContents = true;
             } else {
-                i2 = 6;
-                z6 = false;
+                state = 6;
+                fitToContents = false;
             }
-            cOUIBottomSheetBehavior.setFitToContents(z6);
+            cOUIBottomSheetBehavior.setFitToContents(fitToContents);
             cOUIBottomSheetBehavior.setGestureInsetBottomIgnored(true);
             setIsNeedOutsideViewAnim(false);
         } else {
-            i2 = 3;
+            state = 3;
         }
-        int i6 = this.mFirstShowCollapsed ? 4 : i2;
-        cOUIBottomSheetBehavior.setPanelState(i6);
-        this.mLastStaticState = i6;
+        int panelState = this.mFirstShowCollapsed ? 4 : state;
+        cOUIBottomSheetBehavior.setPanelState(panelState);
+        this.mLastStaticState = panelState;
         cOUIBottomSheetBehavior.addBottomSheetCallback(new COUIBottomSheetBehavior.COUIBottomSheetCallback() {
             @Override
-            public void onSlide(View view, float f2) {
+            public void onSlide(View view, float slideOffset) {
             }
 
             @Override
-            public void onStateChanged(View view, int i10) {
+            public void onStateChanged(View view, int newState) {
                 if (COUIBottomSheetDialog.DEBUG) {
-                    Log.d(COUIBottomSheetDialog.TAG, "onStateChanged: newState=" + i10);
+                    Log.d(COUIBottomSheetDialog.TAG, "onStateChanged: newState=" + newState);
                 }
-                COUIBottomSheetDialog.this.handleBehaviorStateChange(view, i10);
+                COUIBottomSheetDialog.this.handleBehaviorStateChange(view, newState);
             }
         });
         if (DEBUG) {
-            Log.d(TAG, "initBehavior: peekHeight=" + this.mPeekHeight + " mSkipCollapsed=" + this.mSkipCollapsed + " mIsHandlePanel=" + this.mIsHandlePanel + " mFirstShowCollapsed=" + this.mFirstShowCollapsed + " state=" + i6);
+            Log.d(TAG, "initBehavior: peekHeight=" + this.mPeekHeight + " mSkipCollapsed=" + this.mSkipCollapsed + " mIsHandlePanel=" + this.mIsHandlePanel + " mFirstShowCollapsed=" + this.mFirstShowCollapsed + " state=" + panelState);
         }
     }
 
@@ -1294,9 +1297,9 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
             return;
         }
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) view.getLayoutParams();
-        boolean z6 = getContext().getResources().getConfiguration().smallestScreenWidthDp < 600;
+        boolean isPhone = getContext().getResources().getConfiguration().smallestScreenWidthDp < 600;
         this.mCoordinatorLayoutMinInsetsTop = (int) getContext().getResources().getDimension(com.coui.appcompat.R.dimen.coui_bottom_sheet_margin_top_default);
-        if (z6 && windowInsets.getSystemWindowInsetTop() > 0) {
+        if (isPhone && windowInsets.getSystemWindowInsetTop() > 0) {
             this.mCoordinatorLayoutMinInsetsTop = windowInsets.getSystemWindowInsetTop();
         }
         if (this.mIsInTinyScreen) {
@@ -1306,10 +1309,10 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
                 this.mCoordinatorLayoutMinInsetsTop = (int) getContext().getResources().getDimension(com.coui.appcompat.R.dimen.coui_panel_normal_padding_top_tiny_screen);
             }
         }
-        int i2 = layoutParams.topMargin;
-        int i6 = this.mCoordinatorLayoutMinInsetsTop;
-        if (i2 != i6) {
-            layoutParams.topMargin = i6;
+        int topMargin = layoutParams.topMargin;
+        int minInsetsTop = this.mCoordinatorLayoutMinInsetsTop;
+        if (topMargin != minInsetsTop) {
+            layoutParams.topMargin = minInsetsTop;
             this.mCoordinatorLayout.setLayoutParams(layoutParams);
         }
         COUIPanelContentLayout cOUIPanelContentLayout = this.mDraggableConstraintLayout;
@@ -1327,14 +1330,14 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
 
 
     public void initMaxHeight(WindowInsets windowInsets) {
-        boolean z6 = this.mPanelHeight >= COUIPanelMultiWindowUtils.getPanelMaxHeight(getContext(), null, windowInsets, this.mIsHandlePanel, this.mCouiPanelEdgeToEdgeEnable);
+        boolean atMaxHeight = this.mPanelHeight >= COUIPanelMultiWindowUtils.getPanelMaxHeight(getContext(), null, windowInsets, this.mIsHandlePanel, this.mCouiPanelEdgeToEdgeEnable);
         COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = this.mDesignBottomSheetFrameLayout;
         if (cOUIPanelPercentFrameLayout != null) {
-            cOUIPanelPercentFrameLayout.getLayoutParams().height = (this.mIsShowInMaxHeight || z6) ? -1 : -2;
+            cOUIPanelPercentFrameLayout.getLayoutParams().height = (this.mIsShowInMaxHeight || atMaxHeight) ? -1 : -2;
         }
         COUIPanelContentLayout cOUIPanelContentLayout = this.mDraggableConstraintLayout;
         if (cOUIPanelContentLayout != null) {
-            if (this.mIsShowInMaxHeight || z6) {
+            if (this.mIsShowInMaxHeight || atMaxHeight) {
                 cOUIPanelContentLayout.getLayoutParams().height = -1;
             }
         }
@@ -1379,7 +1382,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
 
     private void initPhysics() {
         if (this.mAppearStiffness == Float.MIN_VALUE) {
-            this.mAppearStiffness = 200.0f;
+            this.mAppearStiffness = DEFAULT_SPRING_STIFFNESS;
         }
         if (this.mAppearDampingRatio == Float.MIN_VALUE) {
             this.mAppearDampingRatio = DEFAULT_SPRING_DAMPING_RATIO;
@@ -1401,8 +1404,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         });
     }
 
-    private void initThemeResources(int i2) {
-        TypedArray typedArrayObtainStyledAttributes = getContext().obtainStyledAttributes(null, com.coui.appcompat.R.styleable.COUIBottomSheetDialog, com.coui.appcompat.R.attr.couiBottomSheetDialogStyle, i2);
+    private void initThemeResources(int defStyleRes) {
+        TypedArray typedArrayObtainStyledAttributes = getContext().obtainStyledAttributes(null, com.coui.appcompat.R.styleable.COUIBottomSheetDialog, com.coui.appcompat.R.attr.couiBottomSheetDialogStyle, defStyleRes);
         this.mPanelDragViewDrawable = getTypedArrayDrawable(typedArrayObtainStyledAttributes, com.coui.appcompat.R.styleable.COUIBottomSheetDialog_panelDragViewIcon, com.coui.appcompat.R.drawable.coui_panel_drag_view);
         int color = typedArrayObtainStyledAttributes.getColor(com.coui.appcompat.R.styleable.COUIBottomSheetDialog_panelDragViewTintColor, COUIContextUtil.getAttrColor(getContext(), com.coui.appcompat.R.attr.couiColorControls));
         this.mPanelDragViewDrawableTintColor = color;
@@ -1431,7 +1434,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
             this.mTranslationAndScaleSpringAnimation = new COUISpringAnimation(new FloatValueHolder());
             COUISpringForce cOUISpringForce = new COUISpringForce();
             this.mSpringForceTranslationAndScale = cOUISpringForce;
-            cOUISpringForce.setBounce(0.0f);
+            cOUISpringForce.setBounce(DEFAULT_TRANSLATION_SPRING_BOUNCE);
             this.mTranslationAndScaleSpringAnimation.setSpring(this.mSpringForceTranslationAndScale);
         }
     }
@@ -1558,16 +1561,16 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
 
-    public void lambda$setFrameRate$0(AnimationVelocityCalculator animationVelocityCalculator, ValueAnimator valueAnimator, ValueAnimator valueAnimator2) {
+    public void onAnimatorFrameRateUpdate(AnimationVelocityCalculator animationVelocityCalculator, ValueAnimator valueAnimator, ValueAnimator valueAnimator2) {
         float fCalculator = animationVelocityCalculator.calculator(this.mDesignBottomSheetFrameLayout.getHeight(), valueAnimator);
         COUILog.d(TAG, "DynamicFrameRateManager.getSuggestFrameRate: v " + fCalculator + " frame " + DynamicFrameRateManager.getSuggestFrameRate(fCalculator, 2));
         DynamicFrameRateManager.setFrameRate(this.mDesignBottomSheetFrameLayout, ANIMATION_TYPE_ID, (int) fCalculator, (Bundle) null);
     }
 
 
-    public void lambda$setFrameRate$1(COUIDynamicAnimation cOUIDynamicAnimation, float f2, float f10) {
-        COUILog.d(TAG, "COUISpringAnimation DynamicFrameRateManager.getSuggestFrameRate: v " + Math.abs(f10) + " frame " + DynamicFrameRateManager.getSuggestFrameRate(f10, 2));
-        DynamicFrameRateManager.setFrameRate(this.mDesignBottomSheetFrameLayout, ANIMATION_TYPE_ID, Math.abs((int) f10), (Bundle) null);
+    public void onSpringFrameRateUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float value, float velocity) {
+        COUILog.d(TAG, "COUISpringAnimation DynamicFrameRateManager.getSuggestFrameRate: v " + Math.abs(velocity) + " frame " + DynamicFrameRateManager.getSuggestFrameRate(velocity, 2));
+        DynamicFrameRateManager.setFrameRate(this.mDesignBottomSheetFrameLayout, ANIMATION_TYPE_ID, Math.abs((int) velocity), (Bundle) null);
     }
 
 
@@ -1575,9 +1578,9 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         if (this.mDesignBottomSheetFrameLayout == null) {
             return;
         }
-        int i2 = getContext().getResources().getConfiguration().screenWidthDp;
-        int i6 = getContext().getResources().getConfiguration().screenHeightDp;
-        if (!this.isLargeScreenLimitMaxSize || !COUIResponsiveUtils.isLargePadWindow(getContext(), i2, i6) || COUIPanelMultiWindowUtils.isInMultiWindowMode(COUIPanelMultiWindowUtils.contextToActivity(getContext()))) {
+        int widthDp = getContext().getResources().getConfiguration().screenWidthDp;
+        int heightDp = getContext().getResources().getConfiguration().screenHeightDp;
+        if (!this.isLargeScreenLimitMaxSize || !COUIResponsiveUtils.isLargePadWindow(getContext(), widthDp, heightDp) || COUIPanelMultiWindowUtils.isInMultiWindowMode(COUIPanelMultiWindowUtils.contextToActivity(getContext()))) {
             this.mDesignBottomSheetFrameLayout.restoreDefaultMaxSize();
             this.mDesignBottomSheetFrameLayout.setMaxHeight(getContext().getResources().getDimensionPixelOffset(com.coui.appcompat.R.dimen.coui_panel_max_height));
             return;
@@ -1591,8 +1594,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         return ((COUIBottomSheetBehavior) getBehavior()).isCanHideKeyboard();
     }
 
-    private int normalizePoints(int i2, int i6) {
-        return Math.max(0, Math.min(i2, i6));
+    private int normalizePoints(int value, int max) {
+        return Math.max(0, Math.min(value, max));
     }
 
     private void offsetViewTo() {
@@ -1641,36 +1644,36 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
 
-    public void outsideAlphaChange(float f2, boolean z6) {
+    public void outsideAlphaChange(float progress, boolean showing) {
         View view;
         View viewFindFocus;
         InputMethodManager inputMethodManager;
-        float f10 = this.mCurrentOutSideAlphaStateHidden;
-        if (f10 <= 0.0f) {
-            f10 = 1.0f;
+        float hiddenAlpha = this.mCurrentOutSideAlphaStateHidden;
+        if (hiddenAlpha <= 0.0f) {
+            hiddenAlpha = 1.0f;
         }
-        float f11 = this.mCurrentOutSideAlphaStateShow;
-        if (f11 <= 0.0f) {
-            f11 = 0.0f;
+        float shownAlpha = this.mCurrentOutSideAlphaStateShow;
+        if (shownAlpha <= 0.0f) {
+            shownAlpha = 0.0f;
         }
-        float outsideViewAlpha = getOutsideViewAlpha(f2);
+        float outsideViewAlpha = getOutsideViewAlpha(progress);
         this.mCurrentOutsideAlpha = outsideViewAlpha;
-        float fMax = z6 ? f11 + (outsideViewAlpha * (1.0f - f11)) : Math.max(0.0f, 1.0f - outsideViewAlpha) * f10;
+        float fMax = showing ? shownAlpha + (outsideViewAlpha * (1.0f - shownAlpha)) : Math.max(0.0f, 1.0f - outsideViewAlpha) * hiddenAlpha;
         View view2 = this.mOutsideView;
         if (view2 != null) {
             view2.setAlpha(fMax);
         }
-        boolean z10 = isFollowHand() || isFadeInCenterAllState() || shouldHandlePanelUpdateNavBarColor();
-        if (this.mOutsideView != null && COUIPanelMultiWindowUtils.isVirtualNavigation(getContext()) && z10 && !this.mIsInTinyScreen) {
+        boolean updateNavBar = isFollowHand() || isFadeInCenterAllState() || shouldHandlePanelUpdateNavBarColor();
+        if (this.mOutsideView != null && COUIPanelMultiWindowUtils.isVirtualNavigation(getContext()) && updateNavBar && !this.mIsInTinyScreen) {
             setNavigationBarColorAlpha(fMax);
         } else if (this.mCouiPanelEdgeToEdgeEnable && (view = this.mNavigationCustomView) != null) {
             if (!this.mIsEntering) {
-                f2 = Math.max(0.0f, 1.0f - f2);
+                progress = Math.max(0.0f, 1.0f - progress);
             }
-            view.setAlpha(f2);
+            view.setAlpha(progress);
         }
         COUIPanelContentLayout cOUIPanelContentLayout = this.mDraggableConstraintLayout;
-        if (cOUIPanelContentLayout == null || !this.mIsNeedShowKeyboard || (viewFindFocus = cOUIPanelContentLayout.findFocus()) == null || !z6 || (inputMethodManager = this.mInputMethodManager) == null) {
+        if (cOUIPanelContentLayout == null || !this.mIsNeedShowKeyboard || (viewFindFocus = cOUIPanelContentLayout.findFocus()) == null || !showing || (inputMethodManager = this.mInputMethodManager) == null) {
             return;
         }
         inputMethodManager.showSoftInput(viewFindFocus, 0);
@@ -1816,22 +1819,22 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
 
     private void resetWindowImeAnimFlags() {
         this.mAdjustResizeEnable = true;
-        int i2 = 0;
+        int softInputMode = 0;
         this.mIsNeedShowKeyboard = false;
         Window window = getWindow();
         getAdjustResizeHelper().setWindowType(window.getAttributes().type);
-        int i6 = window.getAttributes().softInputMode & 15;
-        if (i6 != 5 || isInMultiWindowMode() || this.mIsInWindowFloatingMode) {
-            i2 = i6;
+        int stateMask = window.getAttributes().softInputMode & 15;
+        if (stateMask != 5 || isInMultiWindowMode() || this.mIsInWindowFloatingMode) {
+            softInputMode = stateMask;
         } else {
             this.mIsNeedShowKeyboard = true;
         }
-        window.setSoftInputMode(i2 | 48);
+        window.setSoftInputMode(softInputMode | 48);
     }
 
-    public static int resolveDialogTheme(Context context, int i2) {
-        if (((i2 >>> 24) & 255) >= 1) {
-            return i2;
+    public static int resolveDialogTheme(Context context, int themeResId) {
+        if (((themeResId >>> 24) & 255) >= 1) {
+            return themeResId;
         }
         TypedValue typedValue = new TypedValue();
         context.getTheme().resolveAttribute(com.coui.appcompat.R.attr.couiBottomSheetDialogStyle, typedValue, true);
@@ -1857,13 +1860,13 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         }
     }
 
-    private boolean reversalAnimation(final Animator.AnimatorListener animatorListener, boolean z6) {
+    private boolean reversalAnimation(final Animator.AnimatorListener animatorListener, boolean toShow) {
         COUISpringAnimation cOUISpringAnimation;
         COUISpringAnimation cOUISpringAnimation2 = this.mTranslationAndScaleSpringAnimation;
         if (cOUISpringAnimation2 == null || !cOUISpringAnimation2.isRunning() || (cOUISpringAnimation = this.mAlphaSpringAnimation) == null || !cOUISpringAnimation.isRunning()) {
             return false;
         }
-        if (z6) {
+        if (toShow) {
             this.mTranslationAndScaleSpringAnimation.animateToFinalPosition(getRevertAnimationFinalPositionToShow());
             this.mAlphaSpringAnimation.animateToFinalPosition(getRevertAnimationFinalPositionToShow());
         } else {
@@ -1881,8 +1884,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mTranslationAndScaleSpringAnimation.removeEndListener(this.mTranslationAndScaleEndListener);
         COUIDynamicAnimation.OnAnimationEndListener onAnimationEndListener = new COUIDynamicAnimation.OnAnimationEndListener() {
             @Override
-            public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z10, float f2, float f10) {
-                if (z10) {
+            public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean canceled, float value, float velocity) {
+                if (canceled) {
                     animatorListener.onAnimationCancel(null);
                 } else {
                     animatorListener.onAnimationEnd(null);
@@ -1935,36 +1938,36 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         }
     }
 
-    private void setNavigationBarColor(int i2) {
+    private void setNavigationBarColor(int color) {
         if (unNeedNavigationCustomView()) {
-            getWindow().setNavigationBarColor(i2);
+            getWindow().setNavigationBarColor(color);
         } else {
             getWindow().setNavigationBarColor(0);
         }
-        setNavigationCustomViewColor(i2);
-        COUILog.d(TAG, "setNavigationBarColor color: " + Integer.toHexString(i2));
+        setNavigationCustomViewColor(color);
+        COUILog.d(TAG, "setNavigationBarColor color: " + Integer.toHexString(color));
     }
 
 
-    public void setNavigationBarColorAlpha(float f2) {
-        int i2 = (int) (f2 * this.mOutsideViewBackgroundAlpha);
-        if (i2 > 0) {
-            setNavigationBarColor(Color.argb(i2, 0, 0, 0));
+    public void setNavigationBarColorAlpha(float alpha) {
+        int alphaInt = (int) (alpha * this.mOutsideViewBackgroundAlpha);
+        if (alphaInt > 0) {
+            setNavigationBarColor(Color.argb(alphaInt, 0, 0, 0));
         } else {
             setNavigationBarColor(0);
             getWindow().setNavigationBarContrastEnforced(false);
         }
     }
 
-    private void setNavigationCustomViewColor(int i2) {
+    private void setNavigationCustomViewColor(int color) {
         View view;
         if (unNeedNavigationCustomView() || (view = this.mNavigationCustomView) == null) {
             return;
         }
         if (this.mCouiPanelEdgeToEdgeEnable) {
-            view.setBackground(getNavigationDrawable(i2));
+            view.setBackground(getNavigationDrawable(color));
         } else {
-            view.setBackgroundColor(i2);
+            view.setBackgroundColor(color);
         }
     }
 
@@ -1972,17 +1975,17 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         if (unNeedNavigationCustomView() || windowInsets == null || this.mNavigationCustomView == null) {
             return;
         }
-        int i2 = windowInsets.getInsets(WindowInsets.Type.navigationBars()).bottom;
-        this.mNavigationCustomView.getLayoutParams().height = Math.max(0, i2);
+        int navBarHeight = windowInsets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+        this.mNavigationCustomView.getLayoutParams().height = Math.max(0, navBarHeight);
     }
 
     private void setPanelHeight() {
         COUIPanelContentLayout cOUIPanelContentLayout = this.mDraggableConstraintLayout;
         if (cOUIPanelContentLayout != null) {
             ViewGroup.LayoutParams layoutParams = cOUIPanelContentLayout.getLayoutParams();
-            int i2 = this.mPanelHeight;
-            if (i2 != 0) {
-                layoutParams.height = i2;
+            int height = this.mPanelHeight;
+            if (height != 0) {
+                layoutParams.height = height;
             }
             this.mDraggableConstraintLayout.setLayoutParams(layoutParams);
         }
@@ -1996,29 +1999,29 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = this.mDesignBottomSheetFrameLayout;
         if (cOUIPanelPercentFrameLayout != null) {
             ViewGroup.LayoutParams layoutParams = cOUIPanelPercentFrameLayout.getLayoutParams();
-            int i2 = this.mPanelWidth;
-            if (i2 != 0) {
-                layoutParams.width = i2;
+            int width = this.mPanelWidth;
+            if (width != 0) {
+                layoutParams.width = width;
             }
             this.mDesignBottomSheetFrameLayout.setLayoutParams(layoutParams);
         }
     }
 
 
-    public void setPulledUpViewPaddingBottom(int i2) {
+    public void setPulledUpViewPaddingBottom(int paddingBottom) {
         COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout;
         if (this.mPulledUpView == null || (cOUIPanelPercentFrameLayout = this.mDesignBottomSheetFrameLayout) == null) {
             return;
         }
         if (TextUtils.equals(cOUIPanelPercentFrameLayout.getClass().getSimpleName(), this.mPulledUpView.getClass().getSimpleName())) {
-            i2 += this.mPanelPaddingBottom;
+            paddingBottom += this.mPanelPaddingBottom;
         }
         View view = this.mPulledUpView;
-        view.setPadding(view.getPaddingLeft(), this.mPulledUpView.getPaddingTop(), this.mPulledUpView.getPaddingRight(), i2);
+        view.setPadding(view.getPaddingLeft(), this.mPulledUpView.getPaddingTop(), this.mPulledUpView.getPaddingRight(), paddingBottom);
     }
 
-    private void setSpringStartPosition(float f2) {
-        this.mAppearSpringAnim.setStartValue(f2);
+    private void setSpringStartPosition(float startValue) {
+        this.mAppearSpringAnim.setStartValue(startValue);
     }
 
     private void setStatusBarTransparentAndFont(Window window) {
@@ -2027,10 +2030,16 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         }
         View decorView = window.getDecorView();
         int systemUiVisibility = decorView.getSystemUiVisibility();
-        int i2 = systemUiVisibility | 1024; // SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        int flags = systemUiVisibility | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
         window.setStatusBarColor(0);
-        window.addFlags(Integer.MIN_VALUE);
-        decorView.setSystemUiVisibility(COUIDarkModeUtil.isNightMode(getContext()) ? i2 & (-8209) : systemUiVisibility | 1280);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        int lightBarFlags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                | View.SYSTEM_UI_FLAG_LOW_PROFILE;
+        decorView.setSystemUiVisibility(COUIDarkModeUtil.isNightMode(getContext())
+                ? flags & ~lightBarFlags
+                : systemUiVisibility | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                  | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
 
 
@@ -2086,8 +2095,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mPanelViewTranslationAnimationSet.start();
     }
 
-    private void startReleaseAnimInTinyScreen(float f2, float f10, float f11, Animator.AnimatorListener animatorListener) {
-        this.mPanelViewTranslationAnimationSet.playTogether(createPanelTranslateAnimation(f2, f10, this.mTranslateHidingDuration, new COUIOutEaseInterpolator()), createOutsideAlphaAnimation(false, DEFAULT_ALPHA_HIDING_ANIMATOR_DURATION, new COUIEaseInterpolator()));
+    private void startReleaseAnimInTinyScreen(float startY, float endY, float durationMs, Animator.AnimatorListener animatorListener) {
+        this.mPanelViewTranslationAnimationSet.playTogether(createPanelTranslateAnimation(startY, endY, this.mTranslateHidingDuration, new COUIOutEaseInterpolator()), createOutsideAlphaAnimation(false, DEFAULT_ALPHA_HIDING_ANIMATOR_DURATION, new COUIEaseInterpolator()));
         startReleaseAnim(animatorListener);
     }
 
@@ -2098,9 +2107,9 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mPanelViewTranslationAnimationSet.start();
     }
 
-    private void startShowingAnimInTinyScreen(int i2, Animator.AnimatorListener animatorListener) {
+    private void startShowingAnimInTinyScreen(int extraOffset, Animator.AnimatorListener animatorListener) {
         this.mPanelViewTranslationAnimationSet.playTogether(createOutsideAlphaAnimation(true, SHOW_HEIGHT_ANIM_DURATION_IN_TINY_SCREEN, (PathInterpolator) OUTSIDE_ALPHA_ANIM_INTERPOLATOR));
-        setSpringStartPosition(this.mFirstShowCollapsed ? this.mPeekHeight : getContentViewHeightWithMargins() + i2);
+        setSpringStartPosition(this.mFirstShowCollapsed ? this.mPeekHeight : getContentViewHeightWithMargins() + extraOffset);
         snapToTop();
         startShowingAnim(animatorListener);
     }
@@ -2166,12 +2175,12 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
 
-    public void translateUpdate(float f2) {
+    public void translateUpdate(float translationY) {
         COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = this.mDesignBottomSheetFrameLayout;
         if (cOUIPanelPercentFrameLayout != null) {
-            cOUIPanelPercentFrameLayout.setTranslationY(f2);
+            cOUIPanelPercentFrameLayout.setTranslationY(translationY);
             if (!this.mIsInterruptingAnim) {
-                this.mCurrentParentViewTranslationY = f2;
+                this.mCurrentParentViewTranslationY = translationY;
             }
             this.mIsInterruptingAnim = false;
         }
@@ -2326,8 +2335,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         return null;
     }
 
-    public float getOutsideViewAlpha(float f2) {
-        return !this.mIsInTinyScreen ? f2 : Math.max(0.0f, f2 - 0.5f) * 2.0f;
+    public float getOutsideViewAlpha(float slideOffset) {
+        return !this.mIsInTinyScreen ? slideOffset : Math.max(0.0f, slideOffset - 0.5f) * 2.0f;
     }
 
     public int getPeekHeight() {
@@ -2377,7 +2386,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         return this.mSkipCollapsed;
     }
 
-    private void onAppearAnimationEnd(boolean z6, float f2, float f10) {
+    private void onAppearAnimationEnd(boolean canceled, float value, float velocity) {
         this.mIsAppearSpringAnimStared = false;
         COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = this.mDesignBottomSheetFrameLayout;
         if (cOUIPanelPercentFrameLayout != null && this.mSnapStartBottom != -1) {
@@ -2390,15 +2399,15 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         }
     }
 
-    private void onAppearAnimationUpdate(float f2, float f10) {
+    private void onAppearAnimationUpdate(float value, float velocity) {
         COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = this.mDesignBottomSheetFrameLayout;
         if (cOUIPanelPercentFrameLayout == null || this.mSnapStartBottom == -1) {
             return;
         }
-        if (f2 < 0.0f) {
-            cOUIPanelPercentFrameLayout.layout(cOUIPanelPercentFrameLayout.getLeft(), this.mDesignBottomSheetFrameLayout.getTop(), this.mDesignBottomSheetFrameLayout.getRight(), (int) (this.mSnapStartBottom - f2));
+        if (value < 0.0f) {
+            cOUIPanelPercentFrameLayout.layout(cOUIPanelPercentFrameLayout.getLeft(), this.mDesignBottomSheetFrameLayout.getTop(), this.mDesignBottomSheetFrameLayout.getRight(), (int) (this.mSnapStartBottom - value));
         }
-        this.mDesignBottomSheetFrameLayout.setTranslationY(f2);
+        this.mDesignBottomSheetFrameLayout.setTranslationY(value);
         if (!this.mIsInterruptingAnim) {
             this.mCurrentParentViewTranslationY = this.mDesignBottomSheetFrameLayout.getTranslationY();
         }
@@ -2450,7 +2459,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         initBehavior();
         initWindow();
         initDraggableConstraintLayoutSize();
-        if (this.mFrameRate && COUIVersionUtil.checkOPlusViewSubSDK(34, 10)) {
+        if (this.mFrameRate && COUIVersionUtil.checkOPlusViewSubSDK(SDK_VERSION_FOR_COMPUTE, SDK_SUB_VERSION_FOR_COMPUTE)) {
             this.mADFRFeatureType = DynamicFrameRateManager.getDynamicFrameRateType();
             this.mIsVSdk = true;
         }
@@ -2486,11 +2495,11 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
     @Override
-    public void onWindowFocusChanged(boolean z6) {
-        if (z6) {
+    public void onWindowFocusChanged(boolean hasFocus) {
+        if (hasFocus) {
             setFocusChangeFalseIfHasnotEdittext();
         }
-        super.onWindowFocusChanged(z6);
+        super.onWindowFocusChanged(hasFocus);
     }
 
     public void refresh() {
@@ -2535,22 +2544,22 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mAnimationListener = onAnimationListener;
     }
 
-    public void setBottomButtonBar(boolean z6, String str, View.OnClickListener onClickListener, String str2, View.OnClickListener onClickListener2, String str3, View.OnClickListener onClickListener3) {
+    public void setBottomButtonBar(boolean visible, String str, View.OnClickListener onClickListener, String str2, View.OnClickListener onClickListener2, String str3, View.OnClickListener onClickListener3) {
         ensureDraggableContentLayout();
-        this.mDraggableConstraintLayout.setUpBottomBar(z6, str, onClickListener, str2, onClickListener2, str3, onClickListener3);
+        this.mDraggableConstraintLayout.setUpBottomBar(visible, str, onClickListener, str2, onClickListener2, str3, onClickListener3);
     }
 
     public void setBottomSheetDialogAnimatorListener(BottomSheetDialogAnimatorListener bottomSheetDialogAnimatorListener) {
         this.mBottomSheetDialogAnimatorListener = bottomSheetDialogAnimatorListener;
     }
 
-    public void setCanPerformHapticFeedback(boolean z6) {
-        this.mCanPerformHapticFeedback = z6;
+    public void setCanPerformHapticFeedback(boolean enable) {
+        this.mCanPerformHapticFeedback = enable;
     }
 
-    public void setCanPullUp(boolean z6) {
-        if (this.mCanPullUp != z6) {
-            this.mCanPullUp = z6;
+    public void setCanPullUp(boolean canPullUp) {
+        if (this.mCanPullUp != canPullUp) {
+            this.mCanPullUp = canPullUp;
             if (getBehavior() instanceof COUIBottomSheetBehavior) {
                 this.mPanelPullUpListener = this.mCanPullUp ? getPanelPullUpListener() : null;
                 ((COUIBottomSheetBehavior) getBehavior()).setPullUpListener(this.mPanelPullUpListener);
@@ -2559,10 +2568,10 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
     @Override
-    public void setCancelable(boolean z6) {
-        super.setCancelable(z6);
-        if (this.mCancelable != z6) {
-            this.mCancelable = z6;
+    public void setCancelable(boolean cancelable) {
+        super.setCancelable(cancelable);
+        if (this.mCancelable != cancelable) {
+            this.mCancelable = cancelable;
             if (this.mDesignBottomSheetFrameLayout == null || getWindow() == null) {
                 return;
             }
@@ -2571,15 +2580,15 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
     @Override
-    public void setCanceledOnTouchOutside(boolean z6) {
-        super.setCanceledOnTouchOutside(z6);
-        if (z6 && !this.mCancelable) {
+    public void setCanceledOnTouchOutside(boolean cancel) {
+        super.setCanceledOnTouchOutside(cancel);
+        if (cancel && !this.mCancelable) {
             this.mCancelable = true;
             if (this.mDesignBottomSheetFrameLayout != null && getWindow() != null) {
                 startListeningForBackCallbacks(this.mDesignBottomSheetFrameLayout);
             }
         }
-        this.mCanceledOnTouchOutside = z6;
+        this.mCanceledOnTouchOutside = cancel;
     }
 
     public void setCenterButton(String str, View.OnClickListener onClickListener) {
@@ -2588,13 +2597,13 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
     }
 
     @Override
-    public void setContentView(int i2) {
-        setContentView(getLayoutInflater().inflate(i2, (ViewGroup) null));
+    public void setContentView(int layoutResId) {
+        setContentView(getLayoutInflater().inflate(layoutResId, (ViewGroup) null));
     }
 
-    public void setCouiPanelEdgeToEdgeEnable(boolean z6) {
-        if (this.mCouiPanelEdgeToEdgeEnable != z6) {
-            this.mCouiPanelEdgeToEdgeEnable = z6;
+    public void setCouiPanelEdgeToEdgeEnable(boolean enable) {
+        if (this.mCouiPanelEdgeToEdgeEnable != enable) {
+            this.mCouiPanelEdgeToEdgeEnable = enable;
             initPeekHeight();
             getAdjustResizeHelper().setCouiPanelEdgeToEdgeEnable(this.mCouiPanelEdgeToEdgeEnable);
         }
@@ -2604,55 +2613,55 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mDialogOffsetListener = dialogOffsetListener;
     }
 
-    public void setDisableSubExpand(boolean z6) {
-        this.mDisableSubExpand = z6;
+    public void setDisableSubExpand(boolean disable) {
+        this.mDisableSubExpand = disable;
     }
 
     public void setDragableLinearLayout(COUIPanelContentLayout cOUIPanelContentLayout) {
         setDragableLinearLayout(cOUIPanelContentLayout, false);
     }
 
-    public void setDraggable(boolean z6) {
-        if (this.mIsDraggable != z6) {
-            this.mIsDraggable = z6;
+    public void setDraggable(boolean draggable) {
+        if (this.mIsDraggable != draggable) {
+            this.mIsDraggable = draggable;
             getBehavior().setDraggable(this.mIsDraggable);
         }
     }
 
     @Deprecated
-    public void setExecuteNavColorAnimAfterDismiss(boolean z6) {
-        this.mIsExecuteNavColorAnimAfterDismiss = z6;
+    public void setExecuteNavColorAnimAfterDismiss(boolean enable) {
+        this.mIsExecuteNavColorAnimAfterDismiss = enable;
     }
 
     @Deprecated
-    public void setFinalNavColorAfterDismiss(int i2) {
-        this.mFinalNavColorAfterDismiss = i2;
+    public void setFinalNavColorAfterDismiss(int color) {
+        this.mFinalNavColorAfterDismiss = color;
     }
 
-    public void setFirstShowCollapsed(boolean z6) {
-        this.mFirstShowCollapsed = z6;
+    public void setFirstShowCollapsed(boolean collapsed) {
+        this.mFirstShowCollapsed = collapsed;
     }
 
-    public void setFollowWindowChange(boolean z6) {
-        this.mFocusChange = Boolean.valueOf(z6);
+    public void setFollowWindowChange(boolean follow) {
+        this.mFocusChange = Boolean.valueOf(follow);
     }
 
-    public void setFrameRate(boolean z6) {
-        this.mFrameRate = z6;
+    public void setFrameRate(boolean enable) {
+        this.mFrameRate = enable;
     }
 
-    public void setGlobalDrag(boolean z6) {
-        this.mGlobalDrag = z6;
+    public void setGlobalDrag(boolean enable) {
+        this.mGlobalDrag = enable;
     }
 
-    public void setHandleViewHasPressAnim(boolean z6) {
-        if (this.mHandleViewHasPressAnim != z6) {
-            this.mHandleViewHasPressAnim = z6;
+    public void setHandleViewHasPressAnim(boolean enable) {
+        if (this.mHandleViewHasPressAnim != enable) {
+            this.mHandleViewHasPressAnim = enable;
             COUIPanelContentLayout cOUIPanelContentLayout = this.mDraggableConstraintLayout;
             if (cOUIPanelContentLayout == null) {
                 return;
             }
-            if (z6) {
+            if (enable) {
                 cOUIPanelContentLayout.setDragViewPressAnim(true);
             } else {
                 cOUIPanelContentLayout.removeDragViewPressAnim();
@@ -2660,31 +2669,31 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         }
     }
 
-    public void setHeight(int i2) {
-        this.mPanelHeight = i2;
+    public void setHeight(int height) {
+        this.mPanelHeight = height;
         setPanelHeight();
     }
 
-    public void setHeightChangeAnim(boolean z6) {
-        ((COUIBottomSheetBehavior) getBehavior()).setHeightChangeAnim(z6);
+    public void setHeightChangeAnim(boolean enable) {
+        ((COUIBottomSheetBehavior) getBehavior()).setHeightChangeAnim(enable);
     }
 
-    public void setHideDragViewHeight(int i2) {
+    public void setHideDragViewHeight(int height) {
         COUIPanelContentLayout cOUIPanelContentLayout;
-        this.mHideDragViewHeight = i2;
+        this.mHideDragViewHeight = height;
         if (this.mIsHandlePanel || (cOUIPanelContentLayout = this.mDraggableConstraintLayout) == null || cOUIPanelContentLayout.getDrawLayout() == null) {
             return;
         }
         setHideDragViewHeight();
     }
 
-    public void setIsHandlePanel(boolean z6) {
-        if (this.mIsHandlePanel != z6) {
-            this.mIsHandlePanel = z6;
+    public void setIsHandlePanel(boolean handlePanel) {
+        if (this.mIsHandlePanel != handlePanel) {
+            this.mIsHandlePanel = handlePanel;
             if (this.mDraggableConstraintLayout == null) {
                 return;
             }
-            if (z6) {
+            if (handlePanel) {
                 showDragView();
             } else {
                 hideDragView();
@@ -2692,30 +2701,30 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         }
     }
 
-    public void setIsInTinyScreen(boolean z6, boolean z10) {
-        this.mIsInTinyScreen = z6;
-        this.mIsFullScreenInTinyScreen = z10;
+    public void setIsInTinyScreen(boolean tinyScreen, boolean fullScreen) {
+        this.mIsInTinyScreen = tinyScreen;
+        this.mIsFullScreenInTinyScreen = fullScreen;
     }
 
-    public void setIsInWindowFloatingMode(boolean z6) {
-        this.mIsInWindowFloatingMode = z6;
+    public void setIsInWindowFloatingMode(boolean floating) {
+        this.mIsInWindowFloatingMode = floating;
     }
 
-    public void setIsNeedOutsideViewAnim(boolean z6) {
-        this.mIsNeedOutsideViewAnim = z6;
+    public void setIsNeedOutsideViewAnim(boolean needAnim) {
+        this.mIsNeedOutsideViewAnim = needAnim;
     }
 
-    public void setIsShowInMaxHeight(boolean z6) {
-        this.mIsShowInMaxHeight = z6;
-        int i2 = z6 ? -1 : -2;
+    public void setIsShowInMaxHeight(boolean maxHeight) {
+        this.mIsShowInMaxHeight = maxHeight;
+        int layoutHeight = maxHeight ? -1 : -2;
         COUIPanelContentLayout cOUIPanelContentLayout = this.mDraggableConstraintLayout;
         if (cOUIPanelContentLayout != null) {
-            cOUIPanelContentLayout.setLayoutAtMaxHeight(z6);
+            cOUIPanelContentLayout.setLayoutAtMaxHeight(maxHeight);
         }
         COUIPanelPercentFrameLayout cOUIPanelPercentFrameLayout = this.mDesignBottomSheetFrameLayout;
         if (cOUIPanelPercentFrameLayout != null) {
             ViewGroup.LayoutParams layoutParams = cOUIPanelPercentFrameLayout.getLayoutParams();
-            layoutParams.height = i2;
+            layoutParams.height = layoutHeight;
             this.mDesignBottomSheetFrameLayout.setLayoutParams(layoutParams);
             ((COUIBottomSheetBehavior) getBehavior()).setLayoutAtMaxHeight(this.mIsShowInMaxHeight);
         }
@@ -2726,8 +2735,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mDraggableConstraintLayout.setLeftButton(str, onClickListener);
     }
 
-    public void setNavColor(int i2) {
-        this.mNavColor = i2;
+    public void setNavColor(int color) {
+        this.mNavColor = color;
         if (getWindow() != null) {
             setNavigationBarColor(getNavColor());
         }
@@ -2752,10 +2761,10 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         }
     }
 
-    public void setOutsideMaskColor(int i2) {
+    public void setOutsideMaskColor(int color) {
         View view = this.mOutsideView;
         if (view != null) {
-            view.setBackgroundColor(i2);
+            view.setBackgroundColor(color);
         }
     }
 
@@ -2774,11 +2783,11 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mDesignBottomSheetFrameLayout.setBackground(this.mPanelBackground);
     }
 
-    public void setPanelBackgroundTintColor(int i2) {
-        if (this.mDesignBottomSheetFrameLayout == null || this.mPanelBackground == null || this.mPanelBackgroundTintColor == i2) {
+    public void setPanelBackgroundTintColor(int color) {
+        if (this.mDesignBottomSheetFrameLayout == null || this.mPanelBackground == null || this.mPanelBackgroundTintColor == color) {
             return;
         }
-        this.mPanelBackgroundTintColor = i2;
+        this.mPanelBackgroundTintColor = color;
         if (getWindow() != null && !COUINavigationBarUtil.isGestureNavigation(getContext())) {
             setNavigationBarColor(getNavColor());
         }
@@ -2790,15 +2799,15 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mDesignBottomSheetFrameLayout.setBackground(this.mPanelBackground);
     }
 
-    public void setPanelBarViewColor(int i2) {
+    public void setPanelBarViewColor(int color) {
         COUIPanelBarView cOUIPanelBarView = this.mPanelBarView;
         if (cOUIPanelBarView != null) {
-            cOUIPanelBarView.setBarColor(i2);
+            cOUIPanelBarView.setBarColor(color);
         }
     }
 
-    public void setPanelDismissTranslateDuration(float f2) {
-        this.mTranslateHidingDuration = f2;
+    public void setPanelDismissTranslateDuration(float duration) {
+        this.mTranslateHidingDuration = duration;
     }
 
     public void setPanelDragViewDrawable(Drawable drawable) {
@@ -2810,32 +2819,32 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         cOUIPanelContentLayout.setDragViewDrawable(drawable);
     }
 
-    public void setPanelDragViewDrawableTintColor(int i2) {
+    public void setPanelDragViewDrawableTintColor(int color) {
         Drawable drawable;
-        if (this.mDraggableConstraintLayout == null || (drawable = this.mPanelDragViewDrawable) == null || this.mPanelDragViewDrawableTintColor == i2) {
+        if (this.mDraggableConstraintLayout == null || (drawable = this.mPanelDragViewDrawable) == null || this.mPanelDragViewDrawableTintColor == color) {
             return;
         }
-        this.mPanelDragViewDrawableTintColor = i2;
-        drawable.setTint(i2);
+        this.mPanelDragViewDrawableTintColor = color;
+        drawable.setTint(color);
         this.mDraggableConstraintLayout.setDragViewDrawable(this.mPanelDragViewDrawable);
     }
 
-    public void setPeekHeight(int i2) {
-        this.mPeekHeight = i2;
+    public void setPeekHeight(int peekHeight) {
+        this.mPeekHeight = peekHeight;
     }
 
-    public void setPhysicsParams(float f2, float f10) {
-        this.mAppearStiffness = f2;
-        this.mAppearDampingRatio = f10;
+    public void setPhysicsParams(float frequency, float dampingRatio) {
+        this.mAppearStiffness = frequency;
+        this.mAppearDampingRatio = dampingRatio;
     }
 
-    public void setPreferWidth(int i2) {
-        this.mPreferWidth = i2;
+    public void setPreferWidth(int width) {
+        this.mPreferWidth = width;
         Log.d(TAG, "setPreferWidth =：" + this.mPreferWidth);
     }
 
-    public void setRegisterConfigurationChangeCallBack(boolean z6) {
-        this.mRegisterConfigurationChangeCallBack = z6;
+    public void setRegisterConfigurationChangeCallBack(boolean enable) {
+        this.mRegisterConfigurationChangeCallBack = enable;
     }
 
     public void setRightButton(String str, View.OnClickListener onClickListener) {
@@ -2843,34 +2852,34 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mDraggableConstraintLayout.setRightButton(str, onClickListener);
     }
 
-    public void setShouldRegisterWindowInsetsListener(boolean z6) {
-        this.mShouldRegisterWindowInsetsListener = z6;
+    public void setShouldRegisterWindowInsetsListener(boolean enable) {
+        this.mShouldRegisterWindowInsetsListener = enable;
     }
 
-    public void setShowInDialogFragment(boolean z6) {
-        this.mIsShowInDialogFragment = z6;
+    public void setShowInDialogFragment(boolean show) {
+        this.mIsShowInDialogFragment = show;
     }
 
-    public void setSkipCollapsed(boolean z6) {
-        this.mSkipCollapsed = z6;
+    public void setSkipCollapsed(boolean skip) {
+        this.mSkipCollapsed = skip;
     }
 
-    public void setSupportExitBlockingAnimation(boolean z6) {
-        if (!COUIVersionUtil.checkOPlusViewSubSDK(34, 10) || this.mSupportExitBlockingAnimation == z6) {
+    public void setSupportExitBlockingAnimation(boolean enable) {
+        if (!COUIVersionUtil.checkOPlusViewSubSDK(SDK_VERSION_FOR_COMPUTE, SDK_SUB_VERSION_FOR_COMPUTE) || this.mSupportExitBlockingAnimation == enable) {
             return;
         }
-        this.mSupportExitBlockingAnimation = z6;
+        this.mSupportExitBlockingAnimation = enable;
         operateBlockingAnimation();
     }
 
-    public void setUseNormalSmoothCorner(boolean z6) {
+    public void setUseNormalSmoothCorner(boolean enable) {
         if (RoundCornerUtil.isPathSupportSingleCorner() && RoundCornerUtil.isSmoothRoundRectOn() && COUIVersionUtil.getOSVersionCode() > 37) {
-            this.mUseNormalSmoothCorner = z6;
+            this.mUseNormalSmoothCorner = enable;
         }
     }
 
-    public void setWidth(int i2) {
-        this.mPanelWidth = i2;
+    public void setWidth(int width) {
+        this.mPanelWidth = width;
         setPanelWidth();
     }
 
@@ -2916,7 +2925,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mDesignBottomSheetFrameLayout.setHasAnchor(zIsFollowHand);
         boolean zHaveEnoughSpace = haveEnoughSpace();
         if (zIsFollowHand && zHaveEnoughSpace) {
-            this.mOutsideView.setAlpha(0.0f);
+            this.mOutsideView.setAlpha(ALPHA_TRANSPARENT);
             this.mCurrentOutsideAlpha = 0.0f;
             offsetViewTo();
             return true;
@@ -2954,9 +2963,9 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         updatePanelMarginBottom(this.mConfiguration, this.mApplyWindowInsets);
     }
 
-    public COUIBottomSheetDialog(Context context, boolean z6, DialogInterface.OnCancelListener onCancelListener) {
+    public COUIBottomSheetDialog(Context context, boolean cancelable, DialogInterface.OnCancelListener onCancelListener) {
         this(context, com.coui.appcompat.R.style.DefaultBottomSheetDialog);
-        setCancelable(z6);
+        setCancelable(cancelable);
         setOnCancelListener(onCancelListener);
     }
 
@@ -2964,13 +2973,13 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         if (!this.mIsVSdk || this.mDesignBottomSheetFrameLayout == null) {
             return;
         }
-        int i2 = this.mADFRFeatureType;
-        if (i2 == 2) {
+        int featureType = this.mADFRFeatureType;
+        if (featureType == 2) {
             final AnimationVelocityCalculator animationVelocityCalculator = new AnimationVelocityCalculator(valueAnimator);
             valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public final void onAnimationUpdate(ValueAnimator valueAnimator2) {
-                    COUIBottomSheetDialog.this.lambda$setFrameRate$0(animationVelocityCalculator, valueAnimator, valueAnimator2);
+                    COUIBottomSheetDialog.this.onAnimatorFrameRateUpdate(animationVelocityCalculator, valueAnimator, valueAnimator2);
                 }
             });
             valueAnimator.addListener(new AnimatorListenerAdapter() {
@@ -2981,7 +2990,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
                     DynamicFrameRateManager.setFrameRate(COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout, COUIBottomSheetDialog.ANIMATION_TYPE_ID, -2, (Bundle) null);
                 }
             });
-        } else if (i2 == 1) {
+        } else if (featureType == 1) {
             valueAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animator) {
@@ -2997,7 +3006,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
                     DynamicFrameRateManager.setFrameRate(COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout, COUIBottomSheetDialog.ANIMATION_TYPE_ID, -1, (Bundle) null);
                 }
             });
-        } else if (i2 == 0) {
+        } else if (featureType == 0) {
             COUILog.d(TAG, "LEVEL_DEFAULT do nothing");
         }
     }
@@ -3012,7 +3021,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         initView();
     }
 
-    public void setDragableLinearLayout(COUIPanelContentLayout cOUIPanelContentLayout, boolean z6) {
+    public void setDragableLinearLayout(COUIPanelContentLayout cOUIPanelContentLayout, boolean needRefresh) {
         this.mDraggableConstraintLayout = cOUIPanelContentLayout;
         if (!this.mIsHandlePanel) {
             hideDragView();
@@ -3025,7 +3034,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
             }
             cOUIPanelContentLayout.setDragViewDrawable(this.mPanelDragViewDrawable);
         }
-        if (z6) {
+        if (needRefresh) {
             refresh();
         } else if (cOUIPanelContentLayout != null) {
             WindowInsets windowInsets = this.mApplyWindowInsets;
@@ -3044,9 +3053,9 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
 
     private void setHideDragViewHeight() {
         ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) this.mDraggableConstraintLayout.getDrawLayout().getLayoutParams();
-        int i2 = this.mHideDragViewHeight;
-        if (i2 > 0) {
-            marginLayoutParams.height = i2;
+        int height = this.mHideDragViewHeight;
+        if (height > 0) {
+            marginLayoutParams.height = height;
         } else {
             marginLayoutParams.height = getContext().getResources().getDimensionPixelSize(com.coui.appcompat.R.dimen.coui_panel_drag_view_hide_height);
         }
@@ -3054,8 +3063,8 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         this.mDraggableConstraintLayout.getDrawLayout().setLayoutParams(marginLayoutParams);
     }
 
-    public void dismiss(boolean z6) {
-        if (isShowing() && z6 && !this.mIsExecutingDismissAnim) {
+    public void dismiss(boolean animated) {
+        if (isShowing() && animated && !this.mIsExecutingDismissAnim) {
             hideKeyboard();
             if (getBehavior().getState() != 5) {
                 dismissWithInterruptibleAnim();
@@ -3066,14 +3075,14 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         superDismiss();
     }
 
-    public COUIBottomSheetDialog(Context context, int i2, float f2, float f10) {
-        this(context, i2);
-        this.mPhysicsFrequency = f2;
-        this.mPhysicsDampingRatio = f10;
+    public COUIBottomSheetDialog(Context context, int themeResId, float frequency, float dampingRatio) {
+        this(context, themeResId);
+        this.mPhysicsFrequency = frequency;
+        this.mPhysicsDampingRatio = dampingRatio;
     }
 
-    public COUIBottomSheetDialog(Context context, int i2) {
-        super(context, resolveDialogTheme(context, i2));
+    public COUIBottomSheetDialog(Context context, int themeResId) {
+        super(context, resolveDialogTheme(context, themeResId));
         this.mTemtRect = new Rect();
         this.mHandleViewHasPressAnim = true;
         this.mIsShowInDialogFragment = false;
@@ -3163,7 +3172,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
                 if ((cOUIPanelContentLayout == null || cOUIPanelContentLayout.findFocus() == null) && !COUIBottomSheetDialog.this.isFollowHand() && !COUIBottomSheetDialog.this.isFadeInCenter()) {
                     COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.setTranslationY(contentViewHeightWithMargins);
                 }
-                COUIBottomSheetDialog.this.mOutsideView.setAlpha(0.0f);
+                COUIBottomSheetDialog.this.mOutsideView.setAlpha(ALPHA_TRANSPARENT);
                 if (COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout.getRatio() == 2.0f) {
                     COUIBottomSheetDialog cOUIBottomSheetDialog2 = COUIBottomSheetDialog.this;
                     cOUIBottomSheetDialog2.doParentViewTranslationShowingAnim(cOUIBottomSheetDialog2.mCoordinatorLayout.getHeight() / 2, COUIBottomSheetDialog.this.getPanelShowAnimListener());
@@ -3176,7 +3185,7 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
                 return true;
             }
         };
-        initThemeResources(i2);
+        initThemeResources(themeResId);
         initValueResources();
         saveActivityContextToGetMultiWindowInfo(context);
     }
@@ -3185,32 +3194,32 @@ public class COUIBottomSheetDialog extends BottomSheetDialog {
         if (!this.mIsVSdk || this.mDesignBottomSheetFrameLayout == null) {
             return;
         }
-        int i2 = this.mADFRFeatureType;
-        if (i2 == 2) {
+        int featureType = this.mADFRFeatureType;
+        if (featureType == 2) {
             cOUISpringAnimation.addUpdateListener(new COUIDynamicAnimation.OnAnimationUpdateListener() {
                 @Override
-                public final void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float f2, float f10) {
-                    COUIBottomSheetDialog.this.lambda$setFrameRate$1(cOUIDynamicAnimation, f2, f10);
+                public final void onAnimationUpdate(COUIDynamicAnimation cOUIDynamicAnimation, float value, float velocity) {
+                    COUIBottomSheetDialog.this.onSpringFrameRateUpdate(cOUIDynamicAnimation, value, velocity);
                 }
             });
             cOUISpringAnimation.addEndListener(new COUIDynamicAnimation.OnAnimationEndListener() {
                 @Override
-                public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z6, float f2, float f10) {
+                public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean canceled, float value, float velocity) {
                     COUILog.d(COUIBottomSheetDialog.TAG, "COUISpringAnimation LEVEL_HIGH_PRECISION onAnimatorEnd: DynamicFrameRateManager.FRAME_RATE_END");
                     DynamicFrameRateManager.setFrameRate(COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout, COUIBottomSheetDialog.ANIMATION_TYPE_ID, -2, (Bundle) null);
                 }
             });
-        } else if (i2 == 1) {
+        } else if (featureType == 1) {
             COUILog.d(TAG, "COUISpringAnimation LEVEL_LOW_PRECISION onAnimatorStart: DynamicFrameRateManager.LOW_PRECISION_FRAME_RATE");
             DynamicFrameRateManager.setFrameRate(this.mDesignBottomSheetFrameLayout, ANIMATION_TYPE_ID, -1, (Bundle) null);
             cOUISpringAnimation.addEndListener(new COUIDynamicAnimation.OnAnimationEndListener() {
                 @Override
-                public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean z6, float f2, float f10) {
+                public void onAnimationEnd(COUIDynamicAnimation cOUIDynamicAnimation, boolean canceled, float value, float velocity) {
                     COUILog.d(COUIBottomSheetDialog.TAG, "COUISpringAnimation LEVEL_LOW_PRECISION onAnimatorEnd: DynamicFrameRateManager.FRAME_RATE_END");
                     DynamicFrameRateManager.setFrameRate(COUIBottomSheetDialog.this.mDesignBottomSheetFrameLayout, COUIBottomSheetDialog.ANIMATION_TYPE_ID, -2, (Bundle) null);
                 }
             });
-        } else if (i2 == 0) {
+        } else if (featureType == 0) {
             COUILog.d(TAG, "COUISpringAnimation LEVEL_DEFAULT do nothing");
         }
     }

@@ -4,8 +4,10 @@ import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import com.coui.appcompat.reddot.COUIHintRedDot;
+
 import androidx.core.content.res.ResourcesCompat;
+
+import com.coui.appcompat.reddot.COUIHintRedDot;
 
 
 public class COUITab {
@@ -17,7 +19,7 @@ public class COUITab {
     private Object mTag;
     private CharSequence mText;
     COUITabView mView;
-    private int mPosition = -1;
+    private int mPosition = INVALID_POSITION;
     private boolean mIsBold = true;
 
     public CharSequence getContentDescription() {
@@ -101,7 +103,7 @@ public class COUITab {
         this.mIcon = null;
         this.mText = null;
         this.mContentDesc = null;
-        this.mPosition = -1;
+        this.mPosition = INVALID_POSITION;
         this.mCustomView = null;
     }
 
@@ -113,14 +115,14 @@ public class COUITab {
         cOUITabLayout.selectTab(this);
     }
 
-    public void setBold(boolean z6) {
-        this.mIsBold = z6;
+    public void setBold(boolean bold) {
+        this.mIsBold = bold;
     }
 
-    public COUITab setContentDescription(int i2) {
+    public COUITab setContentDescription(int contentDescription) {
         COUITabLayout cOUITabLayout = this.mParent;
         if (cOUITabLayout != null) {
-            return setContentDescription(cOUITabLayout.getResources().getText(i2));
+            return setContentDescription(cOUITabLayout.getResources().getText(contentDescription));
         }
         throw new IllegalArgumentException("Tab not attached to a COUITabLayout");
     }
@@ -137,25 +139,25 @@ public class COUITab {
     }
 
     @Deprecated
-    public COUITab setPointMode(int i2) {
+    public COUITab setPointMode(int pointMode) {
         COUITabView cOUITabView = this.mView;
-        if (cOUITabView != null && cOUITabView.getHintRedDot() != null && i2 != this.mView.getHintRedDot().getPointMode()) {
-            this.mView.getHintRedDot().setPointMode(i2);
+        if (cOUITabView != null && cOUITabView.getHintRedDot() != null && pointMode != this.mView.getHintRedDot().getPointMode()) {
+            this.mView.getHintRedDot().setPointMode(pointMode);
         }
         return this;
     }
 
     @Deprecated
-    public COUITab setPointNumber(int i2) {
+    public COUITab setPointNumber(int pointNumber) {
         COUITabView cOUITabView = this.mView;
-        if (cOUITabView != null && cOUITabView.getHintRedDot() != null && i2 != this.mView.getHintRedDot().getPointNumber()) {
-            this.mView.getHintRedDot().setPointNumber(i2);
+        if (cOUITabView != null && cOUITabView.getHintRedDot() != null && pointNumber != this.mView.getHintRedDot().getPointNumber()) {
+            this.mView.getHintRedDot().setPointNumber(pointNumber);
         }
         return this;
     }
 
-    public void setPosition(int i2) {
-        this.mPosition = i2;
+    public void setPosition(int position) {
+        this.mPosition = position;
     }
 
     public COUITab setTag(Object obj) {
@@ -181,27 +183,27 @@ public class COUITab {
         }
     }
 
-    public COUITab setCustomView(int i2) {
+    public COUITab setCustomView(int customView) {
         COUITabLayout cOUITabLayout = this.mParent;
         if (cOUITabLayout == null) {
             throw new IllegalArgumentException("Tab not attached to a COUITabLayout");
         }
-        this.mCustomView = LayoutInflater.from(cOUITabLayout.getContext()).inflate(i2, (ViewGroup) this.mParent, false);
+        this.mCustomView = LayoutInflater.from(cOUITabLayout.getContext()).inflate(customView, (ViewGroup) this.mParent, false);
         return this;
     }
 
-    public COUITab setIcon(int i2) {
+    public COUITab setIcon(int icon) {
         COUITabLayout cOUITabLayout = this.mParent;
         if (cOUITabLayout != null) {
-            return setIcon(ResourcesCompat.getDrawable(cOUITabLayout.getResources(), i2, null));
+            return setIcon(ResourcesCompat.getDrawable(cOUITabLayout.getResources(), icon, null));
         }
         throw new IllegalArgumentException("Tab not attached to a TabLayout");
     }
 
-    public COUITab setText(int i2) {
+    public COUITab setText(int text) {
         COUITabLayout cOUITabLayout = this.mParent;
         if (cOUITabLayout != null) {
-            return setText(cOUITabLayout.getResources().getText(i2));
+            return setText(cOUITabLayout.getResources().getText(text));
         }
         throw new IllegalArgumentException("Tab not attached to a TabLayout");
     }

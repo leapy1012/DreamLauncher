@@ -1,6 +1,7 @@
 package com.coui.appcompat.springchain;
 
 import android.view.View;
+
 import com.coui.appcompat.springchain.api.IChainItem;
 
 import java.util.Objects;
@@ -27,7 +28,7 @@ public final class COUIChainItem implements IChainItem {
     }
 
     public COUIChainItem(View proxyView, int itemX, int itemY, int itemWidth, int itemHeight,
-            boolean skipSpringChainCalc) {
+                         boolean skipSpringChainCalc) {
         this.proxyView = proxyView;
         this.itemX = itemX;
         this.itemY = itemY;

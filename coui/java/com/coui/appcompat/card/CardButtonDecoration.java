@@ -20,7 +20,7 @@ public final class CardButtonDecoration extends BaseCardItemDecoration {
     }
 
     public CardButtonDecoration(Context appContext, CardPositionPredicate cardPositionPredicate,
-            PreferenceGroupAdapter adapter) {
+                                PreferenceGroupAdapter adapter) {
         super(appContext);
         if (cardPositionPredicate == null) {
             throw new NullPointerException("cardPositionPredicate");

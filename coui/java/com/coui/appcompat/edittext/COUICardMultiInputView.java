@@ -241,7 +241,7 @@ public class COUICardMultiInputView extends ConstraintLayout implements View.OnL
 
     @Override
     public void onLayoutChange(View view, int left, int top, int right, int bottom, int oldLeft,
-            int oldTop, int oldRight, int oldBottom) {
+                               int oldTop, int oldRight, int oldBottom) {
         mEdittextContainerRect.left = 0;
         mEdittextContainerRect.top = 0;
         mEdittextContainerRect.right = getMeasuredWidth();

@@ -1,15 +1,16 @@
 package com.coui.appcompat.grid;
 
-import com.coui.appcompat.R;
-
 import android.content.Context;
 import android.content.res.Configuration;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.FragmentContainerView;
+
+import com.coui.appcompat.R;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.component.responsiveui.unit.Dp;

@@ -14,7 +14,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -594,16 +593,12 @@ public class COUINumberPicker extends LinearLayout {
             if (text == null) {
                 text = formatValue(selectorValue);
             }
+            // Leapy fixed 2026-08-27: Decoded OPPO smali computes gradient coeffs
+            // inside the band but always paints the non-focus pass from the start
+            // hint-neutral tokens. Interpolating normalColor made the row below
+            // selection use focus black (coeff=0 -> focus end color).
             int normalColor = Color.argb(alphaStart, redStart, greenStart, blueStart);
             int focusColor = Color.argb(alphaEnd, redEnd, greenEnd, blueEnd);
-            if (y > gradientPositionTop && y < gradientPositionBottom) {
-                float gradientCoeff = getGradientCoeff(y);
-                normalColor = Color.argb(
-                        gradualChange(alphaStart, alphaEnd, gradientCoeff),
-                        gradualChange(redStart, redEnd, gradientCoeff),
-                        gradualChange(greenStart, greenEnd, gradientCoeff),
-                        gradualChange(blueStart, blueEnd, gradientCoeff));
-            }
             float blendedTextSize = gradualChangeTextSize(normalTextSize, focusTextSize, normalTextSize, normalTextSize, y);
             // Leapy modified 2026-07-24: BEGIN match decoded OPPO clipping-based size transition while a number leaves the focus band.
             selectorPaint.setTextSize(normalTextSize);
@@ -644,7 +639,7 @@ public class COUINumberPicker extends LinearLayout {
             selectorPaint.setColor(focusTextColor);
             selectorPaint.setTextAlign(Paint.Align.LEFT);
             float unitX = lastTextX + (selectedValueWidth / 2f) + unitMargin;
-            if (isCouiLayoutRtl()) {
+            if (isLayoutRtl()) {
                 unitX = (getMeasuredWidth() - unitX) - selectorPaint.measureText(unitText);
             }
             canvas.drawText(unitText, unitX, unitBaseline - unitMarginBottom, selectorPaint);
@@ -1598,13 +1593,13 @@ public class COUINumberPicker extends LinearLayout {
         return (left + right) / 2;
     }
 
-    private boolean isCouiLayoutRtl() {
-        return getLayoutDirection() == LAYOUT_DIRECTION_RTL;
+    public final boolean isLayoutRtl() {
+        return TextUtils.getLayoutDirectionFromLocale(Locale.getDefault()) == LAYOUT_DIRECTION_RTL;
     }
 
     private float unitTextAnchor() {
         float right = textMargin() + (selectedValueWidth / 2f);
-        if (isCouiLayoutRtl()) {
+        if (isLayoutRtl()) {
             right = ((getMeasuredWidth() - right) - numberPickerPaddingRight) - numberPickerPaddingLeft;
         }
         return right;
@@ -1692,14 +1687,6 @@ public class COUINumberPicker extends LinearLayout {
     private String appendTalkbackSuffix(String text) {
         String valueText = text == null ? "" : text;
         return TextUtils.isEmpty(talkbackSuffix) ? valueText : valueText + talkbackSuffix;
-    }
-
-    private int getGradientCoeff(int y) {
-        return Math.abs(y - (selectorMiddleItemIndex * selectorElementHeight)) / Math.max(1, selectorElementHeight);
-    }
-
-    private int gradualChange(int start, int end, float coeff) {
-        return end - ((int) (((end - start) * 2) * coeff));
     }
 
     private float gradualChangeTextSize(int normalStart, int focus, int normalBefore, int normalAfter, int y) {

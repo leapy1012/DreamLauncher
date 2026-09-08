@@ -42,7 +42,7 @@ class RoundRectDrawableWithShadow extends Drawable {
     }
 
     RoundRectDrawableWithShadow(Resources resources, ColorStateList colorStateList, float radius,
-            float shadowSize, float maxShadowSize) {
+                                float shadowSize, float maxShadowSize) {
         mShadowStartColor = resources.getColor(R.color.cardview_shadow_start_color, null);
         mShadowEndColor = resources.getColor(R.color.cardview_shadow_end_color, null);
         mInsetShadow = resources.getDimensionPixelSize(R.dimen.cardview_compat_inset_shadow);
@@ -57,17 +57,17 @@ class RoundRectDrawableWithShadow extends Drawable {
     }
 
     public static float calculateHorizontalPadding(float maxShadowSize, float cornerRadius,
-            boolean addPaddingForCorners) {
+                                                   boolean addPaddingForCorners) {
         return addPaddingForCorners
                 ? (float) (maxShadowSize + ((1.0d - COS_45) * cornerRadius))
                 : maxShadowSize;
     }
 
     public static float calculateVerticalPadding(float maxShadowSize, float cornerRadius,
-            boolean addPaddingForCorners) {
+                                                 boolean addPaddingForCorners) {
         return addPaddingForCorners
                 ? (float) ((maxShadowSize * SHADOW_MULTIPLIER)
-                + ((1.0d - COS_45) * cornerRadius))
+                           + ((1.0d - COS_45) * cornerRadius))
                 : maxShadowSize * SHADOW_MULTIPLIER;
     }
 

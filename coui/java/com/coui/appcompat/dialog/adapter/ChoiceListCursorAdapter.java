@@ -26,12 +26,12 @@ public class ChoiceListCursorAdapter extends CursorAdapter {
     private boolean mIsMultiChoice;
 
     public ChoiceListCursorAdapter(Context context, Cursor cursor, int layoutResId,
-            String labelColumn, String summaryColumn) {
+                                   String labelColumn, String summaryColumn) {
         this(context, cursor, layoutResId, labelColumn, null, summaryColumn, false);
     }
 
     public ChoiceListCursorAdapter(Context context, Cursor cursor, int layoutResId,
-            String labelColumn, String isCheckedColumn, String summaryColumn, boolean isMultiChoice) {
+                                   String labelColumn, String isCheckedColumn, String summaryColumn, boolean isMultiChoice) {
         this(context, cursor);
         mIsMultiChoice = isMultiChoice;
         mLabelColumn = labelColumn;

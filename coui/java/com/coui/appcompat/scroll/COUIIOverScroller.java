@@ -10,10 +10,10 @@ public interface COUIIOverScroller {
     void fling(int startX, int startY, int velocityX, int velocityY);
 
     void fling(int startX, int startY, int velocityX, int velocityY,
-            int minX, int maxX, int minY, int maxY);
+               int minX, int maxX, int minY, int maxY);
 
     void fling(int startX, int startY, int velocityX, int velocityY,
-            int minX, int maxX, int minY, int maxY, int overX, int overY);
+               int minX, int maxX, int minY, int maxY, int overX, int overY);
 
     int getCOUICurrX();
 

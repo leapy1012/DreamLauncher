@@ -9,7 +9,9 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.widget.OverScroller;
+
 import androidx.core.view.ViewCompat;
+
 import java.util.Arrays;
 
 
@@ -32,9 +34,9 @@ public class COUIViewDragHelper {
     private static final String TAG = "COUIViewDragHelper";
     private static final Interpolator sInterpolator = new Interpolator() {
         @Override
-        public float getInterpolation(float f2) {
-            float f10 = f2 - 1.0f;
-            return (f10 * f10 * f10 * f10 * f10) + 1.0f;
+        public float getInterpolation(float t) {
+            float tMinusOne = t - 1.0f;
+            return (tMinusOne * tMinusOne * tMinusOne * tMinusOne * tMinusOne) + 1.0f;
         }
     };
     private final Callback mCallback;
@@ -58,25 +60,25 @@ public class COUIViewDragHelper {
     private int mTouchSlop;
     private int mTrackingEdges;
     private VelocityTracker mVelocityTracker;
-    private int mActivePointerId = -1;
+    private int mActivePointerId = INVALID_POINTER;
     private final Runnable mSetIdleRunnable = new Runnable() {
         @Override
         public void run() {
-            COUIViewDragHelper.this.setDragState(0);
+            COUIViewDragHelper.this.setDragState(STATE_IDLE);
         }
     };
 
     public static abstract class Callback {
-        public int clampViewPositionHorizontal(View view, int i2, int i6) {
+        public int clampViewPositionHorizontal(View view, int left, int dx) {
             return 0;
         }
 
-        public int clampViewPositionVertical(View view, int i2, int i6) {
+        public int clampViewPositionVertical(View view, int top, int dy) {
             return 0;
         }
 
-        public int getOrderedChildIndex(int i2) {
-            return i2;
+        public int getOrderedChildIndex(int index) {
+            return index;
         }
 
         public int getViewHorizontalDragRange(View view) {
@@ -87,29 +89,29 @@ public class COUIViewDragHelper {
             return 0;
         }
 
-        public void onEdgeDragStarted(int i2, int i6) {
+        public void onEdgeDragStarted(int edgeFlags, int pointerId) {
         }
 
-        public boolean onEdgeLock(int i2) {
+        public boolean onEdgeLock(int edgeFlags) {
             return false;
         }
 
-        public void onEdgeTouched(int i2, int i6) {
+        public void onEdgeTouched(int edgeFlags, int pointerId) {
         }
 
-        public void onViewCaptured(View view, int i2) {
+        public void onViewCaptured(View view, int activePointerId) {
         }
 
-        public void onViewDragStateChanged(int i2) {
+        public void onViewDragStateChanged(int state) {
         }
 
-        public void onViewPositionChanged(View view, int i2, int i6, int i10, int i11) {
+        public void onViewPositionChanged(View view, int left, int top, int dx, int dy) {
         }
 
-        public void onViewReleased(View view, float f2, float f10) {
+        public void onViewReleased(View view, float xvel, float yvel) {
         }
 
-        public abstract boolean tryCaptureView(View view, int i2);
+        public abstract boolean tryCaptureView(View view, int pointerId);
     }
 
     private COUIViewDragHelper(Context context, ViewGroup viewGroup, Callback callback) {
@@ -122,52 +124,52 @@ public class COUIViewDragHelper {
         this.mParentView = viewGroup;
         this.mCallback = callback;
         ViewConfiguration viewConfiguration = ViewConfiguration.get(context);
-        int i2 = (int) ((context.getResources().getDisplayMetrics().density * 20.0f) + 0.5f);
-        this.mDefaultEdgeSize = i2;
-        this.mEdgeSize = i2;
+        int edgeSize = (int) ((context.getResources().getDisplayMetrics().density * 20.0f) + 0.5f);
+        this.mDefaultEdgeSize = edgeSize;
+        this.mEdgeSize = edgeSize;
         this.mTouchSlop = viewConfiguration.getScaledTouchSlop();
         this.mMaxVelocity = viewConfiguration.getScaledMaximumFlingVelocity();
         this.mMinVelocity = viewConfiguration.getScaledMinimumFlingVelocity();
     }
 
-    private boolean checkNewEdgeDrag(float f2, float f10, int i2, int i6) {
-        float fAbs = Math.abs(f2);
-        float fAbs2 = Math.abs(f10);
-        if ((this.mInitialEdgesTouched[i2] & i6) != i6 || (this.mTrackingEdges & i6) == 0 || (this.mEdgeDragsLocked[i2] & i6) == i6 || (this.mEdgeDragsInProgress[i2] & i6) == i6) {
+    private boolean checkNewEdgeDrag(float delta, float odelta, int pointerId, int edge) {
+        float fAbs = Math.abs(delta);
+        float fAbs2 = Math.abs(odelta);
+        if ((this.mInitialEdgesTouched[pointerId] & edge) != edge || (this.mTrackingEdges & edge) == 0 || (this.mEdgeDragsLocked[pointerId] & edge) == edge || (this.mEdgeDragsInProgress[pointerId] & edge) == edge) {
             return false;
         }
-        int i10 = this.mTouchSlop;
-        if (fAbs <= i10 && fAbs2 <= i10) {
+        int touchSlop = this.mTouchSlop;
+        if (fAbs <= touchSlop && fAbs2 <= touchSlop) {
             return false;
         }
-        if (fAbs >= fAbs2 * 0.5f || !this.mCallback.onEdgeLock(i6)) {
-            return (this.mEdgeDragsInProgress[i2] & i6) == 0 && fAbs > ((float) this.mTouchSlop);
+        if (fAbs >= fAbs2 * 0.5f || !this.mCallback.onEdgeLock(edge)) {
+            return (this.mEdgeDragsInProgress[pointerId] & edge) == 0 && fAbs > ((float) this.mTouchSlop);
         }
         int[] iArr = this.mEdgeDragsLocked;
-        iArr[i2] = iArr[i2] | i6;
+        iArr[pointerId] = iArr[pointerId] | edge;
         return false;
     }
 
-    private boolean checkTouchSlop(View view, float f2, float f10) {
+    private boolean checkTouchSlop(View view, float dx, float dy) {
         if (view == null) {
             return false;
         }
-        boolean z6 = this.mCallback.getViewHorizontalDragRange(view) > 0;
-        boolean z10 = this.mCallback.getViewVerticalDragRange(view) > 0;
-        if (!z6 || !z10) {
-            return z6 ? Math.abs(f2) > ((float) this.mTouchSlop) : z10 && Math.abs(f10) > ((float) this.mTouchSlop);
+        boolean checkHorizontal = this.mCallback.getViewHorizontalDragRange(view) > 0;
+        boolean checkVertical = this.mCallback.getViewVerticalDragRange(view) > 0;
+        if (!checkHorizontal || !checkVertical) {
+            return checkHorizontal ? Math.abs(dx) > ((float) this.mTouchSlop) : checkVertical && Math.abs(dy) > ((float) this.mTouchSlop);
         }
-        float f11 = (f2 * f2) + (f10 * f10);
-        int i2 = this.mTouchSlop;
-        return f11 > ((float) (i2 * i2));
+        float distanceSq = (dx * dx) + (dy * dy);
+        int touchSlop = this.mTouchSlop;
+        return distanceSq > ((float) (touchSlop * touchSlop));
     }
 
-    private int clampMag(int i2, int i6, int i10) {
-        int iAbs = Math.abs(i2);
-        if (iAbs < i6) {
+    private int clampMag(int value, int absMin, int absMax) {
+        int iAbs = Math.abs(value);
+        if (iAbs < absMin) {
             return 0;
         }
-        return iAbs > i10 ? i2 > 0 ? i10 : -i10 : i2;
+        return iAbs > absMax ? value > 0 ? absMax : -absMax : value;
     }
 
     private void clearMotionHistory() {
@@ -185,115 +187,116 @@ public class COUIViewDragHelper {
         this.mPointersDown = 0;
     }
 
-    private int computeAxisDuration(int i2, int i6, int i10) {
+    private int computeAxisDuration(int delta, int velocity, int motionRange) {
         int iAbs;
-        if (i2 == 0) {
+        if (delta == 0) {
             return 0;
         }
         int width = this.mParentView.getWidth();
-        float f2 = width / 2;
-        float fDistanceInfluenceForSnapDuration = f2 + (distanceInfluenceForSnapDuration(Math.min(1.0f, Math.abs(i2) / width)) * f2);
-        int iAbs2 = Math.abs(i6);
+        float halfWidth = width / 2;
+        float fDistanceInfluenceForSnapDuration = halfWidth + (distanceInfluenceForSnapDuration(Math.min(1.0f, Math.abs(delta) / width)) * halfWidth);
+        int iAbs2 = Math.abs(velocity);
         if (iAbs2 > 0) {
             iAbs = Math.round(Math.abs(fDistanceInfluenceForSnapDuration / iAbs2) * 1000.0f) * 4;
         } else {
-            iAbs = (int) (((Math.abs(i2) / (i10 == 0 ? 1 : Math.abs(i10))) + 1.0f) * 256.0f);
+            iAbs = (int) (((Math.abs(delta) / (motionRange == 0 ? 1 : Math.abs(motionRange))) + 1.0f) * 256.0f);
         }
-        return Math.min(iAbs, 600);
+        return Math.min(iAbs, MAX_SETTLE_DURATION);
     }
 
-    private int computeSettleDuration(View view, int i2, int i6, int i10, int i11) {
-        float f2;
-        float f10;
-        float f11;
-        float f12;
-        float f13;
-        float f14;
-        int iClampMag = clampMag(i10, (int) this.mMinVelocity, (int) this.mMaxVelocity);
-        int iClampMag2 = clampMag(i11, (int) this.mMinVelocity, (int) this.mMaxVelocity);
-        int iAbs = Math.abs(i2);
-        int iAbs2 = Math.abs(i6);
+    private int computeSettleDuration(View view, int dx, int dy, int xvel, int yvel) {
+        float xWeight;
+        float yWeight;
+        float yDenom;
+        float yNumer;
+        float xNumer;
+        float xDenom;
+        int iClampMag = clampMag(xvel, (int) this.mMinVelocity, (int) this.mMaxVelocity);
+        int iClampMag2 = clampMag(yvel, (int) this.mMinVelocity, (int) this.mMaxVelocity);
+        int iAbs = Math.abs(dx);
+        int iAbs2 = Math.abs(dy);
         int iAbs3 = Math.abs(iClampMag);
         int iAbs4 = Math.abs(iClampMag2);
-        int i12 = iAbs3 + iAbs4;
-        int i13 = iAbs + iAbs2;
-        if (i12 > 0) {
+        int addedVel = iAbs3 + iAbs4;
+        int addedDistance = iAbs + iAbs2;
+        if (addedVel > 0) {
             if (iClampMag != 0) {
-                f13 = iAbs3;
-                f14 = i12;
+                xNumer = iAbs3;
+                xDenom = addedVel;
             } else {
-                f13 = iAbs;
-                f14 = i13;
+                xNumer = iAbs;
+                xDenom = addedDistance;
             }
-            f2 = f13 / f14;
+            xWeight = xNumer / xDenom;
             if (iClampMag2 != 0) {
-                f12 = iAbs4;
-                f11 = i12;
+                yNumer = iAbs4;
+                yDenom = addedVel;
             } else {
-                f12 = iAbs2;
-                f11 = i13;
+                yNumer = iAbs2;
+                yDenom = addedDistance;
             }
         } else {
-            if (i13 <= 0) {
-                f2 = 0.5f;
-                f10 = 0.5f;
-                return (int) ((computeAxisDuration(i2, iClampMag, this.mCallback.getViewHorizontalDragRange(view)) * f2) + (computeAxisDuration(i6, iClampMag2, this.mCallback.getViewVerticalDragRange(view)) * f10));
+            if (addedDistance <= 0) {
+                xWeight = 0.5f;
+                yWeight = 0.5f;
+                return (int) ((computeAxisDuration(dx, iClampMag, this.mCallback.getViewHorizontalDragRange(view)) * xWeight) + (computeAxisDuration(dy, iClampMag2, this.mCallback.getViewVerticalDragRange(view)) * yWeight));
             }
-            f11 = i13;
-            f2 = iAbs / f11;
-            f12 = iAbs2;
+            yDenom = addedDistance;
+            xWeight = iAbs / yDenom;
+            yNumer = iAbs2;
         }
-        f10 = f12 / f11;
-        return (int) ((computeAxisDuration(i2, iClampMag, this.mCallback.getViewHorizontalDragRange(view)) * f2) + (computeAxisDuration(i6, iClampMag2, this.mCallback.getViewVerticalDragRange(view)) * f10));
+        yWeight = yNumer / yDenom;
+        return (int) ((computeAxisDuration(dx, iClampMag, this.mCallback.getViewHorizontalDragRange(view)) * xWeight) + (computeAxisDuration(dy, iClampMag2, this.mCallback.getViewVerticalDragRange(view)) * yWeight));
     }
 
     public static COUIViewDragHelper create(ViewGroup viewGroup, Callback callback) {
         return new COUIViewDragHelper(viewGroup.getContext(), viewGroup, callback);
     }
 
-    private void dispatchViewReleased(float f2, float f10) {
+    private void dispatchViewReleased(float xvel, float yvel) {
         this.mReleaseInProgress = true;
-        this.mCallback.onViewReleased(this.mCapturedView, f2, f10);
+        this.mCallback.onViewReleased(this.mCapturedView, xvel, yvel);
         this.mReleaseInProgress = false;
-        if (this.mDragState == 1) {
-            setDragState(0);
+        if (this.mDragState == STATE_DRAGGING) {
+            setDragState(STATE_IDLE);
         }
     }
 
-    private float distanceInfluenceForSnapDuration(float f2) {
-        return (float) Math.sin((f2 - 0.5f) * 0.47123894f);
+    private float distanceInfluenceForSnapDuration(float f) {
+        return (float) Math.sin((f - 0.5f) * 0.47123894f);
     }
 
-    private void dragTo(int i2, int i6, int i10, int i11) {
-        int left = this.mCapturedView.getLeft();
-        int top = this.mCapturedView.getTop();
-        if (i10 != 0) {
-            i2 = this.mCallback.clampViewPositionHorizontal(this.mCapturedView, i2, i10);
-            ViewCompat.offsetLeftAndRight(this.mCapturedView, i2 - left);
+    private void dragTo(int left, int top, int dx, int dy) {
+        int oldLeft = this.mCapturedView.getLeft();
+        int oldTop = this.mCapturedView.getTop();
+        if (dx != 0) {
+            left = this.mCallback.clampViewPositionHorizontal(this.mCapturedView, left, dx);
+            ViewCompat.offsetLeftAndRight(this.mCapturedView, left - oldLeft);
         }
-        int i12 = i2;
-        if (i11 != 0) {
-            i6 = this.mCallback.clampViewPositionVertical(this.mCapturedView, i6, i11);
-            ViewCompat.offsetTopAndBottom(this.mCapturedView, i6 - top);
+        int clampedLeft = left;
+        if (dy != 0) {
+            top = this.mCallback.clampViewPositionVertical(this.mCapturedView, top, dy);
+            ViewCompat.offsetTopAndBottom(this.mCapturedView, top - oldTop);
         }
-        int i13 = i6;
-        if (i10 == 0 && i11 == 0) {
+        int clampedTop = top;
+        if (dx == 0 && dy == 0) {
             return;
         }
-        this.mCallback.onViewPositionChanged(this.mCapturedView, i12, i13, i12 - left, i13 - top);
+        this.mCallback.onViewPositionChanged(this.mCapturedView, clampedLeft, clampedTop,
+                clampedLeft - oldLeft, clampedTop - oldTop);
     }
 
-    private void ensureMotionHistorySizeForId(int i2) {
+    private void ensureMotionHistorySizeForId(int pointerId) {
         float[] fArr = this.mInitialMotionX;
-        if (fArr == null || fArr.length <= i2) {
-            int i6 = i2 + 1;
-            float[] fArr2 = new float[i6];
-            float[] fArr3 = new float[i6];
-            float[] fArr4 = new float[i6];
-            float[] fArr5 = new float[i6];
-            int[] iArr = new int[i6];
-            int[] iArr2 = new int[i6];
-            int[] iArr3 = new int[i6];
+        if (fArr == null || fArr.length <= pointerId) {
+            int pointerCount = pointerId + 1;
+            float[] fArr2 = new float[pointerCount];
+            float[] fArr3 = new float[pointerCount];
+            float[] fArr4 = new float[pointerCount];
+            float[] fArr5 = new float[pointerCount];
+            int[] iArr = new int[pointerCount];
+            int[] iArr2 = new int[pointerCount];
+            int[] iArr3 = new int[pointerCount];
             if (fArr != null) {
                 System.arraycopy(fArr, 0, fArr2, 0, fArr.length);
                 float[] fArr6 = this.mInitialMotionY;
@@ -319,34 +322,34 @@ public class COUIViewDragHelper {
         }
     }
 
-    private boolean forceSettleCapturedViewAt(int i2, int i6, int i10, int i11) {
-        int left = i2 - this.mCapturedView.getLeft();
-        int top = i6 - this.mCapturedView.getTop();
+    private boolean forceSettleCapturedViewAt(int finalLeft, int finalTop, int xvel, int yvel) {
+        int left = finalLeft - this.mCapturedView.getLeft();
+        int top = finalTop - this.mCapturedView.getTop();
         if (left == 0 && top == 0) {
-            setDragState(0);
+            setDragState(STATE_IDLE);
             return false;
         }
-        computeSettleDuration(this.mCapturedView, left, top, i10, i11);
-        setDragState(2);
+        computeSettleDuration(this.mCapturedView, left, top, xvel, yvel);
+        setDragState(STATE_SETTLING);
         return true;
     }
 
-    private int getEdgesTouched(int i2, int i6) {
-        int i10 = i2 < this.mParentView.getLeft() + this.mEdgeSize ? 1 : 0;
-        if (i6 < this.mParentView.getTop() + this.mEdgeSize) {
-            i10 |= 4;
+    private int getEdgesTouched(int x, int y) {
+        int result = x < this.mParentView.getLeft() + this.mEdgeSize ? 1 : 0;
+        if (y < this.mParentView.getTop() + this.mEdgeSize) {
+            result |= 4;
         }
-        if (i2 > this.mParentView.getRight() - this.mEdgeSize) {
-            i10 |= 2;
+        if (x > this.mParentView.getRight() - this.mEdgeSize) {
+            result |= 2;
         }
-        return i6 > this.mParentView.getBottom() - this.mEdgeSize ? i10 | 8 : i10;
+        return y > this.mParentView.getBottom() - this.mEdgeSize ? result | 8 : result;
     }
 
-    private boolean isValidPointerForActionMove(int i2) {
-        if (isPointerDown(i2)) {
+    private boolean isValidPointerForActionMove(int pointerId) {
+        if (isPointerDown(pointerId)) {
             return true;
         }
-        Log.e(TAG, "Ignoring pointerId=" + i2 + " because ACTION_DOWN was not received for this pointer before ACTION_MOVE. It likely happened because  COUIViewDragHelper did not receive all the events in the event stream.");
+        Log.e(TAG, "Ignoring pointerId=" + pointerId + " because ACTION_DOWN was not received for this pointer before ACTION_MOVE. It likely happened because  COUIViewDragHelper did not receive all the events in the event stream.");
         return false;
     }
 
@@ -356,63 +359,52 @@ public class COUIViewDragHelper {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-    private void reportNewEdgeDrags(float f2, float f10, int i2) {
-        int edgeDrags = checkNewEdgeDrag(f2, f10, i2, 1) ? 1 : 0;
-        if (checkNewEdgeDrag(f10, f2, i2, 4)) {
-            edgeDrags |= 4;
+    private void reportNewEdgeDrags(float dx, float dy, int pointerId) {
+        int edgeDrags = checkNewEdgeDrag(dx, dy, pointerId, EDGE_LEFT) ? 1 : 0;
+        if (checkNewEdgeDrag(dy, dx, pointerId, EDGE_TOP)) {
+            edgeDrags |= EDGE_TOP;
         }
-        if (checkNewEdgeDrag(f2, f10, i2, 2)) {
-            edgeDrags |= 2;
+        if (checkNewEdgeDrag(dx, dy, pointerId, EDGE_RIGHT)) {
+            edgeDrags |= EDGE_RIGHT;
         }
-        if (checkNewEdgeDrag(f10, f2, i2, 8)) {
-            edgeDrags |= 8;
+        if (checkNewEdgeDrag(dy, dx, pointerId, EDGE_BOTTOM)) {
+            edgeDrags |= EDGE_BOTTOM;
         }
         if (edgeDrags != 0) {
             int[] iArr = this.mEdgeDragsInProgress;
-            iArr[i2] = iArr[i2] | edgeDrags;
-            this.mCallback.onEdgeDragStarted(edgeDrags, i2);
+            iArr[pointerId] = iArr[pointerId] | edgeDrags;
+            this.mCallback.onEdgeDragStarted(edgeDrags, pointerId);
         }
     }
 
-    private void saveInitialMotion(float f2, float f10, int i2) {
-        ensureMotionHistorySizeForId(i2);
+    private void saveInitialMotion(float x, float y, int pointerId) {
+        ensureMotionHistorySizeForId(pointerId);
         float[] fArr = this.mInitialMotionX;
-        this.mLastMotionX[i2] = f2;
-        fArr[i2] = f2;
+        this.mLastMotionX[pointerId] = x;
+        fArr[pointerId] = x;
         float[] fArr2 = this.mInitialMotionY;
-        this.mLastMotionY[i2] = f10;
-        fArr2[i2] = f10;
-        this.mInitialEdgesTouched[i2] = getEdgesTouched((int) f2, (int) f10);
-        this.mPointersDown |= 1 << i2;
+        this.mLastMotionY[pointerId] = y;
+        fArr2[pointerId] = y;
+        this.mInitialEdgesTouched[pointerId] = getEdgesTouched((int) x, (int) y);
+        this.mPointersDown |= 1 << pointerId;
     }
 
     private void saveLastMotion(MotionEvent motionEvent) {
         int pointerCount = motionEvent.getPointerCount();
-        for (int i2 = 0; i2 < pointerCount; i2++) {
-            int pointerId = motionEvent.getPointerId(i2);
+        for (int i = 0; i < pointerCount; i++) {
+            int pointerId = motionEvent.getPointerId(i);
             if (isValidPointerForActionMove(pointerId)) {
-                float x6 = motionEvent.getX(i2);
-                float y6 = motionEvent.getY(i2);
-                this.mLastMotionX[pointerId] = x6;
-                this.mLastMotionY[pointerId] = y6;
+                float x = motionEvent.getX(i);
+                float y = motionEvent.getY(i);
+                this.mLastMotionX[pointerId] = x;
+                this.mLastMotionY[pointerId] = y;
             }
         }
     }
 
     public void abort() {
         cancel();
-        if (this.mDragState == 2) {
+        if (this.mDragState == STATE_SETTLING) {
             int currX = this.mScroller.getCurrX();
             int currY = this.mScroller.getCurrY();
             this.mScroller.abortAnimation();
@@ -420,28 +412,28 @@ public class COUIViewDragHelper {
             int currY2 = this.mScroller.getCurrY();
             this.mCallback.onViewPositionChanged(this.mCapturedView, currX2, currY2, currX2 - currX, currY2 - currY);
         }
-        setDragState(0);
+        setDragState(STATE_IDLE);
     }
 
-    public boolean canScroll(View view, boolean z6, int i2, int i6, int i10, int i11) {
-        int i12;
+    public boolean canScroll(View view, boolean checkV, int dx, int dy, int x, int y) {
+        int scrolledY;
         if (view instanceof ViewGroup) {
             ViewGroup viewGroup = (ViewGroup) view;
             int scrollX = view.getScrollX();
             int scrollY = view.getScrollY();
             for (int childCount = viewGroup.getChildCount() - 1; childCount >= 0; childCount--) {
                 View childAt = viewGroup.getChildAt(childCount);
-                int i13 = i10 + scrollX;
-                if (i13 >= childAt.getLeft() && i13 < childAt.getRight() && (i12 = i11 + scrollY) >= childAt.getTop() && i12 < childAt.getBottom() && canScroll(childAt, true, i2, i6, i13 - childAt.getLeft(), i12 - childAt.getTop())) {
+                int scrolledX = x + scrollX;
+                if (scrolledX >= childAt.getLeft() && scrolledX < childAt.getRight() && (scrolledY = y + scrollY) >= childAt.getTop() && scrolledY < childAt.getBottom() && canScroll(childAt, true, dx, dy, scrolledX - childAt.getLeft(), scrolledY - childAt.getTop())) {
                     return true;
                 }
             }
         }
-        return z6 && (view.canScrollHorizontally(-i2) || view.canScrollVertically(-i6));
+        return checkV && (view.canScrollHorizontally(-dx) || view.canScrollVertically(-dy));
     }
 
     public void cancel() {
-        this.mActivePointerId = -1;
+        this.mActivePointerId = INVALID_POINTER;
         clearMotionHistory();
         VelocityTracker velocityTracker = this.mVelocityTracker;
         if (velocityTracker != null) {
@@ -450,19 +442,19 @@ public class COUIViewDragHelper {
         }
     }
 
-    public void captureChildView(View view, int i2) {
+    public void captureChildView(View view, int activePointerId) {
         if (view.getParent() == this.mParentView) {
             this.mCapturedView = view;
-            this.mActivePointerId = i2;
-            this.mCallback.onViewCaptured(view, i2);
-            setDragState(1);
+            this.mActivePointerId = activePointerId;
+            this.mCallback.onViewCaptured(view, activePointerId);
+            setDragState(STATE_DRAGGING);
             return;
         }
         throw new IllegalArgumentException("captureChildView: parameter must be a descendant of the COUIViewDragHelper's tracked parent view (" + this.mParentView + ")");
     }
 
-    public boolean continueSettling(boolean z6) {
-        if (this.mDragState == 2) {
+    public boolean continueSettling(boolean deferCallbacks) {
+        if (this.mDragState == STATE_SETTLING) {
             boolean zComputeScrollOffset = this.mScroller.computeScrollOffset();
             int currX = this.mScroller.getCurrX();
             int currY = this.mScroller.getCurrY();
@@ -481,31 +473,31 @@ public class COUIViewDragHelper {
                 this.mScroller.abortAnimation();
             } else if (!zComputeScrollOffset) {
             }
-            if (z6) {
+            if (deferCallbacks) {
                 this.mParentView.post(this.mSetIdleRunnable);
             } else {
-                setDragState(0);
+                setDragState(STATE_IDLE);
             }
         }
         return this.mDragState == 2;
     }
 
-    public View findTopChildUnder(int i2, int i6) {
+    public View findTopChildUnder(int x, int y) {
         for (int childCount = this.mParentView.getChildCount() - 1; childCount >= 0; childCount--) {
             View childAt = this.mParentView.getChildAt(this.mCallback.getOrderedChildIndex(childCount));
-            if (i2 >= childAt.getLeft() && i2 < childAt.getRight() && i6 >= childAt.getTop() && i6 < childAt.getBottom()) {
+            if (x >= childAt.getLeft() && x < childAt.getRight() && y >= childAt.getTop() && y < childAt.getBottom()) {
                 return childAt;
             }
         }
         return null;
     }
 
-    public void flingCapturedView(int i2, int i6, int i10, int i11) {
+    public void flingCapturedView(int minLeft, int minTop, int maxLeft, int maxTop) {
         if (!this.mReleaseInProgress) {
             throw new IllegalStateException("Cannot flingCapturedView outside of a call to Callback#onViewReleased");
         }
-        this.mScroller.fling(this.mCapturedView.getLeft(), this.mCapturedView.getTop(), (int) this.mVelocityTracker.getXVelocity(this.mActivePointerId), (int) this.mVelocityTracker.getYVelocity(this.mActivePointerId), i2, i10, i6, i11);
-        setDragState(2);
+        this.mScroller.fling(this.mCapturedView.getLeft(), this.mCapturedView.getTop(), (int) this.mVelocityTracker.getXVelocity(this.mActivePointerId), (int) this.mVelocityTracker.getYVelocity(this.mActivePointerId), minLeft, maxLeft, minTop, maxTop);
+        setDragState(STATE_SETTLING);
     }
 
     public int getActivePointerId() {
@@ -536,26 +528,26 @@ public class COUIViewDragHelper {
         return this.mDragState;
     }
 
-    public boolean isCapturedViewUnder(int i2, int i6) {
-        return isViewUnder(this.mCapturedView, i2, i6);
+    public boolean isCapturedViewUnder(int x, int y) {
+        return isViewUnder(this.mCapturedView, x, y);
     }
 
-    public boolean isEdgeTouched(int i2) {
+    public boolean isEdgeTouched(int edges) {
         int length = this.mInitialEdgesTouched.length;
-        for (int i6 = 0; i6 < length; i6++) {
-            if (isEdgeTouched(i2, i6)) {
+        for (int i = 0; i < length; i++) {
+            if (isEdgeTouched(edges, i)) {
                 return true;
             }
         }
         return false;
     }
 
-    public boolean isPointerDown(int i2) {
-        return (this.mPointersDown & (1 << i2)) != 0;
+    public boolean isPointerDown(int pointerId) {
+        return (this.mPointersDown & (1 << pointerId)) != 0;
     }
 
-    public boolean isViewUnder(View view, int i2, int i6) {
-        return view != null && i2 >= view.getLeft() && i2 < view.getRight() && i6 >= view.getTop() && i6 < view.getBottom();
+    public boolean isViewUnder(View view, int x, int y) {
+        return view != null && x >= view.getLeft() && x < view.getRight() && y >= view.getTop() && y < view.getBottom();
     }
 
     public void processTouchEvent(MotionEvent motionEvent) {
@@ -568,92 +560,92 @@ public class COUIViewDragHelper {
             this.mVelocityTracker = VelocityTracker.obtain();
         }
         this.mVelocityTracker.addMovement(motionEvent);
-        int i2 = 0;
+        int i = 0;
         if (actionMasked == 0) {
-            float x6 = motionEvent.getX();
-            float y6 = motionEvent.getY();
+            float x = motionEvent.getX();
+            float y = motionEvent.getY();
             int pointerId = motionEvent.getPointerId(0);
-            View viewFindTopChildUnder = findTopChildUnder((int) x6, (int) y6);
-            saveInitialMotion(x6, y6, pointerId);
-            tryCaptureViewForDrag(viewFindTopChildUnder, pointerId);
-            int i6 = this.mInitialEdgesTouched[pointerId];
-            int i10 = this.mTrackingEdges;
-            if ((i6 & i10) != 0) {
-                this.mCallback.onEdgeTouched(i6 & i10, pointerId);
+            View toCapture = findTopChildUnder((int) x, (int) y);
+            saveInitialMotion(x, y, pointerId);
+            tryCaptureViewForDrag(toCapture, pointerId);
+            int initialEdges = this.mInitialEdgesTouched[pointerId];
+            int trackingEdges = this.mTrackingEdges;
+            if ((initialEdges & trackingEdges) != 0) {
+                this.mCallback.onEdgeTouched(initialEdges & trackingEdges, pointerId);
                 return;
             }
             return;
         }
         if (actionMasked == 1) {
-            if (this.mDragState == 1) {
+            if (this.mDragState == STATE_DRAGGING) {
                 releaseViewForPointerUp();
             }
             cancel();
             return;
         }
         if (actionMasked == 2) {
-            if (this.mDragState == 1) {
+            if (this.mDragState == STATE_DRAGGING) {
                 if (isValidPointerForActionMove(this.mActivePointerId)) {
-                    int iFindPointerIndex = motionEvent.findPointerIndex(this.mActivePointerId);
-                    float x10 = motionEvent.getX(iFindPointerIndex);
-                    float y10 = motionEvent.getY(iFindPointerIndex);
+                    int pointerIndex = motionEvent.findPointerIndex(this.mActivePointerId);
+                    float x = motionEvent.getX(pointerIndex);
+                    float y = motionEvent.getY(pointerIndex);
                     float[] fArr = this.mLastMotionX;
-                    int i11 = this.mActivePointerId;
-                    int i12 = (int) (x10 - fArr[i11]);
-                    int i13 = (int) (y10 - this.mLastMotionY[i11]);
-                    dragTo(this.mCapturedView.getLeft() + i12, this.mCapturedView.getTop() + i13, i12, i13);
+                    int activePointerId = this.mActivePointerId;
+                    int dx = (int) (x - fArr[activePointerId]);
+                    int dy = (int) (y - this.mLastMotionY[activePointerId]);
+                    dragTo(this.mCapturedView.getLeft() + dx, this.mCapturedView.getTop() + dy, dx, dy);
                     saveLastMotion(motionEvent);
                     return;
                 }
                 return;
             }
             int pointerCount = motionEvent.getPointerCount();
-            while (i2 < pointerCount) {
-                int pointerId2 = motionEvent.getPointerId(i2);
-                if (isValidPointerForActionMove(pointerId2)) {
-                    float x11 = motionEvent.getX(i2);
-                    float y11 = motionEvent.getY(i2);
-                    float f2 = x11 - this.mInitialMotionX[pointerId2];
-                    float f10 = y11 - this.mInitialMotionY[pointerId2];
-                    reportNewEdgeDrags(f2, f10, pointerId2);
+            while (i < pointerCount) {
+                int pointerId = motionEvent.getPointerId(i);
+                if (isValidPointerForActionMove(pointerId)) {
+                    float x = motionEvent.getX(i);
+                    float y = motionEvent.getY(i);
+                    float dx = x - this.mInitialMotionX[pointerId];
+                    float dy = y - this.mInitialMotionY[pointerId];
+                    reportNewEdgeDrags(dx, dy, pointerId);
                     if (this.mDragState != 1) {
-                        View viewFindTopChildUnder2 = findTopChildUnder((int) x11, (int) y11);
-                        if (checkTouchSlop(viewFindTopChildUnder2, f2, f10) && tryCaptureViewForDrag(viewFindTopChildUnder2, pointerId2)) {
+                        View toCapture = findTopChildUnder((int) x, (int) y);
+                        if (checkTouchSlop(toCapture, dx, dy) && tryCaptureViewForDrag(toCapture, pointerId)) {
                             break;
                         }
                     } else {
                         break;
                     }
                 }
-                i2++;
+                i++;
             }
             saveLastMotion(motionEvent);
             return;
         }
         if (actionMasked == 3) {
-            if (this.mDragState == 1) {
+            if (this.mDragState == STATE_DRAGGING) {
                 dispatchViewReleased(0.0f, 0.0f);
             }
             cancel();
             return;
         }
         if (actionMasked == 5) {
-            int pointerId3 = motionEvent.getPointerId(actionIndex);
-            float x12 = motionEvent.getX(actionIndex);
-            float y12 = motionEvent.getY(actionIndex);
-            saveInitialMotion(x12, y12, pointerId3);
+            int pointerId = motionEvent.getPointerId(actionIndex);
+            float x = motionEvent.getX(actionIndex);
+            float y = motionEvent.getY(actionIndex);
+            saveInitialMotion(x, y, pointerId);
             if (this.mDragState != 0) {
-                if (isCapturedViewUnder((int) x12, (int) y12)) {
-                    tryCaptureViewForDrag(this.mCapturedView, pointerId3);
+                if (isCapturedViewUnder((int) x, (int) y)) {
+                    tryCaptureViewForDrag(this.mCapturedView, pointerId);
                     return;
                 }
                 return;
             } else {
-                tryCaptureViewForDrag(findTopChildUnder((int) x12, (int) y12), pointerId3);
-                int i14 = this.mInitialEdgesTouched[pointerId3];
-                int i15 = this.mTrackingEdges;
-                if ((i14 & i15) != 0) {
-                    this.mCallback.onEdgeTouched(i14 & i15, pointerId3);
+                tryCaptureViewForDrag(findTopChildUnder((int) x, (int) y), pointerId);
+                int initialEdges2 = this.mInitialEdgesTouched[pointerId];
+                int trackingEdges2 = this.mTrackingEdges;
+                if ((initialEdges2 & trackingEdges2) != 0) {
+                    this.mCallback.onEdgeTouched(initialEdges2 & trackingEdges2, pointerId);
                     return;
                 }
                 return;
@@ -662,60 +654,60 @@ public class COUIViewDragHelper {
         if (actionMasked != 6) {
             return;
         }
-        int pointerId4 = motionEvent.getPointerId(actionIndex);
-        if (this.mDragState == 1 && pointerId4 == this.mActivePointerId) {
-            int pointerCount2 = motionEvent.getPointerCount();
+        int pointerId = motionEvent.getPointerId(actionIndex);
+        if (this.mDragState == 1 && pointerId == this.mActivePointerId) {
+            int pointerCount = motionEvent.getPointerCount();
             while (true) {
-                if (i2 >= pointerCount2) {
+                if (i >= pointerCount) {
                     break;
                 }
-                int pointerId5 = motionEvent.getPointerId(i2);
-                if (pointerId5 != this.mActivePointerId) {
-                    View viewFindTopChildUnder3 = findTopChildUnder((int) motionEvent.getX(i2), (int) motionEvent.getY(i2));
+                int otherPointerId = motionEvent.getPointerId(i);
+                if (otherPointerId != this.mActivePointerId) {
+                    View toCapture = findTopChildUnder((int) motionEvent.getX(i), (int) motionEvent.getY(i));
                     View view = this.mCapturedView;
-                    if (viewFindTopChildUnder3 == view && tryCaptureViewForDrag(view, pointerId5)) {
-                        if (this.mActivePointerId == -1) {
+                    if (toCapture == view && tryCaptureViewForDrag(view, otherPointerId)) {
+                        if (this.mActivePointerId == INVALID_POINTER) {
                             break;
                         }
                     }
                 }
-                i2++;
+                i++;
             }
             releaseViewForPointerUp();
         }
-        clearMotionHistory(pointerId4);
+        clearMotionHistory(pointerId);
     }
 
     public void setCapturedView(View view) {
         this.mCapturedView = view;
     }
 
-    public void setDragState(int i2) {
+    public void setDragState(int state) {
         this.mParentView.removeCallbacks(this.mSetIdleRunnable);
-        if (this.mDragState != i2) {
-            this.mDragState = i2;
-            this.mCallback.onViewDragStateChanged(i2);
+        if (this.mDragState != state) {
+            this.mDragState = state;
+            this.mCallback.onViewDragStateChanged(state);
             if (this.mDragState == 0) {
                 this.mCapturedView = null;
             }
         }
     }
 
-    public void setEdgeSize(int i2) {
-        this.mEdgeSize = i2;
+    public void setEdgeSize(int size) {
+        this.mEdgeSize = size;
     }
 
-    public void setEdgeTrackingEnabled(int i2) {
-        this.mTrackingEdges = i2;
+    public void setEdgeTrackingEnabled(int edgeFlags) {
+        this.mTrackingEdges = edgeFlags;
     }
 
-    public void setMinVelocity(float f2) {
-        this.mMinVelocity = f2;
+    public void setMinVelocity(float minVel) {
+        this.mMinVelocity = minVel;
     }
 
-    public boolean settleCapturedViewAt(int i2, int i6) {
+    public boolean settleCapturedViewAt(int finalLeft, int finalTop) {
         if (this.mReleaseInProgress) {
-            return forceSettleCapturedViewAt(i2, i6, (int) this.mVelocityTracker.getXVelocity(this.mActivePointerId), (int) this.mVelocityTracker.getYVelocity(this.mActivePointerId));
+            return forceSettleCapturedViewAt(finalLeft, finalTop, (int) this.mVelocityTracker.getXVelocity(this.mActivePointerId), (int) this.mVelocityTracker.getYVelocity(this.mActivePointerId));
         }
         throw new IllegalStateException("Cannot settleCapturedViewAt outside of a call to Callback#onViewReleased");
     }
@@ -806,83 +798,83 @@ public class COUIViewDragHelper {
         return this.mDragState == STATE_DRAGGING;
     }
 
-    public boolean smoothSlideViewTo(View view, int i2, int i6) {
+    public boolean smoothSlideViewTo(View view, int finalLeft, int finalTop) {
         this.mCapturedView = view;
-        this.mActivePointerId = -1;
-        boolean zForceSettleCapturedViewAt = forceSettleCapturedViewAt(i2, i6, 0, 0);
+        this.mActivePointerId = INVALID_POINTER;
+        boolean zForceSettleCapturedViewAt = forceSettleCapturedViewAt(finalLeft, finalTop, 0, 0);
         if (!zForceSettleCapturedViewAt && this.mDragState == 0 && this.mCapturedView != null) {
             this.mCapturedView = null;
         }
         return zForceSettleCapturedViewAt;
     }
 
-    public boolean tryCaptureViewForDrag(View view, int i2) {
-        if (view == this.mCapturedView && this.mActivePointerId == i2) {
+    public boolean tryCaptureViewForDrag(View view, int pointerId) {
+        if (view == this.mCapturedView && this.mActivePointerId == pointerId) {
             return true;
         }
-        if (view == null || !this.mCallback.tryCaptureView(view, i2)) {
+        if (view == null || !this.mCallback.tryCaptureView(view, pointerId)) {
             return false;
         }
-        this.mActivePointerId = i2;
-        captureChildView(view, i2);
+        this.mActivePointerId = pointerId;
+        captureChildView(view, pointerId);
         return true;
     }
 
-    private float clampMag(float f2, float f10, float f11) {
-        float fAbs = Math.abs(f2);
-        if (fAbs < f10) {
+    private float clampMag(float value, float absMin, float absMax) {
+        float fAbs = Math.abs(value);
+        if (fAbs < absMin) {
             return 0.0f;
         }
-        return fAbs > f11 ? f2 > 0.0f ? f11 : -f11 : f2;
+        return fAbs > absMax ? value > 0.0f ? absMax : -absMax : value;
     }
 
-    public static COUIViewDragHelper create(ViewGroup viewGroup, float f2, Callback callback) {
-        COUIViewDragHelper cOUIViewDragHelperCreate = create(viewGroup, callback);
-        cOUIViewDragHelperCreate.mTouchSlop = (int) (cOUIViewDragHelperCreate.mTouchSlop * (1.0f / f2));
-        return cOUIViewDragHelperCreate;
+    public static COUIViewDragHelper create(ViewGroup viewGroup, float sensitivity, Callback callback) {
+        COUIViewDragHelper helper = create(viewGroup, callback);
+        helper.mTouchSlop = (int) (helper.mTouchSlop * (1.0f / sensitivity));
+        return helper;
     }
 
-    public boolean isEdgeTouched(int i2, int i6) {
-        return isPointerDown(i6) && (this.mInitialEdgesTouched[i6] & i2) != 0;
+    public boolean isEdgeTouched(int edges, int pointerId) {
+        return isPointerDown(pointerId) && (this.mInitialEdgesTouched[pointerId] & edges) != 0;
     }
 
-    public boolean checkTouchSlop(int i2) {
+    public boolean checkTouchSlop(int directions) {
         int length = this.mInitialMotionX.length;
-        for (int i6 = 0; i6 < length; i6++) {
-            if (checkTouchSlop(i2, i6)) {
+        for (int i = 0; i < length; i++) {
+            if (checkTouchSlop(directions, i)) {
                 return true;
             }
         }
         return false;
     }
 
-    public boolean checkTouchSlop(int i2, int i6) {
-        if (!isPointerDown(i6)) {
+    public boolean checkTouchSlop(int directions, int pointerId) {
+        if (!isPointerDown(pointerId)) {
             return false;
         }
-        boolean z6 = (i2 & 1) == 1;
-        boolean z10 = (i2 & 2) == 2;
-        float f2 = this.mLastMotionX[i6] - this.mInitialMotionX[i6];
-        float f10 = this.mLastMotionY[i6] - this.mInitialMotionY[i6];
-        if (!z6 || !z10) {
-            return z6 ? Math.abs(f2) > ((float) this.mTouchSlop) : z10 && Math.abs(f10) > ((float) this.mTouchSlop);
+        boolean checkHorizontal = (directions & 1) == 1;
+        boolean checkVertical = (directions & 2) == 2;
+        float dx = this.mLastMotionX[pointerId] - this.mInitialMotionX[pointerId];
+        float dy = this.mLastMotionY[pointerId] - this.mInitialMotionY[pointerId];
+        if (!checkHorizontal || !checkVertical) {
+            return checkHorizontal ? Math.abs(dx) > ((float) this.mTouchSlop) : checkVertical && Math.abs(dy) > ((float) this.mTouchSlop);
         }
-        float f11 = (f2 * f2) + (f10 * f10);
-        int i10 = this.mTouchSlop;
-        return f11 > ((float) (i10 * i10));
+        float distanceSq = (dx * dx) + (dy * dy);
+        int touchSlop = this.mTouchSlop;
+        return distanceSq > ((float) (touchSlop * touchSlop));
     }
 
-    private void clearMotionHistory(int i2) {
-        if (this.mInitialMotionX == null || !isPointerDown(i2)) {
+    private void clearMotionHistory(int pointerId) {
+        if (this.mInitialMotionX == null || !isPointerDown(pointerId)) {
             return;
         }
-        this.mInitialMotionX[i2] = 0.0f;
-        this.mInitialMotionY[i2] = 0.0f;
-        this.mLastMotionX[i2] = 0.0f;
-        this.mLastMotionY[i2] = 0.0f;
-        this.mInitialEdgesTouched[i2] = 0;
-        this.mEdgeDragsInProgress[i2] = 0;
-        this.mEdgeDragsLocked[i2] = 0;
-        this.mPointersDown = (~(1 << i2)) & this.mPointersDown;
+        this.mInitialMotionX[pointerId] = 0.0f;
+        this.mInitialMotionY[pointerId] = 0.0f;
+        this.mLastMotionX[pointerId] = 0.0f;
+        this.mLastMotionY[pointerId] = 0.0f;
+        this.mInitialEdgesTouched[pointerId] = 0;
+        this.mEdgeDragsInProgress[pointerId] = 0;
+        this.mEdgeDragsLocked[pointerId] = 0;
+        this.mPointersDown = (~(1 << pointerId)) & this.mPointersDown;
     }
 }

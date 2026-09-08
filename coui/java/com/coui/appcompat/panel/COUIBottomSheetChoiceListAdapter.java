@@ -7,9 +7,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RadioButton;
 import android.widget.TextView;
+
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.checkbox.COUICheckBox;
+
 import java.util.HashSet;
 
 
