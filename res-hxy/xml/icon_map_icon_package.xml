@@ -16,6 +16,8 @@
 -->
 <icons>
 <icon package="com.android.contacts" drawable="aui_ic_contacts"/>
+<icon package="com.android.dialer" className="com.android.contacts.PeopleActivity" drawable="aui_ic_contacts"/>
+<icon package="com.android.dialer" className="com.android.contacts.ui.main.ContactMainActivity" drawable="aui_ic_contacts"/>
 <icon package="com.android.dialer" drawable="aui_ic_dial"/>
 <icon package="com.android.browser" drawable="aui_ic_browser"/>
 <icon package="com.android.mms" drawable="aui_ic_message"/>
@@ -24,23 +26,23 @@
 <icon package="com.android.settings" drawable="aui_ic_settings"/>
 <icon package="com.android.gallery3d" drawable="aui_ic_photo"/>
 <icon package="com.android.gallery" drawable="aui_ic_photo"/>
-<icon package="com.android.calendar" drawable="aui_ic_calendar"/>
+<icon package="com.gdcalendar" drawable="aui_ic_calendar"/>
 <icon package="com.android.deskclock" drawable="aui_ic_alarm"/>
 <icon package="com.android.email" drawable="aui_ic_mail"/>
 <icon package="com.android.fmradio" drawable="aui_ic_fm"/>
-<icon package="com.sprd.note" drawable="aui_ic_notes"/>
+<icon package="gd.app.note" drawable="aui_ic_notes"/>
 <icon package="com.mediatek.filemanager" drawable="aui_ic_filebrowser"/>
 <icon package="com.android.filebrowser" drawable="aui_ic_filebrowser"/>
-<icon package="com.mediatek.videoplayer" drawable="aui_ic_video"/>
-<icon package="com.android.soundrecorder" drawable="aui_ic_recording"/>
+<icon package="com.gd.app.video" drawable="aui_ic_video"/>
+<icon package="gd.app.soundrecorder" drawable="aui_ic_recording"/>
 <icon package="com.android.calculator2" drawable="aui_ic_calculator"/>
 <icon package="com.android.calculator" drawable="aui_ic_calculator"/>
 <icon package="com.android.documentsui" drawable="aui_ic_filebrowser"/>
-<icon package="com.android.music" drawable="aui_ic_local_music"/>
+<icon package="gd.app.musicplayer" drawable="aui_ic_local_music"/>
 <icon package="com.yft.gamemode" drawable="aui_ic_game"/>
 <icon package="com.android.stk" drawable="aui_ic_stk"/>
 <icon package="com.android.recorder" drawable="aui_ic_recording"/>
-<icon package="com.sprd.sprdnote" drawable="aui_ic_notes"/>
+<icon package="gd.app.note" drawable="aui_ic_notes"/>
 <icon package="com.hxy.easylauncher" drawable="aui_ic_easylauncher"/>
 <icon package="com.android.toolbox" drawable="aui_ic_toolbox"/>
 <icon package="com.android.pedometer" drawable="aui_ic_pedometer"/>
@@ -50,7 +52,7 @@
 <icon package="com.mediatek.camera.qrcode" drawable="aui_ic_qrcode"/>
 <icon package="com.android.deskclock" drawable="aui_ic_clock"/>
 <icon package="com.hxy.chlidmode" drawable="aui_ic_chlidmode"/>
-<icon package="com.android.note" drawable="aui_ic_note_card"/>
+<icon package="gd.app.note" drawable="aui_ic_note_card"/>
 <icon package="com.android.launcher3.clean" drawable="aui_ic_cleaner"/>
 <icon package="com.android.launcher3.wallpaper" drawable="aui_ic_wallpaper"/>
 </icons>

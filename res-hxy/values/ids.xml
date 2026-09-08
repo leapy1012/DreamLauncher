@@ -7,4 +7,13 @@
     <item name="coloros_all_apps_tab_fade" type="id" />
     <item name="coloros_all_apps_search_fade" type="id" />
     <item name="coloros_drawer_select_bottom_bar_root" type="id" />
+    <!-- Marker on Categories "Recently installed" row / icons: no Select checkmarks. -->
+    <item name="coloros_drawer_select_skip_check" type="id" />
+    <item name="coloros_layout_overlay_root" type="id" />
+    <item name="home_screen_mode_standard" type="id" />
+    <item name="home_screen_mode_drawer" type="id" />
+    <item name="home_screen_mode_preview" type="id" />
+    <item name="home_screen_mode_title" type="id" />
+    <item name="home_screen_mode_radio" type="id" />
+    <item name="home_screen_apply" type="id" />
 </resources>

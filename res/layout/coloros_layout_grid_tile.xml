@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/coloros_layout_tile"
+    android:layout_width="0dp"
+    android:layout_height="@dimen/coloros_layout_tile_height"
+    android:layout_marginHorizontal="4dp"
+    android:layout_weight="1"
+    android:background="@drawable/coloros_layout_tile_bg"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingHorizontal="10dp"
+    android:paddingVertical="5dp">
+
+    <com.android.launcher3.togglebar.ColorOsLayoutGridPreview
+        android:id="@+id/coloros_layout_tile_preview"
+        android:layout_width="@dimen/coloros_layout_preview_width"
+        android:layout_height="@dimen/coloros_layout_preview_height"
+        android:background="@drawable/coloros_layout_preview_frame" />
+
+    <TextView
+        android:id="@+id/coloros_layout_tile_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/coloros_layout_tile_label"
+        android:textSize="11dp" />
+</LinearLayout>

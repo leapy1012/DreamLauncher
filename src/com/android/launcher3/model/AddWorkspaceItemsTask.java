@@ -29,6 +29,7 @@ import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherModel.CallbackTask;
 import com.android.launcher3.LauncherSettings;
 import com.android.launcher3.LauncherStyle;
+import com.android.launcher3.allapps.coloros.ColorOsHomeSettings;
 import com.android.launcher3.logging.FileLog;
 import com.android.launcher3.model.BgDataModel.Callbacks;
 import com.android.launcher3.model.data.AppInfo;
@@ -68,10 +69,17 @@ public class AddWorkspaceItemsTask extends BaseModelUpdateTask {
     private final boolean mAllowSystemApps;
 
     /**
+     * When true, place icons even if the same shortcut already exists on the
+     * workspace. Oppo drawer Select {@code BatchAddDrawerIconsTask} never
+     * calls {@code shortcutExists}; auto-install still skips duplicates.
+     */
+    private final boolean mAllowDuplicates;
+
+    /**
      * @param itemList items to add on the workspace
      */
     public AddWorkspaceItemsTask(@NonNull final List<Pair<ItemInfo, Object>> itemList) {
-        this(itemList, new WorkspaceItemSpaceFinder(), false /* allowSystemApps */);
+        this(itemList, new WorkspaceItemSpaceFinder(), false, false);
     }
 
     /**
@@ -80,7 +88,12 @@ public class AddWorkspaceItemsTask extends BaseModelUpdateTask {
      */
     public AddWorkspaceItemsTask(@NonNull final List<Pair<ItemInfo, Object>> itemList,
             boolean allowSystemApps) {
-        this(itemList, new WorkspaceItemSpaceFinder(), allowSystemApps);
+        this(itemList, new WorkspaceItemSpaceFinder(), allowSystemApps, false);
+    }
+
+    public AddWorkspaceItemsTask(@NonNull final List<Pair<ItemInfo, Object>> itemList,
+            boolean allowSystemApps, boolean allowDuplicates) {
+        this(itemList, new WorkspaceItemSpaceFinder(), allowSystemApps, allowDuplicates);
     }
 
     /**
@@ -89,15 +102,22 @@ public class AddWorkspaceItemsTask extends BaseModelUpdateTask {
      */
     public AddWorkspaceItemsTask(@NonNull final List<Pair<ItemInfo, Object>> itemList,
             @NonNull final WorkspaceItemSpaceFinder itemSpaceFinder) {
-        this(itemList, itemSpaceFinder, false /* allowSystemApps */);
+        this(itemList, itemSpaceFinder, false, false);
     }
 
     public AddWorkspaceItemsTask(@NonNull final List<Pair<ItemInfo, Object>> itemList,
             @NonNull final WorkspaceItemSpaceFinder itemSpaceFinder,
             boolean allowSystemApps) {
+        this(itemList, itemSpaceFinder, allowSystemApps, false);
+    }
+
+    public AddWorkspaceItemsTask(@NonNull final List<Pair<ItemInfo, Object>> itemList,
+            @NonNull final WorkspaceItemSpaceFinder itemSpaceFinder,
+            boolean allowSystemApps, boolean allowDuplicates) {
         mItemList = itemList;
         mItemSpaceFinder = itemSpaceFinder;
         mAllowSystemApps = allowSystemApps;
+        mAllowDuplicates = allowDuplicates;
     }
 
     @Override
@@ -119,10 +139,17 @@ public class AddWorkspaceItemsTask extends BaseModelUpdateTask {
                 if (item.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPLICATION ||
                         item.itemType == LauncherSettings.Favorites.ITEM_TYPE_SHORTCUT) {
                     // Short-circuit this logic if the icon exists somewhere on the workspace
-                    if (shortcutExists(dataModel, item.getIntent(), item.user)) {
+                    // (auto-install). Drawer Select Add to Home allows duplicates, like Oppo.
+                    if (!mAllowDuplicates
+                            && shortcutExists(dataModel, item.getIntent(), item.user)) {
                         continue;
                     }
-                    if ("com.android.dialer/com.android.contacts.ui.main.ContactMainActivity".equals(item.getTargetComponent().flattenToShortString())) {
+                    if (!apps.shouldShowApp(item.getTargetComponent())) {
+                        continue;
+                    }
+                    // Auto-install only. Drawer Select → Add to Home uses mAllowSystemApps.
+                    if (!mAllowSystemApps
+                            && !ColorOsHomeSettings.shouldAddNewAppsToHome(app.getContext())) {
                         continue;
                     }
                     // b/139663018 Short-circuit this logic if the icon is a system app
@@ -212,7 +239,8 @@ public class AddWorkspaceItemsTask extends BaseModelUpdateTask {
                         itemInfo = new AppInfo(app.getContext(), activities.get(0), item.user)
                                 .makeWorkspaceItem(app.getContext());
 
-                        if (shortcutExists(dataModel, itemInfo.getIntent(), itemInfo.user)) {
+                        if (!mAllowDuplicates
+                                && shortcutExists(dataModel, itemInfo.getIntent(), itemInfo.user)) {
                             // We need this additional check here since we treat all auto added
                             // workspace items as promise icons. At this point we now have the
                             // correct intent to compare against existing workspace icons.

@@ -191,10 +191,17 @@ public class LauncherModel extends LauncherApps.Callback implements InstallSessi
     public void addAndBindAddedWorkspaceItems(
             @NonNull final List<Pair<ItemInfo, Object>> itemList,
             boolean allowSystemApps) {
+        addAndBindAddedWorkspaceItems(itemList, allowSystemApps, false /* allowDuplicates */);
+    }
+
+    public void addAndBindAddedWorkspaceItems(
+            @NonNull final List<Pair<ItemInfo, Object>> itemList,
+            boolean allowSystemApps, boolean allowDuplicates) {
         for (Callbacks cb : getCallbacks()) {
             cb.preAddApps();
         }
-        enqueueModelUpdateTask(new AddWorkspaceItemsTask(itemList, allowSystemApps));
+        enqueueModelUpdateTask(new AddWorkspaceItemsTask(
+                itemList, allowSystemApps, allowDuplicates));
     }
 
     @NonNull

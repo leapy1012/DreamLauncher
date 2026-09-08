@@ -611,6 +611,12 @@ public class LoaderTask implements Runnable {
                     // else if cn == null => can't infer much, leave it
                     // else if !validPkg => could be restored icon or missing sd-card
 
+                    if (cn != null && !mBgAllAppsList.shouldShowApp(cn)) {
+                        c.markDeleted("Filtered component removed from workspace: "
+                                + cn.flattenToShortString());
+                        return;
+                    }
+
                     if (!TextUtils.isEmpty(targetPkg) && !validTarget) {
                         // Points to a valid app (superset of cn != null) but the apk
                         // is not available.

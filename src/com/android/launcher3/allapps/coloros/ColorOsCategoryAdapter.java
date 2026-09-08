@@ -63,7 +63,7 @@ public final class ColorOsCategoryAdapter extends RecyclerView.Adapter<RecyclerV
         mRows.clear();
 
         List<AppInfo> recent = collectRecentApps(context, apps);
-        if (!recent.isEmpty()) {
+        if (!recent.isEmpty() && ColorOsHomeSettings.isShowAppSuggestions(context)) {
             mRows.add(Row.recent(context.getString(R.string.coloros_category_recently_installed),
                     recent));
         }
@@ -111,6 +111,14 @@ public final class ColorOsCategoryAdapter extends RecyclerView.Adapter<RecyclerV
             ((RecentVH) holder).bind(row);
         } else if (holder instanceof CategoryVH) {
             ((CategoryVH) holder).bind(row);
+        }
+    }
+
+    @Override
+    public void onViewAttachedToWindow(@NonNull RecyclerView.ViewHolder holder) {
+        super.onViewAttachedToWindow(holder);
+        if (holder instanceof RecentVH) {
+            ColorOsDrawerSelectController.applyRecentRowChromeIfNeeded(holder.itemView);
         }
     }
 
@@ -213,6 +221,8 @@ public final class ColorOsCategoryAdapter extends RecyclerView.Adapter<RecyclerV
         root.addView(title, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        // Oppo suggestion row: no Select checkmarks; faded + disabled in Select.
+        root.setTag(R.id.coloros_drawer_select_skip_check, Boolean.TRUE);
         return new RecentVH(root, card, icons, title);
     }
 
@@ -464,6 +474,9 @@ public final class ColorOsCategoryAdapter extends RecyclerView.Adapter<RecyclerV
 
         void bind(Row row) {
             title.setText(row.title);
+            // Re-apply immediately: RV bind / item animator can restore alpha=1
+            // after scroll, which undoes Select dimming on Recently installed.
+            ColorOsDrawerSelectController.applyRecentRowChromeIfNeeded(itemView);
             final List<AppInfo> apps = row.apps;
             final int n = Math.min(MAX_PREVIEW, apps.size());
             final CellMetrics m = requireMetrics(itemView.getContext());
@@ -503,12 +516,15 @@ public final class ColorOsCategoryAdapter extends RecyclerView.Adapter<RecyclerV
                     iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
                     iv.setPadding(iconPad, iconPad, iconPad, iconPad);
                     // Oppo suggestion: icons launch only (no folder open).
+                    // Select mode: no checkmarks and not selectable.
                     wireAppLaunch(iv, app);
+                    iv.setTag(R.id.coloros_drawer_select_skip_check, Boolean.TRUE);
                     FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(m.cell, m.cell);
                     lp.leftMargin = pad + i * (m.cell + gap);
                     lp.topMargin = 0;
                     icons.addView(iv, lp);
                 }
+                ColorOsDrawerSelectController.applyRecentRowChromeIfNeeded(itemView);
             };
             if (card.getWidth() > 0) {
                 layout.run();

@@ -23,8 +23,8 @@
             launcher:minHeightDps="640"
             launcher:iconImageSize="56"
             launcher:iconTextSize="11"
-            launcher:allAppsIconSize="48"
-            launcher:allAppsBorderSpace="2"
+            launcher:allAppsIconSize="56"
+            launcher:allAppsBorderSpace="0"
             launcher:allAppsCellHeight="100"
             launcher:canBeDefault="true" />
 
@@ -49,8 +49,8 @@
             launcher:minHeightDps="640"
             launcher:iconImageSize="50"
             launcher:iconTextSize="11"
-            launcher:allAppsIconSize="48"
-            launcher:allAppsBorderSpace="2"
+            launcher:allAppsIconSize="50"
+            launcher:allAppsBorderSpace="0"
             launcher:allAppsCellHeight="100"
             launcher:canBeDefault="false" />
 
@@ -75,8 +75,8 @@
             launcher:minHeightDps="640"
             launcher:iconImageSize="50"
             launcher:iconTextSize="11"
-            launcher:allAppsIconSize="48"
-            launcher:allAppsBorderSpace="2"
+            launcher:allAppsIconSize="50"
+            launcher:allAppsBorderSpace="0"
             launcher:allAppsCellHeight="100"
             launcher:canBeDefault="false" />
 

@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.android.customize.overlay.controller.CategoryController;
 import com.android.customize.overlay.model.CategoryInfo;
 import com.android.launcher3.Launcher;
+import com.android.launcher3.LauncherState;
 import com.android.launcher3.R;
 import com.android.launcher3.allapps.ActivityAllAppsContainerView;
 import com.android.launcher3.allapps.AllAppsRecyclerView;
@@ -133,14 +134,7 @@ public final class ColorOsDrawerChrome {
         dismissPopupWindow();
         dismissLetterCluster();
         if (mTabHeader != null) {
-            mTabHeader.animate().cancel();
-            mTabHeader.setAlpha(selectActive ? 0f : 1f);
-            mTabHeader.setEnabled(!selectActive);
-            if (selectActive) {
-                mTabHeader.setVisibility(View.INVISIBLE);
-            } else {
-                mTabHeader.setVisibility(View.VISIBLE);
-            }
+            applyTabHeaderVisibility();
         }
         if (mLetterIndex != null) {
             mLetterIndex.setVisibility(selectActive ? View.GONE
@@ -149,8 +143,33 @@ public final class ColorOsDrawerChrome {
                 updateLetterRailVisibility();
             }
         }
+        if (selectActive) {
+            endSwipeTracking();
+        }
         if (selectActive && mSearchUiActive) {
             setSearchUiActive(false);
+        }
+    }
+
+    /**
+     * Oppo {@code changeTabViewStatus}: segment + overflow stay gone while Select
+     * header is showing (and while search is active).
+     */
+    private void applyTabHeaderVisibility() {
+        if (mTabHeader == null) {
+            return;
+        }
+        boolean hide = isDrawerSelectActive() || mSearchUiActive;
+        mTabHeader.animate().cancel();
+        mTabHeader.setAlpha(hide ? 0f : 1f);
+        mTabHeader.setEnabled(!hide);
+        mTabHeader.setVisibility(hide ? View.INVISIBLE : View.VISIBLE);
+        if (mSegment != null) {
+            mSegment.setEnabled(!hide);
+            mSegment.setClickable(!hide);
+        }
+        if (!hide) {
+            mTabHeader.bringToFront();
         }
     }
 
@@ -175,11 +194,7 @@ public final class ColorOsDrawerChrome {
             dismissLetterCluster();
             // Hide drawer pages immediately (Oppo springs all_apps_content → 0).
             applySearchUiVisibility();
-            if (mTabHeader != null) {
-                mTabHeader.animate().cancel();
-                mTabHeader.setAlpha(0f);
-                mTabHeader.setEnabled(false);
-            }
+            applyTabHeaderVisibility();
             if (mLetterIndex != null) {
                 mLetterIndex.animate().cancel();
                 mLetterIndex.setAlpha(0f);
@@ -187,11 +202,7 @@ public final class ColorOsDrawerChrome {
             // Re-pin search RV from top (no tab inset) and settle frequent apps.
             mContainer.layoutColorOsAppsBelowTabs();
         } else {
-            if (mTabHeader != null) {
-                mTabHeader.animate().cancel();
-                mTabHeader.setAlpha(1f);
-                mTabHeader.setEnabled(true);
-            }
+            applyTabHeaderVisibility();
             if (mLetterIndex != null) {
                 mLetterIndex.animate().cancel();
                 mLetterIndex.setAlpha(1f);
@@ -222,6 +233,9 @@ public final class ColorOsDrawerChrome {
      * (same rule as {@link AllAppsRecyclerView} / {@code computeVerticalScrollOffset()==0}).
      */
     public boolean shouldContainerScroll(MotionEvent ev) {
+        if (isDrawerSelectActive()) {
+            return false;
+        }
         if (mCategoryList == null || mCategoryList.getVisibility() != View.VISIBLE) {
             return true;
         }
@@ -248,6 +262,10 @@ public final class ColorOsDrawerChrome {
      * Returns true when this gesture should own the stream.
      */
     public boolean onInterceptPageSwipe(MotionEvent ev) {
+        if (isDrawerSelectActive()) {
+            endSwipeTracking();
+            return false;
+        }
         if (mSearchUiActive || mContainer.isSearching()) {
             return false;
         }
@@ -301,6 +319,10 @@ public final class ColorOsDrawerChrome {
 
     /** Consume the page-swipe stream after {@link #onInterceptPageSwipe} claimed it. */
     public boolean onPageSwipeTouch(MotionEvent ev) {
+        if (isDrawerSelectActive()) {
+            endSwipeTracking();
+            return false;
+        }
         if (!mSwipeIntercepted && ev.getActionMasked() != MotionEvent.ACTION_DOWN) {
             return false;
         }
@@ -356,7 +378,7 @@ public final class ColorOsDrawerChrome {
     }
 
     private void switchPageFromSwipe(boolean toCategories) {
-        if (mPageAnimating || toCategories == mShowingCategories) {
+        if (isDrawerSelectActive() || mPageAnimating || toCategories == mShowingCategories) {
             return;
         }
         if (mSegment != null) {
@@ -429,9 +451,8 @@ public final class ColorOsDrawerChrome {
                         return new Paint[]{p};
                     }
                 });
-        mSegment.selectSegmentAt(0);
         mSegment.setOnSelectedSegmentChangeListener((from, to, progress) -> {
-            if (mSuppressSegmentCallback) {
+            if (mSuppressSegmentCallback || isDrawerSelectActive()) {
                 return;
             }
             if (to == 1) {
@@ -497,6 +518,7 @@ public final class ColorOsDrawerChrome {
         mCategoryAdapter.attachSpanSizeLookup(glm);
         mCategoryList.setLayoutManager(glm);
         mCategoryList.setAdapter(mCategoryAdapter);
+        mCategoryList.setItemAnimator(null);
         mCategoryList.setVisibility(View.GONE);
         // Oppo pager: clipChildren + inset top (not full-bleed).
         mCategoryList.setClipToPadding(true);
@@ -529,7 +551,7 @@ public final class ColorOsDrawerChrome {
         mContainer.setClipChildren(true);
         mContainer.setClipToPadding(false);
         initPageSwipeGesture();
-        showAllPage();
+        applyDefaultView();
         mTabHeader.bringToFront();
         mLetterIndex.bringToFront();
         menu.bringToFront();
@@ -784,6 +806,45 @@ public final class ColorOsDrawerChrome {
         return bottom;
     }
 
+    /** Open All or Categories from {@link ColorOsHomeSettings} default view. */
+    public void applyDefaultView() {
+        boolean categories = ColorOsHomeSettings.isDefaultCategories(mContainer.getContext());
+        if (mSegment != null) {
+            mSuppressSegmentCallback = true;
+            mSegment.selectSegmentAt(categories ? 1 : 0);
+            mSuppressSegmentCallback = false;
+        }
+        if (categories) {
+            showCategoriesPage();
+        } else {
+            showAllPage();
+        }
+    }
+
+    /** Rebind Categories so suggestion visibility matches prefs. */
+    public void rebindCategories() {
+        bindCategories();
+    }
+
+    /** Rebind All Apps labels after Show app names changes. */
+    public void refreshDrawerAppNames() {
+        AllAppsRecyclerView rv = resolveAppsRecyclerView();
+        if (rv == null) {
+            return;
+        }
+        for (int i = 0; i < rv.getChildCount(); i++) {
+            View child = rv.getChildAt(i);
+            if (child instanceof com.android.launcher3.BubbleTextView) {
+                com.android.launcher3.BubbleTextView icon =
+                        (com.android.launcher3.BubbleTextView) child;
+                icon.setTextVisibility(icon.shouldTextBeVisible());
+            }
+        }
+        if (rv.getAdapter() != null) {
+            rv.getAdapter().notifyDataSetChanged();
+        }
+    }
+
     /** Re-read prefs and push column count into All Apps adapters. */
     public void applyDrawerColumns() {
         int cols = ColorOsDrawerColumns.resolve(
@@ -898,6 +959,9 @@ public final class ColorOsDrawerChrome {
      * Oppo {@code handleManagerClick}: {@link COUIPopupListWindow} with Select / Sort / Settings.
      */
     private void showOverflowMenu(View anchor) {
+        if (isDrawerSelectActive()) {
+            return;
+        }
         ensurePopupWindow();
         // Oppo ignores re-click while showing; we force-dismiss so a dimmed
         // in-flight exit cannot leave a stuck floating window.
@@ -1000,7 +1064,10 @@ public final class ColorOsDrawerChrome {
         }
         if (itemId == MENU_ID_SETTINGS) {
             mPopupWindow.forceDismiss();
-            Intent intent = new Intent(mLauncher, SettingsActivity.class);
+            // Leave All Apps first: Home from Settings resumes this task, and
+            // without a NORMAL transition the drawer scrim stays on the workspace.
+            mLauncher.getStateManager().goToState(LauncherState.NORMAL, false);
+            Intent intent = SettingsActivity.createHomeScreenIntent(mLauncher);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             mLauncher.startActivity(intent);
         }
@@ -1306,12 +1373,7 @@ public final class ColorOsDrawerChrome {
         if (search != null) {
             search.bringToFront();
         }
-        if (mTabHeader != null) {
-            mTabHeader.setVisibility(View.VISIBLE);
-            mTabHeader.setAlpha(1f);
-            mTabHeader.setEnabled(true);
-            mTabHeader.bringToFront();
-        }
+        applyTabHeaderVisibility();
     }
 
     /**

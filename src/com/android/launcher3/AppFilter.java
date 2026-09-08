@@ -22,6 +22,6 @@ public class AppFilter {
     }
 
     public boolean shouldShowApp(ComponentName app) {
-        return !mFilteredComponents.contains(app);
+        return app == null || !mFilteredComponents.contains(app);
     }
 }

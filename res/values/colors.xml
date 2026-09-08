@@ -189,4 +189,12 @@
     <color name="edit_selection_toolbar_btn_text">#ffffffff</color>
     <color name="edit_selection_toolbar_title_text">#d9ffffff</color>
     <color name="edit_selection_check_selected">#FF3478F6</color>
+    <!-- Oppo ToggleBar Layout sheet -->
+    <color name="coloros_layout_sheet_bg">#FFFFFFFF</color>
+    <color name="coloros_layout_tile_fill">#14000000</color>
+    <color name="coloros_layout_tile_stroke">#FF0066FF</color>
+    <color name="coloros_layout_tile_dot">#FFFFFFFF</color>
+    <color name="coloros_layout_tile_label">#E6000000</color>
+    <color name="coloros_layout_divider">#1A000000</color>
+    <color name="coloros_layout_subtitle">#8A000000</color>
 </resources>

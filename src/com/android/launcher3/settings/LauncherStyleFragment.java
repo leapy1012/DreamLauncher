@@ -18,54 +18,79 @@ package com.android.launcher3.settings;
 import android.annotation.TargetApi;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
-import androidx.preference.PreferenceDataStore;
-import androidx.preference.PreferenceScreen;
-import androidx.preference.PreferenceViewHolder;
-import androidx.preference.SwitchPreference;
 import androidx.recyclerview.widget.COUIRecyclerView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.launcher3.R;
 import com.android.launcher3.LauncherStyle;
+import com.android.launcher3.R;
+import com.android.launcher3.allapps.coloros.ColorOsDrawerChrome;
+import com.android.launcher3.allapps.coloros.ColorOsDrawerColumns;
+import com.android.launcher3.allapps.coloros.ColorOsHomeSettings;
+import com.coui.appcompat.button.COUIButton;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
+import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
+import com.coui.appcompat.preference.COUIMenuPreference;
 import com.coui.appcompat.preference.COUIPreferenceFragment;
+import com.coui.appcompat.preference.COUISwitchPreference;
 
 /**
- * Dev-build only UI allowing developers to toggle flag settings and plugins.
- * See {@link FeatureFlags}.
+ * Oppo Home screen page: Standard / With drawer picker plus drawer settings.
  */
 @TargetApi(Build.VERSION_CODES.O)
-public class LauncherStyleFragment extends COUIPreferenceFragment
-		implements RadioButtonPreference.OnClickListener {
+public class LauncherStyleFragment extends COUIPreferenceFragment {
 
-    private static final String KEY_STYLE_DRAWER = "launcher_style_drawer";
-	private static final String KEY_STYLE_NOMAL = "launcher_style_nomal";
-	private RadioButtonPreference mDrawer;
-	private RadioButtonPreference mNomal;
-	private int mCurrentMode;
-	
+    private static final String KEY_MODE = "home_screen_mode";
+    private static final String KEY_DRAWER_SETTINGS = "home_screen_drawer_settings";
+    private static final String KEY_DRAWER_COLUMNS = "key_drawer_column_switch";
+    private static final String STATE_SELECTED_STYLE = "selected_home_style";
+
+    private HomeScreenModePreference mModePref;
+    private PreferenceCategory mDrawerCategory;
+    private COUISwitchPreference mAddAppsPref;
+    private COUISwitchPreference mSuggestionsPref;
+    private COUIMenuPreference mDefaultViewPref;
+    private COUIMenuPreference mDrawerLayoutPref;
+    private COUISwitchPreference mShowNamesPref;
+    private COUIButton mApplyButton;
+
+    private int mAppliedStyle;
+    private int mSelectedStyle;
+    private int mListBottomPad;
+
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-		setPreferencesFromResource(R.xml.launcher_style, rootKey);
-		mDrawer = (RadioButtonPreference)findPreference(KEY_STYLE_DRAWER);
-		mNomal = (RadioButtonPreference)findPreference(KEY_STYLE_NOMAL);
-		mDrawer.setOnClickListener(this);
-		mNomal.setOnClickListener(this);
-		int mode = LauncherStyle.get(getContext());
-		mDrawer.setChecked(mode == LauncherStyle.APP_DRAWER);
-		mNomal.setChecked(mode == LauncherStyle.REGULAR);
-        mCurrentMode = mode;
-        CharSequence title = getString(R.string.launcher_style_title);
+        setPreferencesFromResource(R.xml.launcher_style, rootKey);
+        mAppliedStyle = LauncherStyle.get(getContext());
+        mSelectedStyle = savedInstanceState != null
+                ? savedInstanceState.getInt(STATE_SELECTED_STYLE, mAppliedStyle)
+                : mAppliedStyle;
+
+        mModePref = findPreference(KEY_MODE);
+        mDrawerCategory = findPreference(KEY_DRAWER_SETTINGS);
+        mAddAppsPref = findPreference(ColorOsHomeSettings.KEY_ADD_APP_TO_HOME);
+        mSuggestionsPref = findPreference(ColorOsHomeSettings.KEY_SHOW_APP_SUGGESTIONS);
+        mDefaultViewPref = findPreference(ColorOsHomeSettings.KEY_DEFAULT_VIEW);
+        mDrawerLayoutPref = findPreference(KEY_DRAWER_COLUMNS);
+        mShowNamesPref = findPreference(ColorOsHomeSettings.KEY_SHOW_APP_NAMES);
+
+        if (mModePref != null) {
+            mModePref.setSelectedStyle(mSelectedStyle);
+            mModePref.setOnModeSelectedListener(style -> {
+                mSelectedStyle = style;
+                updateDrawerSettingsVisibility();
+                updateApplyButton();
+            });
+        }
+        bindDrawerSettings();
+        updateDrawerSettingsVisibility();
+
+        CharSequence title = getString(R.string.home_screen_style_title);
         requireActivity().setTitle(title);
         if (requireActivity() instanceof androidx.appcompat.app.AppCompatActivity) {
             androidx.appcompat.app.ActionBar bar =
@@ -76,7 +101,26 @@ public class LauncherStyleFragment extends COUIPreferenceFragment
             }
         }
     }
-	
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(STATE_SELECTED_STYLE, mSelectedStyle);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+            Bundle savedInstanceState) {
+        View list = super.onCreateView(inflater, container, savedInstanceState);
+        FrameLayout root = new FrameLayout(requireContext());
+        root.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(list, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        inflater.inflate(R.layout.home_screen_apply_bar, root, true);
+        return root;
+    }
+
     @Override
     public RecyclerView onCreateRecyclerView(LayoutInflater inflater, ViewGroup parent,
             Bundle savedInstanceState) {
@@ -117,24 +161,138 @@ public class LauncherStyleFragment extends COUIPreferenceFragment
                 SettingsBaseActivity.bindCouiDividerAppBar(
                         (androidx.appcompat.app.AppCompatActivity) requireActivity(), listView);
             }
+            mListBottomPad = listView.getPaddingBottom();
+        }
+        mApplyButton = view.findViewById(R.id.home_screen_apply);
+        if (mApplyButton != null) {
+            mApplyButton.setOnClickListener(v -> confirmAndApplyMode());
+        }
+        updateApplyButton();
+    }
+
+    private void bindDrawerSettings() {
+        if (mAddAppsPref != null) {
+            mAddAppsPref.setChecked(ColorOsHomeSettings.isAddNewAppsToHome(getContext()));
+            mAddAppsPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                ColorOsHomeSettings.setAddNewAppsToHome(getContext(), (Boolean) newValue);
+                return true;
+            });
+        }
+        if (mSuggestionsPref != null) {
+            mSuggestionsPref.setChecked(ColorOsHomeSettings.isShowAppSuggestions(getContext()));
+            mSuggestionsPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                ColorOsHomeSettings.setShowAppSuggestions(getContext(), (Boolean) newValue);
+                ColorOsDrawerChrome chrome = ColorOsHomeSettings.chrome();
+                if (chrome != null) {
+                    chrome.rebindCategories();
+                }
+                return true;
+            });
+        }
+        if (mDefaultViewPref != null) {
+            String value = ColorOsHomeSettings.getDefaultViewValue(getContext());
+            mDefaultViewPref.setValue(value);
+            mDefaultViewPref.setAssignment(defaultViewLabel(value));
+            mDefaultViewPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                String next = String.valueOf(newValue);
+                ColorOsHomeSettings.setDefaultViewFromValue(getContext(), next);
+                mDefaultViewPref.setAssignment(defaultViewLabel(next));
+                ColorOsDrawerChrome chrome = ColorOsHomeSettings.chrome();
+                if (chrome != null) {
+                    chrome.applyDefaultView();
+                }
+                return true;
+            });
+        }
+        if (mDrawerLayoutPref != null) {
+            int cols = ColorOsDrawerColumns.get(getContext());
+            if (cols != ColorOsDrawerColumns.COLUMNS_FOUR
+                    && cols != ColorOsDrawerColumns.COLUMNS_FIVE) {
+                cols = ColorOsDrawerColumns.DEFAULT;
+            }
+            String value = String.valueOf(cols);
+            mDrawerLayoutPref.setValue(value);
+            mDrawerLayoutPref.setAssignment(drawerLayoutLabel(cols));
+            mDrawerLayoutPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                int next = parseColumns(String.valueOf(newValue));
+                ColorOsDrawerColumns.set(getContext(), next);
+                mDrawerLayoutPref.setAssignment(drawerLayoutLabel(next));
+                if (mModePref != null) {
+                    mModePref.setDrawerColumns(next);
+                }
+                ColorOsDrawerChrome chrome = ColorOsHomeSettings.chrome();
+                if (chrome != null) {
+                    chrome.applyDrawerColumns();
+                }
+                return true;
+            });
+        }
+        if (mShowNamesPref != null) {
+            mShowNamesPref.setChecked(ColorOsHomeSettings.isShowDrawerAppNames(getContext()));
+            mShowNamesPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                ColorOsHomeSettings.setShowDrawerAppNames(getContext(), (Boolean) newValue);
+                ColorOsDrawerChrome chrome = ColorOsHomeSettings.chrome();
+                if (chrome != null) {
+                    chrome.refreshDrawerAppNames();
+                }
+                return true;
+            });
         }
     }
 
-	@Override
-    public void onRadioButtonClicked(RadioButtonPreference preference) {
-		if (preference.isChecked()) {
-			return;
-		}
-		if (mDrawer == preference) {
-			LauncherStyle.set(getContext(), LauncherStyle.APP_DRAWER);
-			mCurrentMode = LauncherStyle.APP_DRAWER;
-		} else if (mNomal == preference) {
-			LauncherStyle.set(getContext(), LauncherStyle.REGULAR);
-			mCurrentMode = LauncherStyle.REGULAR;
-		}
-		mDrawer.setChecked(mCurrentMode == LauncherStyle.APP_DRAWER);
-		mNomal.setChecked(mCurrentMode == LauncherStyle.REGULAR);
-		getActivity().onBackPressed();
-	}
+    private int parseColumns(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return ColorOsDrawerColumns.DEFAULT;
+        }
+    }
 
+    private CharSequence defaultViewLabel(String value) {
+        return ColorOsHomeSettings.VALUE_DEFAULT_VIEW_CATEGORIES.equals(value)
+                ? getString(R.string.coloros_floating_tab_category)
+                : getString(R.string.coloros_floating_tab_all);
+    }
+
+    private CharSequence drawerLayoutLabel(int columns) {
+        return getString(columns == ColorOsDrawerColumns.COLUMNS_FOUR
+                ? R.string.coloros_drawer_columns_four
+                : R.string.coloros_drawer_columns_five);
+    }
+
+    private void updateDrawerSettingsVisibility() {
+        if (mDrawerCategory != null) {
+            mDrawerCategory.setVisible(mSelectedStyle == LauncherStyle.APP_DRAWER);
+        }
+    }
+
+    private void updateApplyButton() {
+        boolean pending = mSelectedStyle != mAppliedStyle;
+        if (mApplyButton != null) {
+            mApplyButton.setVisibility(pending ? View.VISIBLE : View.GONE);
+        }
+        RecyclerView listView = getListView();
+        if (listView != null) {
+            int extra = pending
+                    ? getResources().getDimensionPixelSize(R.dimen.coloros_home_screen_apply_space)
+                    : 0;
+            listView.setPadding(listView.getPaddingLeft(), listView.getPaddingTop(),
+                    listView.getPaddingRight(), mListBottomPad + extra);
+        }
+    }
+
+    private void confirmAndApplyMode() {
+        if (mSelectedStyle == mAppliedStyle) {
+            return;
+        }
+        new COUIAlertDialogBuilder(requireContext())
+                .setMessage(R.string.coloros_switch_home_screen_mode_message)
+                .setPositiveButton(R.string.apply, (dialog, which) -> {
+                    LauncherStyle.set(requireContext(), mSelectedStyle);
+                    mAppliedStyle = mSelectedStyle;
+                    requireActivity().onBackPressed();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
 }

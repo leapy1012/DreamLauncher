@@ -115,6 +115,32 @@ public class EditSelectionToolbar extends FrameLayout {
         updateCount(0);
     }
 
+    /**
+     * Reuse this same toolbar for ToggleBar Layout so Apply sits on the Done button.
+     */
+    public void showLayoutMode(OnClickListener cancel, OnClickListener apply) {
+        applyPillBackground(mCancel);
+        applyPillBackground(mDone);
+        updateLayoutPosition();
+        mCancel.setVisibility(VISIBLE);
+        mTitle.setVisibility(VISIBLE);
+        mTitle.setText(R.string.launcher_layout);
+        mDone.setVisibility(VISIBLE);
+        mDone.setText(R.string.apply);
+        setCancelClickListener(cancel);
+        setDoneClickListener(apply);
+        setVisibility(VISIBLE);
+        setAlpha(1f);
+        bringToFront();
+        if (getParent() instanceof DragLayer dragLayer) {
+            dragLayer.bringChildToFront(this);
+        }
+    }
+
+    public void restoreEditMode() {
+        mDone.setText(R.string.edit_selection_done);
+    }
+
     public void hide() {
         setVisibility(GONE);
     }

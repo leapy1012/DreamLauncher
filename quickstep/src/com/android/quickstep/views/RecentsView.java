@@ -503,6 +503,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 	private OverviewDockView mOverviewDockView;
 	@Nullable
 	private HxyClearAllPanelView mClearAllPanel;
+	@Nullable
+	private Animator mBottomUiAnimator;
+	private boolean mBottomUiEntered;
 	///&&}}
     private final Rect mClearAllButtonDeadZoneRect = new Rect();
     private final Rect mTaskViewDeadZoneRect = new Rect();
@@ -2344,16 +2347,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 
         // Oppo carousel: fade ⋮ via cosine-eased linearInterpolation (see OplusTaskViewImpl).
         updateTaskMenuShortcutAlphas(scroll);
-        float bottomUiAlpha = mOrientationState.getTouchRotation() == ROTATION_0
-                ? mContentAlpha : 0f;
-        if (getResources().getBoolean(R.bool.config_clearall_center)) {
-            if (mClearAllPanel != null) {
-                mClearAllPanel.setAlpha(bottomUiAlpha);
-            }
-            if (mOverviewDockView != null) {
-                mOverviewDockView.setAlpha(bottomUiAlpha);
-            }
-        } else if (mActionsView != null) {
+        if (!getResources().getBoolean(R.bool.config_clearall_center) && mActionsView != null) {
+            float bottomUiAlpha = mOrientationState.getTouchRotation() == ROTATION_0
+                    ? mContentAlpha : 0f;
             mActionsView.getIndexScrollAlpha().setValue(bottomUiAlpha);
         }
         if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
@@ -2592,6 +2588,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             remoteTargetHandle.getTaskViewSimulator().setDrawsBelowRecents(false);
         });
         resetFromSplitSelectionState();
+        hideBottomUiImmediate();
 
         // These are relatively expensive and don't need to be done this frame (RecentsView isn't
         // visible anyway), so defer by a frame to get off the critical path, e.g. app to home.
@@ -2721,6 +2718,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         setEnableDrawingLiveTile(false);
         setRunningTaskHidden(true);
         setTaskIconScaledDown(true);
+        hideBottomUiImmediate();
     }
 
     /**
@@ -4162,6 +4160,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                 mPendingAnimation = null;
             }
         });
+        if (mOverviewDockView != null) {
+            mOverviewDockView.createIconDismissAnimation(dismissedTaskView, anim, animateTaskView);
+        }
     }
 
     /**
@@ -4493,12 +4494,16 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             mClearAllPanel.setVisibility(show ? VISIBLE : GONE);
             if (show) {
                 mClearAllPanel.updateMemoryInfoDisplay();
+                applySettledBottomUiAlpha(mClearAllPanel);
             }
         }
         if (mOverviewDockView != null) {
             DeviceProfile dp = getDeviceProfile();
             boolean showDock = show && !dp.isTablet && !dp.isLandscape;
             mOverviewDockView.setVisibility(showDock ? VISIBLE : GONE);
+            if (showDock) {
+                applySettledBottomUiAlpha(mOverviewDockView);
+            }
         }
     }
 
@@ -4506,16 +4511,142 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         if (!getResources().getBoolean(R.bool.config_clearall_center)) {
             return;
         }
-        float bottomUiAlpha = mOrientationState.getTouchRotation() == ROTATION_0 ? alpha : 0f;
-        if (mClearAllPanel != null) {
-            mClearAllPanel.setAlpha(bottomUiAlpha);
-        }
-        if (mOverviewDockView != null) {
-            mOverviewDockView.setAlpha(bottomUiAlpha);
-        }
+        // Leaving recents: drop the footer immediately. Enter is a separate delayed fade.
         if (alpha <= 0f) {
+            hideBottomUiImmediate();
+        } else {
             updateBottomUiOverviewVisibility();
         }
+    }
+
+    /**
+     * Oppo {@code OplusClearAllPanelView.playEnterAnimation}: dock + RAM + Clear all stay
+     * hidden until recents cards have settled, then fade/rise in.
+     */
+    public void playBottomUiEnter() {
+        if (!getResources().getBoolean(R.bool.config_clearall_center)) {
+            return;
+        }
+        if (mOrientationState.getTouchRotation() != ROTATION_0) {
+            hideBottomUiImmediate();
+            return;
+        }
+        // Icons bind after the gesture; sync first so the dock is VISIBLE for this fade.
+        syncDockFromRecents();
+        if (!shouldShowBottomUi()) {
+            hideBottomUiImmediate();
+            return;
+        }
+        if (mBottomUiEntered && getBottomUiAlpha() > 0.99f) {
+            applySettledBottomUiAlpha(mOverviewDockView);
+            return;
+        }
+        cancelBottomUiAnim();
+        float shift = getResources().getDimension(R.dimen.hxy_overview_bottom_ui_enter_shift);
+        AnimatorSet anim = new AnimatorSet();
+        boolean hasTarget = false;
+        if (mClearAllPanel != null && mClearAllPanel.getVisibility() == VISIBLE) {
+            mClearAllPanel.setAlpha(0f);
+            mClearAllPanel.setTranslationY(shift);
+            anim.play(ObjectAnimator.ofFloat(mClearAllPanel, View.ALPHA, 0f, 1f));
+            anim.play(ObjectAnimator.ofFloat(mClearAllPanel, View.TRANSLATION_Y, shift, 0f));
+            hasTarget = true;
+        }
+        if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
+            // Dock Y is set via OverviewDockView.setY() — do not touch translationY.
+            mOverviewDockView.setAlpha(0f);
+            anim.play(ObjectAnimator.ofFloat(mOverviewDockView, View.ALPHA, 0f, 1f));
+            hasTarget = true;
+        }
+        if (!hasTarget) {
+            return;
+        }
+        anim.setDuration(600);
+        anim.setInterpolator(EMPHASIZED_DECELERATE);
+        anim.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                mBottomUiEntered = true;
+                mBottomUiAnimator = null;
+                // Dock may bind after this fade; reveal it if it appeared late.
+                updateBottomUiOverviewVisibility();
+            }
+        });
+        mBottomUiAnimator = anim;
+        anim.start();
+    }
+
+    private void applySettledBottomUiAlpha(View view) {
+        if (view == null) {
+            return;
+        }
+        if (mBottomUiEntered) {
+            view.setAlpha(1f);
+        } else if (mBottomUiAnimator == null || !mBottomUiAnimator.isRunning()) {
+            view.setAlpha(0f);
+        }
+    }
+
+    /** Oppo {@code playExitAnimator}: fade footer as soon as we leave Overview. */
+    public void playBottomUiExit() {
+        if (!getResources().getBoolean(R.bool.config_clearall_center)) {
+            return;
+        }
+        cancelBottomUiAnim();
+        mBottomUiEntered = false;
+        if (getBottomUiAlpha() <= 0.01f) {
+            hideBottomUiImmediate();
+            return;
+        }
+        AnimatorSet anim = new AnimatorSet();
+        if (mClearAllPanel != null) {
+            anim.play(ObjectAnimator.ofFloat(mClearAllPanel, View.ALPHA, mClearAllPanel.getAlpha(), 0f));
+        }
+        if (mOverviewDockView != null) {
+            anim.play(ObjectAnimator.ofFloat(mOverviewDockView, View.ALPHA, mOverviewDockView.getAlpha(), 0f));
+        }
+        anim.setDuration(240);
+        anim.setInterpolator(ACCEL);
+        anim.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                hideBottomUiImmediate();
+            }
+        });
+        mBottomUiAnimator = anim;
+        anim.start();
+    }
+
+    public void hideBottomUiImmediate() {
+        cancelBottomUiAnim();
+        mBottomUiEntered = false;
+        if (mClearAllPanel != null) {
+            mClearAllPanel.setAlpha(0f);
+            mClearAllPanel.setTranslationY(0f);
+        }
+        if (mOverviewDockView != null) {
+            mOverviewDockView.setAlpha(0f);
+        }
+        if (getResources().getBoolean(R.bool.config_clearall_center)) {
+            updateBottomUiOverviewVisibility();
+        }
+    }
+
+    private void cancelBottomUiAnim() {
+        if (mBottomUiAnimator != null) {
+            mBottomUiAnimator.cancel();
+            mBottomUiAnimator = null;
+        }
+    }
+
+    private float getBottomUiAlpha() {
+        if (mClearAllPanel != null && mClearAllPanel.getVisibility() == VISIBLE) {
+            return mClearAllPanel.getAlpha();
+        }
+        if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
+            return mOverviewDockView.getAlpha();
+        }
+        return 0f;
     }
 
     @Override

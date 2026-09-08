@@ -42,6 +42,7 @@ import androidx.annotation.WorkerThread;
 import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAppState;
+import com.android.launcher3.icons.IconProvider;
 import com.android.launcher3.LauncherSettings.Favorites;
 import com.android.launcher3.logging.FileLog;
 import com.android.launcher3.model.data.ItemInfo;
@@ -238,10 +239,6 @@ public class ItemInstallQueue {
 
     public static class PendingInstallShortcutInfo extends ItemInfo {///hxy-feature: add launcher style function  202312
 
-        /** Hidden from workspace; DialActivity is the phone icon on MTK DreamDialer. */
-        private static final ComponentName DIALER_CONTACT_MAIN = new ComponentName(
-                "com.android.dialer", "com.android.contacts.ui.main.ContactMainActivity");
-
         @Nullable
         private static LauncherActivityInfo pickWorkspaceLauncherActivity(
                 List<LauncherActivityInfo> activities) {
@@ -249,7 +246,7 @@ public class ItemInstallQueue {
                 return null;
             }
             for (LauncherActivityInfo lai : activities) {
-                if (!DIALER_CONTACT_MAIN.equals(lai.getComponentName())) {
+                if (!IconProvider.isDialerContactsActivity(lai.getComponentName())) {
                     return lai;
                 }
             }

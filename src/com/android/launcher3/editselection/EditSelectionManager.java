@@ -37,6 +37,7 @@ public final class EditSelectionManager {
     /** Source of truth — survives folder open/close view recycle. */
     private final LinkedHashSet<ItemInfo> mSelectedItems = new LinkedHashSet<>();
     private boolean mActive;
+    private boolean mLayoutPreviewActive;
     @Nullable
     private EditSelectionToolbar mToolbar;
     @Nullable
@@ -58,6 +59,11 @@ public final class EditSelectionManager {
 
     public boolean isActive() {
         return mActive;
+    }
+
+    /** Hide checkmarks while the Layout sheet is previewing the workspace. */
+    public boolean shouldDrawChecks() {
+        return mActive && !mLayoutPreviewActive;
     }
 
     public int getSelectedCount() {
@@ -128,6 +134,7 @@ public final class EditSelectionManager {
 
     /** Exit selection UI and clear selection. */
     public void exit() {
+        mLayoutPreviewActive = false;
         if (!mActive && mSelectedItems.isEmpty()) {
             hideChrome();
             return;
@@ -318,6 +325,43 @@ public final class EditSelectionManager {
                 clearSelection();
             });
         }
+    }
+
+    /** Hide edit chrome while ToggleBar Layout is open; stay in edit mode. */
+    public void hideChromeForLayout() {
+        hideChrome();
+    }
+
+    /**
+     * Keep the existing Done toolbar and retarget it to Cancel | Layout | Apply so the
+     * Apply pill matches the edit-mode Done position.
+     */
+    public void showLayoutChrome(View.OnClickListener cancel, View.OnClickListener apply) {
+        ensureChrome();
+        mLayoutPreviewActive = true;
+        if (mToolbar != null) {
+            mToolbar.showLayoutMode(cancel, apply);
+        }
+        if (mBottomBar != null) {
+            mBottomBar.hide();
+        }
+        invalidateWorkspaceIcons();
+    }
+
+    /** Restore the Done toolbar after Layout Cancel. */
+    public void restoreChromeAfterLayout() {
+        mLayoutPreviewActive = false;
+        if (!mActive) {
+            return;
+        }
+        ensureChrome();
+        if (mToolbar != null) {
+            mToolbar.restoreEditMode();
+            mToolbar.show();
+            mToolbar.updateCount(mSelectedItems.size());
+        }
+        bindListeners();
+        invalidateWorkspaceIcons();
     }
 
     private void hideChrome() {

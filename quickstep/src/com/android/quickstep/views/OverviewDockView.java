@@ -16,6 +16,7 @@
 
 package com.android.quickstep.views;
 
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -27,6 +28,8 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Interpolator;
+import android.view.animation.PathInterpolator;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -35,6 +38,9 @@ import androidx.annotation.Nullable;
 
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
+import com.android.launcher3.anim.Interpolators;
+import com.android.launcher3.anim.PendingAnimation;
+import com.android.launcher3.anim.SpringProperty;
 import com.android.quickstep.RecentsModel;
 import com.android.quickstep.TaskIconCache;
 import com.android.systemui.shared.recents.model.Task;
@@ -62,6 +68,10 @@ public class OverviewDockView extends HorizontalScrollView {
     private static final float EDGE_SCALE_DOWN_FACTOR = 0.13f;
     /** ColorOS {@code DockIconView.MAX_PAGE_SCRIM_ALPHA}. */
     private static final float MAX_PAGE_SCRIM_ALPHA = 0.2f;
+    /** ColorOS {@code DockIconView.DOCK_ICON_EXIT}. */
+    private static final Interpolator DOCK_ICON_EXIT = new PathInterpolator(0.4f, 1f, 0.9f, 1f);
+    /** ColorOS dismiss shrink target on the removed dock icon. */
+    private static final float DISMISS_SCALE = 0.8f;
 
     /** ColorOS {@code LinkScrollState}: neither side is driving. */
     private static final int LINK_UNLINK = -1;
@@ -92,6 +102,10 @@ public class OverviewDockView extends HorizontalScrollView {
      * {@code (taskWidth + recentsPageSpacing) / (iconWidth + dockPageSpacing)}.
      */
     private float mScrollScale = 1f;
+    /** True while a ColorOS-style icon dismiss is playing — skip rebuild snaps. */
+    private boolean mDismissAnimating;
+    @Nullable
+    private View mDismissingIcon;
 
     public OverviewDockView(Context context) {
         this(context, null);
@@ -107,6 +121,7 @@ public class OverviewDockView extends HorizontalScrollView {
         setClipToPadding(false);
         setClipChildren(false);
         setOverScrollMode(OVER_SCROLL_NEVER);
+        setAlpha(0f);
 
         mIconSize = getResources().getDimensionPixelSize(R.dimen.overview_dock_icon_size);
         mIconSpacing = getResources().getDimensionPixelSize(R.dimen.overview_dock_icon_spacing);
@@ -185,6 +200,9 @@ public class OverviewDockView extends HorizontalScrollView {
             }
             int[] taskIds = tv.getTaskIds();
             ids[i] = taskIds != null && taskIds.length > 0 ? taskIds[0] : -1;
+        }
+        if (mDismissAnimating) {
+            return;
         }
         if (Arrays.equals(ids, mBoundTaskIds) && mContainer.getChildCount() == count) {
             // Task set unchanged (e.g. post-dismiss re-sync after setCurrentPage) —
@@ -431,6 +449,146 @@ public class OverviewDockView extends HorizontalScrollView {
     }
 
     /**
+     * ColorOS {@code DockView.createIconDismissAnimation} +
+     * {@code RecentsViewAnimUtil.createDismissDockIconAnim}:
+     * dismissed icon fades/scales with {@code DOCK_ICON_EXIT}; remaining icons slide to close
+     * the gap on the same PendingAnimation as the task card.
+     */
+    public void createIconDismissAnimation(@Nullable TaskView dismissedTaskView,
+            PendingAnimation anim, boolean animateIcon) {
+        if (dismissedTaskView == null || anim == null || getVisibility() != VISIBLE) {
+            return;
+        }
+        int[] taskIds = dismissedTaskView.getTaskIds();
+        if (taskIds == null || taskIds.length == 0) {
+            return;
+        }
+        final int dismissedTaskId = taskIds[0];
+        final View dismissedIcon = findIconForTaskId(dismissedTaskId);
+        if (dismissedIcon == null) {
+            return;
+        }
+        final int dismissedIndex = mContainer.indexOfChild(dismissedIcon);
+        final int childCount = mContainer.getChildCount();
+        if (dismissedIndex < 0 || childCount == 0) {
+            return;
+        }
+        mDismissAnimating = true;
+        mDismissingIcon = dismissedIcon;
+
+        if (animateIcon) {
+            anim.add(ObjectAnimator.ofFloat(dismissedIcon, View.ALPHA, dismissedIcon.getAlpha(), 0f),
+                    DOCK_ICON_EXIT, SpringProperty.DEFAULT);
+            anim.add(ObjectAnimator.ofFloat(dismissedIcon, View.SCALE_X,
+                            dismissedIcon.getScaleX(), DISMISS_SCALE),
+                    DOCK_ICON_EXIT, SpringProperty.DEFAULT);
+            anim.add(ObjectAnimator.ofFloat(dismissedIcon, View.SCALE_Y,
+                            dismissedIcon.getScaleY(), DISMISS_SCALE),
+                    DOCK_ICON_EXIT, SpringProperty.DEFAULT);
+        }
+
+        final int centeredIndex = mCenteredChildIndex >= 0
+                ? mCenteredChildIndex : dismissedIndex;
+        final boolean dismissCurrentLast =
+                centeredIndex == dismissedIndex && centeredIndex == childCount - 1;
+        final boolean dismissLeftOfCurrent = dismissedIndex == centeredIndex - 1;
+        final float gap = mIconSize + mIconSpacing;
+        boolean slid = false;
+        for (int i = 0; i < childCount; i++) {
+            View child = mContainer.getChildAt(i);
+            if (child == dismissedIcon) {
+                continue;
+            }
+            float layoutShift = i > dismissedIndex ? -gap : 0f;
+            float extra = (dismissCurrentLast || dismissLeftOfCurrent) ? gap : 0f;
+            float tx = layoutShift + extra;
+            if (tx != 0f) {
+                anim.add(ObjectAnimator.ofFloat(child, View.TRANSLATION_X, child.getTranslationX(),
+                                tx),
+                        Interpolators.ACCEL, SpringProperty.DEFAULT);
+                slid = true;
+            }
+        }
+        if (slid) {
+            anim.addOnFrameCallback(this::updateCurveProperties);
+        }
+        anim.addEndListener(success -> finishIconDismiss(dismissedIcon, dismissedTaskId, success));
+    }
+
+    @Nullable
+    private View findIconForTaskId(int taskId) {
+        int count = mContainer.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View child = mContainer.getChildAt(i);
+            Object tag = child.getTag();
+            if (tag instanceof Integer && ((Integer) tag) == taskId) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    private void finishIconDismiss(View dismissedIcon, int taskId, boolean success) {
+        mDismissAnimating = false;
+        mDismissingIcon = null;
+        if (!success) {
+            dismissedIcon.setAlpha(1f);
+            resetChildTranslations();
+            updateCurveProperties();
+            return;
+        }
+        mContainer.removeView(dismissedIcon);
+        resetChildTranslations();
+        clearFirstChildStartMargin();
+        removeBoundTaskId(taskId);
+        if (mContainer.getChildCount() == 0) {
+            setVisibility(GONE);
+            mCenteredChildIndex = -1;
+            return;
+        }
+        recenterOnCurrentRecentsPage();
+    }
+
+    private void resetChildTranslations() {
+        int count = mContainer.getChildCount();
+        for (int i = 0; i < count; i++) {
+            mContainer.getChildAt(i).setTranslationX(0f);
+        }
+    }
+
+    private void clearFirstChildStartMargin() {
+        if (mContainer.getChildCount() == 0) {
+            return;
+        }
+        View first = mContainer.getChildAt(0);
+        ViewGroup.LayoutParams lp = first.getLayoutParams();
+        if (lp instanceof LinearLayout.LayoutParams) {
+            LinearLayout.LayoutParams mlp = (LinearLayout.LayoutParams) lp;
+            if (mlp.getMarginStart() != 0) {
+                mlp.setMarginStart(0);
+                first.setLayoutParams(mlp);
+            }
+        }
+    }
+
+    private void removeBoundTaskId(int taskId) {
+        int kept = 0;
+        for (int id : mBoundTaskIds) {
+            if (id != taskId) {
+                kept++;
+            }
+        }
+        int[] next = new int[kept];
+        int j = 0;
+        for (int id : mBoundTaskIds) {
+            if (id != taskId) {
+                next[j++] = id;
+            }
+        }
+        mBoundTaskIds = next;
+    }
+
+    /**
      * ColorOS {@code DockView.updateCurveProperties}: scale/dim by distance to viewport center.
      * Centered → scale 1.0 / undimmed; ≥1 page away → scale 0.87 / 0.2 scrim.
      */
@@ -443,7 +601,7 @@ public class OverviewDockView extends HorizontalScrollView {
         float viewportCenterX = getScrollX() + getWidth() / 2f;
         for (int i = 0; i < count; i++) {
             View child = mContainer.getChildAt(i);
-            if (!(child instanceof ImageView)) {
+            if (!(child instanceof ImageView) || child == mDismissingIcon) {
                 continue;
             }
             float iconCenterX = mContainer.getLeft() + child.getLeft() + child.getTranslationX()

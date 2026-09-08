@@ -48,8 +48,11 @@
     <dimen name="coloros_control_height">48dp</dimen>
     <dimen name="coloros_action_height">@dimen/coui_btn_large_height_min</dimen>
     <dimen name="coloros_launcher_mode_card_min_height">220dp</dimen>
-    <dimen name="coloros_launcher_mode_preview_height">150dp</dimen>
+    <dimen name="coloros_launcher_mode_preview_height">194dp</dimen>
+    <dimen name="coloros_home_screen_mode_inner_inset">32dp</dimen>
+    <dimen name="coloros_home_screen_mode_title_size">14sp</dimen>
     <dimen name="coloros_launcher_mode_radio_slot_width">56dp</dimen>
+    <dimen name="coloros_home_screen_apply_space">88dp</dimen>
     <dimen name="coloros_preference_icon_slot_width">32dp</dimen>
     <dimen name="coloros_icon_card_bottom_padding">14dp</dimen>
     <dimen name="coloros_theme_preview_height">224dp</dimen>
@@ -129,12 +132,12 @@
     <dimen name="coloros_all_apps_search_empty_img_height">200dp</dimen>
     <dimen name="coloros_all_apps_search_empty_block_height">240dp</dimen>
     <!-- Match grid side inset so search width lines up with icon columns. -->
-    <dimen name="coloros_all_apps_search_margin_horizontal">12dp</dimen>
+    <dimen name="coloros_all_apps_search_margin_horizontal">13dp</dimen>
     <dimen name="coloros_all_apps_search_icon_size">18dp</dimen>
     <!-- Oppo has a clear icon→hint gap (~8–12dp visual). -->
     <dimen name="coloros_all_apps_search_icon_text_gap">8dp</dimen>
     <dimen name="coloros_all_apps_search_padding_horizontal">14dp</dimen>
-    <dimen name="coloros_all_apps_grid_horizontal_padding">12dp</dimen>
+    <dimen name="coloros_all_apps_grid_horizontal_padding">13dp</dimen>
     <dimen name="coloros_all_apps_tab_gap_below_status">6dp</dimen>
     <dimen name="coloros_all_apps_list_bottom_gap">2dp</dimen>
     <!-- Legacy gap token; list top inset is now layout margin (Oppo header_tab_height_aer). -->

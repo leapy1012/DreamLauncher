@@ -95,6 +95,7 @@ import android.graphics.Paint;
 import com.android.launcher3.BuildConfig;
 import com.android.launcher3.LauncherPrefs;
 import com.android.launcher3.PendingAddItemInfo;
+import com.android.launcher3.togglebar.ColorOsLayoutSettings;
 
 /**
  * An icon that can appear on in the workspace representing an {@link Folder}.
@@ -215,6 +216,10 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         icon.mFolderName = icon.findViewById(R.id.folder_icon_name);
         icon.mFolderName.setText(TextUtils.isEmpty(folderInfo.title) ? icon.getContext().getString(R.string.folder_unnamed) : folderInfo.title);
         icon.mFolderName.setCompoundDrawablePadding(0);
+        if (ColorOsLayoutSettings.isHideIconNames(icon.getContext())) {
+            icon.setTextVisible(false);
+            icon.setTextVisibility(false);
+        }
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) icon.mFolderName.getLayoutParams();
         lp.topMargin = grid.iconSizePx + grid.iconDrawablePaddingPx;
 
@@ -772,9 +777,14 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
     }
 
     public void setTextVisible(boolean visible) {
-        boolean visibleStatus = LauncherPrefs.getPrefs(getContext()).getBoolean(LauncherPrefs.WORKSPACE_DOCKED_APP, false);
-        if (visibleStatus) {
-            visible = true;
+        if (ColorOsLayoutSettings.isHideIconNames(getContext())) {
+            visible = false;
+        } else {
+            boolean visibleStatus = LauncherPrefs.getPrefs(getContext()).getBoolean(
+                    LauncherPrefs.WORKSPACE_DOCKED_APP, false);
+            if (visibleStatus) {
+                visible = true;
+            }
         }
         if (visible) {
             mFolderName.setVisibility(VISIBLE);
@@ -974,10 +984,16 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
     }
 
     public void setTextVisibility(boolean visible) {
+        if (ColorOsLayoutSettings.isHideIconNames(getContext())) {
+            visible = false;
+        }
         mFolderName.setTextAlpha(visible ? 1 : 0);
     }
 
     public boolean shouldTextBeVisible() {
+        if (ColorOsLayoutSettings.isHideIconNames(getContext())) {
+            return false;
+        }
         // Text should be visible everywhere but the hotseat.
         return (mInfo.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT
                 && mInfo.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION);

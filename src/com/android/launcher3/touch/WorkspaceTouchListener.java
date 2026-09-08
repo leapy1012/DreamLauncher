@@ -189,6 +189,13 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
         }
         if (mLauncher.getStateManager().getState() != NORMAL) {
             if (Math.abs(ev.getX() - mTouchCoordX) < 5 && Math.abs(ev.getY() - mTouchCoordY) < 5 && action == ACTION_UP) {
+                AbstractFloatingView layoutOverlay = AbstractFloatingView.getOpenView(
+                        mLauncher, AbstractFloatingView.TYPE_COLOROS_LAYOUT);
+                if (layoutOverlay != null) {
+                    // Layout Cancel: stay in workspace edit mode.
+                    layoutOverlay.close(true);
+                    return true;
+                }
                 AbstractFloatingView topView = AbstractFloatingView.getTopOpenView(mLauncher);
                 if (topView != null) {
                     topView.close(false);

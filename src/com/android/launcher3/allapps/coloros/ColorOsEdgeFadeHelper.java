@@ -134,6 +134,12 @@ public final class ColorOsEdgeFadeHelper {
         }
         for (int i = 0; i < host.getChildCount(); i++) {
             View child = host.getChildAt(i);
+            // Select dims Oppo suggestion ("Recently installed") to 0.2. Forcing
+            // 1f here is what made the row snap back to full opacity after one
+            // scroll / layout pass.
+            if (Boolean.TRUE.equals(child.getTag(R.id.coloros_drawer_select_skip_check))) {
+                continue;
+            }
             if (child.getAlpha() != 1f) {
                 child.setAlpha(1f);
             }

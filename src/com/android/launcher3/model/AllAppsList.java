@@ -166,6 +166,10 @@ public class AllAppsList {
         add(info, activityInfo, true, context);
     }
 
+    public boolean shouldShowApp(ComponentName componentName) {
+        return mAppFilter.shouldShowApp(componentName);
+    }
+
     public void add(AppInfo info, LauncherActivityInfo activityInfo, boolean loadIcon, Context context) {
         if (!mAppFilter.shouldShowApp(info.componentName)) {
             return;

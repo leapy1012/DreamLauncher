@@ -9,8 +9,8 @@
     <bool name="config_hxy_grid">true</bool>
     <!-- Factory default workspace grid (see hxy_device_profiles.xml). -->
     <string name="config_default_grid">4_by_6</string>
-    <!-- Factory default home style: 1 = Regular, 0 = App drawer. -->
-    <integer name="config_default_launcher_style">1</integer>
+    <!-- Factory default home style: 0 = App drawer, 1 = Regular. -->
+    <integer name="config_default_launcher_style">0</integer>
     <!-- ColorOS-style All Apps drawer chrome (bottom search, A–Z, All|Categories). -->
     <bool name="config_coloros_drawer">true</bool>
     <!-- added by xiangchangsong for: 待机界面禁止下拉 start-->    

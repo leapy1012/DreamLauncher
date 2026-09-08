@@ -62,6 +62,7 @@ import androidx.annotation.UiThread;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.launcher3.accessibility.BaseAccessibilityDelegate;
+import com.android.launcher3.allapps.coloros.ColorOsHomeSettings;
 import com.android.launcher3.allapps.coloros.ColorOsIconChangeAnimManager;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.dot.DotInfo;
@@ -108,6 +109,7 @@ import com.android.launcher3.dot.NumberDotRenderer;
 import com.android.launcher3.dot.DotDrawUtils;
 import com.android.launcher3.R;
 import com.android.launcher3.LauncherPrefs;
+import com.android.launcher3.togglebar.ColorOsLayoutSettings;
 import android.content.res.Configuration;
 import java.util.concurrent.TimeUnit;
 import android.app.usage.UsageStats;
@@ -512,6 +514,15 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         //hxy_leifengqi update to Dynamic clock 20230302 end
         setIcon(iconDrawable);
         applyLabel(info);
+        if (mDisplay == DISPLAY_WORKSPACE
+                && ColorOsLayoutSettings.isHideIconNames(getContext())) {
+            setTextAlpha(0f);
+        } else if (mDisplay == DISPLAY_ALL_APPS
+                && !ColorOsHomeSettings.isShowDrawerAppNames(getContext())) {
+            setTextAlpha(0f);
+        } else if (mDisplay == DISPLAY_ALL_APPS) {
+            setTextAlpha(1f);
+        }
     }
 
     //hxy_leifengqi update to Dynamic clock 20230302 start
@@ -788,7 +799,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
             return;
         }
         EditSelectionManager selection = launcher.getEditSelectionManager();
-        if (!selection.isActive()) {
+        if (!selection.shouldDrawChecks()) {
             return;
         }
         if (!EditSelectionEligibility.canShowCheckmark(getContext(), this)) {
@@ -1131,6 +1142,14 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     }
 
     public boolean shouldTextBeVisible() {
+        if (mDisplay == DISPLAY_WORKSPACE
+                && ColorOsLayoutSettings.isHideIconNames(getContext())) {
+            return false;
+        }
+        if (mDisplay == DISPLAY_ALL_APPS
+                && !ColorOsHomeSettings.isShowDrawerAppNames(getContext())) {
+            return false;
+        }
         // Text should be visible everywhere but the hotseat.
         Object tag = getParent() instanceof FolderIcon ? ((View) getParent()).getTag() : getTag();
         boolean visibleStatus = LauncherPrefs.getPrefs(getContext()).getBoolean(LauncherPrefs.WORKSPACE_DOCKED_APP, false);
@@ -1143,9 +1162,20 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     }
 
     public void setTextVisibility(boolean visible) {
-        boolean visibleStatus = LauncherPrefs.getPrefs(getContext()).getBoolean(LauncherPrefs.WORKSPACE_DOCKED_APP, false);
-        if (visibleStatus) {
-            visible = true;
+        Object tag = getTag();
+        ItemInfo info = tag instanceof ItemInfo ? (ItemInfo) tag : null;
+        boolean hotseat = info != null
+                && (info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT
+                || info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION);
+        if (hotseat) {
+            visible = LauncherPrefs.getPrefs(getContext()).getBoolean(
+                    LauncherPrefs.WORKSPACE_DOCKED_APP, false);
+        } else if (mDisplay == DISPLAY_WORKSPACE
+                && ColorOsLayoutSettings.isHideIconNames(getContext())) {
+            visible = false;
+        } else if (mDisplay == DISPLAY_ALL_APPS
+                && !ColorOsHomeSettings.isShowDrawerAppNames(getContext())) {
+            visible = false;
         }
         setTextAlpha(visible ? 1 : 0);
     }

@@ -126,25 +126,21 @@ public class IconProvider {
     private Drawable getIconWithOverrides(ComponentName componentName, int iconDpi,
             Supplier<Drawable> fallback) {
         String packageName = componentName.getPackageName();
-        ThemeData td = getThemeDataForPackage(packageName);
+        ThemeData td = getThemeDataForComponent(componentName);
         Drawable icon = null;
         if (mCalendar != null && mCalendar.getPackageName().equals(packageName)) {
             icon = loadCalendarDrawable(iconDpi, td);
         } else if (mClock != null && mClock.getPackageName().equals(packageName)) {
             icon = ClockDrawableWrapper.forPackage(mContext, mClock.getPackageName(), iconDpi, td);
         } else {
-            if ("com.android.dialer/com.android.contacts.ui.main.ContactMainActivity".equals(
-                componentName.flattenToShortString())) {
-                    td = getThemeDataForPackage("com.android.contacts");
-                    if (td == null) {
-                        try {
-                            PackageManager pm = mContext.getPackageManager();
-                            int resId = pm.getResourcesForApplication(packageName).getIdentifier("ic_contact", "mipmap", packageName);
-                            if (resId > 0) {
-                                icon = pm.getResourcesForApplication(packageName).getDrawable(resId, null);
-                            }
-                        } catch (NameNotFoundException | Resources.NotFoundException exc) { }
-                    }
+            if (isDialerContactsActivity(componentName) && td == null) {
+                    try {
+                        PackageManager pm = mContext.getPackageManager();
+                        int resId = pm.getResourcesForApplication(packageName).getIdentifier("ic_contact", "mipmap", packageName);
+                        if (resId > 0) {
+                            icon = pm.getResourcesForApplication(packageName).getDrawable(resId, null);
+                        }
+                    } catch (NameNotFoundException | Resources.NotFoundException exc) { }
             } else if ("com.mediatek.camera/.HxyQrCodeActivity".equals(
                 componentName.flattenToShortString())) {
                     td = getThemeDataForPackage("com.mediatek.camera.qrcode");
@@ -216,7 +212,7 @@ public class IconProvider {
     @TargetApi(Build.VERSION_CODES.TIRAMISU)
     private Drawable getIconWithOverrides(ComponentName componentName, int iconDpi) {
         String packageName = componentName.getPackageName();
-        ThemeData td = getThemeDataForPackage(packageName);
+        ThemeData td = getThemeDataForComponent(componentName);
 
         Drawable icon = null;
         if (mCalendar != null && mCalendar.getPackageName().equals(packageName)) {
@@ -224,18 +220,14 @@ public class IconProvider {
         } else if (mClock != null && mClock.getPackageName().equals(packageName)) {
             icon = ClockDrawableWrapper.forPackage(mContext, mClock.getPackageName(), iconDpi, td);
         } else {
-            if ("com.android.dialer/com.android.contacts.ui.main.ContactMainActivity".equals(
-                componentName.flattenToShortString())) {
-                    td = getThemeDataForPackage("com.android.contacts");
-                    if (td == null) {
-                        try {
-                            PackageManager pm = mContext.getPackageManager();
-                            int resId = pm.getResourcesForApplication(packageName).getIdentifier("ic_contact", "mipmap", packageName);
-                            if (resId > 0) {
-                                icon = pm.getResourcesForApplication(packageName).getDrawable(resId, null);
-                            }
-                        } catch (NameNotFoundException | Resources.NotFoundException exc) { }
-                    }
+            if (isDialerContactsActivity(componentName) && td == null) {
+                    try {
+                        PackageManager pm = mContext.getPackageManager();
+                        int resId = pm.getResourcesForApplication(packageName).getIdentifier("ic_contact", "mipmap", packageName);
+                        if (resId > 0) {
+                            icon = pm.getResourcesForApplication(packageName).getDrawable(resId, null);
+                        }
+                    } catch (NameNotFoundException | Resources.NotFoundException exc) { }
             } else if ("com.mediatek.camera/.HxyQrCodeActivity".equals(
                 componentName.flattenToShortString())) {
                     try {
@@ -254,6 +246,24 @@ public class IconProvider {
          }
         //hxy-feature: desktop theme 202312
         return icon;
+    }
+
+    /**
+     * DreamDialer Contacts launcher/entry activities. Phone is
+     * {@code com.android.contacts.dial.DialActivity}; these must not inherit {@code aui_ic_dial}.
+     */
+    public static boolean isDialerContactsActivity(ComponentName componentName) {
+        if (componentName == null || !"com.android.dialer".equals(componentName.getPackageName())) {
+            return false;
+        }
+        String cls = componentName.getClassName();
+        return "com.android.contacts.PeopleActivity".equals(cls)
+                || "com.android.contacts.ui.main.ContactMainActivity".equals(cls)
+                || "com.android.contacts.activities.PeopleActivity".equals(cls);
+    }
+
+    protected ThemeData getThemeDataForComponent(ComponentName componentName) {
+        return componentName == null ? null : getThemeDataForPackage(componentName.getPackageName());
     }
 
     protected ThemeData getThemeDataForPackage(String packageName) {

@@ -22,6 +22,7 @@ import static android.content.pm.ActivityInfo.CONFIG_UI_MODE;
 import static android.view.accessibility.AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
 
 import static com.android.launcher3.AbstractFloatingView.TYPE_ALL;
+import static com.android.launcher3.AbstractFloatingView.TYPE_COLOROS_LAYOUT;
 import static com.android.launcher3.AbstractFloatingView.TYPE_FOLDER;
 import static com.android.launcher3.AbstractFloatingView.TYPE_ICON_SURFACE;
 import static com.android.launcher3.AbstractFloatingView.TYPE_REBIND_SAFE;
@@ -685,14 +686,21 @@ public class Launcher extends StatefulActivity<LauncherState>
             return mDragController::cancelDrag;
         }
 
-        // #3 view handler
+        // #3 layout overlay: back is Cancel, stay in edit mode
+        AbstractFloatingView layoutOverlay =
+                AbstractFloatingView.getOpenView(this, TYPE_COLOROS_LAYOUT);
+        if (layoutOverlay != null) {
+            return layoutOverlay;
+        }
+
+        // #4 view handler
         AbstractFloatingView topView =
                 AbstractFloatingView.getTopOpenView(Launcher.this);
         if (topView != null && topView.canHandleBack()) {
             return topView;
         }
 
-        // #4 state handler
+        // #5 state handler
         return new OnBackAnimationCallback() {
             @Override
             public void onBackInvoked() {
@@ -2274,6 +2282,13 @@ public class Launcher extends StatefulActivity<LauncherState>
     @Override
     @TargetApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void onBackPressed() {
+        AbstractFloatingView layoutOverlay =
+                AbstractFloatingView.getOpenView(this, TYPE_COLOROS_LAYOUT);
+        if (layoutOverlay != null) {
+            // Same as Layout Cancel: restore preview and stay in workspace edit mode.
+            layoutOverlay.onBackInvoked();
+            return;
+        }
         AbstractFloatingView topView = AbstractFloatingView.getTopOpenView(Launcher.this);
         if (mStateManager.getState() == SPRING_LOADED) {
             if (topView != null && topView.canHandleBack()) {

@@ -150,6 +150,13 @@ public class LauncherRecentsView extends RecentsView<QuickstepLauncher, Launcher
             setOverviewSelectEnabled(true);
         }
         setFreezeViewVisibility(true);
+        if (toState.overviewUi) {
+            if (toState != OVERVIEW_MODAL_TASK) {
+                hideBottomUiImmediate();
+            }
+        } else {
+            playBottomUiExit();
+        }
     }
 
     @Override
@@ -169,6 +176,7 @@ public class LauncherRecentsView extends RecentsView<QuickstepLauncher, Launcher
         if (isOverlayEnabled) {
             runActionOnRemoteHandles(remoteTargetHandle ->
                     remoteTargetHandle.getTaskViewSimulator().setDrawsBelowRecents(true));
+            playBottomUiEnter();
         }
     }
 

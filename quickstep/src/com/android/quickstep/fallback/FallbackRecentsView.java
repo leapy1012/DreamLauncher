@@ -231,6 +231,11 @@ public class FallbackRecentsView extends RecentsView<RecentsActivity, RecentsSta
             setOverviewSelectEnabled(true);
         }
         setFreezeViewVisibility(true);
+        if (toState == DEFAULT) {
+            hideBottomUiImmediate();
+        } else if (toState != MODAL_TASK) {
+            playBottomUiExit();
+        }
     }
 
     @Override
@@ -252,6 +257,7 @@ public class FallbackRecentsView extends RecentsView<RecentsActivity, RecentsSta
         if (isOverlayEnabled) {
             runActionOnRemoteHandles(remoteTargetHandle ->
                     remoteTargetHandle.getTaskViewSimulator().setDrawsBelowRecents(true));
+            playBottomUiEnter();
         }
     }
 

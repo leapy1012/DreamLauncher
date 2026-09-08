@@ -21,6 +21,7 @@ import static androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTIO
 import static com.android.launcher3.config.FeatureFlags.IS_STUDIO_BUILD;
 import static com.android.launcher3.states.RotationHelper.ALLOW_ROTATION_PREFERENCE_KEY;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -114,8 +115,11 @@ public class SettingsActivity extends AppCompatActivity
 
     /** List of fragments that can be hosted by this activity. */
     private static final List<String> VALID_PREFERENCE_FRAGMENTS =
-            !Utilities.IS_DEBUG_DEVICE ? Collections.emptyList()
-                    : Collections.singletonList(DeveloperOptionsFragment.class.getName());
+            !Utilities.IS_DEBUG_DEVICE
+                    ? Collections.singletonList(LauncherStyleFragment.class.getName())
+                    : java.util.Arrays.asList(
+                            LauncherStyleFragment.class.getName(),
+                            DeveloperOptionsFragment.class.getName());
 
     private static final String DEVELOPER_OPTIONS_KEY = "pref_developer_options";
     private static final String FLAGS_PREFERENCE_KEY = "flag_toggler";
@@ -129,10 +133,15 @@ public class SettingsActivity extends AppCompatActivity
     //hxy-feature: desktop theme 202312
     private static final boolean SHOW_THEME_ICON = SystemProperties.getInt("persist.sys.hxy_theme_icon", 0) == 1;//added by zhushuangqian for theme
     //hxy-feature: desktop theme 202312
-    @VisibleForTesting
-    static final String EXTRA_FRAGMENT = ":settings:fragment";
+    public static final String EXTRA_FRAGMENT = ":settings:fragment";
     @VisibleForTesting
     static final String EXTRA_FRAGMENT_ARGS = ":settings:fragment_args";
+
+    /** Oppo drawer overflow Settings → Home screen page (Standard / With drawer). */
+    public static Intent createHomeScreenIntent(Context context) {
+        return new Intent(context, SettingsActivity.class)
+                .putExtra(EXTRA_FRAGMENT, LauncherStyleFragment.class.getName());
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

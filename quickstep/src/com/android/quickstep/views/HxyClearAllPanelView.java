@@ -66,6 +66,7 @@ public class HxyClearAllPanelView extends LinearLayout {
         super.onFinishInflate();
         mClearButton = findViewById(R.id.btn_clear);
         mMemoryInfo = findViewById(R.id.memeryinfo_textview);
+        setAlpha(0f);
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) getLayoutParams();
         if (lp == null) {
             lp = new FrameLayout.LayoutParams(

@@ -41,13 +41,11 @@ import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.widget.picker.WidgetsFullSheet;
 import com.android.launcher3.util.PackageManagerHelper;
 import static com.android.launcher3.LauncherState.NORMAL;
-import com.android.launcher3.InvariantDeviceProfile;
-import com.android.launcher3.InvariantDeviceProfile.GridOption;
 import com.android.launcher3.screenedit.ScrollEffectAdapter;
+import com.android.launcher3.togglebar.ColorOsLayoutOverlay;
 import com.android.launcher3.screenedit.GridGallery;
 import com.android.launcher3.screenedit.OverviewPanelStateTransAnimation;
 import com.android.launcher3.screenedit.GridGalleryAdapter;
-import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -266,36 +264,9 @@ public class OptionsDialogView extends AbstractFloatingView {
         return true;
     }
 
-    /** Oppo-style Layout entry: pick workspace grid (cols × rows). */
+    /** Oppo ToggleBar Layout: live workspace preview + grid sheet. */
     private static void showLayoutPicker(View view) {
-        Launcher launcher = Launcher.getLauncher(view.getContext());
-        if (LayoutLockHelper.checkLockedAndShowMessage(launcher)) {
-            return;
-        }
-        InvariantDeviceProfile idp = InvariantDeviceProfile.INSTANCE.get(launcher);
-        List<GridOption> options = idp.parseAllGridOptions(launcher);
-        if (options.isEmpty()) {
-            return;
-        }
-
-        CharSequence[] labels = new CharSequence[options.size()];
-        int checkedItem = -1;
-        for (int i = 0; i < options.size(); i++) {
-            GridOption option = options.get(i);
-            labels[i] = option.numColumns + " x " + option.numRows;
-            if (idp.numColumns == option.numColumns && idp.numRows == option.numRows) {
-                checkedItem = i;
-            }
-        }
-
-        new COUIAlertDialogBuilder(launcher)
-                .setTitle(R.string.tog_title_layout)
-                .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
-                    GridOption selected = options.get(which);
-                    idp.setCurrentGrid(launcher, selected.name);
-                    dialog.dismiss();
-                })
-                .show();
+        ColorOsLayoutOverlay.show(Launcher.getLauncher(view.getContext()));
     }
 
     public View getEffectsView() {

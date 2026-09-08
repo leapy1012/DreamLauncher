@@ -19,6 +19,11 @@ import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.util.Pair;
 import android.view.Gravity;
@@ -32,6 +37,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.dynamicanimation.animation.FloatPropertyCompat;
 
 import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.DeviceProfile;
@@ -47,6 +53,8 @@ import com.android.launcher3.model.data.ItemInfoWithIcon;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.util.ComponentKey;
 import com.android.launcher3.views.ActivityContext;
+import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
+import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -60,11 +68,35 @@ import static com.android.launcher3.LauncherState.NORMAL;
  */
 public final class ColorOsDrawerSelectController {
 
+    /** Oppo suggestion-row alpha in Select ({@code UNINSTALL_APP_PREDICTION_ICON_ALPHA}). */
+    private static final float RECENT_ROW_SELECT_ALPHA = 0.2f;
+    /** Oppo {@code SelectStateIconRenderer} scale spring response. */
+    private static final float CHECK_RESPONSE = 0.3f;
+    private static final float CHECK_BOUNCE = 0f;
+    private static final float MIN_VISIBLE_PROGRESS = 0.002f;
+    private static final long RECENT_FADE_MS = 200L;
+
+    private static final FloatPropertyCompat<ColorOsDrawerSelectController> CHECK_PROGRESS =
+            new FloatPropertyCompat<ColorOsDrawerSelectController>("checkProgress") {
+                @Override
+                public float getValue(ColorOsDrawerSelectController c) {
+                    return c.mCheckProgress;
+                }
+
+                @Override
+                public void setValue(ColorOsDrawerSelectController c, float value) {
+                    c.mCheckProgress = value;
+                    c.refreshIconChecks();
+                }
+            };
+
     private final ActivityAllAppsContainerView<?> mContainer;
     private final Launcher mLauncher;
     private final ColorOsDrawerChrome mChrome;
 
     private boolean mActive;
+    private float mCheckProgress;
+    @Nullable private COUISpringAnimation mCheckSpring;
     private final LinkedHashMap<ComponentKey, AppInfo> mSelected = new LinkedHashMap<>();
 
     @Nullable private View mHeader;
@@ -109,7 +141,9 @@ public final class ColorOsDrawerSelectController {
             mBottomBar.bringToFront();
         }
         updateTitleAndActions();
+        applyRecentRowsFade(true);
         refreshIconChecks();
+        animateCheckProgress(1f);
         View search = mContainer.getSearchView();
         if (search != null) {
             search.setVisibility(View.INVISIBLE);
@@ -117,11 +151,19 @@ public final class ColorOsDrawerSelectController {
     }
 
     public void exit() {
-        if (!mActive) {
+        exit(true /* animateChecks */);
+    }
+
+    /**
+     * @param animateChecks Oppo springs badges out while staying in the drawer.
+     *                      Snap off when leaving All Apps so workspace/hotseat never
+     *                      inherit the overlay (Add to Home / Home / state reset).
+     */
+    public void exit(boolean animateChecks) {
+        if (!mActive && mCheckProgress <= MIN_VISIBLE_PROGRESS) {
             return;
         }
         mActive = false;
-        mSelected.clear();
         if (mHeader != null) {
             mHeader.setVisibility(View.GONE);
         }
@@ -130,10 +172,15 @@ public final class ColorOsDrawerSelectController {
         }
         mChrome.onDrawerSelectModeChanged(false);
         closeCategoryFolderIfOpen();
-        refreshIconChecks();
+        applyRecentRowsFade(false);
         View search = mContainer.getSearchView();
         if (search != null) {
             search.setVisibility(View.VISIBLE);
+        }
+        if (animateChecks) {
+            animateCheckProgress(0f);
+        } else {
+            snapChecksGone();
         }
     }
 
@@ -149,6 +196,10 @@ public final class ColorOsDrawerSelectController {
     public boolean onItemClick(@NonNull View v) {
         if (!mActive) {
             return false;
+        }
+        if (Boolean.TRUE.equals(v.getTag(R.id.coloros_drawer_select_skip_check))) {
+            // Oppo Recently installed: disabled, no toggle / launch in Select.
+            return true;
         }
         Object tag = v.getTag();
         if (tag instanceof AppInfo app) {
@@ -319,23 +370,13 @@ public final class ColorOsDrawerSelectController {
 
     /** Category preview ImageViews are not BubbleTextViews — paint check as foreground. */
     private void applyImageViewChecks(@NonNull View root) {
-        if (root instanceof android.widget.ImageView iv && root.getTag() instanceof AppInfo app) {
-            if (!mActive) {
-                iv.setForeground(null);
-                return;
-            }
-            int size = iv.getResources().getDimensionPixelSize(R.dimen.edit_selection_check_size);
-            android.graphics.drawable.Drawable check = iv.getContext().getDrawable(
-                    isSelected(app)
-                            ? R.drawable.launcher_ic_app_selected
-                            : R.drawable.launcher_ic_app_unselected);
-            if (check == null) {
-                return;
-            }
-            check = check.mutate();
-            check.setBounds(0, 0, size, size);
-            iv.setForeground(check);
-            iv.setForegroundGravity(Gravity.TOP | Gravity.END);
+        if (Boolean.TRUE.equals(root.getTag(R.id.coloros_drawer_select_skip_check))) {
+            clearImageForegrounds(root);
+            setRecentChildrenEnabled(root, !mActive);
+            return;
+        }
+        if (root instanceof ImageView iv && root.getTag() instanceof AppInfo app) {
+            applyCheckForeground(iv, app);
             return;
         }
         if (root instanceof ViewGroup group) {
@@ -343,6 +384,137 @@ public final class ColorOsDrawerSelectController {
                 applyImageViewChecks(group.getChildAt(i));
             }
         }
+    }
+
+    private void applyCheckForeground(@NonNull ImageView iv, @NonNull AppInfo app) {
+        if (!shouldDrawChecks()) {
+            iv.setForeground(null);
+            return;
+        }
+        Drawable fg = iv.getForeground();
+        ProgressCheckDrawable check;
+        if (fg instanceof ProgressCheckDrawable existing) {
+            check = existing;
+        } else {
+            check = new ProgressCheckDrawable(iv);
+            iv.setForeground(check);
+            iv.setForegroundGravity(Gravity.TOP | Gravity.END);
+        }
+        check.update(isSelected(app), mCheckProgress);
+    }
+
+    private static void clearImageForegrounds(@NonNull View root) {
+        if (root instanceof ImageView iv) {
+            iv.setForeground(null);
+        }
+        if (root instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                clearImageForegrounds(group.getChildAt(i));
+            }
+        }
+    }
+
+    private static void setRecentChildrenEnabled(@NonNull View root, boolean enabled) {
+        if (root instanceof ImageView && root.getTag() instanceof AppInfo) {
+            root.setEnabled(enabled);
+            root.setClickable(enabled);
+        }
+        if (root instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                setRecentChildrenEnabled(group.getChildAt(i), enabled);
+            }
+        }
+    }
+
+    /**
+     * Called after Recently installed icons are rebound so Select fade/disable sticks.
+     */
+    public static void applyRecentRowChromeIfNeeded(@Nullable View row) {
+        if (row == null
+                || !Boolean.TRUE.equals(row.getTag(R.id.coloros_drawer_select_skip_check))) {
+            return;
+        }
+        ActivityContext ctx = ActivityContext.lookupContext(row.getContext());
+        boolean active = false;
+        if (ctx instanceof Launcher launcher
+                && launcher.getAppsView() instanceof
+                com.android.launcher3.allapps.LauncherAllAppsContainerView apps) {
+            ColorOsDrawerSelectController select = apps.getDrawerSelectController();
+            active = select != null && select.isActive();
+        }
+        row.animate().cancel();
+        row.setAlpha(active ? RECENT_ROW_SELECT_ALPHA : 1f);
+        setRecentChildrenEnabled(row, !active);
+        clearImageForegrounds(row);
+    }
+
+    private void applyRecentRowsFade(boolean selectActive) {
+        View categoryList = mContainer.findViewById(R.id.coloros_category_list);
+        if (!(categoryList instanceof ViewGroup group)) {
+            return;
+        }
+        float target = selectActive ? RECENT_ROW_SELECT_ALPHA : 1f;
+        applyRecentRowsFadeRecursive(group, target, selectActive);
+    }
+
+    private void applyRecentRowsFadeRecursive(@NonNull View root, float target, boolean selectActive) {
+        if (Boolean.TRUE.equals(root.getTag(R.id.coloros_drawer_select_skip_check))
+                && root instanceof ViewGroup) {
+            root.animate().cancel();
+            root.animate().alpha(target).setDuration(RECENT_FADE_MS).start();
+            setRecentChildrenEnabled(root, !selectActive);
+            clearImageForegrounds(root);
+            return;
+        }
+        if (root instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                applyRecentRowsFadeRecursive(group.getChildAt(i), target, selectActive);
+            }
+        }
+    }
+
+    private void animateCheckProgress(float target) {
+        if (mCheckSpring != null) {
+            mCheckSpring.cancel();
+            mCheckSpring = null;
+        }
+        if (target > 0f && mCheckProgress <= 0f) {
+            mCheckProgress = 0f;
+        }
+        mCheckSpring = new COUISpringAnimation(this, CHECK_PROGRESS, target);
+        mCheckSpring.setStartValue(mCheckProgress);
+        COUISpringForce force = mCheckSpring.getSpring();
+        force.setBounce(CHECK_BOUNCE);
+        force.setResponse(CHECK_RESPONSE);
+        mCheckSpring.setMinimumVisibleChange(MIN_VISIBLE_PROGRESS);
+        if (target <= 0f) {
+            mCheckSpring.addEndListener((anim, canceled, value, velocity) -> {
+                if (!canceled) {
+                    mCheckProgress = 0f;
+                    mSelected.clear();
+                    refreshIconChecks();
+                }
+            });
+        }
+        mCheckSpring.start();
+    }
+
+    private void snapChecksGone() {
+        if (mCheckSpring != null) {
+            mCheckSpring.cancel();
+            mCheckSpring = null;
+        }
+        mCheckProgress = 0f;
+        mSelected.clear();
+        refreshIconChecks();
+    }
+
+    boolean shouldDrawChecks() {
+        return mCheckProgress > MIN_VISIBLE_PROGRESS;
+    }
+
+    float getCheckProgress() {
+        return mCheckProgress;
     }
 
     private static void invalidateTree(@NonNull View root) {
@@ -364,8 +536,10 @@ public final class ColorOsDrawerSelectController {
             // and places — allowSystemApps so drawer-mode system apps are not skipped.
             items.add(Pair.create(app, null));
         }
-        mLauncher.getModel().addAndBindAddedWorkspaceItems(items, true /* allowSystemApps */);
-        exit();
+        mLauncher.getModel().addAndBindAddedWorkspaceItems(
+                items, true /* allowSystemApps */, true /* allowDuplicates */);
+        // Snap badges off before the workspace is shown so hotseat never draws them.
+        exit(false /* animateChecks */);
         mLauncher.getStateManager().goToState(NORMAL);
     }
 
@@ -461,7 +635,13 @@ public final class ColorOsDrawerSelectController {
             return false;
         }
         ColorOsDrawerSelectController select = apps.getDrawerSelectController();
-        if (select == null || !select.isActive()) {
+        if (select == null || !select.shouldDrawChecks()) {
+            return false;
+        }
+        // Drawer Select badges belong on All Apps / category-folder icons only.
+        // Workspace and hotseat share BubbleTextView and would otherwise inherit
+        // the overlay after Add to Home.
+        if (!icon.isAllAppsDisplay()) {
             return false;
         }
         Object tag = icon.getTag();
@@ -495,9 +675,80 @@ public final class ColorOsDrawerSelectController {
         if (check == null) {
             return false;
         }
+        float progress = select.getCheckProgress();
         check = check.mutate();
         check.setBounds(left, top, left + size, top + size);
+        check.setAlpha((int) (255 * progress));
+        int save = canvas.save();
+        canvas.scale(progress, progress, left + size / 2f, top + size / 2f);
         check.draw(canvas);
+        canvas.restoreToCount(save);
         return true;
+    }
+
+    /**
+     * Category-card ImageView badge: Oppo springs scale+alpha on enter/exit,
+     * then swaps empty/filled instantly on toggle.
+     */
+    private static final class ProgressCheckDrawable extends Drawable {
+        private final ImageView mHost;
+        private final int mSize;
+        @Nullable private Drawable mCheck;
+        private boolean mSelected;
+        private float mProgress;
+
+        ProgressCheckDrawable(@NonNull ImageView host) {
+            mHost = host;
+            mSize = host.getResources().getDimensionPixelSize(R.dimen.edit_selection_check_size);
+        }
+
+        void update(boolean selected, float progress) {
+            if (mCheck == null || mSelected != selected) {
+                mSelected = selected;
+                Drawable d = mHost.getContext().getDrawable(selected
+                        ? R.drawable.launcher_ic_app_selected
+                        : R.drawable.launcher_ic_app_unselected);
+                mCheck = d == null ? null : d.mutate();
+            }
+            mProgress = progress;
+            invalidateSelf();
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            if (mCheck == null || mProgress <= MIN_VISIBLE_PROGRESS) {
+                return;
+            }
+            Rect b = getBounds();
+            mCheck.setBounds(b);
+            mCheck.setAlpha((int) (255 * mProgress));
+            int save = canvas.save();
+            canvas.scale(mProgress, mProgress, b.exactCenterX(), b.exactCenterY());
+            mCheck.draw(canvas);
+            canvas.restoreToCount(save);
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return mSize;
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return mSize;
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
     }
 }

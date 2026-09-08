@@ -38,6 +38,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.launcher3.AppFilter;
 import com.android.launcher3.PendingAddItemInfo;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
@@ -125,8 +126,16 @@ public class PackageManagerHelper {
     @Nullable
     public Intent getAppLaunchIntent(@Nullable final String pkg, @NonNull final UserHandle user) {
         List<LauncherActivityInfo> activities = mLauncherApps.getActivityList(pkg, user);
-        return activities.isEmpty() ? null :
-                AppInfo.makeLaunchIntent(activities.get(0));
+        if (activities.isEmpty()) {
+            return null;
+        }
+        AppFilter filter = new AppFilter(mContext);
+        for (LauncherActivityInfo lai : activities) {
+            if (filter.shouldShowApp(lai.getComponentName())) {
+                return AppInfo.makeLaunchIntent(lai);
+            }
+        }
+        return AppInfo.makeLaunchIntent(activities.get(0));
     }
 
     /**

@@ -129,7 +129,7 @@ public class LauncherAllAppsContainerView extends ActivityAllAppsContainerView<L
 
     private void exitDrawerSelectIfActive() {
         if (mColorOsChrome != null && mColorOsChrome.isDrawerSelectActive()) {
-            mColorOsChrome.getSelectController().exit();
+            mColorOsChrome.getSelectController().exit(false /* animateChecks */);
         }
     }
 
@@ -165,6 +165,11 @@ public class LauncherAllAppsContainerView extends ActivityAllAppsContainerView<L
 
     public boolean isDrawerSelectActive() {
         return mColorOsChrome != null && mColorOsChrome.isDrawerSelectActive();
+    }
+
+    @Nullable
+    public ColorOsDrawerChrome getColorOsChrome() {
+        return mColorOsChrome;
     }
 
     @Override
@@ -246,6 +251,10 @@ public class LauncherAllAppsContainerView extends ActivityAllAppsContainerView<L
 
     @Override
     public boolean shouldContainerScroll(MotionEvent ev) {
+        // Oppo Select: swipe-down must not leave All Apps (X / Back exits Select first).
+        if (isDrawerSelectActive()) {
+            return false;
+        }
         // Categories owns its own RecyclerView; AOSP only consults the All apps RV,
         // which stays at offset 0 while Categories scrolls — that made swipe-down
         // dismiss the drawer (unlike Oppo).

@@ -30,24 +30,33 @@ import java.util.Set;
  *
  * <p>Same ranking as {@code UsageStatsController}: last-used via
  * {@link UsageStatsManager}, mapped onto drawer {@link AppInfo}s, padded to
- * {@link #TARGET_COUNT}. Does not depend on minus-screen UI / OverlayContainer.
+ * {@link #targetCount(Context)}. Count is {@code columns * 2} like Oppo
+ * {@code PredictedAppManager.getPredictedApps(numAllAppsColumns * 2)}:
+ * 10 apps in 5-column drawer, 8 in 4-column.
  */
 public final class ColorOsCommonlyUsedAppsProvider {
 
-    /** Matches LeftScreen {@code UsageStatsController.TARGET_STATS_APP_SIZE}. */
-    public static final int TARGET_COUNT = 10;
+    /** Two rows of the current drawer column count. */
+    public static int targetCount(@NonNull Context context) {
+        int cols = ColorOsDrawerColumns.get(context);
+        if (cols <= 0) {
+            cols = ColorOsDrawerColumns.COLUMNS_FIVE;
+        }
+        return cols * 2;
+    }
 
     private ColorOsCommonlyUsedAppsProvider() {}
 
     /**
-     * Build up to {@link #TARGET_COUNT} adapter items for empty search.
+     * Build up to {@link #targetCount(Context)} adapter items for empty search.
      * Safe to call off the main thread.
      */
     @WorkerThread
     @NonNull
     public static ArrayList<AdapterItem> build(@NonNull Context context,
             @Nullable AllAppsStore store) {
-        ArrayList<AdapterItem> out = new ArrayList<>(TARGET_COUNT);
+        int targetCount = targetCount(context);
+        ArrayList<AdapterItem> out = new ArrayList<>(targetCount);
         if (store == null) {
             return out;
         }
@@ -56,7 +65,7 @@ public final class ColorOsCommonlyUsedAppsProvider {
             return out;
         }
 
-        List<AppInfo> prioritized = mapUsageStatsToApps(context, all);
+        List<AppInfo> prioritized = mapUsageStatsToApps(context, all, targetCount);
         Set<ComponentKey> used = new HashSet<>();
         for (AppInfo info : prioritized) {
             if (info == null || info.componentName == null) {
@@ -67,7 +76,7 @@ public final class ColorOsCommonlyUsedAppsProvider {
                 continue;
             }
             out.add(AdapterItem.asApp(info));
-            if (out.size() >= TARGET_COUNT) {
+            if (out.size() >= targetCount) {
                 return out;
             }
         }
@@ -81,7 +90,7 @@ public final class ColorOsCommonlyUsedAppsProvider {
                 continue;
             }
             out.add(AdapterItem.asApp(info));
-            if (out.size() >= TARGET_COUNT) {
+            if (out.size() >= targetCount) {
                 break;
             }
         }
@@ -90,7 +99,7 @@ public final class ColorOsCommonlyUsedAppsProvider {
 
     @NonNull
     private static List<AppInfo> mapUsageStatsToApps(@NonNull Context context,
-            @NonNull AppInfo[] all) {
+            @NonNull AppInfo[] all, int targetCount) {
         UsageStatsManager usm = context.getSystemService(UsageStatsManager.class);
         if (usm == null) {
             return Collections.emptyList();
@@ -144,7 +153,7 @@ public final class ColorOsCommonlyUsedAppsProvider {
             }
             if (match != null) {
                 prioritized.add(match);
-                if (prioritized.size() >= TARGET_COUNT) {
+                if (prioritized.size() >= targetCount) {
                     break;
                 }
             }

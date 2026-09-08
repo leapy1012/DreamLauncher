@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    <com.coui.appcompat.button.COUIButton
+        android:id="@id/home_screen_apply"
+        style="?couiButtonColorfulDefaultStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="@dimen/coui_horizontal_single_btn_margin"
+        android:layout_marginEnd="@dimen/coui_horizontal_single_btn_margin"
+        android:layout_marginBottom="@dimen/coloros_space_xxlarge"
+        android:text="@string/apply"
+        android:visibility="gone" />
+</merge>

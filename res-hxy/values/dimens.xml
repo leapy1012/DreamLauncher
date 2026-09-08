@@ -135,6 +135,8 @@
     <dimen name="hxy_dock_to_ram_gap">48dp</dimen>
     <!-- Target card→dock gap. -->
     <dimen name="hxy_card_to_dock_gap">24dp</dimen>
+    <!-- Oppo Clear All / dock enter: fade+rise after task cards settle. -->
+    <dimen name="hxy_overview_bottom_ui_enter_shift">16dp</dimen>
     <!-- Base card-down shift; net = this minus hxy_clear_extra_lift (cards rise with Clear). -->
     <dimen name="hxy_recents_card_down_shift">56dp</dimen>
 </resources>

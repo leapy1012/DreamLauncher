@@ -278,6 +278,8 @@ class LauncherPrefs(private val encryptedContext: Context) {
         const val WORKSPACE_LAYOUT_DOCK = "pref_layout_dock"
         // 单行显示
         const val WORKSPACE_APP_NAME = "pref_app_name"
+        // Oppo WordlessDesktopHelper.KEY_ENABLE_NO_APP_TITLE
+        const val ENABLE_NO_APP_TITLE = "enable_no_app_title"
         // 底部dock栏标题
         const val WORKSPACE_DOCKED_APP = "pref_docked_app"
         // 图标大小

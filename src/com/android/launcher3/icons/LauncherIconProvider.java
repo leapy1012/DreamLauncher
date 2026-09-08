@@ -15,6 +15,7 @@
  */
 package com.android.launcher3.icons;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
@@ -47,7 +48,9 @@ public class LauncherIconProvider extends IconProvider {
 
     private static final String TAG_ICON = "icon";
     private static final String ATTR_PACKAGE = "package";
+    private static final String ATTR_CLASS = "className";
     private static final String ATTR_DRAWABLE = "drawable";
+    private static final String CONTACTS_PACKAGE = "com.android.contacts";
 
     private static final String TAG = "LIconProvider";
     private static final Map<String, ThemeData> DISABLED_MAP = Collections.emptyMap();
@@ -96,6 +99,29 @@ public class LauncherIconProvider extends IconProvider {
         updateTheme();
     }
 //hxy-feature: desktop theme 202312
+    @Override
+    protected ThemeData getThemeDataForComponent(ComponentName componentName) {
+        if (componentName == null) {
+            return null;
+        }
+        Map<String, ThemeData> map = getThemedIconMap();
+        ThemeData td = map.get(componentName.flattenToString());
+        if (td == null) {
+            td = map.get(componentName.flattenToShortString());
+        }
+        if (isDialerContactsActivity(componentName)) {
+            if (td == null) {
+                td = map.get(CONTACTS_PACKAGE);
+            }
+            // Contacts must never fall back to the Dialer package (gold handset).
+            return td;
+        }
+        if (td == null) {
+            td = map.get(componentName.getPackageName());
+        }
+        return td;
+    }
+
     @Override
     protected ThemeData getThemeDataForPackage(String packageName) {
         return getThemedIconMap().get(packageName);
@@ -158,13 +184,14 @@ public class LauncherIconProvider extends IconProvider {
                 }
                 if (TAG_ICON.equals(parser.getName())) {
                     String pkg = parser.getAttributeValue(null, ATTR_PACKAGE);
+                    String cls = parser.getAttributeValue(null, ATTR_CLASS);
                     String iconName = parser.getAttributeValue(null, ATTR_DRAWABLE);
-                    if(!TextUtils.isEmpty(iconName) && !TextUtils.isEmpty(pkg) && resall != null) {
-
+                    if (!TextUtils.isEmpty(iconName) && !TextUtils.isEmpty(pkg) && resall != null) {
                         int iconId = resall.getIdentifier(
                             iconName , "drawable", packageName);
-                        if(iconId > 0){
-                            map.put(pkg, new ThemeData(resall, iconId));
+                        if (iconId > 0) {
+                            String key = TextUtils.isEmpty(cls) ? pkg : pkg + "/" + cls;
+                            map.put(key, new ThemeData(resall, iconId));
                         }
                     }
             ////hxy-feature: desktop theme 202312

@@ -13,4 +13,20 @@
         <item>@string/coloros_frequence_sort</item>
         <item>@string/coloros_time_sort</item>
     </string-array>
+    <string-array name="coloros_drawer_default_view_entries">
+        <item>@string/coloros_floating_tab_all</item>
+        <item>@string/coloros_floating_tab_category</item>
+    </string-array>
+    <string-array name="coloros_drawer_default_view_values">
+        <item>all</item>
+        <item>categories</item>
+    </string-array>
+    <string-array name="coloros_drawer_layout_entries">
+        <item>@string/coloros_drawer_columns_four</item>
+        <item>@string/coloros_drawer_columns_five</item>
+    </string-array>
+    <string-array name="coloros_drawer_layout_values">
+        <item>4</item>
+        <item>5</item>
+    </string-array>
 </resources>

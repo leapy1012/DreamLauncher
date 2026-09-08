@@ -2,10 +2,17 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- hxy-feature: add launcher style function  202312 -->
     <string name="home_screen_style_title">Home screen</string>
-    <string name="home_screen_style_regular">Regular</string>
-    <string name="home_screen_style_single">App drawer</string>
-    <string name="launcher_style_title">Launcher Style</string>
-    <string name="launcher_style_summary">Choose Launcer Style</string>
+    <string name="home_screen_style_regular">Standard</string>
+    <string name="home_screen_style_single">With drawer</string>
+    <string name="launcher_style_title">Home screen</string>
+    <string name="launcher_style_summary">Standard or With drawer</string>
+    <string name="coloros_add_app_to_home">Add new apps to Home screen</string>
+    <string name="coloros_show_app_suggestions">Show app suggestions</string>
+    <string name="coloros_drawer_default_view">Default view</string>
+    <string name="coloros_drawer_layout">Drawer layout</string>
+    <string name="coloros_drawer_show_app_names">Show app names</string>
+    <string name="coloros_home_screen_in_use">In use</string>
+    <string name="coloros_switch_home_screen_mode_message">Switching Home screen modes may affect the arrangement of icons on the Home screen. Switch?</string>
     <string name="item_unremoved">Item can not be removed when is Home Screen</string>
     <!-- hxy-feature: add launcher style function  202312 -->
      <!-- hxy-feature: desktop theme 202312 -->
@@ -62,6 +69,8 @@
     <string name="home_screen_layout_lock_tips">Home screen layout has been locked and cannot be edited.</string>
     <string name="launcher_locked_toast_look_setting">View settings</string>
     <string name="launcher_layout">Layout</string>
+    <string name="coloros_layout_hide_icon_names">Hide icon names</string>
+    <string name="coloros_layout_hide_icon_names_summary">Your Home screen layout will change.</string>
     <string name="edit_selection_cancel">Cancel</string>
     <string name="edit_selection_done">Done</string>
     <string name="edit_selection_create_folder">Create folder</string>

@@ -36,6 +36,7 @@ import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherSettings;
 import com.android.launcher3.LauncherSettings.Favorites;
 import com.android.launcher3.LauncherStyle;
+import com.android.launcher3.allapps.coloros.ColorOsHomeSettings;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.icons.IconCache;
 import com.android.launcher3.logging.FileLog;
@@ -424,7 +425,7 @@ public class PackageUpdatedTask extends BaseModelUpdateTask {
             }
             bindUpdatedWidgets(dataModel);
             //hxy-feature: add launcher style function  202312
-            if (LauncherStyle.isRegular(context)) {
+            if (ColorOsHomeSettings.shouldAddNewAppsToHome(context)) {
                 updateToWorkSpace(context, app, appsList);
             }
             /// &&}}

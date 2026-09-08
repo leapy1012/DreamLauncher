@@ -27,6 +27,8 @@ import android.text.TextUtils;
 
 import androidx.annotation.WorkerThread;
 
+import com.android.launcher3.LauncherStyle;
+import com.android.launcher3.allapps.coloros.ColorOsHomeSettings;
 import com.android.launcher3.logging.FileLog;
 import com.android.launcher3.model.ItemInstallQueue;
 import com.android.launcher3.pm.InstallSessionHelper;
@@ -80,6 +82,9 @@ public class SessionCommitReceiver extends BroadcastReceiver {
     }
 
     public static boolean isEnabled(Context context) {
+        if (LauncherStyle.isAppDrawer(context)) {
+            return ColorOsHomeSettings.isAddNewAppsToHome(context);
+        }
         return LauncherPrefs.getPrefs(context).getBoolean(ADD_ICON_PREFERENCE_KEY, true);
     }
 }

@@ -115,7 +115,7 @@
         <!-- hxy-feature: add launcher style function -->
         <com.coui.appcompat.preference.COUIJumpPreference
             android:key="pref_launcher_style"
-            android:title="@string/launcher_style_title"
+            android:title="@string/home_screen_style_title"
             android:summary="@string/launcher_style_summary"
             android:fragment="com.android.launcher3.settings.LauncherStyleFragment"
             android:persistent="true" />

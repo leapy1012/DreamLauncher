@@ -89,6 +89,8 @@
     <string name="icon_shape_override_progress">图标重载中</string>
     <string name="home_screen_icon_size">图标大小</string>
     <string name="apply">应用</string>
+    <string name="coloros_layout_hide_icon_names">隐藏图标名称</string>
+    <string name="coloros_layout_hide_icon_names_summary">桌面布局将会改变。</string>
     <string name="layout_being_applied">正在应用...</string>
     <string name="icon_size_default">默认</string>
     <string name="icon_size_restore">恢复</string>
@@ -100,4 +102,15 @@
     <string name="sure_set_theme">确定设置此主题吗?</string>
     <string name="ok">确定</string>
     <string name="cancel">取消</string>
+    <string name="coloros_add_app_to_home">添加新应用到桌面</string>
+    <string name="coloros_show_app_suggestions">显示应用建议</string>
+    <string name="coloros_drawer_default_view">默认视图</string>
+    <string name="coloros_drawer_layout">抽屉布局</string>
+    <string name="coloros_drawer_show_app_names">显示应用名称</string>
+    <string name="coloros_home_screen_in_use">已应用</string>
+    <string name="coloros_switch_home_screen_mode_message">切换桌面模式可能会重新排布图标位置，是否切换？</string>
+    <string name="coloros_floating_tab_all">全部</string>
+    <string name="coloros_floating_tab_category">分类</string>
+    <string name="coloros_drawer_columns_four">4 列</string>
+    <string name="coloros_drawer_columns_five">5 列</string>
 </resources>

@@ -39,7 +39,7 @@ public final class EditSelectionFolderBadge {
             return;
         }
         EditSelectionManager selection = launcher.getEditSelectionManager();
-        if (!selection.isActive()) {
+        if (!selection.shouldDrawChecks()) {
             return;
         }
         if (!(folderIcon.getTag() instanceof FolderInfo folderInfo)) {
