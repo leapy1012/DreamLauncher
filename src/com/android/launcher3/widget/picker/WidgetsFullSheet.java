@@ -54,6 +54,7 @@ import androidx.annotation.Px;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.launcher3.DeviceProfile;
@@ -71,6 +72,8 @@ import com.android.launcher3.views.SpringRelativeLayout;
 import com.android.launcher3.views.StickyHeaderLayout;
 import com.android.launcher3.views.WidgetsEduView;
 import com.android.launcher3.widget.BaseWidgetSheet;
+import com.android.launcher3.widget.PendingAddShortcutInfo;
+import com.android.launcher3.widget.PendingAddWidgetInfo;
 import com.android.launcher3.widget.LauncherWidgetHolder.ProviderChangedListener;
 import com.android.launcher3.widget.model.WidgetsListBaseEntry;
 import com.android.launcher3.widget.picker.search.SearchModeListener;
@@ -78,6 +81,8 @@ import com.android.launcher3.widget.picker.search.WidgetsSearchBar;
 import com.android.launcher3.widget.util.WidgetsTableUtils;
 import com.android.launcher3.workprofile.PersonalWorkPagedView;
 import com.android.launcher3.workprofile.PersonalWorkSlidingTabStrip.OnActivePageChangedListener;
+import com.coui.appcompat.toolbar.COUIToolbar;
+import com.google.android.material.appbar.COUIDividerAppBarLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -181,6 +186,11 @@ public class WidgetsFullSheet extends BaseWidgetSheet
     protected WidgetsSearchBar mSearchBar;
     protected TextView mHeaderTitle;
     protected RecyclerViewFastScroller mFastScroller;
+    private COUIToolbar mToolbar;
+    @Nullable private COUIDividerAppBarLayout mDividerAppBar;
+    @Nullable private RecyclerView.OnScrollListener mCatalogDividerScrollListener;
+    @Nullable private View.OnLayoutChangeListener mCatalogDividerLayoutListener;
+    @Nullable private WidgetsRecyclerView mCatalogDividerList;
 
     public WidgetsFullSheet(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
@@ -267,8 +277,195 @@ public class WidgetsFullSheet extends BaseWidgetSheet
         mSearchBarContainer = mSearchScrollView.findViewById(R.id.search_bar_container);
         mSearchBar = mSearchScrollView.findViewById(R.id.widgets_search_bar);
 
-        mSearchBar.initialize(
-                mActivityContext.getPopupDataProvider(), /* searchModeListener= */ this);
+        setupCatalogChrome();
+        if (mSearchBar != null) {
+            mSearchBar.initialize(
+                    mActivityContext.getPopupDataProvider(), /* searchModeListener= */ this);
+        }
+    }
+
+    private boolean isCatalogStyle() {
+        return !isTwoPane();
+    }
+
+    private void setupCatalogChrome() {
+        if (!isCatalogStyle()) {
+            return;
+        }
+        mToolbar = findViewById(R.id.toolbar);
+        if (mToolbar != null) {
+            mToolbar.setTitle(R.string.widget_button_text);
+            mToolbar.setNavigationIcon(com.coui.appcompat.R.drawable.coui_back_arrow);
+            mToolbar.setNavigationOnClickListener(v -> close(true));
+        }
+        if (mSearchScrollView != null) {
+            mSearchScrollView.setVisibility(GONE);
+        }
+        if (mFastScroller != null) {
+            mFastScroller.setVisibility(GONE);
+        }
+        View popup = findViewById(R.id.fast_scroller_popup);
+        if (popup != null) {
+            popup.setVisibility(GONE);
+        }
+        View abl = findViewById(R.id.tool_bar_container);
+        if (abl instanceof COUIDividerAppBarLayout) {
+            mDividerAppBar = (COUIDividerAppBarLayout) abl;
+            mDividerAppBar.setDividerDrivenExternally(true);
+            mDividerAppBar.setTranslationZ(1f);
+            mDividerAppBar.bringToFront();
+        }
+        View handle = findViewById(R.id.collapse_handle);
+        if (handle != null) {
+            handle.setTranslationZ(2f);
+            handle.bringToFront();
+        }
+        applyCatalogListPaddingUnderToolbar();
+        bindCatalogCouiAppBar();
+    }
+
+    private void applyCatalogListPaddingUnderToolbar() {
+        View toolbarContainer = findViewById(R.id.tool_bar_container);
+        WidgetsRecyclerView list = mAdapters.get(AdapterHolder.PRIMARY).mWidgetsRecyclerView;
+        if (toolbarContainer == null || list == null) {
+            return;
+        }
+        int extra = getResources().getDimensionPixelSize(R.dimen.widget_catalog_list_padding_top);
+        int bottom = getResources().getDimensionPixelSize(
+                R.dimen.toggle_bar_widget_list_padding_bottom) + mInsets.bottom;
+        Runnable apply = () -> {
+            int top = toolbarContainer.getHeight() + extra;
+            if (top <= extra) {
+                toolbarContainer.post(this::applyCatalogListPaddingUnderToolbar);
+                return;
+            }
+            applyCatalogListPadding(list, top, bottom);
+            if (mHasWorkProfile) {
+                WidgetsRecyclerView work =
+                        mAdapters.get(AdapterHolder.WORK).mWidgetsRecyclerView;
+                if (work != null) {
+                    applyCatalogListPadding(work, top, bottom);
+                }
+            }
+            resetCatalogScrollAndDivider();
+        };
+        if (toolbarContainer.getHeight() == 0) {
+            toolbarContainer.post(apply);
+        } else {
+            apply.run();
+        }
+    }
+
+    private static void applyCatalogListPadding(WidgetsRecyclerView list, int top, int bottom) {
+        list.setPadding(list.getPaddingLeft(), top, list.getPaddingRight(), bottom);
+    }
+
+    private void resetCatalogScrollAndDivider() {
+        WidgetsRecyclerView list = getRecyclerView();
+        if (list != null) {
+            list.stopScroll();
+            RecyclerView.LayoutManager lm = list.getLayoutManager();
+            if (lm instanceof LinearLayoutManager) {
+                ((LinearLayoutManager) lm).scrollToPositionWithOffset(0, 0);
+            } else {
+                list.scrollToPosition(0);
+            }
+        }
+        updateCatalogDivider(list);
+    }
+
+    /**
+     * Overlay padding makes {@link RecyclerView#computeVerticalScrollOffset()} a few pixels
+     * even at rest, so {@link COUIDividerAppBarLayout#bindRecyclerView} fades in a hairline.
+     * Drive the divider from the first row's position instead.
+     */
+    private void bindCatalogCouiAppBar() {
+        if (!isCatalogStyle() || mDividerAppBar == null) {
+            return;
+        }
+        WidgetsRecyclerView list = getRecyclerView();
+        if (list == null) {
+            return;
+        }
+        mDividerAppBar.post(() -> {
+            mDividerAppBar.setDividerDrivenExternally(true);
+            if (mCatalogDividerScrollListener == null) {
+                mCatalogDividerScrollListener = new RecyclerView.OnScrollListener() {
+                    @Override
+                    public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                        updateCatalogDivider(recyclerView);
+                    }
+                };
+            }
+            if (mCatalogDividerLayoutListener == null) {
+                mCatalogDividerLayoutListener = (v, l, t, r, b, ol, ot, or, ob) -> {
+                    if (v instanceof RecyclerView) {
+                        updateCatalogDivider((RecyclerView) v);
+                    }
+                };
+            }
+            if (mCatalogDividerList != null && mCatalogDividerList != list) {
+                mCatalogDividerList.removeOnScrollListener(mCatalogDividerScrollListener);
+                mCatalogDividerList.removeOnLayoutChangeListener(mCatalogDividerLayoutListener);
+            }
+            mCatalogDividerList = list;
+            list.removeOnScrollListener(mCatalogDividerScrollListener);
+            list.addOnScrollListener(mCatalogDividerScrollListener);
+            list.removeOnLayoutChangeListener(mCatalogDividerLayoutListener);
+            list.addOnLayoutChangeListener(mCatalogDividerLayoutListener);
+            updateCatalogDivider(list);
+        });
+    }
+
+    private void updateCatalogDivider(@Nullable RecyclerView list) {
+        if (mDividerAppBar == null) {
+            return;
+        }
+        if (list == null) {
+            mDividerAppBar.setDividerFraction(0f);
+            return;
+        }
+        int range = Math.max(1, mDividerAppBar.getMeasuredHeight());
+        mDividerAppBar.setDividerFraction(
+                Math.min(1f, catalogVisualScrollPx(list) / (float) range));
+    }
+
+    private static int catalogVisualScrollPx(RecyclerView list) {
+        RecyclerView.LayoutManager lm = list.getLayoutManager();
+        if (!(lm instanceof LinearLayoutManager)) {
+            return 0;
+        }
+        LinearLayoutManager llm = (LinearLayoutManager) lm;
+        int first = llm.findFirstVisibleItemPosition();
+        if (first == RecyclerView.NO_POSITION) {
+            return 0;
+        }
+        // Item 0 is the AOSP empty-space header. It stays at paddingTop (often
+        // 0-height), so measuring it never fades the divider. Oppo's
+        // DividerManager uses the first real list child instead.
+        if (first > 1) {
+            return Integer.MAX_VALUE / 4;
+        }
+        View child = llm.findViewByPosition(first == 0 ? 1 : first);
+        if (child == null) {
+            return 0;
+        }
+        return Math.max(0, list.getPaddingTop() - child.getTop());
+    }
+
+    @Override
+    protected void onWidgetCellClicked(View v, Object tag) {
+        if (!isCatalogStyle()) {
+            super.onWidgetCellClicked(v, tag);
+            return;
+        }
+        if (tag instanceof PendingAddWidgetInfo) {
+            if (mActivityContext.addWidgetFromPicker((PendingAddWidgetInfo) tag)) {
+                close(true);
+            }
+            return;
+        }
+        super.onWidgetCellClicked(v, tag);
     }
 
     private void setDeviceManagementResources() {
@@ -289,13 +486,16 @@ public class WidgetsFullSheet extends BaseWidgetSheet
 
         updateRecyclerViewVisibility(currentAdapterHolder);
         attachScrollbarToRecyclerView(currentRecyclerView);
+        bindCatalogCouiAppBar();
     }
 
     @Override
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void onBackProgressed(@NonNull BackEvent backEvent) {
         super.onBackProgressed(backEvent);
-        mFastScroller.setVisibility(backEvent.getProgress() > 0 ? View.INVISIBLE : View.VISIBLE);
+        if (mFastScroller != null && mFastScroller.getVisibility() == VISIBLE) {
+            mFastScroller.setVisibility(backEvent.getProgress() > 0 ? View.INVISIBLE : View.VISIBLE);
+        }
     }
 
     private void attachScrollbarToRecyclerView(WidgetsRecyclerView recyclerView) {
@@ -359,6 +559,7 @@ public class WidgetsFullSheet extends BaseWidgetSheet
         mActivityContext.getAppWidgetHolder().addProviderChangeListener(this);
         notifyWidgetProvidersChanged();
         onRecommendedWidgetsBound();
+        bindCatalogCouiAppBar();
     }
 
     @Override
@@ -376,6 +577,10 @@ public class WidgetsFullSheet extends BaseWidgetSheet
     @Override
     public void setInsets(Rect insets) {
         super.setInsets(insets);
+        if (isCatalogStyle()) {
+            applyCatalogListPaddingUnderToolbar();
+            return;
+        }
         int bottomPadding = Math.max(insets.bottom, mNavBarScrimHeight);
         setBottomPadding(mAdapters.get(AdapterHolder.PRIMARY).mWidgetsRecyclerView, bottomPadding);
         setBottomPadding(mAdapters.get(AdapterHolder.SEARCH).mWidgetsRecyclerView, bottomPadding);
@@ -403,6 +608,9 @@ public class WidgetsFullSheet extends BaseWidgetSheet
 
     @Override
     protected void onContentHorizontalMarginChanged(int contentHorizontalMarginInPx) {
+        if (isCatalogStyle()) {
+            return;
+        }
         setContentViewChildHorizontalMargin(mSearchScrollView, contentHorizontalMarginInPx);
         if (mViewPager == null) {
             setContentViewChildHorizontalPadding(
@@ -584,7 +792,10 @@ public class WidgetsFullSheet extends BaseWidgetSheet
 
     @Override
     public void onRecommendedWidgetsBound() {
-        if (mIsInSearchMode) {
+        if (isCatalogStyle() || mIsInSearchMode) {
+            if (mRecommendedWidgetsTable != null) {
+                mRecommendedWidgetsTable.setVisibility(GONE);
+            }
             return;
         }
         List<WidgetItem> recommendedWidgets =
@@ -626,6 +837,9 @@ public class WidgetsFullSheet extends BaseWidgetSheet
     /** b/209579563: "Widgets" header should be focused first. */
     @Override
     protected View getAccessibilityInitialFocusView() {
+        if (mToolbar != null) {
+            return mToolbar;
+        }
         return mHeaderTitle;
     }
 
@@ -688,11 +902,25 @@ public class WidgetsFullSheet extends BaseWidgetSheet
     }
 
     protected boolean shouldScroll(MotionEvent ev) {
-        boolean intercept = false;
         WidgetsRecyclerView recyclerView = getRecyclerView();
+        if (recyclerView == null) {
+            return false;
+        }
+        if (isCatalogStyle() && getPopupContainer().isEventOverView(recyclerView, ev)) {
+            View toolbar = mDividerAppBar != null
+                    ? mDividerAppBar : findViewById(R.id.tool_bar_container);
+            if (toolbar != null && getPopupContainer().isEventOverView(toolbar, ev)) {
+                return false;
+            }
+            // List owns the gesture so ColorOS spring overscroll can run; dismiss from
+            // the handle, toolbar, scrim, or back.
+            return true;
+        }
+        boolean intercept = false;
         RecyclerViewFastScroller scroller = recyclerView.getScrollbar();
         // Disable swipe down when recycler view is scrolling
-        if (scroller.getThumbOffsetY() >= 0 && getPopupContainer().isEventOverView(scroller, ev)) {
+        if (scroller != null && scroller.getThumbOffsetY() >= 0
+                && getPopupContainer().isEventOverView(scroller, ev)) {
             intercept = true;
         } else if (getPopupContainer().isEventOverView(recyclerView, ev)) {
             intercept = !recyclerView.shouldContainerScroll(ev, getPopupContainer());
@@ -813,7 +1041,7 @@ public class WidgetsFullSheet extends BaseWidgetSheet
     @Override
     protected void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        if (mIsInSearchMode) {
+        if (mIsInSearchMode && mSearchBar != null) {
             mSearchBar.reset();
         }
 
@@ -885,6 +1113,9 @@ public class WidgetsFullSheet extends BaseWidgetSheet
     }
 
     protected void setUpEducationViewsIfNeeded() {
+        if (isCatalogStyle()) {
+            return;
+        }
         if (!hasSeenEducationDialog()) {
             postDelayed(() -> {
                 WidgetsEduView eduDialog = showEducationDialog();
@@ -952,14 +1183,24 @@ public class WidgetsFullSheet extends BaseWidgetSheet
 
         void setup(WidgetsRecyclerView recyclerView) {
             mWidgetsRecyclerView = recyclerView;
-            mWidgetsRecyclerView.setOutlineProvider(mViewOutlineProvider);
-            mWidgetsRecyclerView.setClipToOutline(true);
-            mWidgetsRecyclerView.setClipChildren(false);
+            if (isCatalogStyle()) {
+                mWidgetsRecyclerView.setClipToOutline(false);
+                mWidgetsRecyclerView.setClipChildren(true);
+                mWidgetsRecyclerView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+                mWidgetsRecyclerView.setOverScrollEnable(true);
+                mWidgetsRecyclerView.addItemDecoration(new CatalogRowSpacingDecoration(
+                        getResources().getDimensionPixelSize(
+                                R.dimen.widget_popup_list_divider_height)));
+            } else {
+                mWidgetsRecyclerView.setOutlineProvider(mViewOutlineProvider);
+                mWidgetsRecyclerView.setClipToOutline(true);
+                mWidgetsRecyclerView.setClipChildren(false);
+            }
             mWidgetsRecyclerView.setAdapter(mWidgetsListAdapter);
             mWidgetsRecyclerView.bindFastScrollbar(mFastScroller);
             mWidgetsRecyclerView.setItemAnimator(mWidgetsListItemAnimator);
             mWidgetsRecyclerView.setHeaderViewDimensionsProvider(WidgetsFullSheet.this);
-            if (!isTwoPane()) {
+            if (!isTwoPane() && !isCatalogStyle()) {
                 mWidgetsRecyclerView.setEdgeEffectFactory(
                         ((SpringRelativeLayout) mContent).createEdgeEffectFactory());
             }
@@ -1006,4 +1247,25 @@ public class WidgetsFullSheet extends BaseWidgetSheet
         return result;
     }
          //hxy-bug clone app bug 20240416 by yangj
+
+    /**
+     * Oppo {@code OplusWidgetsFullSheet.WidgetDividerItemDecoration}: space after each
+     * catalog row except the last. The drawable is transparent; only the offset is used.
+     */
+    private static final class CatalogRowSpacingDecoration extends RecyclerView.ItemDecoration {
+        private final int mSpace;
+
+        CatalogRowSpacingDecoration(int space) {
+            mSpace = space;
+        }
+
+        @Override
+        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view,
+                @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+            int position = parent.getChildAdapterPosition(view);
+            if (position >= 0 && position < state.getItemCount() - 1) {
+                outRect.bottom = mSpace;
+            }
+        }
+    }
 }

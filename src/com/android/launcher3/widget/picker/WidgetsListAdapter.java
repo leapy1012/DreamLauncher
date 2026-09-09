@@ -101,6 +101,7 @@ public class WidgetsListAdapter extends Adapter<ViewHolder> implements OnHeaderC
     @Nullable private RecyclerView mRecyclerView;
     @Nullable private PackageUserKey mPendingClickHeader;
     @Px private int mMaxHorizontalSpan;
+    private final boolean mCatalogStyle;
 
     public WidgetsListAdapter(Context context, LayoutInflater layoutInflater,
             IntSupplier emptySpaceHeightProvider, OnClickListener iconClickListener,
@@ -110,11 +111,19 @@ public class WidgetsListAdapter extends Adapter<ViewHolder> implements OnHeaderC
         mMaxHorizontalSpan = WidgetSizes.getWidgetSizePx(
                 ActivityContext.lookupContext(context).getDeviceProfile(),
                         DEFAULT_MAX_HORIZONTAL_SPANS, 1).getWidth();
+        mCatalogStyle = !isTwoPane;
 
-        mViewHolderBinders.put(
-                VIEW_TYPE_WIDGETS_LIST,
-                new WidgetsListTableViewHolderBinder(
-                        mContext, layoutInflater, iconClickListener, iconLongClickListener));
+        if (mCatalogStyle) {
+            mViewHolderBinders.put(
+                    VIEW_TYPE_WIDGETS_LIST,
+                    new WidgetsListCatalogViewHolderBinder(
+                            mContext, layoutInflater, iconClickListener, iconLongClickListener));
+        } else {
+            mViewHolderBinders.put(
+                    VIEW_TYPE_WIDGETS_LIST,
+                    new WidgetsListTableViewHolderBinder(
+                            mContext, layoutInflater, iconClickListener, iconLongClickListener));
+        }
         mViewHolderBinders.put(
                 VIEW_TYPE_WIDGETS_HEADER,
                 new WidgetsListHeaderViewHolderBinder(
@@ -153,6 +162,9 @@ public class WidgetsListAdapter extends Adapter<ViewHolder> implements OnHeaderC
      * Returns true if the adapter has entries which will be visible to the user
      */
     public boolean hasVisibleEntries() {
+        if (mCatalogStyle) {
+            return !mVisibleEntries.isEmpty();
+        }
         // Account for the 1st space entry
         return getItemCount() > 1;
     }
@@ -170,7 +182,9 @@ public class WidgetsListAdapter extends Adapter<ViewHolder> implements OnHeaderC
     /** Updates the widget list based on {@code tempEntries}. */
     public void setWidgets(List<WidgetsListBaseEntry> tempEntries) {
         mAllEntries.clear();
-        mAllEntries.add(new WidgetListSpaceEntry());
+        if (!mCatalogStyle) {
+            mAllEntries.add(new WidgetListSpaceEntry());
+        }
         tempEntries.stream().sorted(mRowComparator).forEach(mAllEntries::add);
         updateVisibleEntries();
     }
@@ -190,26 +204,34 @@ public class WidgetsListAdapter extends Adapter<ViewHolder> implements OnHeaderC
         OptionalInt topForPackageUserKey =
                 getOffsetForPosition(previousPositionForPackageUserKey);
 
-        List<WidgetsListBaseEntry> newVisibleEntries = mAllEntries.stream()
-                .filter(entry -> (((mFilter == null || mFilter.test(entry))
-                        && mHeaderAndSelectedContentFilter.test(entry))
-                        || entry instanceof WidgetListSpaceEntry)
-                        && (mHeaderChangeListener == null
-                        || !(entry instanceof WidgetsListContentEntry)))
-                .map(entry -> {
-                    if (entry instanceof WidgetsListHeaderEntry
-                            && matchesKey(entry, mWidgetsContentVisiblePackageUserKey)) {
-                        // Adjust the original entries to expand headers for the selected content.
-                        return ((WidgetsListHeaderEntry) entry).withWidgetListShown();
-                    } else if (entry instanceof WidgetsListContentEntry) {
-                        // Adjust the original content entries to accommodate for the current
-                        // maxSpanSize.
-                        return ((WidgetsListContentEntry) entry).withMaxSpanSize(
-                                mMaxHorizontalSpan);
-                    }
-                    return entry;
-                })
-                .collect(Collectors.toList());
+        List<WidgetsListBaseEntry> newVisibleEntries;
+        if (mCatalogStyle) {
+            newVisibleEntries = mAllEntries.stream()
+                    .filter(entry -> entry instanceof WidgetsListContentEntry
+                            && (mFilter == null || mFilter.test(entry)))
+                    .collect(Collectors.toList());
+        } else {
+            newVisibleEntries = mAllEntries.stream()
+                    .filter(entry -> (((mFilter == null || mFilter.test(entry))
+                            && mHeaderAndSelectedContentFilter.test(entry))
+                            || entry instanceof WidgetListSpaceEntry)
+                            && (mHeaderChangeListener == null
+                            || !(entry instanceof WidgetsListContentEntry)))
+                    .map(entry -> {
+                        if (entry instanceof WidgetsListHeaderEntry
+                                && matchesKey(entry, mWidgetsContentVisiblePackageUserKey)) {
+                            // Adjust the original entries to expand headers for the selected content.
+                            return ((WidgetsListHeaderEntry) entry).withWidgetListShown();
+                        } else if (entry instanceof WidgetsListContentEntry) {
+                            // Adjust the original content entries to accommodate for the current
+                            // maxSpanSize.
+                            return ((WidgetsListContentEntry) entry).withMaxSpanSize(
+                                    mMaxHorizontalSpan);
+                        }
+                        return entry;
+                    })
+                    .collect(Collectors.toList());
+        }
 
         DiffResult diffResult = DiffUtil.calculateDiff(
                 new WidgetsDiffCallback(mVisibleEntries, newVisibleEntries), false);

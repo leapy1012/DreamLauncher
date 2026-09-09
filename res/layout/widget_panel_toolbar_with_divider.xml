@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.appbar.COUIDividerAppBarLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/tool_bar_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/color_background_widget_sheet"
+    android:elevation="0dp"
+    android:stateListAnimator="@null"
+    android:theme="@style/WidgetPicker.AppCompatOverlay"
+    app:liftOnScroll="false"
+    app:dividerEndAlpha="1"
+    app:dividerEndMarginHorizontal="0dp"
+    app:dividerStartAlpha="0"
+    app:dividerStartMarginHorizontal="0dp"
+    app:elevation="0dp"
+    app:hasDivider="true">
+
+    <com.coui.appcompat.toolbar.COUIToolbar
+        android:id="@+id/toolbar"
+        style="@style/WidgetPicker.Toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/color_background_widget_sheet"
+        android:minHeight="@dimen/widget_catalog_toolbar_min_height"
+        app:supportNavigationIcon="@drawable/coui_back_arrow"
+        app:supportTitleTextAppearance="@style/textAppearanceSecondTitle" />
+</com.google.android.material.appbar.COUIDividerAppBarLayout>

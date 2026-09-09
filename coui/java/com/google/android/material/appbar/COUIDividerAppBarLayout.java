@@ -56,6 +56,7 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
     private OnDividerProgressChangedListener mOnDividerProgressChangedListener;
     private View.OnLayoutChangeListener mOnLayoutChangeListener;
     private RecyclerView.OnScrollListener mOnScrollListener;
+    private boolean mDividerDrivenExternally;
 
     public interface OnDividerProgressChangedListener {
         void onDividerProgressChanged(float fraction);
@@ -218,9 +219,8 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
                 COUIContextUtil.getAttrColor(getContext(), R.attr.couiColorDivider));
         // Leapy modified 2026-07-30: Decoded OPPO applies the restored/start
         // fraction before discovering and binding the scrolling child.
-        refreshDivider();
-        mDividerView.setVisibility(mHasDivider ? VISIBLE : GONE);
         mDividerView.setForceDarkAllowed(false);
+        refreshDivider();
         findRecyclerView();
         bindListener();
         // Leapy end
@@ -234,6 +234,9 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
     }
 
     private void findRecyclerView() {
+        if (mDividerDrivenExternally) {
+            return;
+        }
         View parent = (View) getParent();
         if (!(parent instanceof ViewGroup)) {
             return;
@@ -241,7 +244,7 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
         ViewGroup parentGroup = (ViewGroup) parent;
         for (int i = 0; i < parentGroup.getChildCount(); i++) {
             View child = parentGroup.getChildAt(i);
-            if (child instanceof RecyclerView) {
+            if (child instanceof RecyclerView && child.getVisibility() == VISIBLE) {
                 mTargetView = (RecyclerView) child;
                 return;
             }
@@ -279,6 +282,9 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
     }
 
     public void onDividerChanged() {
+        if (mDividerDrivenExternally) {
+            return;
+        }
         int totalScroll = Math.max(0, mScrollDyByScroll)
                 + mScrollDyByOffset + mScrollDyByOverScroll;
         if (totalScroll < 0 || !isDividerAnimEnable()) {
@@ -299,6 +305,9 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
         if (mDividerView != null) {
             mDividerView.setAlpha(alpha);
             setDividerHorizontalMargin(margin);
+            if (mHasDivider) {
+                mDividerView.setVisibility(alpha <= 0f ? INVISIBLE : VISIBLE);
+            }
         }
         if (notifyProgress && mOnDividerProgressChangedListener != null) {
             mOnDividerProgressChangedListener.onDividerProgressChanged(mDividerFraction);
@@ -404,10 +413,31 @@ public class COUIDividerAppBarLayout extends AppBarLayout {
         }
     }
 
+    /**
+     * Sets the divider progress from a caller that knows the list's visual scroll, not
+     * {@link RecyclerView#computeVerticalScrollOffset()}.
+     */
+    public void setDividerFraction(float fraction) {
+        mDividerFraction = clamp(fraction);
+        applyDividerFraction(true);
+    }
+
+    /**
+     * Stops auto-binding a sibling RecyclerView and ignores
+     * {@link RecyclerView#computeVerticalScrollOffset()} updates.
+     */
+    public void setDividerDrivenExternally(boolean drivenExternally) {
+        mDividerDrivenExternally = drivenExternally;
+        if (drivenExternally) {
+            bindRecyclerView(null);
+        }
+    }
+
     public void reset() {
         mScrollDyByScroll = 0;
         mScrollDyByOffset = 0;
         mScrollDyByOverScroll = 0;
+        mDividerFraction = 0f;
         // Leapy modified 2026-07-30: Keep reset state-only, matching decoded
         // OPPO COUIDividerAppBarLayout.
         // Leapy end

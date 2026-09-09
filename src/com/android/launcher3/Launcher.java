@@ -122,6 +122,7 @@ import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 import android.view.ViewTreeObserver;
 import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.view.WindowManager.LayoutParams;
@@ -205,6 +206,7 @@ import com.android.launcher3.util.ActivityTracker;
 import com.android.launcher3.util.ComponentKey;
 import com.android.launcher3.util.IntArray;
 import com.android.launcher3.util.IntSet;
+import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.util.LockedUserState;
 import com.android.launcher3.util.OnboardingPrefs;
 import com.android.launcher3.util.PackageUserKey;
@@ -2084,6 +2086,72 @@ public class Launcher extends StatefulActivity<LauncherState>
             default:
                 throw new IllegalStateException("Unknown item type: " + info.itemType);
         }
+    }
+
+    /**
+     * Places a widget from the ColorOS catalog: current page first, then later pages, then a new
+     * empty page. Returns false and toasts if the workspace is full.
+     */
+    public boolean addWidgetFromPicker(PendingAddWidgetInfo info) {
+        if (LayoutLockHelper.checkLockedAndShowMessage(this)) {
+            return false;
+        }
+        if (mWorkspace == null || info == null) {
+            return false;
+        }
+        int current = mWorkspace.getNextPage();
+        if (placeWidgetOnPage(info, current, false)) {
+            return true;
+        }
+        int pageCount = mWorkspace.getPageCount();
+        for (int i = 0; i < pageCount; i++) {
+            if (i != current && placeWidgetOnPage(info, i, true)) {
+                return true;
+            }
+        }
+        mWorkspace.addExtraEmptyScreens();
+        int newCount = mWorkspace.getPageCount();
+        for (int i = pageCount; i < newCount; i++) {
+            if (placeWidgetOnPage(info, i, true)) {
+                return true;
+            }
+        }
+        Toast.makeText(this, R.string.out_of_space, Toast.LENGTH_SHORT).show();
+        return false;
+    }
+
+    private boolean placeWidgetOnPage(PendingAddWidgetInfo info, int pageIndex, boolean snap) {
+        CellLayout cellLayout = (CellLayout) mWorkspace.getChildAt(pageIndex);
+        if (cellLayout == null) {
+            return false;
+        }
+        int screenId = mWorkspace.getIdForScreen(cellLayout);
+        int spanX = Math.max(1, info.spanX);
+        int spanY = Math.max(1, info.spanY);
+        int[] cell = new int[2];
+        if (!cellLayout.findCellForSpan(cell, spanX, spanY)) {
+            int minX = Math.max(1, info.minSpanX);
+            int minY = Math.max(1, info.minSpanY);
+            if ((minX == spanX && minY == spanY)
+                    || !cellLayout.findCellForSpan(cell, minX, minY)) {
+                return false;
+            }
+            spanX = minX;
+            spanY = minY;
+        }
+        if (Workspace.EXTRA_EMPTY_SCREEN_IDS.contains(screenId)) {
+            IntSet committed = mWorkspace.commitExtraEmptyScreens();
+            if (committed.isEmpty()) {
+                return false;
+            }
+            screenId = committed.getArray().get(0);
+        }
+        addPendingItem(info, CONTAINER_DESKTOP, screenId, cell, spanX, spanY);
+        if (snap) {
+            int page = pageIndex;
+            mWorkspace.postDelayed(() -> mWorkspace.snapToPage(page), 100);
+        }
+        return true;
     }
 
     /**

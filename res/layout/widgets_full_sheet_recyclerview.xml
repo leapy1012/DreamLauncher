@@ -18,17 +18,20 @@
     <com.android.launcher3.widget.picker.WidgetsRecyclerView
         android:id="@+id/primary_widgets_list_view"
         android:layout_below="@id/collapse_handle"
+        android:layout_alignParentBottom="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingHorizontal="@dimen/widget_list_horizontal_margin"
-        android:clipToPadding="false" />
+        android:clipChildren="true"
+        android:clipToPadding="false"
+        android:overScrollMode="always" />
 
     <!-- SearchAndRecommendationsView without the tab layout as well -->
     <com.android.launcher3.views.StickyHeaderLayout
         android:id="@+id/search_and_recommendations_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/collapse_handle"
+        android:layout_below="@id/tool_bar_container"
+        android:visibility="gone"
         android:paddingBottom="16dp"
         android:layout_marginHorizontal="@dimen/widget_list_horizontal_margin"
         android:clipToOutline="true"

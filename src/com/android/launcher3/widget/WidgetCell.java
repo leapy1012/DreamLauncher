@@ -98,6 +98,7 @@ public class WidgetCell extends LinearLayout {
     private NavigableAppWidgetHostView mAppWidgetHostViewPreview;
     private float mAppWidgetHostViewScale = 1f;
     private int mSourceContainer = CONTAINER_WIDGETS_TRAY;
+    private int mCatalogCellSizePx;
 
     public WidgetCell(Context context) {
         this(context, null);
@@ -183,6 +184,12 @@ public class WidgetCell extends LinearLayout {
         this.mSourceContainer = sourceContainer;
     }
 
+    /** ColorOS catalog cells: fixed 140dp gray preview tile. */
+    public void enableCatalogStyle() {
+        mCatalogCellSizePx = getResources().getDimensionPixelSize(
+                R.dimen.toggle_bar_widget_item_width);
+    }
+
     /**
      * Applies the item to this view
      */
@@ -210,7 +217,12 @@ public class WidgetCell extends LinearLayout {
 
         Context context = getContext();
         mItem = item;
-        mWidgetSize = getWidgetItemSizePx(getContext(), mActivity.getDeviceProfile(), mItem);
+        if (mCatalogCellSizePx > 0) {
+            int preview = Math.round(mCatalogCellSizePx * 0.8f);
+            mWidgetSize = new Size(preview, preview);
+        } else {
+            mWidgetSize = getWidgetItemSizePx(getContext(), mActivity.getDeviceProfile(), mItem);
+        }
 
         mWidgetName.setText(mItem.label);
         mWidgetName.setContentDescription(
@@ -219,7 +231,9 @@ public class WidgetCell extends LinearLayout {
                 mItem.spanX, mItem.spanY));
         mWidgetDims.setContentDescription(context.getString(
                 R.string.widget_accessible_dims_format, mItem.spanX, mItem.spanY));
-        if (!TextUtils.isEmpty(mItem.description)) {
+        if (mCatalogCellSizePx > 0) {
+            mWidgetDescription.setVisibility(GONE);
+        } else if (!TextUtils.isEmpty(mItem.description)) {
             mWidgetDescription.setText(mItem.description);
             mWidgetDescription.setVisibility(VISIBLE);
         } else {
@@ -394,6 +408,14 @@ public class WidgetCell extends LinearLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         ViewGroup.LayoutParams containerLp = mWidgetImageContainer.getLayoutParams();
+
+        if (mCatalogCellSizePx > 0) {
+            containerLp.width = mCatalogCellSizePx;
+            containerLp.height = mCatalogCellSizePx;
+            mAppWidgetHostViewScale = mPreviewContainerScale;
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            return;
+        }
 
         mAppWidgetHostViewScale = mPreviewContainerScale;
         int maxWidth = MeasureSpec.getSize(widthMeasureSpec);

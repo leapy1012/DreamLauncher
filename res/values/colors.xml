@@ -197,4 +197,9 @@
     <color name="coloros_layout_tile_label">#E6000000</color>
     <color name="coloros_layout_divider">#1A000000</color>
     <color name="coloros_layout_subtitle">#8A000000</color>
+    <!-- ColorOS All-widgets catalog -->
+    <color name="color_background_widget_sheet">#fafafa</color>
+    <color name="toggle_bar_widget_list_item_widget_bg">#33000000</color>
+    <color name="toggle_bar_widget_list_item_widget_bg_stroke">#1f000000</color>
+    <color name="launcher_widget_full_sheet_item_name_color">#d9000000</color>
 </resources>

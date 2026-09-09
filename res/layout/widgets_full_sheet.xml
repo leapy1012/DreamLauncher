@@ -30,11 +30,19 @@
 
         <View
             android:id="@+id/collapse_handle"
-            android:layout_width="@dimen/bottom_sheet_handle_width"
+            android:layout_width="@dimen/widget_catalog_handle_width"
             android:layout_height="@dimen/bottom_sheet_handle_height"
-            android:layout_marginTop="@dimen/bottom_sheet_handle_margin"
+            android:layout_marginTop="@dimen/widget_catalog_handle_margin_top"
             android:layout_centerHorizontal="true"
             android:background="@drawable/widget_picker_collapse_handle"/>
+
+        <include
+            android:id="@+id/tool_bar_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/collapse_handle"
+            android:theme="@style/WidgetPicker.AppCompatOverlay"
+            layout="@layout/widget_panel_toolbar_with_divider"/>
 
         <TextView
             style="@style/PrimaryHeadline"
@@ -44,7 +52,7 @@
             android:gravity="center"
             android:visibility="gone"
             android:textSize="18sp"
-            android:layout_below="@id/search_and_recommendations_container"
+            android:layout_below="@id/tool_bar_container"
             tools:text="No widgets available" />
 
         <!-- Fast scroller popup -->
@@ -62,13 +70,14 @@
             android:layout_height="match_parent"
             android:layout_alignParentEnd="true"
             android:layout_alignParentTop="true"
-            android:layout_marginEnd="@dimen/fastscroll_end_margin" />
+            android:layout_marginEnd="@dimen/fastscroll_end_margin"
+            android:visibility="gone" />
 
         <com.android.launcher3.widget.picker.WidgetsRecyclerView
             android:id="@+id/search_widgets_list_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/collapse_handle"
+            android:layout_below="@id/tool_bar_container"
             android:paddingHorizontal="@dimen/widget_list_horizontal_margin"
             android:visibility="gone"
             android:clipToPadding="false" />

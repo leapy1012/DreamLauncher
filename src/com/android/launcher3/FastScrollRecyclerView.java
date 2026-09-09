@@ -23,6 +23,7 @@ import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.COUIRecyclerView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.launcher3.compat.AccessibilityManagerCompat;
@@ -36,7 +37,7 @@ import com.android.launcher3.views.RecyclerViewFastScroller;
  *   <li> Enable fast scroller.
  * </ul>
  */
-public abstract class FastScrollRecyclerView extends RecyclerView  {
+public abstract class FastScrollRecyclerView extends COUIRecyclerView  {
 
     protected RecyclerViewFastScroller mScrollbar;
 
@@ -50,6 +51,8 @@ public abstract class FastScrollRecyclerView extends RecyclerView  {
 
     public FastScrollRecyclerView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        setOverScrollEnable(false);
+        setEnablePointerDownAction(false);
     }
 
     public void bindFastScrollbar(RecyclerViewFastScroller scrollbar) {

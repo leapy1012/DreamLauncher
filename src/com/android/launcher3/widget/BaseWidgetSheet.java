@@ -118,19 +118,23 @@ public abstract class BaseWidgetSheet extends AbstractSlideInView<Launcher>
     }
 
     @Override
-    public final void onClick(View v) {
+    public void onClick(View v) {
         Object tag = null;
         if (v instanceof WidgetCell) {
             tag = v.getTag();
         } else if (v.getParent() instanceof WidgetCell) {
             tag = ((WidgetCell) v.getParent()).getTag();
         }
+        onWidgetCellClicked(v, tag);
+    }
+
+    /** Default: toast to long-press. Catalog sheet overrides to place the widget. */
+    protected void onWidgetCellClicked(View v, Object tag) {
         if (tag instanceof PendingAddShortcutInfo) {
             mWidgetInstructionToast = showShortcutToast(getContext(), mWidgetInstructionToast);
         } else {
             mWidgetInstructionToast = showWidgetToast(getContext(), mWidgetInstructionToast);
         }
-
     }
 
     @Override

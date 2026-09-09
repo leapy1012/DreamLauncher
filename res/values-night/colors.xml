@@ -61,4 +61,8 @@
     <color name="material_color_primary">#ADC6FF</color>
     <color name="material_color_secondary">#BFC6DC</color>
     <color name="material_color_tertiary">#DEBCDF</color>
+    <color name="color_background_widget_sheet">#000000</color>
+    <color name="toggle_bar_widget_list_item_widget_bg">#1affffff</color>
+    <color name="toggle_bar_widget_list_item_widget_bg_stroke">#26ffffff</color>
+    <color name="launcher_widget_full_sheet_item_name_color">#d9ffffff</color>
 </resources>

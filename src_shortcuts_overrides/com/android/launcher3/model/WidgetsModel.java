@@ -182,7 +182,7 @@ public class WidgetsModel {
         // Update each package entry
         IconCache iconCache = app.getIconCache();
         for (PackageItemInfo p : packageItemInfoCache.values()) {
-            iconCache.getTitleAndIconForApp(p, true /* userLowResIcon */);
+            iconCache.getTitleAndIconForApp(p, false /* useLowResIcon */);
         }
     }
 

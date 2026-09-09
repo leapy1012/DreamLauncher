@@ -510,4 +510,18 @@
         <item name="horizontalPadding">16dp</item>
     </style>
 
+    <style name="WidgetPicker.Toolbar" parent="@style/Widget.COUI.Toolbar">
+        <item name="android:minHeight">@dimen/widget_catalog_toolbar_min_height</item>
+        <item name="supportTitleTextAppearance">@style/textAppearanceSecondTitle</item>
+        <item name="supportNavigationIcon">@drawable/coui_back_arrow</item>
+    </style>
+
+    <!-- AppBarLayout needs AppCompat; COUIToolbar title uses ?couiColorPrimaryNeutral.
+         Theme.AppCompat alone is not enough — use the same COUI AppCompat host as settings. -->
+    <style name="WidgetPicker.AppCompatOverlay" parent="@style/OplusSupportAppNoTitleTheme">
+        <item name="colorPrimary">@color/color_background_widget_sheet</item>
+        <item name="colorPrimaryDark">@color/color_background_widget_sheet</item>
+        <item name="android:textColorPrimary">@color/launcher_widget_full_sheet_item_name_color</item>
+    </style>
+
 </resources>

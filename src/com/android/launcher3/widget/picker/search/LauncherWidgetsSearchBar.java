@@ -59,7 +59,9 @@ public class LauncherWidgetsSearchBar extends LinearLayout implements WidgetsSea
 
     @Override
     public void reset() {
-        mController.clearSearchResult();
+        if (mController != null) {
+            mController.clearSearchResult();
+        }
     }
 
     @Override
@@ -72,7 +74,10 @@ public class LauncherWidgetsSearchBar extends LinearLayout implements WidgetsSea
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        mController.onDestroy();
+        if (mController != null) {
+            mController.onDestroy();
+            mController = null;
+        }
     }
 
     @Override
@@ -82,6 +87,8 @@ public class LauncherWidgetsSearchBar extends LinearLayout implements WidgetsSea
 
     @Override
     public void clearSearchBarFocus() {
-        mController.clearFocus();
+        if (mController != null) {
+            mController.clearFocus();
+        }
     }
 }

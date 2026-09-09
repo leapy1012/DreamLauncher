@@ -20,6 +20,7 @@ import android.content.Context;
 import android.graphics.Point;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -41,6 +42,10 @@ public class WidgetsRecyclerView extends FastScrollRecyclerView implements OnIte
     private final Point mFastScrollerOffset = new Point();
     private boolean mTouchDownOnScroller;
     private HeaderViewDimensionsProvider mHeaderViewDimensionsProvider;
+    private int mInitialTouchX;
+    private int mInitialTouchY;
+    private int mScrollPointerId = -1;
+    private int mTouchSlop;
 
     public WidgetsRecyclerView(Context context) {
         this(context, null);
@@ -54,7 +59,69 @@ public class WidgetsRecyclerView extends FastScrollRecyclerView implements OnIte
         // API 21 and below only support 3 parameter ctor.
         super(context, attrs, defStyleAttr);
         mScrollbarTop = getResources().getDimensionPixelSize(R.dimen.dynamic_grid_edge_margin);
+        mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         addOnItemTouchListener(this);
+    }
+
+    @Override
+    public void setScrollingTouchSlop(int slopConstant) {
+        ViewConfiguration configuration = ViewConfiguration.get(getContext());
+        if (slopConstant == RecyclerView.TOUCH_SLOP_DEFAULT) {
+            mTouchSlop = configuration.getScaledTouchSlop();
+        } else if (slopConstant == RecyclerView.TOUCH_SLOP_PAGING) {
+            mTouchSlop = configuration.getScaledPagingTouchSlop();
+        }
+        super.setScrollingTouchSlop(slopConstant);
+    }
+
+    /**
+     * Oppo {@code OplusWidgetsRecyclerView}: take the gesture only when movement matches
+     * this list's axis so a vertical pull inside a widget row is not eaten by the row.
+     */
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent e) {
+        LayoutManager layoutManager = getLayoutManager();
+        if (layoutManager == null) {
+            return super.onInterceptTouchEvent(e);
+        }
+        boolean canScrollHorizontally = layoutManager.canScrollHorizontally();
+        boolean canScrollVertically = layoutManager.canScrollVertically();
+        int actionMasked = e.getActionMasked();
+        int actionIndex = e.getActionIndex();
+        if (actionMasked == MotionEvent.ACTION_DOWN) {
+            mScrollPointerId = e.getPointerId(0);
+            mInitialTouchX = Math.round(e.getX());
+            mInitialTouchY = Math.round(e.getY());
+            if (getScrollState() == SCROLL_STATE_SETTLING) {
+                return false;
+            }
+            return super.onInterceptTouchEvent(e);
+        }
+        if (actionMasked != MotionEvent.ACTION_MOVE) {
+            if (actionMasked == MotionEvent.ACTION_POINTER_DOWN) {
+                mScrollPointerId = e.getPointerId(actionIndex);
+                mInitialTouchX = Math.round(e.getX(actionIndex));
+                mInitialTouchY = Math.round(e.getY(actionIndex));
+            }
+            return super.onInterceptTouchEvent(e);
+        }
+        int pointerIndex = e.findPointerIndex(mScrollPointerId);
+        if (pointerIndex < 0) {
+            return false;
+        }
+        int x = Math.round(e.getX(pointerIndex));
+        int y = Math.round(e.getY(pointerIndex));
+        if (getScrollState() == SCROLL_STATE_DRAGGING) {
+            return super.onInterceptTouchEvent(e);
+        }
+        int dx = x - mInitialTouchX;
+        int dy = y - mInitialTouchY;
+        boolean intercept = canScrollHorizontally
+                && Math.abs(dx) > mTouchSlop && Math.abs(dx) > Math.abs(dy);
+        if (canScrollVertically && Math.abs(dy) > mTouchSlop && Math.abs(dy) > Math.abs(dx)) {
+            intercept = true;
+        }
+        return intercept && super.onInterceptTouchEvent(e);
     }
 
     @Override
