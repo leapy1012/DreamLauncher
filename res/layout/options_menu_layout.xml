@@ -46,6 +46,12 @@
             android:text="@string/launcher_layout" />
 
         <com.android.launcher3.screenedit.IconTextView
+            android:id="@+id/screen_manager_button"
+            style="@style/PannelButton"
+            android:drawableTop="@drawable/quickactionbar_layout_icon"
+            android:text="@string/screen_manager_button_text" />
+
+        <com.android.launcher3.screenedit.IconTextView
             android:id="@+id/settings_button"
             style="@style/PannelButton"
             android:drawableTop="@drawable/quickactionbar_launcher_setting_icon"

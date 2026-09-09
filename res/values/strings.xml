@@ -86,6 +86,9 @@
     <!-- Text for both the tile of a popup view, which shows all available widgets installed on
          the device, and the text of a button, which opens this popup view. [CHAR LIMIT=30]-->
     <string name="widget_button_text">Widgets</string>
+    <string name="screen_manager_button_text">Screen Manager</string>
+    <string name="booster_phone_boost">Phone Boost</string>
+    <string name="booster_optimized">Optimized</string>
     <!-- Search bar text shown in the popup view showing all available widgets installed on the
          device. [CHAR_LIMIT=50] -->
     <string name="widgets_full_sheet_search_bar_hint">Search</string>

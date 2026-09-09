@@ -7,6 +7,7 @@ import android.view.View;
 
 import com.android.launcher3.Launcher;
 import com.android.launcher3.anim.BaseParams;
+import com.android.launcher3.big.booster.BoosterOverlayView;
 import com.android.launcher3.big.memoryclean.utils.HxyAntiShakeUtil;
 import com.android.launcher3.R;
 import com.android.launcher3.big.HxyAnimBubbleTextView;
@@ -23,6 +24,7 @@ public class ClearCallBack extends BaseCallback {
         this.mIcon.setText(R.string.memory_clean_running_animator);
         sendMemoryCleanBroadcast(this.mIcon.getContext());
         this.mIcon.setIconVisible(false);
+        showBoosterOverlay();
     }
 
     public void onStart(BaseParams params) {
@@ -32,6 +34,7 @@ public class ClearCallBack extends BaseCallback {
         if (params.resouceOK()) {
             this.mIcon.setIconVisible(false);
         }
+        showBoosterOverlay();
     }
 
     public void onRunning() {
@@ -51,6 +54,16 @@ public class ClearCallBack extends BaseCallback {
     private void sendMemoryCleanBroadcast(Context context) {
         if (!HxyAntiShakeUtil.isInvalidClick(1500) && (context instanceof ContextWrapper)) {
            ((RecentsView) Launcher.getLauncher(context).getOverviewPanel()).hxyClearAllTasks();
+        }
+    }
+
+    private void showBoosterOverlay() {
+        Context context = this.mIcon.getContext();
+        try {
+            Launcher launcher = Launcher.getLauncher(context);
+            BoosterOverlayView.show(launcher);
+        } catch (Exception ignored) {
+            // Icon may be bound outside Launcher in rare cases.
         }
     }
 }
