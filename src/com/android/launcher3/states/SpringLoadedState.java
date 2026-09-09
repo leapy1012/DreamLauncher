@@ -38,9 +38,24 @@ public class SpringLoadedState extends LauncherState {
         super(id, LAUNCHER_STATE_HOME, STATE_FLAGS);
     }
 
+    /**
+     * Oppo ToggleBar workspace scale uses ~550ms with Path(0.33,0,0.67,1).
+     * Keep slightly shorter so it settles with the bar spring.
+     */
     @Override
     public int getTransitionDuration(Context context, boolean isToState) {
-        return 150;
+        return 420;
+    }
+
+    /**
+     * Fade hotseat via WorkspaceStateTransitionAnimation (Oppo HotSeatSpring),
+     * instead of snapping it GONE on long-press. Hide page indicator so it does
+     * not keep scaling/settling under the toggle bar after the bar spring ends
+     * (that relative motion looks like the toggle icons "reposition").
+     */
+    @Override
+    public int getVisibleElements(Launcher launcher) {
+        return VERTICAL_SWIPE_INDICATOR;
     }
 
     @Override
@@ -72,7 +87,9 @@ public class SpringLoadedState extends LauncherState {
 
     @Override
     public ScaleAndTranslation getHotseatScaleAndTranslation(Launcher launcher) {
-        return new ScaleAndTranslation(1, 0, 0);
+        // Scale with workspace while fading, matching Oppo ScaleTarget(workspace, hotseat, PI).
+        float scale = getWorkspaceScaleAndTranslation(launcher).scale;
+        return new ScaleAndTranslation(scale, 0, 0);
     }
 
     /**

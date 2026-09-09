@@ -216,6 +216,7 @@ import com.android.launcher3.util.RunnableList;
 import com.android.launcher3.util.SafeCloseable;
 import com.android.launcher3.util.ScreenOnTracker;
 import com.android.launcher3.util.ScreenOnTracker.ScreenOnListener;
+import com.android.launcher3.util.SystemBarHelper;
 import com.android.launcher3.util.SystemUiController;
 import com.android.launcher3.util.Themes;
 import com.android.launcher3.util.Thunk;
@@ -1332,6 +1333,9 @@ public class Launcher extends StatefulActivity<LauncherState>
             if (mEditSelectionManager != null) {
                 mEditSelectionManager.exit();
             }
+
+            // Restore status bar after leaving edit / spring-loaded (Oppo ToggleBar).
+            SystemBarHelper.showStatusBar(getWindow());
 
             mHotseat.setVisibility(View.VISIBLE);
             long delay = 0;
@@ -3459,10 +3463,13 @@ public class Launcher extends StatefulActivity<LauncherState>
      * Shows the default options popup
      */
     public void showDefaultOptions(float x, float y) {
-        // OptionsPopupView.show(this, getPopupTarget(x, y), OptionsPopupView.getOptions(this),
-        //         false);
-        OptionsDialogView.show(this, null);
+        // Attach edit chrome first so DragLayer finishes its layout pass before the
+        // options bar springs — otherwise toolbar addView/requestLayout shifts the
+        // BOTTOM-gravity options panel mid-animation.
         getEditSelectionManager().enter();
+        OptionsDialogView.show(this, null);
+        // Match Oppo: hide status bar when opening the workspace edit options.
+        SystemBarHelper.hideStatusBar(getWindow(), false /* animate */);
     }
 
     /** Oppo-style edit-mode selection (checkmarks + Cancel/Done toolbar). */

@@ -26,6 +26,8 @@
     <dimen name="launcher_toggle_bar_main_ui_item_width">44dp</dimen>
     <dimen name="togglebar_main_ui_list_item_title_margin_top">4dp</dimen>
     <dimen name="toggle_bar_item_text_size">10sp</dimen>
+    <!-- Oppo toggle_bar_item_translationY_for_in_out_animation -->
+    <dimen name="toggle_bar_item_translationY_for_in_out_animation">44dp</dimen>
     <dimen name="edit_selection_toolbar_padding_top">4dp</dimen>
     <dimen name="edit_selection_toolbar_edge_padding">28dp</dimen>
     <dimen name="edit_selection_toolbar_btn_min_width">72dp</dimen>
@@ -77,7 +79,7 @@
     <dimen name="density_30dp">30dp</dimen>
     <dimen name="density_20dp">20dp</dimen>
     <dimen name="density_10dp">10dp</dimen>
-    <dimen name="folder_label_text_size">26sp</dimen>
+    <dimen name="folder_label_text_size">24sp</dimen>
 
     <dimen name="prize_preference_title_size">16sp</dimen>
     <dimen name="prize_preference_subtitle_size">12sp</dimen>

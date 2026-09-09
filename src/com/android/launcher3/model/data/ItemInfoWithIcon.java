@@ -32,6 +32,7 @@ import com.android.launcher3.DynamicClockIcon;
 import com.android.launcher3.R;
 import android.content.ComponentName;
 import android.provider.Settings;
+import android.text.TextUtils;
 //hxy_leifengqi update to Dynamic clock 20230302 end
 
 /**
@@ -257,6 +258,9 @@ public abstract class ItemInfoWithIcon extends ItemInfo {
 			if (componentName.getPackageName().equals(pkg)) {
                 int resId = R.drawable.ic_live_alarmclock;
                 String themedName = Settings.Global.getString(context.getContentResolver(), "themed");
+                if (TextUtils.isEmpty(themedName)) {
+                    themedName = "";
+                }
                 if (themedName.contains("hills")) {
                     resId = R.drawable.theme_hills_alarmclock;
                 } else if (themedName.contains("tunnel")) {

@@ -138,6 +138,7 @@ import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.PagedView;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
+import com.coui.appcompat.snackbar.COUISnackBar;
 import com.android.launcher3.anim.AnimatedFloat;
 import com.android.launcher3.anim.AnimatorListeners;
 import com.android.launcher3.anim.AnimatorPlaybackController;
@@ -6689,8 +6690,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                         Formatter.formatShortFileSize(getContext(), detaMemory));
             }
 
-            Toast toast = Toast.makeText(getContext(), str, Toast.LENGTH_SHORT);
-            toast.show();
+            // COUI tip UI (same wording as MTK; not a system Toast).
+            final String message = str;
+            post(() -> COUISnackBar.make(this, message, 2500).show());
         }
     }
 }

@@ -19,6 +19,8 @@
     <bool name="config_show_notification_number">true</bool>
     <bool name="config_show_scroll_effect">true</bool>
     <bool name="config_show_full_folder_style">true</bool>
+    <!-- ColorOS open folder has no permanent in-grid Add tile. -->
+    <bool name="config_folder_show_add_tile">false</bool>
     <integer name="hxy_config_default_theme_blur_scrim_level">0</integer>
     <!--hxy_leifengqi update to Dynamic clock 20230303 start-->
     <string name="dynamic_clock_pkg" >com.android.deskclock</string>

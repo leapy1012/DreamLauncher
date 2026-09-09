@@ -18,11 +18,13 @@ package com.android.launcher3.uioverrides.states;
 import static android.view.View.VISIBLE;
 
 import static com.android.launcher3.LauncherState.ALL_APPS;
+import static com.android.launcher3.LauncherState.EDIT_MODE;
 import static com.android.launcher3.LauncherState.HINT_STATE;
 import static com.android.launcher3.LauncherState.HINT_STATE_TWO_BUTTON;
 import static com.android.launcher3.LauncherState.NORMAL;
 import static com.android.launcher3.LauncherState.OVERVIEW;
 import static com.android.launcher3.LauncherState.OVERVIEW_SPLIT_SELECT;
+import static com.android.launcher3.LauncherState.SPRING_LOADED;
 import static com.android.launcher3.QuickstepTransitionManager.TASKBAR_TO_HOME_DURATION;
 import static com.android.launcher3.WorkspaceStateTransitionAnimation.getWorkspaceSpringScaleAnimator;
 import static com.android.launcher3.anim.Interpolators.ACCEL;
@@ -41,6 +43,8 @@ import static com.android.launcher3.anim.Interpolators.OVERSHOOT_1_2;
 import static com.android.launcher3.anim.Interpolators.clampToProgress;
 import static com.android.launcher3.states.StateAnimationConfig.ANIM_ALL_APPS_FADE;
 import static com.android.launcher3.states.StateAnimationConfig.ANIM_DEPTH;
+import static com.android.launcher3.states.StateAnimationConfig.ANIM_HOTSEAT_FADE;
+import static com.android.launcher3.states.StateAnimationConfig.ANIM_HOTSEAT_SCALE;
 import static com.android.launcher3.states.StateAnimationConfig.ANIM_OVERVIEW_ACTIONS_FADE;
 import static com.android.launcher3.states.StateAnimationConfig.ANIM_OVERVIEW_FADE;
 import static com.android.launcher3.states.StateAnimationConfig.ANIM_OVERVIEW_SCALE;
@@ -55,6 +59,7 @@ import static com.android.launcher3.states.StateAnimationConfig.ANIM_WORKSPACE_T
 import static com.android.quickstep.views.RecentsView.RECENTS_SCALE_PROPERTY;
 
 import android.animation.ValueAnimator;
+import android.view.animation.PathInterpolator;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.Hotseat;
@@ -86,6 +91,16 @@ public class QuickstepAtomicAnimationFactory extends
     // Due to use of physics, duration may differ between devices so we need to calculate and
     // cache the value.
     private int mHintToNormalDuration = -1;
+
+    /** Oppo ToggleBarAnimHelper.INTERPOLATOR_WORKSPACE_SCALE */
+    private static final PathInterpolator TOGGLE_BAR_WORKSPACE_SCALE =
+            new PathInterpolator(0.33f, 0f, 0.67f, 1f);
+    /** Oppo ToggleBarAnimHelper.INTERPOLATOR_GAUSSIAN_VIEW */
+    private static final PathInterpolator TOGGLE_BAR_SCRIM =
+            new PathInterpolator(0.42f, 0f, 0.58f, 1f);
+    /** Oppo ToggleBarAnimHelper.INTERPOLATOR_HOTSEAT */
+    private static final PathInterpolator TOGGLE_BAR_HOTSEAT =
+            new PathInterpolator(0.33f, 0f, 0.83f, 0.87f);
 
     public QuickstepAtomicAnimationFactory(QuickstepLauncher activity) {
         super(activity);
@@ -208,6 +223,21 @@ public class QuickstepAtomicAnimationFactory extends
             AllAppsSwipeController.applyAllAppsToNormalConfig(mActivity, config);
         } else if (fromState == NORMAL && toState == ALL_APPS) {
             AllAppsSwipeController.applyNormalToAllAppsAnimConfig(mActivity, config);
+        } else if ((fromState == NORMAL || fromState == HINT_STATE)
+                && (toState == SPRING_LOADED || toState == EDIT_MODE)) {
+            // Oppo ToggleBar enter: workspace scale + scrim + hotseat fade choreography.
+            config.setInterpolator(ANIM_WORKSPACE_SCALE, TOGGLE_BAR_WORKSPACE_SCALE);
+            config.setInterpolator(ANIM_WORKSPACE_TRANSLATE, TOGGLE_BAR_WORKSPACE_SCALE);
+            config.setInterpolator(ANIM_SCRIM_FADE, TOGGLE_BAR_SCRIM);
+            config.setInterpolator(ANIM_HOTSEAT_FADE, TOGGLE_BAR_HOTSEAT);
+            config.setInterpolator(ANIM_HOTSEAT_SCALE, TOGGLE_BAR_WORKSPACE_SCALE);
+        } else if ((fromState == SPRING_LOADED || fromState == EDIT_MODE)
+                && toState == NORMAL) {
+            config.setInterpolator(ANIM_WORKSPACE_SCALE, TOGGLE_BAR_WORKSPACE_SCALE);
+            config.setInterpolator(ANIM_WORKSPACE_TRANSLATE, TOGGLE_BAR_WORKSPACE_SCALE);
+            config.setInterpolator(ANIM_SCRIM_FADE, TOGGLE_BAR_SCRIM);
+            config.setInterpolator(ANIM_HOTSEAT_FADE, TOGGLE_BAR_HOTSEAT);
+            config.setInterpolator(ANIM_HOTSEAT_SCALE, TOGGLE_BAR_WORKSPACE_SCALE);
         } else if (fromState == OVERVIEW && toState == OVERVIEW_SPLIT_SELECT) {
             SplitAnimationTimings timings = mActivity.getDeviceProfile().isTablet
                     ? SplitAnimationTimings.TABLET_OVERVIEW_TO_SPLIT

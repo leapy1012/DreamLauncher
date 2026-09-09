@@ -168,18 +168,21 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
         addInfo.itemType = Folder.ITEM_TYPE_ADD_FOLDER;
         addInfo.rank = items.size();
         this.mAdd = createAddView(addInfo);
-        boolean isAdd = true;
-        if (Launcher.getLauncher(getContext()).isInMultiWindowMode()) {
-            isAdd = false;
-        }
-        if (!getContext().getResources().getBoolean(R.bool.config_show_full_folder_style)) {
-            isAdd = false;
-        }
-        if (isAdd && addFlag) {
+        if (shouldShowAddTile() && addFlag) {
             list.add(this.mAdd);
         }
         arrangeChildren(list, addFlag);//arrangeChildren(items.stream().map(this::createNewView).collect(Collectors.toList()));
         mViewsBound = true;
+    }
+
+    private boolean shouldShowAddTile() {
+        if (!getContext().getResources().getBoolean(R.bool.config_folder_show_add_tile)) {
+            return false;
+        }
+        if (Launcher.getLauncher(getContext()).isInMultiWindowMode()) {
+            return false;
+        }
+        return getContext().getResources().getBoolean(R.bool.config_show_full_folder_style);
     }
 
     /**
@@ -299,7 +302,7 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
     }
 
     public void dropCompleted(ArrayList<View> list) {
-        if (!list.contains(this.mAdd)) {
+        if (shouldShowAddTile() && !list.contains(this.mAdd)) {
             list.add(this.mAdd);
             arrangeChildren(list, true);
         }
@@ -371,7 +374,7 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
      */
     @SuppressLint("RtlHardcoded")
     public void arrangeChildren(List<View> list, boolean addFlag) {
-        if (!list.contains(this.mAdd) && addFlag) {
+        if (shouldShowAddTile() && !list.contains(this.mAdd) && addFlag) {
             list.add(this.mAdd);
         }
         int itemCount = list.size();

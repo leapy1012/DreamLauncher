@@ -37,12 +37,18 @@ class EditModeState(id: Int) : LauncherState(id, StatsLogManager.LAUNCHER_STATE_
     override fun <T> getTransitionDuration(context: T, isToState: Boolean): Int where
     T : Context?,
     T : ActivityContext? {
-        return 150
+        // Match SpringLoadedState / Oppo ToggleBar workspace scale timing.
+        return 420
     }
 
     override fun <T> getDepthUnchecked(context: T): Float where T : Context?, T : ActivityContext? {
         // Oppo ToggleBar: depth=0; dimming via wallpaper blur / static scrim.
         return 0f
+    }
+
+    override fun getVisibleElements(launcher: Launcher): Int {
+        // Same as SpringLoadedState: hide page dots under the options bar.
+        return VERTICAL_SWIPE_INDICATOR
     }
 
     override fun getWorkspaceScaleAndTranslation(launcher: Launcher): ScaleAndTranslation {

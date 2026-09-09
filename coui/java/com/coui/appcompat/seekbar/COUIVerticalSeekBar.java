@@ -1824,19 +1824,48 @@ public class COUIVerticalSeekBar extends AbsSeekBar
         }
     }
 
+    /**
+     * Animate visual overscroll scale toward {@code scale} (typically -1, 0, 1, or 2).
+     * Matches ColorOS: refresh values each call; only when already at an edge.
+     */
     public void startCustomDeformation(float scale) {
-        if (mIsSupportDeformation) {
-            if (mButtonDeformationAnimator == null) {
-                mButtonDeformationAnimator = ValueAnimator.ofFloat(mScale, scale);
-                mButtonDeformationAnimator.setInterpolator(new COUIMoveEaseInterpolator());
-                mButtonDeformationAnimator.setDuration(BUTTON_DEFORMATION_ANIM_DURATION);
-                mButtonDeformationAnimator.addUpdateListener(animation -> {
-                    setTouchScale((Float) animation.getAnimatedValue());
-                    invalidate();
-                });
-            }
-            mButtonDeformationAnimator.start();
+        startCustomDeformation(scale, new COUIMoveEaseInterpolator(), BUTTON_DEFORMATION_ANIM_DURATION);
+    }
+
+    /** ColorOS volume edge deform (450ms). */
+    public void startCustomDeformation(float scale, Interpolator interpolator) {
+        startCustomDeformation(scale, interpolator, 450L);
+    }
+
+    public void startCustomDeformation(float scale, Interpolator interpolator, long duration) {
+        if (!mIsSupportDeformation) {
+            return;
         }
+        final float current = mScale;
+        // Cos gate: skip unless current and target are both at extremes.
+        if ((current < 1.0f || scale < 1.0f) && (current > 0.0f || scale > 0.0f)) {
+            return;
+        }
+        if (mButtonDeformationAnimator == null) {
+            mButtonDeformationAnimator = new ValueAnimator();
+            mButtonDeformationAnimator.addUpdateListener(animation -> {
+                Object value = animation.getAnimatedValue("HOLDER_SCALE");
+                if (value instanceof Float) {
+                    setTouchScale((Float) value);
+                    setLocalProgress(getProgressLimit(
+                            Math.round(((mMax - mMin) * mScale) + mMin)));
+                    invalidate();
+                }
+            });
+        } else {
+            cancelAnim(mButtonDeformationAnimator);
+        }
+        mButtonDeformationAnimator.setValues(
+                PropertyValuesHolder.ofFloat("HOLDER_SCALE", current, scale));
+        mButtonDeformationAnimator.setInterpolator(
+                interpolator != null ? interpolator : new COUIMoveEaseInterpolator());
+        mButtonDeformationAnimator.setDuration(duration > 0 ? duration : BUTTON_DEFORMATION_ANIM_DURATION);
+        mButtonDeformationAnimator.start();
     }
 
     public void endCustomDeformation() {

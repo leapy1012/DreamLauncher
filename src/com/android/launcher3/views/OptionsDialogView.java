@@ -32,9 +32,9 @@ import com.android.launcher3.model.data.WorkspaceItemInfo;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.view.ViewTreeObserver;
 import android.view.Gravity;
 import com.android.launcher3.dragndrop.DragLayer;
-import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
 import com.android.launcher3.util.LayoutLockHelper;
@@ -49,6 +49,8 @@ import com.android.launcher3.screenedit.GridGalleryAdapter;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.view.animation.PathInterpolator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -61,7 +63,23 @@ public class OptionsDialogView extends AbstractFloatingView {
     private static final String EXTRA_WALLPAPER_LAUNCH_SOURCE =
             "com.android.wallpaper.LAUNCH_SOURCE";
 
-    private static final long HIDE_DURATION_MS = 180;
+    /**
+     * Slide distance fallback (Oppo uses 320px). Prefer measured height so the bar
+     * starts fully off-screen.
+     */
+    private static final float TOGGLE_BAR_ENTER_TRANSLATION_Y_FALLBACK = 320f;
+    /** Match SpringLoadedState / Oppo workspace scale timing so bar and desktop finish together. */
+    private static final long ENTER_EXIT_DURATION_MS = 420L;
+    /** Oppo ToggleBarAnimHelper.INTERPOLATOR_WORKSPACE_SCALE */
+    private static final PathInterpolator ENTER_TRANSLATION_INTERPOLATOR =
+            new PathInterpolator(0.33f, 0f, 0.67f, 1f);
+    /** Oppo ToggleBarAnimHelper.INTERPOLATOR_GAUSSIAN_VIEW */
+    private static final PathInterpolator ENTER_ALPHA_INTERPOLATOR =
+            new PathInterpolator(0.42f, 0f, 0.58f, 1f);
+    /** Oppo ToggleBarAnimHelper.INTERPOLATOR_TOGGLE_BAR (exit). */
+    private static final PathInterpolator EXIT_INTERPOLATOR =
+            new PathInterpolator(0.3f, 0f, 0.1f, 1f);
+
     private final ActivityContext mActivity;
     private Runnable mOnDismissed;
     // 启动器实例
@@ -76,6 +94,7 @@ public class OptionsDialogView extends AbstractFloatingView {
     private AnimatorSet animationSet;
     // 概览面板状态转换动画
     private OverviewPanelStateTransAnimation stateTransAnimation;
+    @Nullable private AnimatorSet mEnterExitAnimator;
     // 当前面板状态
     private State currentState;
     public enum State {
@@ -184,37 +203,137 @@ public class OptionsDialogView extends AbstractFloatingView {
     public static <T extends Context & ActivityContext> void show(T activity, Runnable onDismissed, @Nullable Runnable onActionClicked) {
         closeOpenViews(activity, true, TYPE_OPTIONS_POPUP_DIALOG);
         OptionsDialogView optionsDialog = new OptionsDialogView(activity, null);
+        optionsDialog.mOnDismissed = onDismissed;
         optionsDialog.mIsOpen = true;
         BaseDragLayer dragLayer = activity.getDragLayer();
         dragLayer.addView(optionsDialog);
         DragLayer.LayoutParams params = (DragLayer.LayoutParams) optionsDialog.getLayoutParams();
         params.width = BaseDragLayer.LayoutParams.MATCH_PARENT;
+        params.height = BaseDragLayer.LayoutParams.WRAP_CONTENT;
         params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
+        params.ignoreInsets = true;
+        params.bottomMargin = 0;
+        int navInset = 0;
+        if (activity instanceof Launcher) {
+            navInset = ((Launcher) activity).getDeviceProfile().getInsets().bottom;
+        }
+        optionsDialog.setPadding(optionsDialog.getPaddingLeft(), optionsDialog.getPaddingTop(),
+                optionsDialog.getPaddingRight(), navInset);
+        optionsDialog.setAlpha(0f);
+        optionsDialog.setTranslationY(TOGGLE_BAR_ENTER_TRANSLATION_Y_FALLBACK);
+        // Above hotseat/toolbar so the bar is actually visible while animating.
+        dragLayer.bringChildToFront(optionsDialog);
+        optionsDialog.scheduleEnterAnimationAfterLayout();
+    }
+
+    private float getEnterTranslationY() {
+        int h = getHeight();
+        return h > 0 ? h : TOGGLE_BAR_ENTER_TRANSLATION_Y_FALLBACK;
+    }
+
+    private void scheduleEnterAnimationAfterLayout() {
+        // IMPORTANT: do not wait for "stable height". goToState(SPRING_LOADED) keeps
+        // relayouting DragLayer, which previously reset our stable-frame counter forever
+        // and left this view stuck at alpha=0 (edit chrome visible, toggle bar missing).
+        getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                if (getWidth() <= 0) {
+                    return true;
+                }
+                ViewTreeObserver observer = getViewTreeObserver();
+                if (observer.isAlive()) {
+                    observer.removeOnPreDrawListener(this);
+                }
+                // post so this pre-draw can finish; then run enter on next frame.
+                post(() -> playEnterAnimation());
+                return true;
+            }
+        });
+    }
+
+    /**
+     * Enter: slide up from below + fade (420ms PathInterpolator, synced with workspace).
+     */
+    private void playEnterAnimation() {
+        if (!mIsOpen || getParent() == null) {
+            return;
+        }
+        cancelEnterExitAnimation();
+        resetMenuItemTransforms();
+        float startY = getEnterTranslationY();
+        setTranslationY(startY);
+        setAlpha(0f);
+
+        ObjectAnimator ty = ObjectAnimator.ofFloat(this, View.TRANSLATION_Y, startY, 0f);
+        ty.setInterpolator(ENTER_TRANSLATION_INTERPOLATOR);
+        ObjectAnimator alpha = ObjectAnimator.ofFloat(this, View.ALPHA, 0f, 1f);
+        alpha.setInterpolator(ENTER_ALPHA_INTERPOLATOR);
+
+        mEnterExitAnimator = new AnimatorSet();
+        mEnterExitAnimator.playTogether(ty, alpha);
+        mEnterExitAnimator.setDuration(ENTER_EXIT_DURATION_MS);
+        mEnterExitAnimator.start();
+    }
+
+    private void cancelEnterExitAnimation() {
+        if (mEnterExitAnimator != null) {
+            mEnterExitAnimator.cancel();
+            mEnterExitAnimator = null;
+        }
+        animate().cancel();
     }
 
     @Override
     protected void handleClose(boolean animate) {
         if (mIsOpen) {
+            mIsOpen = false;
             if (animate) {
-                animate().alpha(0f)
-                        .withLayer()
-                        .setStartDelay(0)
-                        .setDuration(HIDE_DURATION_MS)
-                        .setInterpolator(Interpolators.ACCEL)
-                        .withEndAction(this::onClosed)
-                        .start();
+                cancelEnterExitAnimation();
+                float endY = getEnterTranslationY();
+                ObjectAnimator ty = ObjectAnimator.ofFloat(this, View.TRANSLATION_Y, getTranslationY(), endY);
+                ty.setInterpolator(EXIT_INTERPOLATOR);
+                ObjectAnimator alpha = ObjectAnimator.ofFloat(this, View.ALPHA, getAlpha(), 0f);
+                alpha.setInterpolator(EXIT_INTERPOLATOR);
+                mEnterExitAnimator = new AnimatorSet();
+                mEnterExitAnimator.playTogether(ty, alpha);
+                mEnterExitAnimator.setDuration(ENTER_EXIT_DURATION_MS);
+                mEnterExitAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        onClosed();
+                    }
+                });
+                mEnterExitAnimator.start();
             } else {
-                animate().cancel();
+                cancelEnterExitAnimation();
+                resetMenuItemTransforms();
                 onClosed();
             }
-            mIsOpen = false;
         }
     }
 
-        private void onClosed() {
+    private void resetMenuItemTransforms() {
+        if (!(mainMenuView instanceof ViewGroup)) {
+            return;
+        }
+        ViewGroup menu = (ViewGroup) mainMenuView;
+        for (int i = 0; i < menu.getChildCount(); i++) {
+            View child = menu.getChildAt(i);
+            child.setAlpha(1f);
+            child.setTranslationY(0f);
+        }
+    }
+
+    private void onClosed() {
+        cancelEnterExitAnimation();
+        setTranslationY(0f);
+        setAlpha(1f);
+        resetMenuItemTransforms();
         mActivity.getDragLayer().removeView(this);
         if (mOnDismissed != null) {
             mOnDismissed.run();
+            mOnDismissed = null;
         }
         Launcher launcher = Launcher.getLauncher(this.getContext());
         launcher.getEditSelectionManager().exit();

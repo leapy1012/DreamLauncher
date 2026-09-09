@@ -1191,6 +1191,51 @@ public class DeviceProfile {
     private void updateAvailableFolderCellDimensions(Resources res) {
         updateFolderCellSize(1f, res);
 
+        // ColorOS FolderParam: cell width = (availableWidth - 2*pageMargin) / numFolderColumns
+        // so the 3-col grid spans the screen like the home page, not a narrow centered strip.
+        if (mUseOppoWorkspaceMetrics) {
+            // ColorOS FolderParam.getFolderCellWidth:
+            // (availableWidth - 2 * folderPageMarginLR) / numFolderColumns
+            int pageMarginLr = res.getDimensionPixelSize(R.dimen.folder_page_margin_lr);
+            int cols = Math.max(1, inv.numFolderColumns);
+            folderCellWidthPx = Math.max(1, (availableWidthPx - pageMarginLr * 2) / cols);
+
+            // ColorOS FolderParam.getFolderCellHeight:
+            // textLine*2 + iconPaddingTop + iconSize + iconDrawablePadding
+            int textLine = res.getDimensionPixelSize(R.dimen.folder_content_text_normal_height);
+            int iconPadTop = res.getDimensionPixelSize(R.dimen.folder_child_icon_padding_top);
+            int iconDrawablePad = res.getDimensionPixelSize(R.dimen.folder_icon_drawable_padding);
+            folderCellHeightPx = folderChildIconSizePx + iconPadTop + iconDrawablePad
+                    + textLine * 2;
+            folderChildDrawablePaddingPx = iconDrawablePad;
+            folderContentPaddingLeftRight =
+                    res.getDimensionPixelSize(R.dimen.folder_content_padding_left_right);
+            folderContentPaddingTop =
+                    res.getDimensionPixelSize(R.dimen.folder_content_padding_top);
+            folderFooterHeightPx =
+                    res.getDimensionPixelSize(R.dimen.folder_footer_height_default);
+
+            // ColorOS FolderParam.updateAvailableFolderCellDimensions uses
+            // folder_label_height as bottom-panel size in the default path.
+            float contentUsedHeight = folderCellHeightPx * inv.numFolderRows
+                    + res.getDimensionPixelSize(R.dimen.folder_label_height);
+            int contentMaxHeight = availableHeightPx;
+            if (contentUsedHeight > contentMaxHeight && contentUsedHeight > 0) {
+                float scale = contentMaxHeight / contentUsedHeight;
+                folderCellHeightPx = Math.max(1, Math.round(folderCellHeightPx * scale));
+                // Keep icons at workspace size when possible; only shrink if required.
+                int scaledIcon = Math.round(folderChildIconSizePx * scale);
+                if (scaledIcon < folderChildIconSizePx * 0.85f) {
+                    folderChildIconSizePx = Math.max(1, scaledIcon);
+                    folderChildTextSizePx = Math.max(1, Math.round(folderChildTextSizePx * scale));
+                    folderLabelTextSizePx = Math.max(1, Math.round(folderLabelTextSizePx * scale));
+                }
+                folderChildDrawablePaddingPx = Math.max(0,
+                        Math.round(iconDrawablePad * scale));
+            }
+            return;
+        }
+
         // For usability we can't have the folder use the whole width of the screen
         Point totalWorkspacePadding = getTotalWorkspacePadding();
 

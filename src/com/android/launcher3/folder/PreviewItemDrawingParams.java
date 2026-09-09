@@ -26,7 +26,7 @@ public class PreviewItemDrawingParams {
     float index;
     public float transX;
     public float transY;
-    float scale;
+    public float scale;
     public FolderPreviewItemAnim anim;
     public boolean hidden;
     public Drawable drawable;

@@ -5,24 +5,24 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.TimeInterpolator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.drawable.GradientDrawable;
 import android.util.Property;
 import android.view.View;
-import android.view.animation.DecelerateInterpolator;
+import android.view.animation.PathInterpolator;
+
 import com.android.launcher3.BubbleTextView;
-import com.android.launcher3.util.DimenUtils;
+import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Launcher;
-import com.android.launcher3.LauncherAnimUtils;
 import com.android.launcher3.LauncherState;
+import com.android.launcher3.R;
 import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.Workspace;
-import com.android.launcher3.anim.PropertyResetListener;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.folder.ClippedFolderIconLayoutRule;
 import com.android.launcher3.folder.Folder;
@@ -30,375 +30,519 @@ import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.FolderPagedView;
 import com.android.launcher3.folder.PreviewBackground;
 import com.android.launcher3.folder.PreviewItemDrawingParams;
-import com.android.launcher3.folder.large.HxyFolderGridOrganizer;
-import com.android.launcher3.statehandlers.DepthController;
 import com.android.launcher3.views.BaseDragLayer;
-import com.android.launcher3.R;
+import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
+import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
+import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * ColorOS {@code OplusFolderAnimationManager} open/close path:
+ * per-icon COUI springs (bounce/response) + workspace/hotseat 1↔0.92 companion fade.
+ */
 public class HxyFolderAnimationManager {
-    public static final int FOLDER_BG_DURATION = 750;
-    private static final int FOLDER_NAME_ALPHA_DURATION = 32;
-    private FolderPagedView mContent;
-    private Context mContext;
-    private final int mDelay;
+    /** Exact ColorOS OplusFolderAnimationManager constants. */
+    private static final float OPEN_TRANS_BOUNCE = 0.15f;
+    private static final float OPEN_TRANS_RESPONSE = 0.45f;
+    private static final float CLOSE_TRANS_BOUNCE_MAX = 0.16f;
+    private static final float CLOSE_TRANS_BOUNCE_MIN = 0.1f;
+    private static final float CLOSE_TRANS_RESPONSE = 0.4f;
+    private static final float ICON_ALPHA_BOUNCE = 0.0f;
+    private static final float ICON_ALPHA_RESPONSE = 0.3f;
+    private static final float HEADER_SPRING_BOUNCE = 0.0f;
+    private static final float HEADER_SPRING_OPEN_RESPONSE = 0.4f;
+    private static final float HEADER_SPRING_CLOSE_RESPONSE = 0.15f;
+    private static final float OPEN_ANIM_SCALE_RATIO = 0.2f;
+    private static final float ONE_THIRD = 0.33f;
+    private static final float TWO_THIRD = 0.66f;
+    private static final float WORKSPACE_FOLDER_SCALE = 0.92f;
+
+    private static final TimeInterpolator WORKSPACE_ALPHA_OPEN =
+            new PathInterpolator(0.3f, 0f, 0.1f, 1f);
+    private static final TimeInterpolator WORKSPACE_SCALE_INTERPOLATOR =
+            new PathInterpolator(0.3f, 0f, 0.1f, 1f);
+
+    private final FolderPagedView mContent;
+    private final Context mContext;
     private final int mDuration;
-    private Folder mFolder;
-    private GradientDrawable mFolderBackground;
-    public FolderIcon mFolderIcon;
-    private final DecelerateInterpolator mFolderInterpolator;
+    private final int mWorkspaceContentDuration;
+    private final Folder mFolder;
+    private final FolderIcon mFolderIcon;
     private final boolean mIsOpening;
-    private Launcher mLauncher;
-    private PreviewBackground mPreviewBackground;
+    private final Launcher mLauncher;
+    private final PreviewBackground mPreviewBackground;
     private final HxyFolderGridOrganizer mPreviewVerifier;
-    private final PreviewItemDrawingParams mTmpParams = new PreviewItemDrawingParams(0.0f, 0.0f, 0.0f);
+    private final PreviewItemDrawingParams mTmpParams = new PreviewItemDrawingParams(0f, 0f, 0f);
+    private final ArrayList<COUISpringAnimation> mRunningSprings = new ArrayList<>();
 
     public HxyFolderAnimationManager(Folder folder, boolean isOpening) {
-        this.mFolder = folder;
-        this.mContent = folder.mContent;
-        FolderIcon folderIcon = folder.getFolderIcon();
-        this.mFolderIcon = folderIcon;
-        this.mPreviewBackground = folderIcon.mBackground;
-        this.mContext = folder.getContext();
-        Launcher launcher = (Launcher) folder.getContext();
-        this.mLauncher = launcher;
-        this.mIsOpening = isOpening;
-        this.mPreviewVerifier = new HxyFolderGridOrganizer(launcher.getDeviceProfile().inv);
-        Resources res = this.mContent.getResources();
-        this.mDuration = res.getInteger(isOpening
+        mFolder = folder;
+        mContent = folder.mContent;
+        mFolderIcon = folder.getFolderIcon();
+        mPreviewBackground = mFolderIcon.mBackground;
+        mContext = folder.getContext();
+        mLauncher = (Launcher) folder.getContext();
+        mIsOpening = isOpening;
+        mPreviewVerifier = new HxyFolderGridOrganizer(mLauncher.getDeviceProfile().inv);
+        Resources res = mContent.getResources();
+        // Full ColorOS path uses folder_open_duration / folder_close_duration (850 / 800).
+        mDuration = res.getInteger(isOpening
                 ? R.integer.folder_open_duration
                 : R.integer.folder_close_duration);
-        this.mDelay = res.getInteger(R.integer.config_folderDelay);
-        this.mFolderInterpolator = new DecelerateInterpolator();
+        mWorkspaceContentDuration = res.getInteger(isOpening
+                ? R.integer.folder_workspace_content_open_duration
+                : R.integer.folder_workspace_content_close_duration);
     }
 
     private List<BubbleTextView> getPreviewIconsOnPage(int page) {
-        return this.mPreviewVerifier.setFolderInfo(this.mFolder.mInfo).previewItemsForPage(page, this.mFolder.getIconsInReadingOrder());
+        return mPreviewVerifier.setFolderInfo(mFolder.mInfo)
+                .previewItemsForPage(page, mFolder.getIconsInReadingOrder());
     }
 
     public AnimatorSet getAnimator(Consumer<Animator> call) {
-        int previewItemOffsetX;
-        float initialAlpha;
-        float finalAlpha;
-        float from;
-        long duration;
-        BaseDragLayer.LayoutParams lp = (BaseDragLayer.LayoutParams) this.mFolder.getLayoutParams();
-        ClippedFolderIconLayoutRule rule = this.mFolderIcon.getLayoutRule();
-        boolean isOnFirstPage = this.mFolder.mContent.getCurrentPage() == 0;
-        List<BubbleTextView> itemsInPreview = getPreviewIconsOnPage(isOnFirstPage ? 0 : this.mFolder.mContent.getCurrentPage());
-        Rect folderIconPos = new Rect();
-        float scaleRelativeToDragLayer = this.mLauncher.getDragLayer().getDescendantRectRelativeToSelf(this.mFolderIcon, folderIconPos);
-        Rect iconRect = this.mFolderIcon.getIconRect();
-        folderIconPos.offset(iconRect.left, iconRect.top);
-        folderIconPos.bottom = folderIconPos.top + iconRect.height();
-        folderIconPos.right = folderIconPos.left + iconRect.width();
-        float initialSize = ((float) (this.mPreviewBackground.getScaledRadius() * 2)) * scaleRelativeToDragLayer;
-        float previewScale = rule.scaleForItem(itemsInPreview.size());
-        float scalePreviewX = initialSize / ((float) lp.width);
-        float scalePreviewY = initialSize / ((float) lp.height);
-        float previewSize = rule.getIconSize() * previewScale;
-        float initialScale = scalePreviewX;
-        float scaleX = mIsOpening ? scalePreviewX : 1.0f;
-        float scaleY = mIsOpening ? scalePreviewY : 1.0f;
-        if (scaleX > 0.0f) {
-            this.mFolder.setScaleX(scaleX);
-            this.mFolder.setScaleY(scaleY);
-        }
-        this.mFolder.setPivotX((float) (-this.mPreviewBackground.getScaledRadius()));
-        this.mFolder.setPivotY((float) (-this.mPreviewBackground.getScaledRadius()));
-        int previewItemOffsetX2 = (int) (previewSize / 2.0f);
-        if (Utilities.isRtl(this.mContext.getResources())) {
-            previewItemOffsetX = (int) (((((float) lp.width) * initialScale) - initialSize) - ((float) previewItemOffsetX2));
-        } else {
-            previewItemOffsetX = previewItemOffsetX2;
-        }
-        int paddingOffsetX = (int) (((float) (this.mFolder.getPaddingLeft() + this.mContent.getPaddingLeft())) * initialScale);
-        int paddingOffsetY = (int) (((float) (this.mFolder.getPaddingTop() + this.mContent.getPaddingTop())) * initialScale);
-        int initialX = folderIconPos.left;
-        int initialY = folderIconPos.top;
-        float xDistance = (float) (initialX - lp.x);
-        float yDistance = (float) (initialY - lp.y);
-        int initialY2 = paddingOffsetX + previewItemOffsetX;
-        Rect startRect = new Rect(Math.round(((float) initialY2) / initialScale), Math.round(((float) paddingOffsetY) / initialScale), Math.round((((float) initialY2) + initialSize) / initialScale), Math.round((((float) paddingOffsetY) + initialSize) / initialScale));
-        Rect endRect = new Rect(0, 0, lp.width, lp.height);
         AnimatorSet a = new AnimatorSet();
-        a.setInterpolator(this.mFolderInterpolator);
-        float pxFromDp = (float) DimenUtils.pxToDp(mContext, 2.0f);
-        PropertyResetListener colorResetListener = new PropertyResetListener(BubbleTextView.TEXT_ALPHA_PROPERTY, Float.valueOf(1.0f));
-        // boolean isSpring = this.mLauncher.getStateManager().getCurrentStableState() == LauncherState.SPRING_LOADED_2;
-        Animator t = getAnimator((View) this.mFolder, View.TRANSLATION_X, xDistance, 0.0f);
-        call.accept(t);
-        play(a, t);
-        play(a, getAnimator((View) this.mFolder, View.TRANSLATION_Y, yDistance, 0.0f));
-        play(a, getAnimator((View) this.mFolder, (Property) LauncherAnimUtils.SCALE_PROPERTY, initialScale, 1.0f));
-        // play(a, getAnimator1(this.mFolderIcon, View.SCALE_X, 1.0f, 3.0f));
-        // play(a, getAnimator1(this.mFolderIcon, View.SCALE_Y, 1.0f, 3.0f));
-        // play(a, getAnimator1(this.mFolderIcon, View.ALPHA, 1.0f, 0.8f));
-        // Animator animatorWallpaper = getAnimatorWallpaper(this.mLauncher.getHxyGroupAnimTool().getWallpaperBg(), View.ALPHA, 0.0f, 1.0f);
-        // if (!this.mIsOpening || !isSpring) {
-        // }
-        // play(a, animatorWallpaper, this.mDuration);
-        // if (isSpring && !this.mLauncher.isInState(LauncherState.OVERVIEW)) {
-        //     play(a, getAnimator(this.mLauncher.getHxyGroupAnimTool().mUpView, View.ALPHA, 1.0f, 0.0f));
-        // }
-        if (!this.mLauncher.isInState(LauncherState.OVERVIEW)) {
-            finalAlpha = 0.0f;
-            initialAlpha = 1.0f;
-            play(a, getAnimator((View) this.mLauncher.getDragLayer().findViewById(R.id.page_indicator), View.ALPHA, 1.0f, 0.0f));
-        } else {
-            finalAlpha = 0.0f;
-            initialAlpha = 1.0f;
+
+        // ColorOS full path keeps the folder container at scale 1; icons spring individually.
+        mFolder.setScaleX(1f);
+        mFolder.setScaleY(1f);
+        mFolder.setTranslationX(0f);
+        mFolder.setTranslationY(0f);
+
+        // Placeholder so Folder open/close listeners attach and duration matches ColorOS.
+        ValueAnimator gate = ValueAnimator.ofFloat(0f, 1f);
+        gate.setDuration(mDuration);
+        call.accept(gate);
+        a.play(gate);
+
+        playWorkspaceCompanion(a);
+
+        // Folder chrome alpha (container becomes visible immediately; header springs separately).
+        play(a, getAnimator(mFolder, View.ALPHA, 0f, 1f), 0, Math.min(mDuration, 200));
+
+        View header = mFolder.mFolderName;
+        if (header != null) {
+            float headerResponse = mIsOpening
+                    ? HEADER_SPRING_OPEN_RESPONSE : HEADER_SPRING_CLOSE_RESPONSE;
+            if (mIsOpening) {
+                header.setAlpha(0f);
+            }
+            playSpringOnGate(gate, header, COUIDynamicAnimation.ALPHA,
+                    mIsOpening ? 0f : 1f, mIsOpening ? 1f : 0f,
+                    HEADER_SPRING_BOUNCE, headerResponse, COUIDynamicAnimation.MIN_VISIBLE_CHANGE_ALPHA);
         }
-        // play(a, getAnimator((View) this.mLauncher.getWorkspace(), View.ALPHA, initialAlpha, finalAlpha));
-        // play(a, getAnimator(this.mLauncher.getAppsView().getSearchView(), View.ALPHA, initialAlpha, finalAlpha));
-        Launcher launcher = this.mLauncher;
-        View tempView = launcher.getHotseat();
-        float workspace_target = 0.9f;
-        DeviceProfile grid = this.mLauncher.getDeviceProfile();
-        from = 1.0f;
-        play(a, getAnimator(tempView, View.ALPHA, 1.0f, 0.0f));
-        
-        View pageIndicator = this.mLauncher.getDragLayer().findViewById(R.id.page_indicator);
-        Workspace workspaceView = this.mLauncher.getWorkspace();
-        int centerY = (int) (((-workspaceView.getPivotY()) / 2.0f) + (tempView.getPivotY() / 2.0f));
-        tempView.setPivotY((float) centerY);
-        pageIndicator.setPivotY((float) centerY);
-        tempView.setPivotX(workspaceView.getPivotX());
-        pageIndicator.setPivotX(workspaceView.getPivotX());
-        play(a, getAnimator(tempView, View.SCALE_X, 1.0f, 0.9f));
-        play(a, getAnimator(tempView, View.SCALE_Y, 1.0f, 0.9f));
-        play(a, getAnimator((View) workspaceView, View.SCALE_X, from, workspace_target));
-        play(a, getAnimator((View) workspaceView, View.SCALE_Y, from, workspace_target));
-        play(a, getAnimator(pageIndicator, View.SCALE_X, 1.0f, 0.9f));
-        play(a, getAnimator(pageIndicator, View.SCALE_Y, 1.0f, 0.9f));
-        
-        play(a, getAnimator((View) this.mFolder, View.ALPHA, 0.0f, 1.0f));
-        play(a, this.mFolderIcon.getFolderName().createTextAlphaAnimator(!this.mIsOpening));
-        this.mFolder.mFolderName.setAlpha(this.mIsOpening ? 0.0f : 1.0f);
-        Animator animator2 = getAnimator((View) this.mFolder.mFolderName, View.ALPHA, 0.0f, 1.0f);
-        AnimatorSet a2 = a;
-        play(a, animator2, this.mIsOpening ? 32L : 0L,
-                this.mIsOpening ? Math.max(0, this.mDuration - 32) : 32);
-        int midDuration = this.mDuration / 2;
-        play(a2, getAnimator((View) this.mFolder, View.TRANSLATION_Z, -this.mFolder.getElevation(), 0.0f), this.mIsOpening ? (long) midDuration : 0, midDuration);
-        a2.addListener(new AnimatorListenerAdapter() {
-            public void onAnimationEnd(Animator animation) {
-                super.onAnimationEnd(animation);
-                HxyFolderAnimationManager.this.mFolder.setTranslationX(0.0f);
-                HxyFolderAnimationManager.this.mFolder.setTranslationY(0.0f);
-                HxyFolderAnimationManager.this.mFolder.setTranslationZ(0.0f);
-                HxyFolderAnimationManager.this.mFolder.setScaleX(1.0f);
-                HxyFolderAnimationManager.this.mFolder.setScaleY(1.0f);
-                if (HxyFolderAnimationManager.this.mLauncher.isInState(LauncherState.OVERVIEW)) {
-                    HxyFolderAnimationManager.this.mLauncher.getDragLayer().findViewById(R.id.page_indicator).setAlpha(0.0f);
-                }
-                HxyFolderAnimationManager.this.initHardlayer(false);
+
+        play(a, mFolderIcon.getFolderName().createTextAlphaAnimator(!mIsOpening), 0, mDuration);
+
+        addChildrenSpringAnimators(gate);
+
+        a.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                initHardlayer(true);
             }
 
-            public void onAnimationStart(Animator animation) {
-                super.onAnimationStart(animation);
-                HxyFolderAnimationManager.this.initHardlayer(true);
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                cancelSprings();
+                resetChildrenTransforms();
+                mFolder.setTranslationX(0f);
+                mFolder.setTranslationY(0f);
+                mFolder.setTranslationZ(0f);
+                mFolder.setScaleX(1f);
+                mFolder.setScaleY(1f);
+                mFolder.setAlpha(1f);
+                if (mLauncher.isInState(LauncherState.OVERVIEW)) {
+                    View pi = mLauncher.getDragLayer().findViewById(R.id.page_indicator);
+                    if (pi != null) {
+                        pi.setAlpha(0f);
+                    }
+                }
+                initHardlayer(false);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                cancelSprings();
+                resetChildrenTransforms();
             }
         });
-        Iterator<Animator> it = a2.getChildAnimations().iterator();
-        while (it.hasNext()) {
-            it.next().setInterpolator(new DecelerateInterpolator(1.0f));
+        return a;
+    }
+
+    private void playWorkspaceCompanion(AnimatorSet a) {
+        View hotseat = mLauncher.getHotseat();
+        Workspace<?> workspace = mLauncher.getWorkspace();
+        View pageIndicator = mLauncher.getDragLayer().findViewById(R.id.page_indicator);
+
+        // AnimationConstant.getMinWpScaleForFolderAnim → 0.92
+        float workspaceTarget = WORKSPACE_FOLDER_SCALE;
+        int contentMs = mWorkspaceContentDuration;
+
+        int centerY = (int) (((-workspace.getPivotY()) / 2f) + (hotseat.getPivotY() / 2f));
+        hotseat.setPivotY(centerY);
+        hotseat.setPivotX(workspace.getPivotX());
+        if (pageIndicator != null) {
+            pageIndicator.setPivotY(centerY);
+            pageIndicator.setPivotX(workspace.getPivotX());
         }
-        return a2;
+
+        Animator wsAlpha = getAnimator(workspace, View.ALPHA, 1f, 0f);
+        wsAlpha.setInterpolator(mIsOpening ? WORKSPACE_ALPHA_OPEN : WORKSPACE_SCALE_INTERPOLATOR);
+        play(a, wsAlpha, 0, contentMs);
+
+        play(a, getAnimator(hotseat, View.ALPHA, 1f, 0f), 0, contentMs);
+        play(a, getAnimator(hotseat, View.SCALE_X, 1f, workspaceTarget), 0, contentMs);
+        play(a, getAnimator(hotseat, View.SCALE_Y, 1f, workspaceTarget), 0, contentMs);
+        play(a, getAnimator(workspace, View.SCALE_X, 1f, workspaceTarget), 0, contentMs);
+        play(a, getAnimator(workspace, View.SCALE_Y, 1f, workspaceTarget), 0, contentMs);
+        if (pageIndicator != null) {
+            play(a, getAnimator(pageIndicator, View.ALPHA, 1f, 0f), 0, contentMs);
+            play(a, getAnimator(pageIndicator, View.SCALE_X, 1f, workspaceTarget), 0, contentMs);
+            play(a, getAnimator(pageIndicator, View.SCALE_Y, 1f, workspaceTarget), 0, contentMs);
+        }
+        for (Animator child : a.getChildAnimations()) {
+            if (child != wsAlpha && child.getDuration() == contentMs) {
+                child.setInterpolator(WORKSPACE_SCALE_INTERPOLATOR);
+            }
+        }
+    }
+
+    /**
+     * ColorOS {@code OplusFolderAnimationManager#getChildrenAnimatorSet} — spring each icon
+     * from the closed-folder preview position to its grid cell (and reverse on close).
+     */
+    private void addChildrenSpringAnimators(ValueAnimator gate) {
+        CellLayout cellLayout = mContent.getCurrentCellLayout();
+        if (cellLayout == null) {
+            return;
+        }
+        ShortcutAndWidgetContainer container = cellLayout.getShortcutsAndWidgets();
+        if (container == null) {
+            return;
+        }
+        cellLayout.setClipChildren(false);
+        cellLayout.setClipToPadding(false);
+        container.setClipChildren(false);
+        container.setClipToPadding(false);
+
+        DeviceProfile dp = mLauncher.getDeviceProfile();
+        int folderIconSizePx = dp.folderIconSizePx > 0 ? dp.folderIconSizePx : dp.iconSizePx;
+        int iconSizePx = dp.iconSizePx;
+        int folderCellWidthPx = dp.folderCellWidthPx;
+        int folderCellHeightPx = dp.folderCellHeightPx;
+
+        float[] folderIconLoc = new float[2];
+        float scaleRel = mLauncher.getDragLayer()
+                .getDescendantCoordRelativeToSelf(mFolderIcon, folderIconLoc);
+        float folderIconCenterX = ((folderIconSizePx / 2f) + mPreviewBackground.getOffsetX())
+                * scaleRel + folderIconLoc[0];
+        float folderIconCenterY = ((folderIconSizePx / 2f) + mPreviewBackground.getOffsetY())
+                * scaleRel + folderIconLoc[1];
+
+        float[] contentLoc = new float[2];
+        Utilities.getDescendantCoordRelativeToAncestor(mContent, mFolder, contentLoc, false);
+        BaseDragLayer.LayoutParams folderLp =
+                (BaseDragLayer.LayoutParams) mFolder.getLayoutParams();
+        float contentCenterX = contentLoc[0] + folderLp.x + mContent.getWidth() / 2f;
+        float contentCenterY = contentLoc[1] + folderLp.y + mContent.getHeight() / 2f;
+        float[] folderDistance = new float[]{
+                folderIconCenterX - contentCenterX,
+                folderIconCenterY - contentCenterY
+        };
+
+        int needX = folderIconCenterX <= dp.availableWidthPx * ONE_THIRD ? 1
+                : (folderIconCenterX <= dp.availableWidthPx * TWO_THIRD ? 2 : 3);
+        int needY = folderIconCenterY <= dp.availableHeightPx * ONE_THIRD ? 1
+                : (folderIconCenterY <= dp.availableHeightPx * TWO_THIRD ? 2 : 3);
+
+        ClippedFolderIconLayoutRule rule = mFolderIcon.getLayoutRule();
+        boolean isOnFirstPage = mContent.getCurrentPage() == 0;
+        List<BubbleTextView> previewItems = getPreviewIconsOnPage(
+                isOnFirstPage ? 0 : mContent.getCurrentPage());
+        int previewCount = previewItems.size();
+        int firstPagePreviewCount = isOnFirstPage
+                ? previewCount : ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
+
+        int childCount = container.getChildCount();
+        int lastCellY = childCount == 0 ? 0
+                : ((CellLayoutLayoutParams) container.getChildAt(childCount - 1)
+                .getLayoutParams()).getCellY();
+        int lastCellX = childCount == 0 ? 0
+                : (childCount > cellLayout.getCountX()
+                ? cellLayout.getCountX() - 1
+                : ((CellLayoutLayoutParams) container.getChildAt(childCount - 1)
+                .getLayoutParams()).getCellX());
+
+        int maxLevelClose = getMaxLevel(4 - needX, 4 - needY, lastCellY, lastCellX);
+
+        for (int i = 0; i < childCount; i++) {
+            View child = container.getChildAt(i);
+            if (!(child instanceof BubbleTextView)) {
+                continue;
+            }
+            BubbleTextView btv = (BubbleTextView) child;
+            CellLayoutLayoutParams btvLp = (CellLayoutLayoutParams) btv.getLayoutParams();
+            btvLp.isLockedToGrid = true;
+            container.setupLp(btv);
+
+            int previewIndex = previewItems.indexOf(btv);
+            boolean inPreview = previewIndex >= 0
+                    && previewIndex < ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
+            float previewScale;
+            float previewTransX;
+            float previewTransY;
+            if (inPreview) {
+                rule.computePreviewItemDrawingParams(previewIndex, firstPagePreviewCount, mTmpParams);
+                previewScale = mTmpParams.scale;
+                previewTransX = mTmpParams.transX;
+                previewTransY = mTmpParams.transY;
+            } else {
+                // ColorOS requireScaleChild → start tiny when not part of closed preview.
+                previewScale = rule.scaleForItem(firstPagePreviewCount) * OPEN_ANIM_SCALE_RATIO;
+                previewTransX = folderIconSizePx / 2f;
+                previewTransY = folderIconSizePx / 2f;
+            }
+
+            float f30 = inPreview ? 1f : OPEN_ANIM_SCALE_RATIO;
+            float width = ((((mContent.getWidth() / 2f) - (folderCellWidthPx / 2f))
+                    - btvLp.x)
+                    - mContent.getPaddingLeft())
+                    - cellLayout.getPaddingLeft()
+                    - ((((folderIconSizePx - (iconSizePx * previewScale)) / 2f) - previewTransX)
+                    * scaleRel);
+            float height = ((((mContent.getHeight() / 2f) - (folderCellHeightPx / 2f))
+                    - btvLp.y)
+                    - mContent.getPaddingTop())
+                    - cellLayout.getPaddingTop();
+            float f35 = (folderIconSizePx / 2f) - ((previewScale * folderCellHeightPx) / 2f);
+            float yOffset = height - ((((btv.getPaddingTop() * previewScale) + f35) - previewTransY)
+                    * scaleRel);
+
+            float startTx;
+            float startTy;
+            float startScale;
+            float endTx;
+            float endTy;
+            float endScale;
+            float bounce;
+            float response;
+
+            int level = getLevel(btvLp.getCellX(), btvLp.getCellY(), needX, needY,
+                    lastCellY, lastCellX);
+            if (mIsOpening) {
+                startTx = width + folderDistance[0];
+                startTy = yOffset + folderDistance[1];
+                startScale = previewScale * scaleRel * f30;
+                endTx = 0f;
+                endTy = 0f;
+                endScale = 1f;
+                bounce = OPEN_TRANS_BOUNCE;
+                response = OPEN_TRANS_RESPONSE; // level * 0 response delay unused (ICON_RESPONSE_DELAY=0)
+            } else {
+                startTx = btv.getTranslationX();
+                startTy = btv.getTranslationY();
+                startScale = btv.getScaleX();
+                endTx = width + folderDistance[0];
+                endTy = yOffset + folderDistance[1];
+                endScale = previewScale * scaleRel * f30;
+                float t = ((level + 1f) / (maxLevelClose + 1f));
+                bounce = Utilities.mapRange(t, CLOSE_TRANS_BOUNCE_MAX, CLOSE_TRANS_BOUNCE_MIN);
+                response = CLOSE_TRANS_RESPONSE;
+            }
+
+            updatePivot(btv);
+
+            final float sTx = startTx;
+            final float sTy = startTy;
+            final float sSc = startScale;
+            gate.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    if (mIsOpening) {
+                        btv.setTranslationX(sTx);
+                        btv.setTranslationY(sTy);
+                        btv.setScaleX(sSc);
+                        btv.setScaleY(sSc);
+                        btv.setAlpha(0f);
+                    }
+                }
+            });
+
+            playSpringOnGate(gate, btv, COUIDynamicAnimation.TRANSLATION_X,
+                    startTx, endTx, bounce, response, 0.5f);
+            playSpringOnGate(gate, btv, COUIDynamicAnimation.TRANSLATION_Y,
+                    startTy, endTy, bounce, response, 0.5f);
+            playSpringOnGate(gate, btv, COUIDynamicAnimation.SCALE_X,
+                    startScale, endScale, bounce, response,
+                    COUIDynamicAnimation.MIN_VISIBLE_CHANGE_SCALE);
+            playSpringOnGate(gate, btv, COUIDynamicAnimation.SCALE_Y,
+                    startScale, endScale, bounce, response,
+                    COUIDynamicAnimation.MIN_VISIBLE_CHANGE_SCALE);
+            playSpringOnGate(gate, btv, COUIDynamicAnimation.ALPHA,
+                    mIsOpening ? 0f : 1f, mIsOpening ? 1f : 0f,
+                    ICON_ALPHA_BOUNCE, ICON_ALPHA_RESPONSE,
+                    COUIDynamicAnimation.MIN_VISIBLE_CHANGE_ALPHA);
+        }
+    }
+
+    private void updatePivot(BubbleTextView btv) {
+        btv.setPivotX(btv.getMeasuredWidth() / 2f);
+        btv.setPivotY(btv.getPaddingTop() + btv.getIconSize() / 2f);
+    }
+
+    private void playSpringOnGate(ValueAnimator gate, View target,
+            COUIDynamicAnimation.ViewProperty property,
+            float start, float end, float bounce, float response, float minVisible) {
+        COUISpringForce force = new COUISpringForce(end)
+                .setBounce(bounce)
+                .setResponse(response);
+        COUISpringAnimation spring = new COUISpringAnimation(target, property);
+        spring.setSpring(force);
+        spring.setStartValue(start);
+        spring.setMinimumVisibleChange(minVisible);
+        mRunningSprings.add(spring);
+        gate.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                spring.setStartValue(start);
+                spring.animateToFinalPosition(end);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                if (spring.isRunning()) {
+                    spring.cancel();
+                }
+            }
+        });
+    }
+
+    private void cancelSprings() {
+        for (COUISpringAnimation spring : mRunningSprings) {
+            if (spring.isRunning()) {
+                spring.cancel();
+            }
+        }
+        mRunningSprings.clear();
+    }
+
+    private void resetChildrenTransforms() {
+        CellLayout cellLayout = mContent.getCurrentCellLayout();
+        if (cellLayout == null) {
+            return;
+        }
+        ShortcutAndWidgetContainer container = cellLayout.getShortcutsAndWidgets();
+        if (container == null) {
+            return;
+        }
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            child.setTranslationX(0f);
+            child.setTranslationY(0f);
+            child.setScaleX(1f);
+            child.setScaleY(1f);
+            child.setAlpha(1f);
+        }
+        if (mFolder.mFolderName != null) {
+            mFolder.mFolderName.setAlpha(1f);
+        }
+    }
+
+    /** ColorOS OplusFolderAnimationManager.getLevel */
+    private static int getLevel(int cellX, int cellY, int needX, int needY,
+            int lastCellY, int lastCellX) {
+        if (needX == 1) {
+            if (needY == 1) {
+                return (lastCellX + lastCellY) - (cellX + cellY);
+            }
+            if (needY == 2) {
+                return lastCellX - cellX;
+            }
+            if (needY == 3) {
+                return (lastCellX - cellX) + cellY;
+            }
+        } else if (needX == 2) {
+            if (needY == 1) {
+                return lastCellY - cellY;
+            }
+            if (needY == 3) {
+                return cellY;
+            }
+            return 0;
+        } else if (needX == 3) {
+            if (needY == 1) {
+                return cellX + (lastCellY - cellY);
+            }
+            if (needY == 2) {
+                return cellX;
+            }
+            if (needY == 3) {
+                return cellX + cellY;
+            }
+        }
+        return 0;
+    }
+
+    /** ColorOS OplusFolderAnimationManager.getMaxLevel */
+    private static int getMaxLevel(int needX, int needY, int lastCellY, int lastCellX) {
+        if (needX == 1 || needX == 3) {
+            if (needY == 1 || needY == 3) {
+                return lastCellX + lastCellY;
+            }
+            if (needY == 2) {
+                return lastCellX;
+            }
+        } else if (needX == 2) {
+            if (needY == 1 || needY == 3) {
+                return lastCellY;
+            }
+        }
+        return 0;
     }
 
     public void startFolderEditAnim(View v) {
         AnimatorSet a = new AnimatorSet();
-        play(a, getAnimator(v, View.ALPHA, 0.0f, 1.0f));
-        a.setDuration(800);
-        a.setInterpolator(this.mFolderInterpolator);
+        play(a, getAnimator(v, View.ALPHA, 0f, 1f), 0, 800);
+        a.setInterpolator(WORKSPACE_SCALE_INTERPOLATOR);
         a.start();
         v.setTag(a);
     }
 
     public void initHardlayer(boolean result) {
+        View pageIndicator = mLauncher.getDragLayer().findViewById(R.id.page_indicator);
         if (result) {
-            this.mLauncher.getHotseat().setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
-            this.mLauncher.getWorkspace().setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
-            this.mLauncher.getHotseat().setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
-            this.mLauncher.getDragLayer().findViewById(R.id.page_indicator).setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
+            mLauncher.getHotseat().setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
+            mLauncher.getWorkspace().setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
+            if (pageIndicator != null) {
+                pageIndicator.setLayerType(View.LAYER_TYPE_HARDWARE, (Paint) null);
+            }
             return;
         }
-        this.mLauncher.getHotseat().setLayerType(View.LAYER_TYPE_NONE, (Paint) null);
-        if (this.mLauncher.isInState(LauncherState.NORMAL)) {
-            this.mLauncher.getWorkspace().setLayerType(View.LAYER_TYPE_NONE, (Paint) null);
+        mLauncher.getHotseat().setLayerType(View.LAYER_TYPE_NONE, (Paint) null);
+        if (mLauncher.isInState(LauncherState.NORMAL)) {
+            mLauncher.getWorkspace().setLayerType(View.LAYER_TYPE_NONE, (Paint) null);
         }
-        this.mLauncher.getHotseat().setLayerType(View.LAYER_TYPE_NONE, (Paint) null);
-        this.mLauncher.getDragLayer().findViewById(R.id.page_indicator).setLayerType(View.LAYER_TYPE_NONE, (Paint) null);
-    }
-
-    private void addPreviewItemAnimators(AnimatorSet animatorSet, float folderScale, int previewItemOffsetX, int previewItemOffsetY) {
-        List<BubbleTextView> list;
-        int numItemsInPreview;
-        List<BubbleTextView> itemsInPreview;
-        boolean isOnFirstPage;
-        AnimatorSet animatorSet2 = animatorSet;
-        ClippedFolderIconLayoutRule rule = this.mFolderIcon.getLayoutRule();
-        boolean z = true;
-        boolean isOnFirstPage2 = this.mFolder.mContent.getCurrentPage() == 0;
-        if (isOnFirstPage2) {
-            list = getPreviewIconsOnPage(0);
-        } else {
-            list = getPreviewIconsOnPage(this.mFolder.mContent.getCurrentPage());
+        if (pageIndicator != null) {
+            pageIndicator.setLayerType(View.LAYER_TYPE_NONE, (Paint) null);
         }
-        List<BubbleTextView> itemsInPreview2 = list;
-        int numItemsInPreview2 = itemsInPreview2.size();
-        int numItemsInFirstPagePreview = isOnFirstPage2 ? numItemsInPreview2 : ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
-        TimeInterpolator previewItemInterpolator = getPreviewItemInterpolator();
-        ShortcutAndWidgetContainer cwc = this.mContent.getPageAt(0).getShortcutsAndWidgets();
-        int i = 0;
-        while (i < numItemsInPreview2) {
-            BubbleTextView btv = itemsInPreview2.get(i);
-            CellLayoutLayoutParams btvLp = (CellLayoutLayoutParams) btv.getLayoutParams();
-            btvLp.isLockedToGrid = z;
-            cwc.setupLp(btv);
-            float iconScale = (rule.getIconSize() * rule.scaleForItem(numItemsInFirstPagePreview)) / ((float) itemsInPreview2.get(i).getIconSize());
-            float initialScale = iconScale / folderScale;
-            float scale = this.mIsOpening ? initialScale : 1.0f;
-            btv.setScaleX(scale);
-            btv.setScaleY(scale);
-            rule.computePreviewItemDrawingParams(i, numItemsInFirstPagePreview, this.mTmpParams);
-            int iconOffsetX = ((int) (((float) (btvLp.width - btv.getIconSize())) * iconScale)) / 2;
-            float scale2 = scale;
-            int i2 = i;
-            int previewPosX = (int) (((this.mTmpParams.transX - ((float) iconOffsetX)) + ((float) previewItemOffsetX)) / folderScale);
-            ClippedFolderIconLayoutRule rule2 = rule;
-            int previewPosY = (int) ((this.mTmpParams.transY + ((float) previewItemOffsetY)) / folderScale);
-            float xDistance = (float) (previewPosX - btvLp.x);
-            int i3 = previewPosX;
-            float yDistance = (float) (previewPosY - btvLp.y);
-            int previewPosY2 = previewPosY;
-            CellLayoutLayoutParams btvLp2 = btvLp;
-            Animator translationX = getAnimator((View) btv, View.TRANSLATION_X, xDistance, 0.0f);
-            translationX.setInterpolator(previewItemInterpolator);
-            play(animatorSet2, translationX);
-            float xDistance2 = xDistance;
-            Animator translationY = getAnimator((View) btv, View.TRANSLATION_Y, yDistance, 0.0f);
-            translationY.setInterpolator(previewItemInterpolator);
-            play(animatorSet2, translationY);
-            Animator scaleAnimator = getAnimator((View) btv, (Property) LauncherAnimUtils.SCALE_PROPERTY, initialScale, 1.0f);
-            scaleAnimator.setInterpolator(previewItemInterpolator);
-            play(animatorSet2, scaleAnimator);
-            float initialScale2 = initialScale;
-            if (this.mFolder.getItemCount() > ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW) {
-                int delay = this.mDelay;
-                if (!mIsOpening) {
-                    delay *= 2;
-                }
-                if (mIsOpening) {
-                    isOnFirstPage = isOnFirstPage2;
-                    translationX.setStartDelay((long) delay);
-                    translationY.setStartDelay((long) delay);
-                    scaleAnimator.setStartDelay((long) delay);
-                } else {
-                    isOnFirstPage = isOnFirstPage2;
-                }
-                itemsInPreview = itemsInPreview2;
-                numItemsInPreview = numItemsInPreview2;
-                translationX.setDuration(translationX.getDuration() - ((long) delay));
-                translationY.setDuration(translationY.getDuration() - ((long) delay));
-                scaleAnimator.setDuration(scaleAnimator.getDuration() - ((long) delay));
-            } else {
-                isOnFirstPage = isOnFirstPage2;
-                itemsInPreview = itemsInPreview2;
-                numItemsInPreview = numItemsInPreview2;
-            }
-            final BubbleTextView bubbleTextView = btv;
-            final float f2 = xDistance2;
-            final float f3 = yDistance;
-            final float yDistance2 = initialScale2;
-            animatorSet2.addListener(new AnimatorListenerAdapter() {
-                public void onAnimationStart(Animator animation) {
-                    super.onAnimationStart(animation);
-                    if (HxyFolderAnimationManager.this.mIsOpening) {
-                        bubbleTextView.setTranslationX(f2);
-                        bubbleTextView.setTranslationY(f3);
-                        bubbleTextView.setScaleX(yDistance2);
-                        bubbleTextView.setScaleY(yDistance2);
-                    }
-                }
-
-                public void onAnimationEnd(Animator animation) {
-                    super.onAnimationEnd(animation);
-                    bubbleTextView.setTranslationX(0.0f);
-                    bubbleTextView.setTranslationY(0.0f);
-                    bubbleTextView.setScaleX(1.0f);
-                    bubbleTextView.setScaleY(1.0f);
-                }
-            });
-            i = i2 + 1;
-            rule = rule2;
-            isOnFirstPage2 = isOnFirstPage;
-            itemsInPreview2 = itemsInPreview;
-            numItemsInPreview2 = numItemsInPreview;
-            z = true;
-        }
-    }
-
-    private void play(AnimatorSet as, Animator a) {
-        play(as, a, a.getStartDelay(), this.mDuration);
-    }
-
-    private void play(AnimatorSet as, Animator a, int duration) {
-        play(as, a, a.getStartDelay(), duration);
     }
 
     private void play(AnimatorSet as, Animator a, long startDelay, int duration) {
+        if (a == null) {
+            return;
+        }
         a.setStartDelay(startDelay);
-        a.setDuration((long) duration);
+        a.setDuration(duration);
         as.play(a);
     }
 
-    private TimeInterpolator getPreviewItemInterpolator() {
-        if (this.mFolder.getItemCount() <= ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW) {
-            return this.mFolderInterpolator;
-        }
-        if (this.mIsOpening) {
-            return this.mFolderInterpolator;
-        }
-        return this.mFolderInterpolator;
-    }
-
-    private Animator getAnimator(DepthController view, Property property, float v1, float v2) {
-        if (this.mIsOpening) {
-            return ObjectAnimator.ofFloat(view, property, new float[]{v2});
-        }
-        return ObjectAnimator.ofFloat(view, property, new float[]{v1});
-    }
-
     private Animator getAnimator(View view, Property property, float v1, float v2) {
-        if (this.mIsOpening) {
-            return ObjectAnimator.ofFloat(view, property, new float[]{v1, v2});
+        if (mIsOpening) {
+            return ObjectAnimator.ofFloat(view, property, v1, v2);
         }
-        return ObjectAnimator.ofFloat(view, property, new float[]{v2, v1});
-    }
-
-    private Animator getAnimatorWallpaper(View view, Property property, float v1, float v2) {
-        if (this.mIsOpening) {
-            return ObjectAnimator.ofFloat(view, property, new float[]{view.getAlpha(), v2});
-        }
-        return ObjectAnimator.ofFloat(view, property, new float[]{view.getAlpha(), v1});
-    }
-
-    private Animator getAnimator1(View view, Property property, float v1, float v2) {
-        if (this.mIsOpening) {
-            return ObjectAnimator.ofFloat(view, property, new float[]{v1, v1});
-        }
-        return ObjectAnimator.ofFloat(view, property, new float[]{v2, v1});
-    }
-
-    private Animator getAnimator(GradientDrawable drawable, String property, int v1, int v2) {
-        if (this.mIsOpening) {
-            return ObjectAnimator.ofArgb(drawable, property, new int[]{v1, v2});
-        }
-        return ObjectAnimator.ofArgb(drawable, property, new int[]{v2, v1});
+        return ObjectAnimator.ofFloat(view, property, v2, v1);
     }
 }

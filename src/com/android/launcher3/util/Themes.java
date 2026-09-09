@@ -40,7 +40,9 @@ import com.android.launcher3.Utilities;
 import com.android.launcher3.icons.GraphicsUtils;
 import com.android.launcher3.views.ActivityContext;
 //hxy-feature: desktop theme 202312
+import android.os.SystemProperties;
 import android.provider.Settings;
+import android.text.TextUtils;
 //hxy-feature: desktop theme 202312
 /**
  * Various utility methods associated with theming.
@@ -87,7 +89,15 @@ public class Themes {
 
     //hxy-feature: desktop theme 202312
     public static String getThemedName(Context context) {
-        return Settings.Global.getString(context.getContentResolver(), KEY_THEMED);
+        String name = Settings.Global.getString(context.getContentResolver(), KEY_THEMED);
+        if (TextUtils.isEmpty(name) || "none".equals(name)) {
+            String factory = SystemProperties.get("ro.hxy.themed", "");
+            if (!TextUtils.isEmpty(factory) && !"none".equals(factory)) {
+                Settings.Global.putString(context.getContentResolver(), KEY_THEMED, factory);
+                return factory;
+            }
+        }
+        return name;
     }
     //hxy-feature: desktop theme 202312
 

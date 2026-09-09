@@ -8,6 +8,7 @@ import android.content.pm.LauncherActivityInfo;
 import android.content.pm.LauncherApps;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Picture;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -40,6 +41,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Batch actions for edit-mode selection: Create folder / Uninstall-or-Remove.
@@ -314,19 +316,29 @@ public final class EditSelectionActions {
             Drawable icon = src.getConstantState() != null
                     ? src.getConstantState().newDrawable().mutate()
                     : src.mutate();
-            Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-            icon.setBounds(0, 0, size, size);
-            icon.draw(new Canvas(bitmap));
-            return bitmap;
+            final int iconSize = size;
+            // Use Picture recording: hardware icon bitmaps cannot be drawn onto a
+            // software Canvas (ARGB_8888), which caused create-folder fly-in crashes.
+            return snapshotWithPicture(iconSize, iconSize, canvas -> {
+                icon.setBounds(0, 0, iconSize, iconSize);
+                icon.draw(canvas);
+            });
         }
         int width = view.getWidth();
         int height = view.getHeight();
         if (width <= 0 || height <= 0) {
             return null;
         }
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        view.draw(new Canvas(bitmap));
-        return bitmap;
+        return snapshotWithPicture(width, height, view::draw);
+    }
+
+    /** Records drawing into a Picture so hardware bitmaps are safe to rasterize. */
+    private static Bitmap snapshotWithPicture(int width, int height, Consumer<Canvas> drawer) {
+        Picture picture = new Picture();
+        Canvas canvas = picture.beginRecording(width, height);
+        drawer.accept(canvas);
+        picture.endRecording();
+        return Bitmap.createBitmap(picture);
     }
 
     private static void animateFlyIn(Launcher launcher, List<FlyIn> flyIns, FolderIcon folderIcon) {

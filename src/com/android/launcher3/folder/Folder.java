@@ -278,7 +278,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         // reliable behavior when clicking the text field (since it will always gain focus on
         // click).
         setFocusableInTouchMode(true);
-
+        // Full-bleed folder must receive empty-area taps to dismiss (ColorOS).
+        setClickable(true);
     }
 
     @Override
@@ -296,7 +297,15 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                 R.drawable.round_rect_folder, getContext().getTheme());
 
         mContent = findViewById(R.id.folder_content);
-        mContent.setPadding(paddingLeftRight, dp.folderContentPaddingTop, paddingLeftRight, 0);
+        if (isFullBleedOpenFolder()) {
+            // ColorOS oplus_user_folder: FolderPagedView paddingTop = pageview_padding_top;
+            // L/R content margins are 0; cell L/R/bottom come from folder_page.xml.
+            int pagePadTop = getResources().getDimensionPixelSize(
+                    R.dimen.folder_pageview_padding_top);
+            mContent.setPadding(0, pagePadTop, 0, 0);
+        } else {
+            mContent.setPadding(paddingLeftRight, dp.folderContentPaddingTop, paddingLeftRight, 0);
+        }
         mContent.setFolder(this);
 
         mPageIndicator = findViewById(R.id.folder_page_indicator);
@@ -313,10 +322,16 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                 | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
                 | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         mFolderName.forceDisableSuggestions(true);
-        mFolderName.setPadding(mFolderName.getPaddingLeft(),
-                (mFooterHeight - mFolderName.getLineHeight()) / 2,
-                mFolderName.getPaddingRight(),
-                (mFooterHeight - mFolderName.getLineHeight()) / 2);
+        if (isFullBleedOpenFolder()) {
+            // ColorOS: title sits below status bar inside folder_title_height.
+            mFolderName.setPadding(mFolderName.getPaddingLeft(), 0,
+                    mFolderName.getPaddingRight(), 0);
+        } else {
+            mFolderName.setPadding(mFolderName.getPaddingLeft(),
+                    (mFooterHeight - mFolderName.getLineHeight()) / 2,
+                    mFolderName.getPaddingRight(),
+                    (mFooterHeight - mFolderName.getLineHeight()) / 2);
+        }
 
         if (Utilities.ATLEAST_R) {
             mKeyboardInsetAnimationCallback = new KeyboardInsetAnimationCallback(this);
@@ -1206,6 +1221,41 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         BaseDragLayer.LayoutParams lp = (BaseDragLayer.LayoutParams) getLayoutParams();
         BaseDragLayer parent = mActivityContext.getDragLayer();
         DragLayer dragLayer = mLauncher.getDragLayer();
+
+        // ColorOS OplusFolder.centerAboutIcon: bottom-align measured content (not full-bleed fill).
+        // x = (dragLayer.width - measuredWidth) / 2
+        // y = (dragLayer.height - insets.bottom) - measuredHeight
+        if (isFullBleedOpenFolder()) {
+            int width = getMeasuredWidth() > 0 ? getMeasuredWidth() : getFolderWidth();
+            int height = getMeasuredHeight() > 0 ? getMeasuredHeight() : getFolderHeight();
+            if (width <= 0) {
+                width = mLauncher.getDeviceProfile().availableWidthPx;
+            }
+            if (height <= 0) {
+                height = getFolderHeight();
+            }
+            int bottomInset = mLauncher.getDeviceProfile().getInsets().bottom;
+            int x = (dragLayer.getWidth() - width) / 2;
+            int y = (dragLayer.getHeight() - bottomInset) - height;
+            Rect iconRectInDragLayer = sTempRect;
+            dragLayer.getDescendantRectRelativeToSelf(mFolderIcon, iconRectInDragLayer);
+            Rect iconContentRect = mFolderIcon.getIconRect();
+            iconRectInDragLayer.offset(iconContentRect.left, iconContentRect.top);
+            iconRectInDragLayer.bottom = iconRectInDragLayer.top + iconContentRect.height();
+            iconRectInDragLayer.right = iconRectInDragLayer.left + iconContentRect.width();
+            setPivotX(iconRectInDragLayer.centerX() - x);
+            setPivotY(iconRectInDragLayer.centerY() - y);
+            mFolderIconPivotX = mFolderIcon.getMeasuredWidth() / 2f;
+            mFolderIconPivotY = mFolderIcon.getMeasuredHeight() / 2f;
+            lp.width = width;
+            lp.height = height;
+            lp.x = x;
+            lp.y = Math.max(0, y);
+            mFolderIcon.setPivotX(mFolderIconPivotX);
+            mFolderIcon.setPivotY(mFolderIconPivotY);
+            return;
+        }
+
         int width = getFolderWidth();
         int height = getFolderHeight();
 
@@ -1280,8 +1330,16 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     protected int getContentAreaHeight() {
         DeviceProfile grid = mActivityContext.getDeviceProfile();
-        int maxContentAreaHeight = grid.availableHeightPx - grid.getTotalWorkspacePadding().y
-                - mFooterHeight;
+        int maxContentAreaHeight;
+        if (isFullBleedOpenFolder()) {
+            // ColorOS OplusFolder.getContentAreaHeight
+            Rect insets = grid.getInsets();
+            maxContentAreaHeight = grid.availableHeightPx - insets.top - insets.bottom
+                    - mFooterHeight;
+        } else {
+            maxContentAreaHeight = grid.availableHeightPx - grid.getTotalWorkspacePadding().y
+                    - mFooterHeight;
+        }
         int height = Math.min(maxContentAreaHeight,
                 mContent.getDesiredHeight());
         return Math.max(height, MIN_CONTENT_DIMEN);
@@ -1300,7 +1358,15 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     }
 
     private int getFolderHeight(int contentAreaHeight) {
-        return getPaddingTop() + getPaddingBottom() + contentAreaHeight + mFooterHeight + mHeaderHeight;
+        if (isFullBleedOpenFolder()) {
+            // ColorOS: indicator overlays content; height excludes separate footer stack.
+            int wrapperTop = getResources().getDimensionPixelSize(
+                    R.dimen.folder_content_wrapper_margin_top);
+            return getPaddingTop() + getPaddingBottom() + contentAreaHeight
+                    + mHeaderHeight + wrapperTop;
+        }
+        return getPaddingTop() + getPaddingBottom() + contentAreaHeight + mFooterHeight
+                + mHeaderHeight;
     }
 
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -1316,6 +1382,26 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         if (mContent.getChildCount() > 0) {
             int cellIconGap = (this.mContent.getPageAt(0).getCellWidth() - this.mActivityContext.getDeviceProfile().iconSizePx) / 2;
             mFooter.setPadding(this.mContent.getPaddingLeft() + cellIconGap, this.mFooter.getPaddingTop(), this.mContent.getPaddingRight() + cellIconGap, this.mFooter.getPaddingBottom());
+        }
+
+        if (isFullBleedOpenFolder()) {
+            // ColorOS OplusFolder.onMeasure:
+            // folderHeight = folder_content_wrapper_margin_top + headerH + contentH (+ paddings)
+            // Page indicator overlays content (FrameLayout), so do not add footer to height.
+            int wrapperTop = getResources().getDimensionPixelSize(
+                    R.dimen.folder_content_wrapper_margin_top);
+            int folderWidth = getPaddingLeft() + getPaddingRight() + contentWidth;
+            int folderHeight = wrapperTop + mHeaderHeight + getPaddingTop() + getPaddingBottom()
+                    + contentHeight;
+            int headerWidthSpec = MeasureSpec.makeMeasureSpec(folderWidth, MeasureSpec.EXACTLY);
+            mHeader.measure(headerWidthSpec,
+                    View.MeasureSpec.makeMeasureSpec(this.mHeaderHeight, MeasureSpec.EXACTLY));
+            mFooter.measure(contentAreaWidthSpec,
+                    View.MeasureSpec.makeMeasureSpec(this.mFooterHeight, MeasureSpec.EXACTLY));
+            mContentLl.measure(contentAreaWidthSpec,
+                    View.MeasureSpec.makeMeasureSpec(contentHeight, MeasureSpec.EXACTLY));
+            setMeasuredDimension(folderWidth, folderHeight);
+            return;
         }
 
         mFooter.measure(contentAreaWidthSpec, View.MeasureSpec.makeMeasureSpec(this.mFooterHeight, MeasureSpec.EXACTLY));
@@ -1749,9 +1835,24 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             } else if (!dl.isEventOverView(this, ev)
                     && mLauncherDelegate.interceptOutsideTouch(ev, dl, this)) {
                 return true;
+            } else if (isFullBleedOpenFolder()) {
+                // Empty space inside the ColorOS folder dismisses via onTouchEvent.
+                return false;
             }
         }
         return false;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        // ColorOS: empty-area UP reaches the folder view (icons/title consume their own taps).
+        if (isFullBleedOpenFolder()
+                && !isEditingName()
+                && event.getAction() == MotionEvent.ACTION_UP) {
+            close(true);
+            return true;
+        }
+        return super.onTouchEvent(event);
     }
 
     @Override
@@ -1771,6 +1872,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        if (isFullBleedOpenFolder()) {
+            // No frosted plate — content floats on the wallpaper blur (ColorOS).
+            super.dispatchDraw(canvas);
+            return;
+        }
         if (mClipPath != null) {
             int count = canvas.save();
             canvas.clipPath(mClipPath);
@@ -1786,6 +1892,14 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     public FolderPagedView getContent() {
         return mContent;
+    }
+
+    /**
+     * ColorOS-like open folder: fill the drag layer, no frosted card, icons float on blur.
+     * Hxy full-folder style enables this.
+     */
+    protected boolean isFullBleedOpenFolder() {
+        return getResources().getBoolean(R.bool.config_show_full_folder_style);
     }
 
     /** Returns the height of the current folder's bottom edge from the bottom of the screen. */

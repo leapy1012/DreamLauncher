@@ -26,14 +26,14 @@
 <icon package="com.android.settings" drawable="aui_ic_settings"/>
 <icon package="com.android.gallery3d" drawable="aui_ic_photo"/>
 <icon package="com.android.gallery" drawable="aui_ic_photo"/>
-<icon package="com.gdcalendar" drawable="aui_ic_calendar"/>
+<icon package="gd.app.calendar" drawable="aui_ic_calendar"/>
 <icon package="com.android.deskclock" drawable="aui_ic_alarm"/>
 <icon package="com.android.email" drawable="aui_ic_mail"/>
 <icon package="com.android.fmradio" drawable="aui_ic_fm"/>
 <icon package="gd.app.note" drawable="aui_ic_notes"/>
 <icon package="com.mediatek.filemanager" drawable="aui_ic_filebrowser"/>
 <icon package="com.android.filebrowser" drawable="aui_ic_filebrowser"/>
-<icon package="com.gd.app.video" drawable="aui_ic_video"/>
+<icon package="gd.app.video" drawable="aui_ic_video"/>
 <icon package="gd.app.soundrecorder" drawable="aui_ic_recording"/>
 <icon package="com.android.calculator2" drawable="aui_ic_calculator"/>
 <icon package="com.android.calculator" drawable="aui_ic_calculator"/>

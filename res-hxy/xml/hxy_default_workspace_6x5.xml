@@ -1,26 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Factory default 5×6 workspace (app-drawer style). Matches mtk_5_6.png:
      last row File Manager / Photos / Clock / System Manager / Settings;
-     dock Phone / Contacts / Messages / Chrome / Camera. -->
+     dock Phone / Contacts / Messages / Browser / Camera. -->
 <favorites>
-    <!-- Hotseat: Phone, Contacts, Messages, Chrome, Camera -->
+    <!-- Hotseat: Phone, Contacts, Messages, Browser (MtkBrowser), Camera -->
     <resolve container="-101" screen="0" x="0" y="0">
         <favorite packageName="com.android.dialer" className="com.android.contacts.dial.DialActivity"/>
         <favorite packageName="com.google.android.dialer" className="com.google.android.dialer.extensions.GoogleDialtactsActivity"/>
     </resolve>
     <resolve container="-101" screen="1" x="1" y="0">
-        <favorite packageName="com.android.contacts" className="com.android.contacts.activities.PeopleActivity"/>
         <favorite packageName="com.android.dialer" className="com.android.contacts.PeopleActivity"/>
+        <favorite packageName="com.android.contacts" className="com.android.contacts.activities.PeopleActivity"/>
         <favorite packageName="com.google.android.contacts" className="com.android.contacts.activities.PeopleActivity"/>
     </resolve>
     <resolve container="-101" screen="2" x="2" y="0">
+        <favorite packageName="com.android.messaging" className="com.android.messaging.ui.conversationlist.ConversationListActivity"/>
         <favorite uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_MESSAGING;end"/>
         <favorite packageName="com.android.mms" className="com.android.mms.ui.ConversationList"/>
-        <favorite packageName="com.android.messaging" className="com.android.messaging.ui.conversationlist.ConversationListActivity"/>
     </resolve>
     <resolve container="-101" screen="3" x="3" y="0">
-        <favorite packageName="com.android.chrome" className="com.google.android.apps.chrome.Main"/>
+        <favorite packageName="com.android.browser" className="com.android.browser.BrowserActivity"/>
         <favorite uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_BROWSER;end"/>
+        <favorite packageName="com.android.chrome" className="com.google.android.apps.chrome.Main"/>
     </resolve>
     <resolve container="-101" screen="4" x="4" y="0">
         <favorite packageName="com.mediatek.camera" className="com.mediatek.camera.CameraLauncher"/>
@@ -29,9 +30,9 @@
 
     <!-- Workspace last row: File Manager, Photos, Clock, System Manager, Settings -->
     <resolve screen="0" x="0" y="-1">
-        <favorite packageName="com.mediatek.filemanager" className="com.mediatek.filemanager.FileManagerOperationActivity"/>
+        <favorite packageName="com.android.filebrowser" className="com.android.filebrowser.activity.ZSFileSortActivity"/>
         <favorite packageName="com.android.filebrowser" className="com.android.filebrowser.FileBrowserActivity"/>
-        <favorite packageName="com.android.documentsui" className="com.android.documentsui.LauncherActivity"/>
+        <favorite packageName="com.mediatek.filemanager" className="com.mediatek.filemanager.FileManagerOperationActivity"/>
         <favorite uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_FILES;end"/>
     </resolve>
     <resolve screen="0" x="1" y="-1">

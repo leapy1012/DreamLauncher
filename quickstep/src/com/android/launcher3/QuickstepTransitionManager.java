@@ -44,7 +44,6 @@ import static com.android.launcher3.LauncherState.OVERVIEW;
 import static com.android.launcher3.Utilities.mapBoundToRange;
 import static com.android.launcher3.anim.Interpolators.ACCEL_1_5;
 import static com.android.launcher3.anim.Interpolators.AGGRESSIVE_EASE;
-import static com.android.launcher3.anim.Interpolators.DEACCEL_1_5;
 import static com.android.launcher3.anim.Interpolators.DEACCEL_1_7;
 import static com.android.launcher3.anim.Interpolators.EXAGGERATED_EASE;
 import static com.android.launcher3.anim.Interpolators.LINEAR;
@@ -182,10 +181,11 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
     private static final String CONTROL_REMOTE_APP_TRANSITION_PERMISSION =
             "android.permission.CONTROL_REMOTE_APP_TRANSITION_ANIMATIONS";
 
-    private static final long APP_LAUNCH_DURATION = 500;
+    private static final long APP_LAUNCH_DURATION = 420;
 
+    /** Icon fade-out while the opening window takes over (ColorOS uses ~20ms delay). */
     private static final long APP_LAUNCH_ALPHA_DURATION = 50;
-    private static final long APP_LAUNCH_ALPHA_START_DELAY = 25;
+    private static final long APP_LAUNCH_ALPHA_START_DELAY = 20;
 
     public static final int ANIMATION_NAV_FADE_IN_DURATION = 266;
     public static final int ANIMATION_NAV_FADE_OUT_DURATION = 133;
@@ -208,8 +208,18 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
     // TODO(b/236145847): Tune TASKBAR_TO_HOME_DURATION to 383 after conflict with unlock animation
     // is solved.
     public static final int TASKBAR_TO_HOME_DURATION = 300;
-    protected static final int CONTENT_SCALE_DURATION = 350;
+    /** ColorOS content spring (stiffness≈300) settles near this duration. */
+    protected static final int CONTENT_SCALE_DURATION = 380;
+    /** Match scale so workspace fade reads as one “spread-out” motion. */
+    protected static final int CONTENT_FADE_DURATION = 380;
     protected static final int CONTENT_SCRIM_DURATION = 350;
+
+    /**
+     * Approximates ColorOS content spring (critically damped, stiffness≈300):
+     * scale 1→0.9 + fade 1→0 on open.
+     */
+    private static final Interpolator CONTENT_OPEN_INTERPOLATOR =
+            new PathInterpolator(0.25f, 0.1f, 0.25f, 1f);
 
     private static final int MAX_NUM_TASKS = 5;
 
@@ -567,10 +577,17 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
         } else if (mLauncher.isInState(OVERVIEW)) {
             endListener = composeViewContentAnimator(launcherAnimator, alphas, scales);
         } else {
+            // ColorOS-like content: scale home icons toward 0.9 and fade them out so the
+            // opening app reads as expanding while the grid “spreads” away.
             List<View> viewsToAnimate = new ArrayList<>();
             Workspace<?> workspace = mLauncher.getWorkspace();
             workspace.forEachVisiblePage(
                     view -> viewsToAnimate.add(((CellLayout) view).getShortcutsAndWidgets()));
+
+            View pageIndicator = workspace.getPageIndicator();
+            if (pageIndicator != null) {
+                viewsToAnimate.add(pageIndicator);
+            }
 
             // Do not scale hotseat as a whole when taskbar is present, and scale QSB only if it's
             // not inline.
@@ -582,13 +599,19 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                 viewsToAnimate.add(mLauncher.getHotseat());
             }
 
+            final float[] contentAlphas = alphas;
             viewsToAnimate.forEach(view -> {
                 view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
                 ObjectAnimator scaleAnim = ObjectAnimator.ofFloat(view, SCALE_PROPERTY, scales)
                         .setDuration(CONTENT_SCALE_DURATION);
-                scaleAnim.setInterpolator(DEACCEL_1_5);
+                scaleAnim.setInterpolator(CONTENT_OPEN_INTERPOLATOR);
                 launcherAnimator.play(scaleAnim);
+
+                ObjectAnimator alphaAnim = ObjectAnimator.ofFloat(view, View.ALPHA, contentAlphas)
+                        .setDuration(CONTENT_FADE_DURATION);
+                alphaAnim.setInterpolator(CONTENT_OPEN_INTERPOLATOR);
+                launcherAnimator.play(alphaAnim);
             });
 
             final boolean scrimEnabled = ENABLE_SCRIM_FOR_APP_LAUNCH.get();
@@ -605,7 +628,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                     ObjectAnimator scrim = ObjectAnimator.ofArgb(scrimView, VIEW_BACKGROUND_COLOR,
                             colors);
                     scrim.setDuration(CONTENT_SCRIM_DURATION);
-                    scrim.setInterpolator(DEACCEL_1_5);
+                    scrim.setInterpolator(CONTENT_OPEN_INTERPOLATOR);
 
                     launcherAnimator.play(scrim);
                 }
@@ -614,6 +637,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
             endListener = () -> {
                 viewsToAnimate.forEach(view -> {
                     SCALE_PROPERTY.set(view, 1f);
+                    view.setAlpha(1f);
                     view.setLayerType(View.LAYER_TYPE_NONE, null);
                 });
                 if (scrimEnabled) {

@@ -69,6 +69,9 @@
     <integer name="folder_light_close_duration">600</integer>
     <integer name="folder_light_open_duration">600</integer>
     <integer name="folder_open_duration">850</integer>
+    <!-- WallpaperUtil.getLauncherContentAnimWithGaussian open/close content durations -->
+    <integer name="folder_workspace_content_open_duration">300</integer>
+    <integer name="folder_workspace_content_close_duration">400</integer>
 
     <!-- The distance at which the animation should take the max duration -->
     <integer name="config_dropAnimMaxDist">800</integer>
