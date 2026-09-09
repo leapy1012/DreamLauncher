@@ -1,0 +1,49 @@
+# Build a shareable AAR (coui/dist/coui-*.aar).
+# Tag: coui-v1.0.0  (version should match gradle.properties COUI_VERSION)
+# Or run manually from Actions → Build COUI AAR.
+
+name: Build COUI AAR
+
+on:
+  push:
+    tags:
+      - "coui-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  aar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: Export AAR
+        run: gradle :coui:exportCouiAar --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coui-aar
+          path: |
+            coui/dist/*.aar
+            coui/dist/USAGE.txt
+
+      - name: Attach AAR to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            coui/dist/*.aar
+            coui/dist/USAGE.txt

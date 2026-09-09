@@ -33,6 +33,9 @@ apktool_oplus_tmp
 /_*.txt
 /*.log
 
+# Built COUI AAR (run :coui:exportCouiAar; copy the file to other projects)
+coui/dist/
+
 # Scratch dirs from device audits and apk checks
 /_apk_check/
 /_img/

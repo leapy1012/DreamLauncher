@@ -288,8 +288,10 @@ allprojects {
         task.doFirst {
             // 排除 Filter 模块
             if (!task.project.path.contains(":Filter")) {
-                // 替换java.base
-                options.compilerArgs += ["--patch-module", "java.base=${rootDir}/libs/core-all.jar"]
+                def coreAllJar = file("${rootDir}/libs/core-all.jar")
+                if (coreAllJar.exists()) {
+                    options.compilerArgs += ["--patch-module", "java.base=${coreAllJar}"]
+                }
                 // 允许访问 java.lang.runtime 包（Java record 需要）
                 options.compilerArgs += ["--add-exports", "java.base/java.lang.runtime=ALL-UNNAMED"]
             }
