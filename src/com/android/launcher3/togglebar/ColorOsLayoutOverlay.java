@@ -2,6 +2,10 @@ package com.android.launcher3.togglebar;
 
 import static com.android.launcher3.LauncherState.NORMAL;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -15,14 +19,17 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.graphics.drawable.Drawable;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
 import com.android.launcher3.AbstractFloatingView;
+import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
+import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.Insettable;
 import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.InvariantDeviceProfile.GridOption;
@@ -50,6 +57,10 @@ import java.util.List;
 public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insettable {
 
     private static final int SHEET_EXTRA_BOTTOM_DP = 12;
+    /** Oppo {@code LayoutSpringAnimationHelper} fade-out / fade-in. */
+    private static final float PREVIEW_FADE_SCALE = 0.9f;
+    private static final long PREVIEW_FADE_OUT_MS = 180;
+    private static final long PREVIEW_FADE_IN_MS = 220;
 
     private Launcher mLauncher;
     private View mSheet;
@@ -65,6 +76,8 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
     private boolean mRestoreNavContrast = true;
     private final List<SavedIcon> mSavedIcons = new ArrayList<>();
     private final List<SavedPage> mSavedPages = new ArrayList<>();
+    @Nullable
+    private Animator mPreviewAnimator;
 
     public ColorOsLayoutOverlay(Context context) {
         this(context, null);
@@ -184,22 +197,23 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
             if (!(pageView instanceof CellLayout cell)) {
                 continue;
             }
+            ViewGroup.LayoutParams lp = cell.getLayoutParams();
             mSavedPages.add(new SavedPage(cell, cell.getPaddingLeft(), cell.getPaddingTop(),
-                    cell.getPaddingRight(), cell.getPaddingBottom()));
+                    cell.getPaddingRight(), cell.getPaddingBottom(),
+                    lp != null ? lp.height : ViewGroup.LayoutParams.MATCH_PARENT,
+                    cell.getTranslationY()));
             ShortcutAndWidgetContainer container = cell.getShortcutsAndWidgets();
             if (container == null) {
                 continue;
             }
             for (int i = 0; i < container.getChildCount(); i++) {
                 View child = container.getChildAt(i);
-                if (child instanceof LauncherAppWidgetHostView) {
+                if (!(child.getLayoutParams() instanceof CellLayoutLayoutParams childLp)) {
                     continue;
                 }
-                if (!(child.getLayoutParams() instanceof CellLayoutLayoutParams lp)) {
-                    continue;
-                }
-                mSavedIcons.add(new SavedIcon(child, page, lp.getCellX(), lp.getCellY(),
-                        lp.cellHSpan, lp.cellVSpan));
+                boolean widget = child instanceof LauncherAppWidgetHostView;
+                mSavedIcons.add(new SavedIcon(child, page, childLp.getCellX(), childLp.getCellY(),
+                        childLp.cellHSpan, childLp.cellVSpan, widget));
             }
         }
         mSavedIcons.sort(Comparator.comparingInt((SavedIcon s) -> s.page)
@@ -208,6 +222,66 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
     }
 
     private void previewGrid(int cols, int rows) {
+        previewGrid(cols, rows, true);
+    }
+
+    private void previewGrid(int cols, int rows, boolean animate) {
+        Workspace workspace = mLauncher.getWorkspace();
+        if (workspace == null) {
+            return;
+        }
+        CellLayout current = workspace.getPageAt(workspace.getCurrentPage()) instanceof CellLayout cell
+                ? cell : null;
+        cancelPreviewAnim();
+        if (!animate || current == null) {
+            applyPreviewGridNow(cols, rows);
+            resetPageAnim(current);
+            return;
+        }
+        current.setPivotX(workspace.getPivotX());
+        current.setPivotY(Math.max(1, current.getHeight()) / 2f);
+        AnimatorSet fadeOut = new AnimatorSet();
+        fadeOut.playTogether(
+                ObjectAnimator.ofFloat(current, View.ALPHA, current.getAlpha(), 0f),
+                ObjectAnimator.ofFloat(current, View.SCALE_X, current.getScaleX(), PREVIEW_FADE_SCALE),
+                ObjectAnimator.ofFloat(current, View.SCALE_Y, current.getScaleY(), PREVIEW_FADE_SCALE));
+        fadeOut.setDuration(PREVIEW_FADE_OUT_MS);
+        fadeOut.setInterpolator(Interpolators.DEACCEL);
+        fadeOut.addListener(new AnimatorListenerAdapter() {
+            boolean mCanceled;
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                mCanceled = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (mCanceled) {
+                    return;
+                }
+                applyPreviewGridNow(cols, rows);
+                AnimatorSet fadeIn = new AnimatorSet();
+                fadeIn.playTogether(
+                        ObjectAnimator.ofFloat(current, View.ALPHA, 0f, 1f),
+                        ObjectAnimator.ofFloat(current, View.SCALE_X, PREVIEW_FADE_SCALE, 1f),
+                        ObjectAnimator.ofFloat(current, View.SCALE_Y, PREVIEW_FADE_SCALE, 1f));
+                fadeIn.setDuration(PREVIEW_FADE_IN_MS);
+                fadeIn.setInterpolator(Interpolators.ACCEL_DEACCEL);
+                mPreviewAnimator = fadeIn;
+                fadeIn.start();
+            }
+        });
+        mPreviewAnimator = fadeOut;
+        fadeOut.start();
+    }
+
+    /**
+     * Oppo {@code PreviewGridChangedTask.changeLayout}: leftover horizontal padding,
+     * CellLayout height + translationY recenter, {@code setGridCellSize}, then re-place
+     * icons. Overflow icons are hidden (Oppo slides them off-screen).
+     */
+    private void applyPreviewGridNow(int cols, int rows) {
         Workspace workspace = mLauncher.getWorkspace();
         if (workspace == null) {
             return;
@@ -215,9 +289,7 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         boolean restoreOriginal = cols == mOriginalCols && rows == mOriginalRows;
         DeviceProfile dp = mLauncher.getDeviceProfile();
         Point cellSize = dp.getOppoPreviewCellSize(cols, rows);
-        int padHor = dp.getOppoPreviewPaddingHor(cols);
-        float iconScale = dp.getOppoPreviewIconSizePx(cols)
-                / (float) Math.max(1, dp.getOppoPreviewIconSizePx(mOriginalCols));
+        int iconSize = dp.getOppoPreviewIconSizePx(cols);
         for (int page = 0; page < workspace.getPageCount(); page++) {
             View pageView = workspace.getPageAt(page);
             if (!(pageView instanceof CellLayout cell)) {
@@ -225,15 +297,14 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
             }
             if (restoreOriginal) {
                 restorePageChrome(cell);
-                cell.setGridSize(cols, rows);
                 cell.resetCellSize(dp);
+                cell.setGridSize(cols, rows);
                 restorePageIcons(page);
             } else {
-                // Oppo setNewCellLayoutPadding + setGridCellSize(cols, rows, cellW*cols, cellH*rows)
-                cell.setPadding(padHor, cell.getPaddingTop(), padHor, cell.getPaddingBottom());
+                applyOppoCellLayoutPadding(dp, cell, workspace, cellSize, cols, rows);
                 cell.setGridSize(cols, rows);
                 cell.setCellDimensions(Math.max(1, cellSize.x), Math.max(1, cellSize.y));
-                placePageIcons(page, cols, rows, iconScale);
+                placePageIcons(page, cols, rows, iconSize);
             }
             cell.requestLayout();
         }
@@ -241,13 +312,73 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         workspace.invalidate();
     }
 
-    private void restorePageChrome(CellLayout cell) {
+    /**
+     * Oppo {@code setNewCellLayoutPadding}: padHor is leftover after {@code cols * cellW},
+     * height is {@code padTop + padBottom + rows * cellH}, translationY recenters in
+     * {@code availableHeightPx}.
+     */
+    private void applyOppoCellLayoutPadding(DeviceProfile dp, CellLayout cell,
+            Workspace workspace, Point cellSize, int cols, int rows) {
+        SavedPage saved = findSavedPage(cell);
+        int padTop = saved != null ? saved.padT : cell.getPaddingTop();
+        int padBottom = saved != null ? saved.padB : cell.getPaddingBottom();
+        int padHor = Math.max(0, ((dp.widthPx - (cellSize.x * cols)) / 2)
+                - workspace.getPaddingLeft());
+        int height = padTop + padBottom + (cellSize.y * rows);
+        float translationY = -((dp.availableHeightPx - height
+                - workspace.getPaddingTop() - workspace.getPaddingBottom()) / 2f);
+        ViewGroup.LayoutParams lp = cell.getLayoutParams();
+        if (lp != null) {
+            lp.height = height;
+            cell.setLayoutParams(lp);
+        }
+        cell.setTranslationY(translationY);
+        cell.setPadding(padHor, padTop, padHor, padBottom);
+    }
+
+    private void cancelPreviewAnim() {
+        if (mPreviewAnimator != null) {
+            mPreviewAnimator.removeAllListeners();
+            mPreviewAnimator.cancel();
+            mPreviewAnimator = null;
+        }
+    }
+
+    private static void resetPageAnim(@Nullable CellLayout cell) {
+        if (cell == null) {
+            return;
+        }
+        cell.animate().cancel();
+        cell.setAlpha(1f);
+        cell.setScaleX(1f);
+        cell.setScaleY(1f);
+    }
+
+    @Nullable
+    private SavedPage findSavedPage(CellLayout cell) {
         for (SavedPage saved : mSavedPages) {
             if (saved.cell == cell) {
-                cell.setPadding(saved.padL, saved.padT, saved.padR, saved.padB);
-                return;
+                return saved;
             }
         }
+        return null;
+    }
+
+    private void restorePageChrome(CellLayout cell) {
+        SavedPage saved = findSavedPage(cell);
+        if (saved == null) {
+            cell.setTranslationY(0f);
+            resetPageAnim(cell);
+            return;
+        }
+        cell.setPadding(saved.padL, saved.padT, saved.padR, saved.padB);
+        ViewGroup.LayoutParams lp = cell.getLayoutParams();
+        if (lp != null) {
+            lp.height = saved.height;
+            cell.setLayoutParams(lp);
+        }
+        cell.setTranslationY(saved.translationY);
+        resetPageAnim(cell);
     }
 
     private void restorePageIcons(int page) {
@@ -264,33 +395,42 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
             }
             saved.view.setScaleX(1f);
             saved.view.setScaleY(1f);
+            if (saved.widget) {
+                saved.view.setVisibility(INVISIBLE);
+            } else {
+                saved.view.setVisibility(VISIBLE);
+                applyPreviewIconSize(saved.view, 0);
+            }
         }
     }
 
     /**
-     * Oppo {@code arrangeNonWidgetItemsOnScreen}: keep the original cell if it is still
-     * vacant in the new grid; otherwise take the next vacant cell.
+     * Oppo {@code arrangeItemsOnScreen}: widgets keep occupancy while hidden; icons
+     * pack into vacant cells (original grid restore uses {@link #restorePageIcons}).
      */
-    private void placePageIcons(int page, int cols, int rows, float iconScale) {
+    private void placePageIcons(int page, int cols, int rows, int iconSizePx) {
         GridOccupancy occupancy = new GridOccupancy(cols, rows);
         int[] vacant = new int[2];
         for (SavedIcon saved : mSavedIcons) {
-            if (saved.page != page) {
+            if (saved.page != page || !saved.widget) {
                 continue;
             }
-            int spanX = Math.max(1, Math.min(saved.spanX, cols));
-            int spanY = Math.max(1, Math.min(saved.spanY, rows));
+            markOrHide(saved, occupancy, vacant, cols, rows);
+        }
+        for (SavedIcon saved : mSavedIcons) {
+            if (saved.page != page || saved.widget) {
+                continue;
+            }
             int destX;
             int destY;
-            if (occupancy.isRegionVacant(saved.cellX, saved.cellY, spanX, spanY)) {
-                destX = saved.cellX;
-                destY = saved.cellY;
-            } else if (occupancy.findVacantCell(vacant, spanX, spanY)) {
-                destX = vacant[0];
-                destY = vacant[1];
-            } else {
+            int spanX = Math.max(1, Math.min(saved.spanX, cols));
+            int spanY = Math.max(1, Math.min(saved.spanY, rows));
+            if (!occupancy.findVacantCell(vacant, spanX, spanY)) {
+                saved.view.setVisibility(INVISIBLE);
                 continue;
             }
+            destX = vacant[0];
+            destY = vacant[1];
             occupancy.markCells(destX, destY, spanX, spanY, true);
             if (saved.view.getLayoutParams() instanceof CellLayoutLayoutParams lp) {
                 lp.setCellX(destX);
@@ -299,9 +439,53 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
                 lp.cellVSpan = spanY;
                 lp.useTmpCoords = false;
             }
-            saved.view.setScaleX(iconScale);
-            saved.view.setScaleY(iconScale);
+            saved.view.setScaleX(1f);
+            saved.view.setScaleY(1f);
+            saved.view.setVisibility(VISIBLE);
+            applyPreviewIconSize(saved.view, iconSizePx);
         }
+    }
+
+    private static void markOrHide(SavedIcon saved, GridOccupancy occupancy, int[] vacant,
+            int cols, int rows) {
+        int spanX = Math.max(1, Math.min(saved.spanX, cols));
+        int spanY = Math.max(1, Math.min(saved.spanY, rows));
+        int destX;
+        int destY;
+        if (occupancy.isRegionVacant(saved.cellX, saved.cellY, spanX, spanY)) {
+            destX = saved.cellX;
+            destY = saved.cellY;
+        } else if (occupancy.findVacantCell(vacant, spanX, spanY)) {
+            destX = vacant[0];
+            destY = vacant[1];
+        } else {
+            return;
+        }
+        occupancy.markCells(destX, destY, spanX, spanY, true);
+        if (saved.view.getLayoutParams() instanceof CellLayoutLayoutParams lp) {
+            lp.setCellX(destX);
+            lp.setCellY(destY);
+            lp.cellHSpan = spanX;
+            lp.cellVSpan = spanY;
+            lp.useTmpCoords = false;
+        }
+    }
+
+    /**
+     * Oppo {@code getIconSizeTmp}: change the drawable bounds, not the whole view
+     * scale (that also shrinks the label).
+     */
+    private static void applyPreviewIconSize(View view, int iconSizePx) {
+        if (!(view instanceof BubbleTextView icon)) {
+            return;
+        }
+        Drawable drawable = icon.getIcon();
+        if (drawable == null) {
+            return;
+        }
+        int size = iconSizePx > 0 ? iconSizePx : icon.getIconSize();
+        drawable.setBounds(0, 0, size, size);
+        icon.invalidate();
     }
 
     private static final class SavedIcon {
@@ -311,14 +495,16 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         final int cellY;
         final int spanX;
         final int spanY;
+        final boolean widget;
 
-        SavedIcon(View view, int page, int cellX, int cellY, int spanX, int spanY) {
+        SavedIcon(View view, int page, int cellX, int cellY, int spanX, int spanY, boolean widget) {
             this.view = view;
             this.page = page;
             this.cellX = cellX;
             this.cellY = cellY;
             this.spanX = spanX;
             this.spanY = spanY;
+            this.widget = widget;
         }
     }
 
@@ -328,13 +514,18 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         final int padT;
         final int padR;
         final int padB;
+        final int height;
+        final float translationY;
 
-        SavedPage(CellLayout cell, int padL, int padT, int padR, int padB) {
+        SavedPage(CellLayout cell, int padL, int padT, int padR, int padB,
+                int height, float translationY) {
             this.cell = cell;
             this.padL = padL;
             this.padT = padT;
             this.padR = padR;
             this.padB = padB;
+            this.height = height;
+            this.translationY = translationY;
         }
     }
 
@@ -348,6 +539,8 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
             return;
         }
         mApplied = true;
+        cancelPreviewAnim();
+        applyPreviewGridNow(mOriginalCols, mOriginalRows);
         ColorOsLayoutSettings.setHideIconNames(mLauncher, mPreviewHideNames);
         ColorOsLayoutSettings.setPreviewHideNames(null);
         if (gridChanged) {
@@ -373,9 +566,10 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
             return;
         }
         mIsOpen = false;
+        cancelPreviewAnim();
         ColorOsLayoutSettings.setPreviewHideNames(null);
         if (!mApplied) {
-            previewGrid(mOriginalCols, mOriginalRows);
+            previewGrid(mOriginalCols, mOriginalRows, false);
             ColorOsLayoutSettings.applyToWorkspace(mLauncher);
         }
         restoreEditChrome();
