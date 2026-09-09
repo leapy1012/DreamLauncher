@@ -505,6 +505,7 @@ public class IconCache extends BaseIconCache {
         CacheEntry entry = getEntryForPackageLocked(
                 infoInOut.packageName, infoInOut.user, useLowResIcon);
         applyCacheEntry(entry, infoInOut);
+        applyLauncherOrThemedPackageIcon(infoInOut, useLowResIcon);
         if (infoInOut.widgetCategory == NO_CATEGORY) {
             return;
         }
@@ -529,6 +530,36 @@ public class IconCache extends BaseIconCache {
             Log.e(TAG, "Error initializing bitmap for icons with widget category", e);
         }
 
+    }
+
+    /**
+     * Package cache uses {@link ApplicationInfo#loadIcon}, which is the raw APK icon.
+     * Home/drawer icons go through {@link IconProvider} (theme map + launcher activity).
+     * Widget catalog headers must use that same drawable so Browser/Calendar/Clock match.
+     */
+    private void applyLauncherOrThemedPackageIcon(@NonNull PackageItemInfo info,
+            boolean useLowResIcon) {
+        if (useLowResIcon || TextUtils.isEmpty(info.packageName)) {
+            return;
+        }
+        Drawable icon = mIconProvider.getIcon(new ComponentName(info.packageName, ""));
+        if (icon == null) {
+            List<LauncherActivityInfo> activities =
+                    mLauncherApps.getActivityList(info.packageName, info.user);
+            if (activities == null || activities.isEmpty()) {
+                return;
+            }
+            icon = mIconProvider.getIcon(activities.get(0), mIconDpi);
+        }
+        if (icon == null) {
+            return;
+        }
+        try (LauncherIcons li = LauncherIcons.obtain(mContext)) {
+            info.bitmap = li.createBadgedIconBitmap(icon,
+                    new BaseIconFactory.IconOptions().setUser(info.user));
+        } catch (Exception e) {
+            Log.e(TAG, "Error applying launcher icon for " + info.packageName, e);
+        }
     }
 
     private synchronized BitmapInfo getBadgedIcon(@Nullable final BitmapInfo bitmap,
