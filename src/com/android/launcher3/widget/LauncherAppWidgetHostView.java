@@ -20,6 +20,7 @@ import android.annotation.TargetApi;
 import android.appwidget.AppWidgetProviderInfo;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Handler;
@@ -42,6 +43,8 @@ import androidx.annotation.Nullable;
 import com.android.launcher3.CheckLongPressHelper;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
+import com.android.launcher3.editselection.EditSelectionActions;
+import com.android.launcher3.editselection.EditSelectionWidgetBadge;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.dragndrop.DragLayer;
@@ -95,6 +98,9 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
 
     // The following member variables are only used during drag-n-drop.
     private boolean mIsInDragMode = false;
+    private boolean mEditDeleteIconPressed;
+    private boolean mClipToOutlineBeforeEdit;
+    private boolean mEditClipOverride;
 
     private boolean mTrackingWidgetUpdate = false;
 
@@ -255,9 +261,79 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
     }
 
     public boolean onTouchEvent(MotionEvent ev) {
+        if (handleEditDeleteIconTouch(ev)) {
+            return true;
+        }
         mLongPressHelper.onTouchEvent(ev);
         // We want to keep receiving though events to be able to cancel long press on ACTION_UP
         return true;
+    }
+
+    /**
+     * Oppo draws the minus after the widget clip layer. AOSP {@code clipToOutline}
+     * (clock face / card) would otherwise hide the badge.
+     */
+    public void setEditDeleteIconActive(boolean active) {
+        if (active) {
+            if (!mEditClipOverride) {
+                mClipToOutlineBeforeEdit = getClipToOutline();
+                mEditClipOverride = true;
+            }
+            setClipToOutline(false);
+            invalidate();
+            return;
+        }
+        if (mEditClipOverride) {
+            setClipToOutline(mClipToOutlineBeforeEdit);
+            mEditClipOverride = false;
+            invalidate();
+        }
+    }
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        if (EditSelectionWidgetBadge.shouldDraw(this)) {
+            setClipToOutline(false);
+        }
+        super.dispatchDraw(canvas);
+        EditSelectionWidgetBadge.drawIfNecessary(this, canvas);
+    }
+
+    /**
+     * Oppo {@code isTouchInDeleteIconRect} → {@code deleteSizeVariableView}.
+     * In SPRING_LOADED, {@link #onInterceptTouchEvent} already consumes widget clicks.
+     */
+    private boolean handleEditDeleteIconTouch(MotionEvent ev) {
+        if (!EditSelectionWidgetBadge.shouldDraw(this)) {
+            mEditDeleteIconPressed = false;
+            return false;
+        }
+        switch (ev.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                mEditDeleteIconPressed = EditSelectionWidgetBadge.isTouchOnIcon(
+                        this, ev.getX(), ev.getY());
+                return mEditDeleteIconPressed;
+            case MotionEvent.ACTION_UP:
+                if (mEditDeleteIconPressed
+                        && EditSelectionWidgetBadge.isTouchOnIcon(this, ev.getX(), ev.getY())) {
+                    removeFromWorkspace();
+                }
+                mEditDeleteIconPressed = false;
+                return true;
+            case MotionEvent.ACTION_CANCEL:
+                mEditDeleteIconPressed = false;
+                return true;
+            default:
+                return mEditDeleteIconPressed;
+        }
+    }
+
+    private void removeFromWorkspace() {
+        Object tag = getTag();
+        if (tag instanceof ItemInfo info) {
+            mLauncher.removeItem(this, info, true /* deleteFromDb */);
+            EditSelectionActions.stripEmptyWorkspaceScreens(mLauncher);
+        }
     }
 
     @Override
@@ -313,6 +389,10 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
             LauncherAppWidgetInfo info = (LauncherAppWidgetInfo) getTag();
             mTempRect.set(left, top, right, bottom);
             mColorExtractor.setWorkspaceLocation(mTempRect, (View) getParent(), info.screenId);
+        }
+        // onLayout re-enables clipToOutline; keep it off while the minus is showing.
+        if (EditSelectionWidgetBadge.shouldDraw(this)) {
+            setClipToOutline(false);
         }
     }
 

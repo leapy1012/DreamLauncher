@@ -16,6 +16,7 @@ import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.large.listview.HxyLargeFolderIconItem;
 import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.model.data.ItemInfo;
+import com.android.launcher3.widget.LauncherAppWidgetHostView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -287,11 +288,15 @@ public final class EditSelectionManager {
         }
     }
 
-    /** Keep page-preview highlight in sync when the workspace is swiped. */
+    /** Keep page-preview highlight in sync when the workspace is swiped or a page is stripped. */
     public void onWorkspacePageChanged() {
-        if (!mActive || mBottomBar == null || mSelectedItems.isEmpty()) {
+        if (!mActive || mBottomBar == null) {
             return;
         }
+        if (mSelectedItems.isEmpty()) {
+            return;
+        }
+        mBottomBar.updateForSelectionCount(mSelectedItems.size(), mSelectedItems);
         mBottomBar.syncCurrentPageHighlight();
     }
 
@@ -317,8 +322,10 @@ public final class EditSelectionManager {
         }
         if (mBottomBar != null) {
             mBottomBar.setCreateFolderClickListener(v -> {
-                EditSelectionActions.createFolder(mLauncher, getSelectedViews());
-                clearSelection();
+                if (EditSelectionActions.createFolder(
+                        mLauncher, getSelectedItems(), getSelectedViews())) {
+                    clearSelection();
+                }
             });
             mBottomBar.setUninstallClickListener(v -> {
                 EditSelectionActions.uninstallOrRemove(mLauncher, getSelectedViews());
@@ -476,6 +483,8 @@ public final class EditSelectionManager {
         } else if (child instanceof FolderIcon folderIcon) {
             folderIcon.setForceHideDot(hideDot);
             folderIcon.invalidate();
+        } else if (child instanceof LauncherAppWidgetHostView widget) {
+            widget.setEditDeleteIconActive(mActive && !mLayoutPreviewActive);
         }
     }
 }

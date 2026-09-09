@@ -12,6 +12,8 @@ import androidx.annotation.Nullable;
 
 import com.android.launcher3.BuildConfig;
 import com.android.launcher3.LauncherSettings;
+import com.android.launcher3.LauncherStyle;
+import com.android.launcher3.R;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.model.data.ItemInfo;
@@ -82,6 +84,54 @@ public final class EditSelectionEligibility {
     }
 
     /**
+     * Workspace-edit trash label. Oppo drawer mode is always {@code remove_action}.
+     */
+    public static int removeButtonLabel(Context context,
+            @Nullable Iterable<? extends ItemInfo> selected) {
+        if (LauncherStyle.isAppDrawer(context)) {
+            return R.string.edit_selection_remove;
+        }
+        boolean uninstallable = false;
+        boolean removable = false;
+        if (selected != null) {
+            for (ItemInfo info : selected) {
+                if (isUninstallable(context, info)) {
+                    uninstallable = true;
+                } else if (isRemovableShortcut(info)) {
+                    removable = true;
+                }
+            }
+        }
+        if (uninstallable && !removable) {
+            return R.string.edit_selection_uninstall;
+        }
+        if (removable) {
+            return R.string.edit_selection_remove;
+        }
+        return R.string.edit_selection_uninstall;
+    }
+
+    /**
+     * Oppo {@code PagePreviewButtonContainer}: drawer mode always removes from Home;
+     * standard mode uninstalls or removes shortcuts.
+     */
+    public static boolean isRemoveButtonEnabled(Context context,
+            @Nullable Iterable<? extends ItemInfo> selected) {
+        if (selected == null) {
+            return false;
+        }
+        if (LauncherStyle.isAppDrawer(context)) {
+            for (ItemInfo info : selected) {
+                if (canRemoveFromHome(info)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return isUninstallButtonEnabled(context, selected);
+    }
+
+    /**
      * Oppo {@code GenericUtils.isEnableUninstallButton}: enable Uninstall when any
      * selected item is uninstallable or a removable shortcut.
      */
@@ -96,6 +146,14 @@ public final class EditSelectionEligibility {
             }
         }
         return false;
+    }
+
+    /** Workspace / folder items that can leave Home without uninstalling the package. */
+    public static boolean canRemoveFromHome(@Nullable ItemInfo info) {
+        if (info == null || isHotseat(info) || isLauncherUtility(info)) {
+            return false;
+        }
+        return canRemoveFromWorkspace(info);
     }
 
     /**

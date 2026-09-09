@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
@@ -27,7 +28,7 @@ import java.util.Set;
 
 /**
  * Oppo page-preview bottom chrome while apps are selected:
- * page thumbnails + Create folder | Uninstall.
+ * page thumbnails + Create folder | Remove (drawer) or Uninstall (standard).
  */
 public class EditSelectionBottomBar extends FrameLayout {
 
@@ -95,11 +96,7 @@ public class EditSelectionBottomBar extends FrameLayout {
         boolean canFolder = selectedCount >= 2;
         mCreateFolder.setEnabled(canFolder);
         mCreateFolder.setAlpha(canFolder ? 1f : 0.4f);
-        // Oppo: enable when any selected item is uninstallable or a removable shortcut.
-        boolean canUninstall = EditSelectionEligibility.isUninstallButtonEnabled(
-                getContext(), selectedItems);
-        mUninstall.setEnabled(canUninstall);
-        mUninstall.setAlpha(canUninstall ? 1f : 0.4f);
+        updateRemoveButton(selectedItems);
         setVisibility(VISIBLE);
         setAlpha(1f);
         bringToFront();
@@ -124,6 +121,20 @@ public class EditSelectionBottomBar extends FrameLayout {
             return;
         }
         show(count, selectedItems);
+    }
+
+    /**
+     * Oppo {@code PagePreviewButtonContainer.updateRemoveBtnText}: drawer mode is always
+     * {@code remove_action}; standard mode is Uninstall / Remove from the selection.
+     */
+    private void updateRemoveButton(@Nullable java.util.Collection<ItemInfo> selectedItems) {
+        if (mUninstall instanceof TextView title) {
+            title.setText(EditSelectionEligibility.removeButtonLabel(getContext(), selectedItems));
+        }
+        boolean enabled = EditSelectionEligibility.isRemoveButtonEnabled(
+                getContext(), selectedItems);
+        mUninstall.setEnabled(enabled);
+        mUninstall.setAlpha(enabled ? 1f : 0.4f);
     }
 
     /** Highlight the preview matching the workspace's current/next page. */

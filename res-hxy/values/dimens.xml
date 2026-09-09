@@ -36,6 +36,8 @@
     <dimen name="edit_selection_check_size">20dp</dimen>
     <dimen name="edit_selection_check_top_offset">3dp</dimen>
     <dimen name="edit_selection_check_right_offset">3dp</dimen>
+    <!-- Oppo delete_icon_weight / launcher_ic_widget_remove -->
+    <dimen name="edit_selection_widget_remove_size">20dp</dimen>
     <!-- Oppo page_preview_item_width/height/gap -->
     <dimen name="edit_selection_page_preview_width">48dp</dimen>
     <dimen name="edit_selection_page_preview_height">68dp</dimen>

@@ -4,19 +4,17 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
-import android.view.View;
 
 import com.android.launcher3.Launcher;
-import com.android.launcher3.R;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 import com.android.launcher3.model.data.FolderInfo;
 
 /**
- * Draws Oppo-style selection chrome on folder icons:
- * unselected checkmark, or a blue count badge when contents are selected.
+ * Draws Oppo-style selection chrome on folder icons: a count badge when
+ * contents are selected. Folders themselves never get a check
+ * ({@code FlexibleFolderIcon.applySwitchState} is empty).
  */
 public final class EditSelectionFolderBadge {
 
@@ -51,32 +49,7 @@ public final class EditSelectionFolderBadge {
         // Oppo hides the count while the folder is open.
         if (selectedInFolder > 0 && (folder == null || !folder.isOpen())) {
             drawCountBadge(folderIcon, canvas, selectedInFolder);
-            return;
         }
-        drawUnselectedCheck(folderIcon, canvas);
-    }
-
-    private static void drawUnselectedCheck(FolderIcon folderIcon, Canvas canvas) {
-        if (!iconBounds(folderIcon, sTmpRect)) {
-            return;
-        }
-        int size = folderIcon.getResources().getDimensionPixelSize(R.dimen.edit_selection_check_size);
-        int topOffset = folderIcon.getResources().getDimensionPixelSize(
-                R.dimen.edit_selection_check_top_offset);
-        int rightOffset = folderIcon.getResources().getDimensionPixelSize(
-                R.dimen.edit_selection_check_right_offset);
-        boolean rtl = folderIcon.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
-        int left = rtl
-                ? sTmpRect.left - rightOffset
-                : sTmpRect.right - size + rightOffset;
-        int top = sTmpRect.top - topOffset;
-        Drawable check = folderIcon.getContext().getDrawable(R.drawable.launcher_ic_app_unselected);
-        if (check == null) {
-            return;
-        }
-        check = check.mutate();
-        check.setBounds(left, top, left + size, top + size);
-        check.draw(canvas);
     }
 
     private static void drawCountBadge(FolderIcon folderIcon, Canvas canvas, int count) {

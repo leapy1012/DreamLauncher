@@ -75,8 +75,11 @@
     <string name="edit_selection_done">Done</string>
     <string name="edit_selection_create_folder">Create folder</string>
     <string name="edit_selection_uninstall">Uninstall</string>
+    <string name="edit_selection_remove">Remove</string>
     <string name="edit_selection_need_two_apps">Select at least two apps to create a folder</string>
     <string name="edit_selection_no_space_for_folder">Not enough space to create a folder</string>
+    <string name="colorrect_tips">Insufficient space</string>
+    <string name="generate_failed_folder">You cannot repeat and create a same folder</string>
     <string name="launcher_settings_display">Display</string>
     <string name="launcher_settings_notifications">Notifications</string>
     <string name="launcher_settings_side_screens">Side screens</string>

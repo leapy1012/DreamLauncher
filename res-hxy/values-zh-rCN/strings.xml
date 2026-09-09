@@ -113,4 +113,6 @@
     <string name="coloros_floating_tab_category">分类</string>
     <string name="coloros_drawer_columns_four">4 列</string>
     <string name="coloros_drawer_columns_five">5 列</string>
+    <string name="colorrect_tips">此页空间不足</string>
+    <string name="generate_failed_folder">无法重复组成文件夹</string>
 </resources>
