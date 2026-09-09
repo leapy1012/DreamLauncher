@@ -829,6 +829,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             mEmptyMessagePaint.setColor(Themes.getAttrColor(context, android.R.attr.textColorPrimary));
 		}
 		///&&}}
+        mEmptyMessagePaint.setColor(Color.WHITE);
         mEmptyMessagePaint.setTextSize(getResources()
                 .getDimension(R.dimen.recents_empty_message_text_size));
         mEmptyMessagePaint.setTypeface(Typeface.create(Themes.getDefaultBodyFont(context),
@@ -5365,13 +5366,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                     mEmptyMessagePaint, availableWidth)
                     .setAlignment(Layout.Alignment.ALIGN_CENTER)
                     .build();
-            int totalHeight = mEmptyTextLayout.getHeight()
-                    + mEmptyMessagePadding + mEmptyIcon.getIntrinsicHeight();
-
-            int top = (mLastMeasureSize.y - totalHeight) / 2;
-            int left = (mLastMeasureSize.x - mEmptyIcon.getIntrinsicWidth()) / 2;
-            mEmptyIcon.setBounds(left, top, left + mEmptyIcon.getIntrinsicWidth(),
-                    top + mEmptyIcon.getIntrinsicHeight());
         }
     }
 
@@ -5388,9 +5382,8 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             canvas.save();
             canvas.translate(getScrollX() + (mTempRect.left - mTempRect.right) / 2,
                     (mTempRect.top - mTempRect.bottom) / 2);
-            mEmptyIcon.draw(canvas);
             canvas.translate(mEmptyMessagePadding,
-                    mEmptyIcon.getBounds().bottom + mEmptyMessagePadding);
+                    (mLastMeasureSize.y - mEmptyTextLayout.getHeight()) / 2f);
             mEmptyTextLayout.draw(canvas);
             canvas.restore();
         }
