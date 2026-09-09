@@ -210,6 +210,7 @@ public final class ColorOsCategoryFolderView extends AbstractFloatingView {
                     R.layout.all_apps_icon, mGrid, false);
             icon.setOnClickListener(ItemClickHandler.INSTANCE);
             icon.applyFromApplicationInfo(info);
+            ColorOsDrawerSelectController.applyNotificationDotIfNeeded(icon);
             GridLayout.LayoutParams glp = new GridLayout.LayoutParams(
                     GridLayout.spec(i / COLS),
                     GridLayout.spec(i % COLS));

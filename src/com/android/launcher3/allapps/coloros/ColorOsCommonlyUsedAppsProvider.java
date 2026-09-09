@@ -18,6 +18,7 @@ import com.android.launcher3.model.data.AppInfo;
 import com.android.launcher3.util.ComponentKey;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -36,6 +37,31 @@ import java.util.Set;
  */
 public final class ColorOsCommonlyUsedAppsProvider {
 
+    /**
+     * Oppo {@code PredictedAppManager.DEFAULT_PACKAGES}. Used when usage-stats
+     * is empty (launcher is not granted {@code PACKAGE_USAGE_STATS}).
+     */
+    private static final String[] DEFAULT_PACKAGES = {
+            "com.android.settings",
+            "com.android.deskclock",
+            "com.google.android.deskclock",
+            "com.android.camera2",
+            "com.android.camera",
+            "com.android.mms",
+            "com.google.android.apps.messaging",
+            "com.android.contacts",
+            "com.google.android.dialer",
+            "com.android.dialer",
+            "com.android.browser",
+            "com.android.chrome",
+            "com.android.calendar",
+            "com.google.android.calendar",
+            "com.android.gallery3d",
+            "com.android.calculator2",
+            "com.android.documentsui",
+            "com.android.vending",
+    };
+
     /** Two rows of the current drawer column count. */
     public static int targetCount(@NonNull Context context) {
         int cols = ColorOsDrawerColumns.get(context);
@@ -48,15 +74,16 @@ public final class ColorOsCommonlyUsedAppsProvider {
     private ColorOsCommonlyUsedAppsProvider() {}
 
     /**
-     * Build up to {@link #targetCount(Context)} adapter items for empty search.
-     * Safe to call off the main thread.
+     * Ranked drawer apps for All-tab suggestions / empty search.
+     * Always fills {@link #targetCount} like Oppo {@code getPredictedApps}:
+     * usage stats, then {@link #DEFAULT_PACKAGES}, then remaining store apps.
      */
     @WorkerThread
     @NonNull
-    public static ArrayList<AdapterItem> build(@NonNull Context context,
-            @Nullable AllAppsStore store) {
+    public static List<AppInfo> collect(@NonNull Context context,
+            @Nullable AllAppsStore store, boolean padToTarget) {
         int targetCount = targetCount(context);
-        ArrayList<AdapterItem> out = new ArrayList<>(targetCount);
+        ArrayList<AppInfo> out = new ArrayList<>(targetCount);
         if (store == null) {
             return out;
         }
@@ -65,34 +92,64 @@ public final class ColorOsCommonlyUsedAppsProvider {
             return out;
         }
 
-        List<AppInfo> prioritized = mapUsageStatsToApps(context, all, targetCount);
         Set<ComponentKey> used = new HashSet<>();
-        for (AppInfo info : prioritized) {
+        addUnique(out, used, mapUsageStatsToApps(context, all, targetCount), targetCount);
+        if (out.size() < targetCount) {
+            addUnique(out, used, matchDefaultPackages(all), targetCount);
+        }
+        if (padToTarget && out.size() < targetCount) {
+            addUnique(out, used, Arrays.asList(all), targetCount);
+        }
+        return out;
+    }
+
+    private static void addUnique(@NonNull List<AppInfo> out, @NonNull Set<ComponentKey> used,
+            @NonNull List<AppInfo> candidates, int targetCount) {
+        for (AppInfo info : candidates) {
             if (info == null || info.componentName == null) {
                 continue;
             }
-            ComponentKey key = new ComponentKey(info.componentName, info.user);
-            if (!used.add(key)) {
+            if (!used.add(new ComponentKey(info.componentName, info.user))) {
                 continue;
             }
-            out.add(AdapterItem.asApp(info));
+            out.add(info);
             if (out.size() >= targetCount) {
-                return out;
+                return;
             }
         }
-        // Pad with remaining drawer apps (store order) like LeftScreen.
-        for (AppInfo info : all) {
-            if (info == null || info.componentName == null) {
+    }
+
+    @NonNull
+    private static List<AppInfo> matchDefaultPackages(@NonNull AppInfo[] all) {
+        ArrayList<AppInfo> matched = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (String pkg : DEFAULT_PACKAGES) {
+            if (!seen.add(pkg)) {
                 continue;
             }
-            ComponentKey key = new ComponentKey(info.componentName, info.user);
-            if (!used.add(key)) {
-                continue;
+            for (AppInfo info : all) {
+                if (info != null && info.componentName != null
+                        && pkg.equals(info.componentName.getPackageName())) {
+                    matched.add(info);
+                    break;
+                }
             }
+        }
+        return matched;
+    }
+
+    /**
+     * Build up to {@link #targetCount(Context)} adapter items for empty search.
+     * Safe to call off the main thread.
+     */
+    @WorkerThread
+    @NonNull
+    public static ArrayList<AdapterItem> build(@NonNull Context context,
+            @Nullable AllAppsStore store) {
+        List<AppInfo> apps = collect(context, store, true /* padToTarget */);
+        ArrayList<AdapterItem> out = new ArrayList<>(apps.size());
+        for (AppInfo info : apps) {
             out.add(AdapterItem.asApp(info));
-            if (out.size() >= targetCount) {
-                break;
-            }
         }
         return out;
     }

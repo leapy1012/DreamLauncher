@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/coloros_all_apps_prediction_divider_height"
+    android:paddingHorizontal="@dimen/coloros_all_apps_prediction_divider_padding">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/coloros_all_apps_prediction_divider_line"
+        android:layout_gravity="center"
+        android:background="@drawable/coloros_all_apps_prediction_divider"
+        android:importantForAccessibility="no" />
+</FrameLayout>

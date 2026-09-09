@@ -343,7 +343,7 @@ final class ColorOsLetterClusterOverlay {
         }
         String target = section.toUpperCase(Locale.US);
         for (BaseAllAppsAdapter.AdapterItem item : list.getAdapterItems()) {
-            if (item == null || item.itemInfo == null) {
+            if (item == null || item.itemInfo == null || item.predictedSuggestion) {
                 continue;
             }
             AppInfo info = item.itemInfo;
@@ -514,6 +514,7 @@ final class ColorOsLetterClusterOverlay {
                 icon.setOnClickListener(ItemClickHandler.INSTANCE);
                 icon.setOnLongClickListener(ItemLongClickListener.INSTANCE_ALL_APPS);
                 icon.applyFromApplicationInfo(info);
+                ColorOsDrawerSelectController.applyNotificationDotIfNeeded(icon);
                 addView(icon);
             }
         }

@@ -184,7 +184,7 @@ public class LauncherStyleFragment extends COUIPreferenceFragment {
                 ColorOsHomeSettings.setShowAppSuggestions(getContext(), (Boolean) newValue);
                 ColorOsDrawerChrome chrome = ColorOsHomeSettings.chrome();
                 if (chrome != null) {
-                    chrome.rebindCategories();
+                    chrome.refreshAppSuggestions();
                 }
                 return true;
             });

@@ -347,15 +347,18 @@ public final class ColorOsDrawerSelectController {
     private void refreshIconChecks() {
         AllAppsRecyclerView rv = mContainer.getActiveRecyclerView();
         if (rv != null) {
+            applyNotificationDotsRecursive(rv);
             invalidateTree(rv);
         }
         View appsList = mContainer.findViewById(R.id.apps_list_view);
         if (appsList instanceof ViewGroup group && appsList != rv) {
+            applyNotificationDotsRecursive(group);
             invalidateTree(group);
         }
         View categoryList = mContainer.findViewById(R.id.coloros_category_list);
         if (categoryList instanceof ViewGroup group) {
             applyImageViewChecks(group);
+            applyNotificationDotsRecursive(group);
             invalidateTree(group);
         }
         com.android.launcher3.AbstractFloatingView folder =
@@ -363,9 +366,41 @@ public final class ColorOsDrawerSelectController {
                         mLauncher,
                         com.android.launcher3.AbstractFloatingView.TYPE_FOLDER_FULL_SHEET);
         if (folder != null) {
+            applyNotificationDotsRecursive(folder);
             invalidateTree(folder);
         }
         mContainer.invalidate();
+    }
+
+    /**
+     * Oppo {@code SelectStateIconRenderer}: hide notification badges in drawer
+     * select so they do not sit on the checkmarks.
+     */
+    public static void applyNotificationDotIfNeeded(@Nullable BubbleTextView icon) {
+        if (icon == null || !icon.isAllAppsDisplay()) {
+            return;
+        }
+        ActivityContext ctx = ActivityContext.lookupContext(icon.getContext());
+        boolean hide = false;
+        if (ctx instanceof Launcher launcher
+                && launcher.getAppsView() instanceof
+                com.android.launcher3.allapps.LauncherAllAppsContainerView apps) {
+            ColorOsDrawerSelectController select = apps.getDrawerSelectController();
+            hide = select != null && (select.isActive() || select.shouldDrawChecks());
+        }
+        icon.setForceHideDot(hide);
+    }
+
+    private static void applyNotificationDotsRecursive(@NonNull View root) {
+        if (root instanceof BubbleTextView icon) {
+            applyNotificationDotIfNeeded(icon);
+            return;
+        }
+        if (root instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                applyNotificationDotsRecursive(group.getChildAt(i));
+            }
+        }
     }
 
     /** Category preview ImageViews are not BubbleTextViews — paint check as foreground. */

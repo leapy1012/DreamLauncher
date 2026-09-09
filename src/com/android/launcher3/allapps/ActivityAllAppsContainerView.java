@@ -1464,6 +1464,14 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         return mAH.get(SEARCH).mAppsList;
     }
 
+    /** Rebuild the personal All list (Oppo Show app suggestions toggle). */
+    public void refreshPersonalAdapterItems() {
+        AdapterHolder main = mAH.get(AdapterHolder.MAIN);
+        if (main != null && main.mAppsList != null) {
+            main.mAppsList.updateAdapterItems();
+        }
+    }
+
     public FloatingHeaderView getFloatingHeaderView() {
         return mHeader;
     }

@@ -22,7 +22,9 @@ import androidx.recyclerview.widget.DiffUtil;
 
 import com.android.launcher3.R;
 import com.android.launcher3.allapps.BaseAllAppsAdapter.AdapterItem;
+import com.android.launcher3.allapps.coloros.ColorOsCommonlyUsedAppsProvider;
 import com.android.launcher3.allapps.coloros.ColorOsDrawerSort;
+import com.android.launcher3.allapps.coloros.ColorOsHomeSettings;
 import com.android.launcher3.model.data.AppInfo;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.util.LabelComparator;
@@ -263,6 +265,30 @@ public class AlphabeticalAppsList<T extends Context & ActivityContext> implement
     }
 
     /**
+     * Oppo {@code refillAdapterItemsPredictedAppsAndAllAppsDividerInject}: when
+     * Show app suggestions is on, pin {@code columns * 2} predicted icons at the
+     * top of All, then a full-width divider, then the A–Z list.
+     */
+    private int injectDrawerSuggestions(int position) {
+        if (mWorkProviderManager != null
+                || !mActivityContext.getResources().getBoolean(R.bool.config_coloros_drawer)
+                || !ColorOsHomeSettings.isShowAppSuggestions(mActivityContext)) {
+            return position;
+        }
+        List<AppInfo> predicted = ColorOsCommonlyUsedAppsProvider.collect(
+                mActivityContext, mAllAppsStore, true /* padToTarget */);
+        if (predicted.isEmpty()) {
+            return position;
+        }
+        for (AppInfo info : predicted) {
+            mAdapterItems.add(AdapterItem.asPredictedApp(info));
+            position++;
+        }
+        mAdapterItems.add(AdapterItem.asAllAppsDivider());
+        return position + 1;
+    }
+
+    /**
      * Updates the set of filtered apps with the current filter. At this point, we expect
      * mCachedSectionNames to have been calculated for the set of all apps in mApps.
      */
@@ -285,6 +311,7 @@ public class AlphabeticalAppsList<T extends Context & ActivityContext> implement
                 addApps = mWorkProviderManager.shouldShowWorkApps();
             }
             if (addApps) {
+                position = injectDrawerSuggestions(position);
                 String lastSectionName = null;
                 for (AppInfo info : mApps) {
                     mAdapterItems.add(AdapterItem.asApp(info));

@@ -159,6 +159,11 @@
     <color name="coloros_category_card_surface">#26FFFFFF</color>
     <!-- Oppo suggestion uses the same category_bg_color as folder cards. -->
     <color name="coloros_category_recent_surface">#26FFFFFF</color>
+    <!-- Oppo all_apps_divider.xml between predicted row and A–Z. -->
+    <dimen name="coloros_all_apps_prediction_divider_height">24dp</dimen>
+    <dimen name="coloros_all_apps_prediction_divider_line">1dp</dimen>
+    <dimen name="coloros_all_apps_prediction_divider_padding">24dp</dimen>
+    <color name="coloros_all_apps_prediction_divider">#1FFFFFFF</color>
     <!-- Oppo category_page_padding_start / category_folder_padding_start. -->
     <dimen name="coloros_category_page_padding">16dp</dimen>
     <dimen name="coloros_category_folder_padding">16dp</dimen>

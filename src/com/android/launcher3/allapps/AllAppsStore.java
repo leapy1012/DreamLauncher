@@ -165,6 +165,8 @@ public class AllAppsStore {
                 ItemInfo info = (ItemInfo) child.getTag();
                 if (mTempKey.updateFromItemInfo(info) && updatedDots.test(mTempKey)) {
                     child.applyDotState(info, true /* animate */);
+                    com.android.launcher3.allapps.coloros.ColorOsDrawerSelectController
+                            .applyNotificationDotIfNeeded(child);
                 }
             }
         });

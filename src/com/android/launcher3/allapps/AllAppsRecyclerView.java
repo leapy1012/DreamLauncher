@@ -167,7 +167,8 @@ public class AllAppsRecyclerView extends FastScrollRecyclerView {
     }
 
     @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+    public void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
         updatePoolSize();
     }
 

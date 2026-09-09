@@ -826,6 +826,13 @@ public final class ColorOsDrawerChrome {
         bindCategories();
     }
 
+    /** All predicted row + Categories recently-installed, matching the toggle. */
+    public void refreshAppSuggestions() {
+        bindCategories();
+        mContainer.refreshPersonalAdapterItems();
+        mContainer.post(this::refreshLetterRailSections);
+    }
+
     /** Rebind All Apps labels after Show app names changes. */
     public void refreshDrawerAppNames() {
         AllAppsRecyclerView rv = resolveAppsRecyclerView();

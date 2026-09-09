@@ -102,6 +102,11 @@ public abstract class BaseAllAppsAdapter<T extends Context & ActivityContext> ex
          * icon label while showing search results. Null outside search.
          */
         @Nullable public List<String> searchHighlightContent = null;
+        /**
+         * Oppo predicted-app row on All ({@code VIEW_TYPE} 256). Same icon bind,
+         * distinct DiffUtil identity from the A–Z copy of the same app.
+         */
+        public boolean predictedSuggestion;
 
         public AdapterItem(int viewType) {
             this.viewType = viewType;
@@ -114,6 +119,16 @@ public abstract class BaseAllAppsAdapter<T extends Context & ActivityContext> ex
             AdapterItem item = new AdapterItem(VIEW_TYPE_ICON);
             item.itemInfo = appInfo;
             return item;
+        }
+
+        public static AdapterItem asPredictedApp(AppInfo appInfo) {
+            AdapterItem item = asApp(appInfo);
+            item.predictedSuggestion = true;
+            return item;
+        }
+
+        public static AdapterItem asAllAppsDivider() {
+            return new AdapterItem(VIEW_TYPE_ALL_APPS_DIVIDER);
         }
 
         protected boolean isCountedForAccessibility() {
@@ -129,6 +144,9 @@ public abstract class BaseAllAppsAdapter<T extends Context & ActivityContext> ex
             }
             // Icon identity by component+user so DiffUtil can emit MOVE ops on sort.
             if (viewType == VIEW_TYPE_ICON) {
+                if (predictedSuggestion != other.predictedSuggestion) {
+                    return false;
+                }
                 if (itemInfo == null || other.itemInfo == null) {
                     return itemInfo == other.itemInfo;
                 }
@@ -240,8 +258,11 @@ public abstract class BaseAllAppsAdapter<T extends Context & ActivityContext> ex
                         : R.layout.all_apps_empty_search;
                 return new ViewHolder(mLayoutInflater.inflate(emptyLayout, parent, false));
             case VIEW_TYPE_ALL_APPS_DIVIDER:
-                return new ViewHolder(mLayoutInflater.inflate(
-                        R.layout.all_apps_divider, parent, false));
+                int dividerLayout = mActivityContext.getResources().getBoolean(
+                        R.bool.config_coloros_drawer)
+                        ? R.layout.coloros_all_apps_prediction_divider
+                        : R.layout.all_apps_divider;
+                return new ViewHolder(mLayoutInflater.inflate(dividerLayout, parent, false));
             case VIEW_TYPE_WORK_EDU_CARD:
                 return new ViewHolder(mLayoutInflater.inflate(
                         R.layout.work_apps_edu, parent, false));
@@ -270,6 +291,8 @@ public abstract class BaseAllAppsAdapter<T extends Context & ActivityContext> ex
                 // Oppo BaseAllAppsAdapter: bold matching query substrings in search results.
                 icon.setSearchHighlightContent(adapterItem.searchHighlightContent);
                 icon.applyFromApplicationInfo(adapterItem.itemInfo);
+                com.android.launcher3.allapps.coloros.ColorOsDrawerSelectController
+                        .applyNotificationDotIfNeeded(icon);
                 break;
             }
             case VIEW_TYPE_EMPTY_SEARCH: {

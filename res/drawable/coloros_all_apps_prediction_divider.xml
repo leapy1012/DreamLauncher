@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="1dp" />
+    <solid android:color="@color/coloros_all_apps_prediction_divider" />
+    <size android:height="@dimen/coloros_all_apps_prediction_divider_line" />
+</shape>
