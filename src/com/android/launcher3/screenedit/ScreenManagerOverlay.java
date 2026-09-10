@@ -110,7 +110,6 @@ public class ScreenManagerOverlay extends AbstractFloatingView {
         mCarousel.setCameraDistance(density * 8000f);
         mCarousel.setPivotX(screenW / 2f);
         mCarousel.setPivotY(screenH * 0.42f);
-        mCarousel.setPivotZ(-mRadiusPx);
 
         for (int i = 0; i < pageCount; i++) {
             View page = workspace.getPageAt(i);
@@ -308,7 +307,7 @@ public class ScreenManagerOverlay extends AbstractFloatingView {
     }
 
     @Override
-    public void logActionCommand(int command) {
-        // no-op
+    public boolean onControllerInterceptTouchEvent(MotionEvent ev) {
+        return false;
     }
 }

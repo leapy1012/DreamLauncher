@@ -46,7 +46,6 @@ import com.android.launcher3.togglebar.ColorOsLayoutOverlay;
 import com.android.launcher3.screenedit.GridGallery;
 import com.android.launcher3.screenedit.OverviewPanelStateTransAnimation;
 import com.android.launcher3.screenedit.GridGalleryAdapter;
-import com.android.launcher3.screenedit.ScreenManagerOverlay;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -123,9 +122,6 @@ public class OptionsDialogView extends AbstractFloatingView {
         });
         findViewById(R.id.layout_button).setOnClickListener(v -> {
             showLayoutPicker(v);
-        });
-        findViewById(R.id.screen_manager_button).setOnClickListener(v -> {
-            openScreenManager(v);
         });
         findViewById(R.id.settings_button).setOnClickListener(v -> {
             startSettings(v);
@@ -390,12 +386,6 @@ public class OptionsDialogView extends AbstractFloatingView {
     /** Oppo ToggleBar Layout: live workspace preview + grid sheet. */
     private static void showLayoutPicker(View view) {
         ColorOsLayoutOverlay.show(Launcher.getLauncher(view.getContext()));
-    }
-
-    /** CM Screen Manager: 3D rotating workspace page carousel. */
-    private void openScreenManager(View view) {
-        ScreenManagerOverlay.show(Launcher.getLauncher(view.getContext()));
-        resetState();
     }
 
     public View getEffectsView() {

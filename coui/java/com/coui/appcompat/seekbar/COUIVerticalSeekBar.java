@@ -631,6 +631,11 @@ public class COUIVerticalSeekBar extends AbsSeekBar
                 if (!isDeformationFling()) {
                     stopPhysicsMove();
                 }
+                // Normalize leftover overshoot so the next QS/volume drag starts from a
+                // legal scale (matches OplusVolumeSeekBar; fling settle can fail).
+                if (mScale < 0.0f || mScale > 1.0f) {
+                    endCustomDeformation();
+                }
                 if (mIsPhysicsEnable && mPhysicalAnimator == null) {
                     initPhysicsAnimator(getContext());
                 }
@@ -701,10 +706,20 @@ public class COUIVerticalSeekBar extends AbsSeekBar
         mIsDragging = false;
         mStartDragging = false;
         if (!mIsPhysicsEnable || Math.abs(mFlingVelocity) < 100.0f) {
-            if (mScale >= 0.0f && mScale <= 1.0f && mOnSeekBarChangeListener != null) {
+            final boolean inRange = mScale >= 0.0f && mScale <= 1.0f;
+            if (inRange && mOnSeekBarChangeListener != null) {
                 mOnSeekBarChangeListener.onStopTrackingTouch(this);
             }
             flingBehaviorAfterDeformationDrag();
+            // QS brightness/volume: if overshoot fling never schedules (physics holder
+            // out of range / animator missing), clamp and fire stop so the next drag
+            // is not stuck with mScale outside [0,1] and deferred stop-tracking.
+            if (!inRange && !isDeformationFling()) {
+                endCustomDeformation();
+                if (mOnSeekBarChangeListener != null) {
+                    mOnSeekBarChangeListener.onStopTrackingTouch(this);
+                }
+            }
         } else {
             flingBehaviorAfterEndDrag(mFlingVelocity);
         }
