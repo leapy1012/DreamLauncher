@@ -11,8 +11,13 @@ import com.android.launcher3.big.booster.BoosterOverlayView;
 import com.android.launcher3.big.memoryclean.utils.HxyAntiShakeUtil;
 import com.android.launcher3.R;
 import com.android.launcher3.big.HxyAnimBubbleTextView;
+import com.android.launcher3.dragndrop.DragLayer;
 import com.android.quickstep.views.RecentsView;
 
+/**
+ * Cleanup icon callback. Icon visibility / text timing matches the pre-booster
+ * behavior; the fullscreen wave runs only after {@link #onEnd()}.
+ */
 public class ClearCallBack extends BaseCallback {
     private static final String TAG = "ClearCallBack";
 
@@ -24,17 +29,16 @@ public class ClearCallBack extends BaseCallback {
         this.mIcon.setText(R.string.memory_clean_running_animator);
         sendMemoryCleanBroadcast(this.mIcon.getContext());
         this.mIcon.setIconVisible(false);
-        showBoosterOverlay();
     }
 
     public void onStart(BaseParams params) {
         super.onStart(params);
         this.mIcon.setText(R.string.memory_clean_running_animator);
         sendMemoryCleanBroadcast(this.mIcon.getContext());
+        // Original behavior: only hide when both bg+src exist (resouceOK).
         if (params.resouceOK()) {
             this.mIcon.setIconVisible(false);
         }
-        showBoosterOverlay();
     }
 
     public void onRunning() {
@@ -45,6 +49,8 @@ public class ClearCallBack extends BaseCallback {
         this.mIcon.setText(R.string.memory_clean_start_animator);
         this.mIcon.setLayerType(View.LAYER_TYPE_NONE, (Paint) null);
         this.mIcon.setIconVisible(true);
+        // Post so the restored icon can draw once before the wave snapshot.
+        this.mIcon.post(this::showBoosterWave);
     }
 
     public boolean onClick() {
@@ -57,11 +63,18 @@ public class ClearCallBack extends BaseCallback {
         }
     }
 
-    private void showBoosterOverlay() {
+    private void showBoosterWave() {
         Context context = this.mIcon.getContext();
         try {
             Launcher launcher = Launcher.getLauncher(context);
-            BoosterOverlayView.show(launcher);
+            DragLayer dragLayer = launcher.getDragLayer();
+            int[] iconLoc = new int[2];
+            int[] layerLoc = new int[2];
+            mIcon.getLocationInWindow(iconLoc);
+            dragLayer.getLocationInWindow(layerLoc);
+            float originX = iconLoc[0] - layerLoc[0] + mIcon.getWidth() / 2f;
+            float originY = iconLoc[1] - layerLoc[1] + mIcon.getHeight() / 2f;
+            BoosterOverlayView.show(launcher, originX, originY);
         } catch (Exception ignored) {
             // Icon may be bound outside Launcher in rare cases.
         }
