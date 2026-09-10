@@ -22,6 +22,12 @@
     <color name="coloros_folder_title_text">#FFFFFFFF</color>
     <color name="coloros_folder_title_hint">#B3FFFFFF</color>
     <color name="coloros_folder_page_indicator">#FFFFFFFF</color>
+    <!-- ColorOS launcher_page_indicator_select/unselect_color for open folder. -->
+    <color name="coloros_folder_page_indicator_selected">#FFFFFFFF</color>
+    <color name="coloros_folder_page_indicator_unselected">#4DFFFFFF</color>
+
+    <!-- ColorOS open-folder backdrop: dark dim (wallpaper stays sharp). -->
+    <color name="coloros_folder_open_scrim">#80000000</color>
 
     <!-- Layout scale. Names describe intent so screens do not depend on arbitrary numbers. -->
     <dimen name="coloros_space_micro">4dp</dimen>
@@ -73,6 +79,11 @@
     <dimen name="coloros_folder_title_height">62dp</dimen>
     <dimen name="coloros_folder_title_width">228dp</dimen>
     <dimen name="coloros_folder_title_text_size">24sp</dimen>
+    <!-- ColorOS folder_name_width / folder_name_clear_margin_end -->
+    <dimen name="folder_name_width">228dp</dimen>
+    <dimen name="folder_name_clear_margin_end">10dp</dimen>
+    <!-- ColorOS folder_name_edit_bg_color -->
+    <color name="folder_name_edit_bg_color">#4DFFFFFF</color>
     <dimen name="coloros_folder_header_margin_horizontal">10dp</dimen>
     <dimen name="coloros_folder_content_margin_horizontal">20dp</dimen>
     <dimen name="coloros_folder_content_top_gap">14dp</dimen>

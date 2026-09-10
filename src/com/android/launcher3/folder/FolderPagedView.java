@@ -28,6 +28,7 @@ import android.util.ArrayMap;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewDebug;
 
@@ -736,6 +737,21 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
 
     public int itemsPerPage() {
         return mOrganizer.getMaxItemsPerPage();
+    }
+
+    /**
+     * ColorOS {@code OplusFolderPagedView.onTouchEvent}: empty cells inside the icon grid
+     * dismiss the open folder (icons consume their own taps first).
+     */
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        if (mFolder != null
+                && mFolder.isFullBleedOpenFolder()
+                && ev.getAction() == MotionEvent.ACTION_UP
+                && !isHandlingTouch()) {
+            mFolder.completeDragExit();
+        }
+        return super.onTouchEvent(ev);
     }
 
     @Override

@@ -68,6 +68,8 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
 
     private static final int PAGE_INDICATOR_ALPHA = 255;
     private static final int DOT_ALPHA = 128;
+    /** ColorOS folder unselect (#4DFFFFFF) relative to opaque white. */
+    private static final int FOLDER_DOT_ALPHA = 0x4D;
     private static final float DOT_ALPHA_FRACTION = 0.5f;
     private static final int DOT_GAP_FACTOR = SHOW_DOT_PAGINATION.get() ? 4 : 3;
     private static final int VISIBLE_ALPHA = 255;
@@ -134,6 +136,9 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
     private @Nullable ObjectAnimator mAlphaAnimator;
 
     private float[] mEntryAnimationRadiusFactors;
+
+    /** When set, inactive dots use {@link #FOLDER_DOT_ALPHA} instead of {@link #DOT_ALPHA}. */
+    private boolean mFolderStyle;
 
     private final Runnable mHidePaginationRunnable =
             () -> animatePaginationToAlpha(INVISIBLE_ALPHA);
@@ -222,6 +227,24 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
     @Override
     public void setPaintColor(int color) {
         mPaginationPaint.setColor(color);
+    }
+
+    /**
+     * ColorOS open-folder pagination: opaque white active + ~30% white inactive
+     * ({@code launcher_page_indicator_select/unselect_color}).
+     */
+    public void setFolderPaginationStyle(int activeColor) {
+        mFolderStyle = true;
+        mPaginationPaint.setColor(activeColor);
+        invalidate();
+    }
+
+    private int getInactiveDotAlpha() {
+        return mFolderStyle ? FOLDER_DOT_ALPHA : DOT_ALPHA;
+    }
+
+    private float getInactiveDotAlphaFraction() {
+        return mFolderStyle ? (FOLDER_DOT_ALPHA / 255f) : DOT_ALPHA_FRACTION;
     }
 
     private void hideAfterDelay() {
@@ -393,7 +416,7 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
                 circleGap = -circleGap;
             }
             for (int i = 0; i < mEntryAnimationRadiusFactors.length; i++) {
-                mPaginationPaint.setAlpha(i == mActivePage ? PAGE_INDICATOR_ALPHA : DOT_ALPHA);
+                mPaginationPaint.setAlpha(i == mActivePage ? PAGE_INDICATOR_ALPHA : getInactiveDotAlpha());
                 canvas.drawCircle(x, y, mDotRadius * mEntryAnimationRadiusFactors[i],
                         mPaginationPaint);
                 x += circleGap;
@@ -403,8 +426,8 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
 
             // Here we draw the dots
             mPaginationPaint.setAlpha(SHOW_DOT_PAGINATION.get()
-                    ? ((int) (alpha * DOT_ALPHA_FRACTION))
-                    : DOT_ALPHA);
+                    ? ((int) (alpha * getInactiveDotAlphaFraction()))
+                    : getInactiveDotAlpha());
             for (int i = 0; i < mNumPages; i++) {
                 canvas.drawCircle(x, y, mDotRadius, mPaginationPaint);
                 x += circleGap;

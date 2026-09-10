@@ -1215,11 +1215,16 @@ public class DeviceProfile {
             folderFooterHeightPx =
                     res.getDimensionPixelSize(R.dimen.folder_footer_height_default);
 
-            // ColorOS FolderParam.updateAvailableFolderCellDimensions uses
-            // folder_label_height as bottom-panel size in the default path.
+            // ColorOS FolderParam: reserve page top/bottom padding (+ indicator chrome) so
+            // the last icon row does not sit on the page indicator.
             float contentUsedHeight = folderCellHeightPx * inv.numFolderRows
-                    + res.getDimensionPixelSize(R.dimen.folder_label_height);
-            int contentMaxHeight = availableHeightPx;
+                    + res.getDimensionPixelSize(R.dimen.folder_pageview_padding_top)
+                    + res.getDimensionPixelSize(R.dimen.folder_pageview_padding_bottom);
+            // Content area is below title chrome / wrapper, above nav inset.
+            int contentMaxHeight = availableHeightPx
+                    - getInsets().top - getInsets().bottom
+                    - res.getDimensionPixelSize(R.dimen.coloros_folder_title_height)
+                    - res.getDimensionPixelSize(R.dimen.folder_content_wrapper_margin_top);
             if (contentUsedHeight > contentMaxHeight && contentUsedHeight > 0) {
                 float scale = contentMaxHeight / contentUsedHeight;
                 folderCellHeightPx = Math.max(1, Math.round(folderCellHeightPx * scale));

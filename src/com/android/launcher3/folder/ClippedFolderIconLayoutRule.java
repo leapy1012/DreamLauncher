@@ -52,12 +52,11 @@ public class ClippedFolderIconLayoutRule {
         mIconSize = intrinsicIconSize;
         mIsRtl = rtl;
 
-        // Layout slot size is a fraction of the folder plate; drawable scale is
-        // chosen so the drawn icon matches that slot even if intrinsic ≠ plate.
-        mBaselineIconSize = mAvailableSpace * SMALL_FOLDER_ICON_SCALE;
-        mBaselineIconScale = intrinsicIconSize > 0
-                ? mBaselineIconSize / intrinsicIconSize
-                : SMALL_FOLDER_ICON_SCALE;
+        // ColorOS OplusClippedFolderIconLayoutRule#initForDefaultIcon: params.scale is the
+        // plate fraction (0.18), not baseline/intrinsic. Drawing still targets plate*0.18
+        // via canvas.scale(params.scale) * (intrinsic normalization).
+        mBaselineIconScale = SMALL_FOLDER_ICON_SCALE;
+        mBaselineIconSize = mAvailableSpace * mBaselineIconScale;
 
         float cols = PREVIEW_COLUMNS;
         mPreviewPadding = (mAvailableSpace - (mBaselineIconSize * cols))

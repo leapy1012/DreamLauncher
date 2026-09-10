@@ -268,13 +268,6 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import com.android.launcher3.views.OptionsDialogView;
 import com.android.launcher3.editselection.EditSelectionManager;
-import android.view.WindowManagerGlobal;
-import android.app.ActivityTaskManager;
-import com.android.launcher3.screenshot.ImageCaptureImpl;
-import android.util.DisplayMetrics;
-import android.graphics.RenderEffect;
-import android.graphics.Shader;
-import android.graphics.Bitmap;
 import android.app.Activity;
 import com.android.launcher3.big.HxyGroupAnimTool;
 
@@ -451,7 +444,6 @@ public class Launcher extends StatefulActivity<LauncherState>
     private StartupLatencyLogger mStartupLatencyLogger;
     private CellPosMapper mCellPosMapper = CellPosMapper.DEFAULT;
     private SensorManager mSensorMgr;//声明一个传感管理器对象
-    private ImageCaptureImpl mImageCapture;
     private HxyGroupAnimTool mHxyGroupAnimTool = new HxyGroupAnimTool(this);
 
     @Override
@@ -627,28 +619,21 @@ public class Launcher extends StatefulActivity<LauncherState>
         registerReceiver(mReceiver, new android.content.IntentFilter(Intent.ACTION_USER_UNLOCKED));
     }
 
-    private Bitmap captureScreenshot(Rect crop) {
-        if (this.mImageCapture == null) {
-            this.mImageCapture = new ImageCaptureImpl(WindowManagerGlobal.getWindowManagerService(), ActivityTaskManager.getService());
-        }
-        return this.mImageCapture.captureDisplay(getDisplayId(), crop);
-    }
-
-    public void setLauncherBlurBg(boolean isBlur) {
-        if (isBlur) {
-            DisplayMetrics metrics = new DisplayMetrics();
-            getWindowManager().getDefaultDisplay().getRealMetrics(metrics);
-            int i = metrics.heightPixels;
-            int i2 = metrics.widthPixels;
-            Bitmap bitmap = captureScreenshot(new Rect(0, 0, metrics.widthPixels, metrics.heightPixels));
-            if (bitmap != null) {
-                mScrimView.setRenderEffect(RenderEffect.createBlurEffect(50.0f, 50.0f, RenderEffect.createBitmapEffect(bitmap), Shader.TileMode.CLAMP));
-                bitmap.recycle();
-                return;
-            }
+    /**
+     * ColorOS open-folder backdrop: dark translucent dim over a sharp wallpaper (not Gaussian
+     * blur). Oppo DepthController drives wallpaper dim/scale; we approximate with ScrimView.
+     */
+    public void setLauncherBlurBg(boolean isFolderOpen) {
+        if (mScrimView == null) {
             return;
         }
-        mScrimView.setRenderEffect(null);
+        if (isFolderOpen) {
+            mScrimView.setRenderEffect(null);
+            mScrimView.setBackgroundColor(getColor(R.color.coloros_folder_open_scrim));
+        } else {
+            mScrimView.setRenderEffect(null);
+            mScrimView.setBackgroundColor(Color.TRANSPARENT);
+        }
     }
 
     /**

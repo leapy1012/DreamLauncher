@@ -9,47 +9,47 @@
     android:gravity="center_horizontal"
     android:orientation="vertical">
 
-    <LinearLayout
+    <!-- ColorOS folder_header: rename capsule background is set on this view while editing. -->
+    <FrameLayout
         android:id="@+id/folder_header"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/folder_title_height"
-        android:gravity="center"
-        android:orientation="vertical">
+        android:layout_height="@dimen/coloros_folder_title_height"
+        android:layout_marginHorizontal="@dimen/coloros_folder_header_margin_horizontal"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+        <com.android.launcher3.big.ColorEditText
+            android:id="@+id/folder_name"
+            android:layout_width="@dimen/folder_name_width"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@null"
+            android:fontFamily="google-sans-text"
+            android:gravity="center"
+            android:hint="@string/folder_hint_text"
+            android:imeOptions="flagNoExtractUi"
+            android:maxLength="20"
+            android:singleLine="true"
+            android:textAlignment="center"
+            android:textColor="#ffffff"
+            android:textColorHighlight="#66FFFFFF"
+            android:textColorHint="#B3FFFFFF"
+            android:textCursorDrawable="@drawable/folder_name_text_cursor"
+            android:textSize="@dimen/folder_label_text_size" />
 
-            <com.android.launcher3.big.ColorEditText
-                android:id="@+id/folder_name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/fold_name_edit_bg"
-                android:fontFamily="google-sans-text"
-                android:gravity="center_horizontal"
-                android:hint="@string/folder_hint_text"
-                android:imeOptions="flagNoExtractUi"
-                android:maxLength="20"
-                android:paddingStart="40dp"
-                android:paddingEnd="40dp"
-                android:singleLine="true"
-                android:textColor="#ffffff"
-                android:textColorHighlight="?android:attr/colorControlHighlight"
-                android:textColorHint="#ffffff"
-                android:textSize="@dimen/folder_label_text_size" />
-
-            <ImageView
-                android:id="@+id/clear_text"
-                android:layout_width="25dp"
-                android:layout_height="25dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:layout_marginEnd="10dp"
-                android:scaleType="fitXY"
-                android:src="@drawable/clear_text"
-                android:visibility="gone" />
-        </RelativeLayout>
-    </LinearLayout>
+        <ImageView
+            android:id="@+id/clear_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="@dimen/folder_name_clear_margin_end"
+            android:clickable="true"
+            android:contentDescription="@string/folder_hint_text"
+            android:focusable="true"
+            android:scaleType="fitXY"
+            android:src="@drawable/folder_name_clear"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <!-- ColorOS folder_content_root: page indicator overlays bottom of content. -->
     <FrameLayout
@@ -74,6 +74,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="@dimen/coloros_folder_page_indicator_bottom_space"
             android:clipChildren="false"
             android:gravity="center"
             android:orientation="horizontal">
@@ -81,7 +82,7 @@
             <com.android.launcher3.pageindicators.PageIndicatorDots
                 android:id="@+id/folder_page_indicator"
                 android:layout_width="wrap_content"
-                android:layout_height="@dimen/folder_footer_height_default"
+                android:layout_height="@dimen/coloros_folder_page_indicator_height"
                 android:layout_gravity="center"
                 android:elevation="1dp" />
         </LinearLayout>

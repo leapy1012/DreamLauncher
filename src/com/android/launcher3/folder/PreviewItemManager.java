@@ -93,6 +93,8 @@ public class PreviewItemManager {
     private final float mClipThreshold;
     private float mCurrentPageItemsTransX = 0;
     private boolean mShouldSlideInFirstPage;
+    /** When true, skip drawing preview icons (plate/bg may still draw). */
+    private boolean mSuppressPreviewItems;
 
     static final int INITIAL_ITEM_ANIMATION_DURATION = 350;
     private static final int FINAL_ITEM_ANIMATION_DURATION = 200;
@@ -138,15 +140,22 @@ public class PreviewItemManager {
     }
 
     private void computePreviewDrawingParams(int drawableSize, int totalSize) {
-        if (mIntrinsicIconSize != drawableSize || mTotalWidth != totalSize ||
+        // ColorOS uses bubble/icon size as the draw intrinsic with params.scale=0.18 so
+        // visual size = 0.18 * that value. Match the plate so preview = plate * 0.18.
+        int plate = mIcon.mBackground.previewSize > 0
+                ? mIcon.mBackground.previewSize : drawableSize;
+        if (mIntrinsicIconSize != plate || mTotalWidth != totalSize ||
                 mPrevTopPadding != mIcon.getPaddingTop()) {
-            mIntrinsicIconSize = drawableSize;
+            mIntrinsicIconSize = plate;
             mTotalWidth = totalSize;
             mPrevTopPadding = mIcon.getPaddingTop();
 
             mIcon.mBackground.setup(mIcon.getContext(), mIcon.mActivity, mIcon, mTotalWidth, mIcon.getMeasuredHeight(),
                     mIcon.getPaddingTop());
-            mIcon.mPreviewLayoutRule.init(mIcon.mBackground.previewSize, mIntrinsicIconSize,
+            plate = mIcon.mBackground.previewSize > 0
+                    ? mIcon.mBackground.previewSize : plate;
+            mIntrinsicIconSize = plate;
+            mIcon.mPreviewLayoutRule.init(plate, plate,
                     Utilities.isRtl(mIcon.getResources()));
 
             updatePreviewItems(false);
@@ -175,6 +184,9 @@ public class PreviewItemManager {
 
     public void drawParams(Canvas canvas, ArrayList<PreviewItemDrawingParams> params,
             PointF offset, boolean shouldClipPath, Path clipPath) {
+        if (mSuppressPreviewItems) {
+            return;
+        }
         // The first item should be drawn last (ie. on top of later items)
         for (int i = params.size() - 1; i >= 0; i--) {
             PreviewItemDrawingParams p = params.get(i);
@@ -224,20 +236,25 @@ public class PreviewItemManager {
     private void drawPreviewItem(Canvas canvas, PreviewItemDrawingParams params, PointF offset,
             boolean shouldClipPath, Path clipPath) {
         canvas.save();
-        if (shouldClipPath) {
+        // Always clip to the plate so oversized drawable shadows cannot paint a second
+        // "ghost" silhouette outside the slot.
+        if (clipPath != null) {
             canvas.clipPath(clipPath);
         }
         canvas.translate(offset.x + params.transX, offset.y + params.transY);
-        canvas.scale(params.scale, params.scale);
+        float scale = params.scale;
+        canvas.scale(scale, scale);
         Drawable d = params.drawable;
 
         if (d != null) {
-            Rect bounds = d.getBounds();
-            canvas.save();
-            canvas.translate(-bounds.left, -bounds.top);
-            canvas.scale(mIntrinsicIconSize / bounds.width(), mIntrinsicIconSize / bounds.height());
+            // ColorOS: one scale (params.scale≈0.18) against intrinsic-sized bounds.
+            // A second scale vs folderChild bounds made some themed icons paint a larger
+            // misaligned layer that looked like close-animation ghosts on the idle preview.
+            int size = Math.max(1, Math.round(mIntrinsicIconSize));
+            Rect old = d.getBounds();
+            d.setBounds(0, 0, size, size);
             d.draw(canvas);
-            canvas.restore();
+            d.setBounds(old);
         }
         canvas.restore();
     }
@@ -301,10 +318,14 @@ public class PreviewItemManager {
         mShouldSlideInFirstPage = currentPage != 0;
         mCurrentPageItemsTransX = 0.0f;
         buildParamsForPage(currentPage, this.mCurrentPageParams, false);
+        // Suppress preview draw for the whole close — params.hidden alone can be
+        // cleared by recompute/updatePreviewItems mid-animation.
+        mSuppressPreviewItems = true;
         onParamsChanged();
     }
 
     public void onFolderClose(int currentPage) {
+        mSuppressPreviewItems = false;
         // If we are not closing on the first page, we animate the current page preview items
         // out, and animate the first page preview items in.
         mShouldSlideInFirstPage = currentPage != 0;
@@ -324,6 +345,8 @@ public class PreviewItemManager {
             slideAnimator.setStartDelay(SLIDE_IN_FIRST_PAGE_ANIMATION_DURATION_DELAY);
             slideAnimator.setDuration(SLIDE_IN_FIRST_PAGE_ANIMATION_DURATION);
             slideAnimator.start();
+        } else {
+            onParamsChanged();
         }
     }
 
@@ -444,7 +467,8 @@ public class PreviewItemManager {
         } else {
             p.drawable = item.newIcon(mContext, FLAG_THEMED);
         }
-        p.drawable.setBounds(0, 0, mIconSize, mIconSize);
+        int size = Math.max(1, Math.round(mIntrinsicIconSize > 0 ? mIntrinsicIconSize : mIconSize));
+        p.drawable.setBounds(0, 0, size, size);
         p.item = item;
 
         // Set the callback to FolderIcon as it is responsible to drawing the icon. The

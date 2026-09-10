@@ -511,6 +511,11 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
         return this.mPreviewHeight;
     }
 
+    /** Space passed to {@link ClippedFolderIconLayoutRule#init}; plate edge length for 1×1. */
+    public int getPreviewSize() {
+        return previewSize;
+    }
+
     public int getBasePreviewOffsetX() {
         return basePreviewOffsetX;
     }

@@ -359,8 +359,6 @@ public class InvariantDeviceProfile {
 
         numFolderRows = closestProfile.numFolderRows;
         numFolderColumns = closestProfile.numFolderColumns;
-        numFolderRows = 3;
-        numFolderColumns = 3;
         folderStyle = closestProfile.folderStyle;
 
         cellStyle = closestProfile.cellStyle;

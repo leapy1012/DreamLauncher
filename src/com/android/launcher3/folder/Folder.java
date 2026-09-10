@@ -36,9 +36,11 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Insets;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.text.Editable;
 import android.text.InputType;
 import android.text.Selection;
 import android.text.TextUtils;
@@ -51,15 +53,20 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewDebug;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.android.launcher3.AbstractFloatingView;
@@ -113,7 +120,6 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.android.launcher3.views.FloatingIconView;
-import android.widget.ImageView;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.util.window.RefreshRateTracker;
@@ -121,7 +127,6 @@ import com.android.launcher3.views.FloatingIconView;
 import com.android.launcher3.folder.large.HxyFolderAnimationManager;
 import java.util.function.Consumer;
 import com.android.launcher3.LauncherApplication;
-import androidx.core.content.ContextCompat;
 import com.android.launcher3.util.DimenUtils;
 import com.android.launcher3.LauncherState;
 
@@ -199,7 +204,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     private CharSequence mFromTitle;
     private FromState mFromLabelState;
     private int mHeaderHeight;
-    private View mHeader;
+    public View mHeader;
 
     @Thunk
     FolderIcon mFolderIcon;
@@ -259,6 +264,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     public View mContentLl;
     public ImageView mClearText;
 
+    /** ColorOS OplusFolder: outside-tap dismiss waits for UP without move. */
+    private final PointF mActionDownPoint = new PointF();
+    private boolean mIsTouchMoveEvent;
+
     /**
      * Used to inflate the Workspace from XML.
      *
@@ -312,6 +321,25 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         mHeader = findViewById(R.id.folder_header);
         mFooter = findViewById(R.id.folder_footer);
         mFooterHeight = dp.folderFooterHeightPx;
+        if (isFullBleedOpenFolder()) {
+            // ColorOS OplusFolder: indicator floats above content bottom (padding zone).
+            ViewGroup.LayoutParams footerLp = mFooter.getLayoutParams();
+            if (footerLp instanceof FrameLayout.LayoutParams) {
+                FrameLayout.LayoutParams flp = (FrameLayout.LayoutParams) footerLp;
+                flp.bottomMargin = getResources().getDimensionPixelSize(
+                        R.dimen.coloros_folder_page_indicator_bottom_space);
+                mFooter.setLayoutParams(flp);
+            }
+            // ColorOS launcher_page_indicator_select/unselect_color (#FFF / #4DFFFFFF).
+            mPageIndicator.setFolderPaginationStyle(ContextCompat.getColor(
+                    getContext(), R.color.coloros_folder_page_indicator_selected));
+            ViewGroup.LayoutParams indicatorLp = mPageIndicator.getLayoutParams();
+            if (indicatorLp != null) {
+                indicatorLp.height = getResources().getDimensionPixelSize(
+                        R.dimen.coloros_folder_page_indicator_height);
+                mPageIndicator.setLayoutParams(indicatorLp);
+            }
+        }
         mFolderName = findViewById(R.id.folder_name);
         mFolderName.setTextSize(TypedValue.COMPLEX_UNIT_PX, dp.folderLabelTextSizePx);
         mFolderName.setOnBackKeyListener(this);
@@ -326,6 +354,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             // ColorOS: title sits below status bar inside folder_title_height.
             mFolderName.setPadding(mFolderName.getPaddingLeft(), 0,
                     mFolderName.getPaddingRight(), 0);
+            mFolderName.setCursorVisible(false);
         } else {
             mFolderName.setPadding(mFolderName.getPaddingLeft(),
                     (mFooterHeight - mFolderName.getLineHeight()) / 2,
@@ -333,23 +362,42 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                     (mFooterHeight - mFolderName.getLineHeight()) / 2);
         }
 
-        if (Utilities.ATLEAST_R) {
+        // ColorOS Folder has no IME lift for open folder; AOSP's KeyboardInsetAnimationCallback
+        // also forces translationY = -ime for duration==-1 animations — skip both for full-bleed.
+        if (Utilities.ATLEAST_R && !isFullBleedOpenFolder()) {
             mKeyboardInsetAnimationCallback = new KeyboardInsetAnimationCallback(this);
             setWindowInsetsAnimationCallback(mKeyboardInsetAnimationCallback);
         }
         mContentLl = findViewById(R.id.folder_content_ll);
-        ImageView imageView = (ImageView) findViewById(R.id.clear_text);
-        mClearText = imageView;
-        imageView.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View view) {
-                Folder.this.mFolderName.setText("");
-            }
-        });
+        mClearText = findViewById(R.id.clear_text);
+        if (mClearText != null) {
+            // ColorOS OplusFolder: clear deletes the Editable then setText("").
+            mClearText.setOnClickListener(v -> {
+                if (mFolderName == null) {
+                    return;
+                }
+                Editable text = mFolderName.getText();
+                if (text != null) {
+                    text.delete(0, text.length());
+                }
+                mFolderName.setText("");
+            });
+        }
         mFooter.measure(0, 0);
         mHeader.measure(0, 0);
         mContentLl.measure(0, 0);
         mFooterHeight = this.mFooter.getMeasuredHeight();
-        mHeaderHeight = mHeader.getMeasuredHeight();
+        if (isFullBleedOpenFolder()) {
+            // ColorOS open folder: header is a fixed chrome height (device shows 62dp),
+            // not wrap_content from measure(0,0) which collapses to the EditText line.
+            mHeaderHeight = getResources().getDimensionPixelSize(
+                    R.dimen.coloros_folder_title_height);
+            // ColorOS folder_name_text_size = 24sp (do not use scaled folderLabelTextSizePx).
+            mFolderName.setTextSize(TypedValue.COMPLEX_UNIT_PX,
+                    getResources().getDimensionPixelSize(R.dimen.folder_label_text_size));
+        } else {
+            mHeaderHeight = mHeader.getMeasuredHeight();
+        }
     }
 
     public boolean onLongClick(View v) {
@@ -420,14 +468,59 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     public void startEditingFolderName() {
         post(() -> {
-            showLabelSuggestions();
-            mFolderName.setHint("");
+            // ColorOS OplusFolder.startEditingFolderName:
+            // clear visible, selectAll, cursor on, rename capsule on header.
+            if (isFullBleedOpenFolder()) {
+                mFolderName.setHint("");
+                mFolderName.setCursorVisible(true);
+                mFolderName.selectAll();
+                if (mClearText != null) {
+                    mClearText.setVisibility(VISIBLE);
+                }
+                if (mHeader != null) {
+                    mHeader.setBackgroundResource(R.drawable.folder_rename_edittext_background);
+                }
+            } else {
+                showLabelSuggestions();
+                mFolderName.setHint("");
+            }
             mIsEditingName = true;
         });
     }
 
     @Override
     public boolean onBackKey() {
+        if (isFullBleedOpenFolder()) {
+            // ColorOS OplusFolder.onBackKey: empty edit restores previous title;
+            // only persist when the text actually changed.
+            CharSequence previous = mInfo.title;
+            Editable text = mFolderName.getText();
+            if (TextUtils.isEmpty(text)) {
+                mFolderName.setText(previous);
+            } else if (!TextUtils.equals(previous, text)) {
+                String newTitle = text.toString();
+                mInfo.setTitle(newTitle, mLauncherDelegate.getModelWriter());
+                mFolderIcon.onTitleChanged(newTitle);
+                mFolderName.setText(newTitle);
+                sendCustomAccessibilityEvent(
+                        this, AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
+                        getContext().getString(R.string.folder_renamed, newTitle));
+            }
+
+            if (mClearText != null) {
+                mClearText.setVisibility(INVISIBLE);
+            }
+            mFolderName.setCursorVisible(false);
+            if (mHeader != null) {
+                mHeader.setBackground(null);
+            }
+
+            mFolderName.clearFocus();
+            Selection.setSelection(mFolderName.getText(), 0, 0);
+            mIsEditingName = false;
+            return true;
+        }
+
         // Convert to a string here to ensure that no other state associated with the text field
         // gets saved.
         String newTitle = mFolderName.getText().toString();
@@ -474,7 +567,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         if (Utilities.ATLEAST_R) {
             this.setTranslationY(0);
 
-            if (windowInsets.isVisible(WindowInsets.Type.ime())) {
+            // ColorOS full-bleed folder keeps title chrome pinned; IME covers the lower icons
+            // instead of translating the whole folder (which pushed the title off-screen).
+            if (!isFullBleedOpenFolder()
+                    && windowInsets.isVisible(WindowInsets.Type.ime())) {
                 Insets keyboardInsets = windowInsets.getInsets(WindowInsets.Type.ime());
                 int folderHeightFromBottom = getHeightFromBottom();
 
@@ -801,9 +897,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         // {@link AnimatorListener} before it so that {@link AnimatorListener#onAnimationStart} can
         // be called to register mCurrentAnimator, which will be used to cancel animator
         addAnimationStartListeners(anim);
-        // Because t=0 has the folder match the folder icon, we can skip the
-        // first frame and have the same movement one frame earlier.
-        anim.setCurrentPlayTime(Math.min(getSingleFrameMs(getContext()), anim.getTotalDuration()));
+        // Hxy open applies per-icon start poses before start(); seeking would advance springs
+        // before those poses are applied and makes large folders look wrong.
         anim.start();
 
         // Make sure the folder picks up the last drag move even if the finger doesn't move.
@@ -839,13 +934,13 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         } else {
             closeComplete(false);
             post(this::announceAccessibilityChanges);
+            mLauncher.setLauncherBlurBg(false);
         }
 
         // Notify the accessibility manager that this folder "window" has disappeared and no
         // longer occludes the workspace items
         mActivityContext.getDragLayer().sendAccessibilityEvent(
                 AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
-        mLauncher.setLauncherBlurBg(false);
     }
 
     private void cancelRunningAnimations() {
@@ -873,9 +968,14 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                             setWindowInsetsAnimationCallback(null);
                         }
                         mIsAnimatingClosed = true;
+                        // ColorOS clears dim with content restore, not before icon springs start.
+                        mLauncher.setLauncherBlurBg(false);
                         if (mFolderIcon != null) {
+                            // Suppress preview items before making the plate visible so the
+                            // first close frame cannot double-draw preview + Folder children.
+                            mFolderIcon.onFolderAnimStartClose(
+                                    Folder.this.mContent.getCurrentPage());
                             mFolderIcon.setIconVisible(true);
-                            mFolderIcon.onFolderAnimStartClose(Folder.this.mContent.getCurrentPage());
                         }
                     }
 
@@ -1222,9 +1322,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         BaseDragLayer parent = mActivityContext.getDragLayer();
         DragLayer dragLayer = mLauncher.getDragLayer();
 
-        // ColorOS OplusFolder.centerAboutIcon: bottom-align measured content (not full-bleed fill).
-        // x = (dragLayer.width - measuredWidth) / 2
-        // y = (dragLayer.height - insets.bottom) - measuredHeight
+        // ColorOS OplusFolder.centerAboutIcon: bottom-align measured content.
+        // Cap y with coloros_folder_top_offset so sparse folders stay top-pinned like Oppo.
         if (isFullBleedOpenFolder()) {
             int width = getMeasuredWidth() > 0 ? getMeasuredWidth() : getFolderWidth();
             int height = getMeasuredHeight() > 0 ? getMeasuredHeight() : getFolderHeight();
@@ -1235,8 +1334,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                 height = getFolderHeight();
             }
             int bottomInset = mLauncher.getDeviceProfile().getInsets().bottom;
+            int topOffset = getResources().getDimensionPixelSize(R.dimen.coloros_folder_top_offset);
             int x = (dragLayer.getWidth() - width) / 2;
-            int y = (dragLayer.getHeight() - bottomInset) - height;
+            int bottomAlignedY = (dragLayer.getHeight() - bottomInset) - height;
+            int y = Math.max(0, Math.min(bottomAlignedY, topOffset));
             Rect iconRectInDragLayer = sTempRect;
             dragLayer.getDescendantRectRelativeToSelf(mFolderIcon, iconRectInDragLayer);
             Rect iconContentRect = mFolderIcon.getIconRect();
@@ -1250,7 +1351,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             lp.width = width;
             lp.height = height;
             lp.x = x;
-            lp.y = Math.max(0, y);
+            lp.y = y;
             mFolderIcon.setPivotX(mFolderIconPivotX);
             mFolderIcon.setPivotY(mFolderIconPivotY);
             return;
@@ -1393,7 +1494,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             int folderWidth = getPaddingLeft() + getPaddingRight() + contentWidth;
             int folderHeight = wrapperTop + mHeaderHeight + getPaddingTop() + getPaddingBottom()
                     + contentHeight;
-            int headerWidthSpec = MeasureSpec.makeMeasureSpec(folderWidth, MeasureSpec.EXACTLY);
+            int headerMargin = getResources().getDimensionPixelSize(
+                    R.dimen.coloros_folder_header_margin_horizontal);
+            int headerWidthSpec = MeasureSpec.makeMeasureSpec(
+                    Math.max(0, folderWidth - 2 * headerMargin), MeasureSpec.EXACTLY);
             mHeader.measure(headerWidthSpec,
                     View.MeasureSpec.makeMeasureSpec(this.mHeaderHeight, MeasureSpec.EXACTLY));
             mFooter.measure(contentAreaWidthSpec,
@@ -1823,21 +1927,54 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     @Override
     public boolean onControllerInterceptTouchEvent(MotionEvent ev) {
-        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
-            BaseDragLayer dl = (BaseDragLayer) getParent();
+        BaseDragLayer dl = (BaseDragLayer) getParent();
+        if (dl == null) {
+            return false;
+        }
+
+        final int action = ev.getAction();
+        if (action == MotionEvent.ACTION_DOWN) {
+            mActionDownPoint.set(ev.getX(), ev.getY());
+            mIsTouchMoveEvent = false;
 
             if (isEditingName()) {
-                if (!dl.isEventOverView(mFolderName, ev)) {
+                // ColorOS OplusFolder: clear button is inside rename chrome — do not end edit.
+                boolean overName = dl.isEventOverView(mFolderName, ev);
+                boolean overClear = mClearText != null
+                        && mClearText.getVisibility() == VISIBLE
+                        && dl.isEventOverView(mClearText, ev);
+                if (!overName && !overClear) {
                     mFolderName.dispatchBackKey();
                     return true;
                 }
                 return false;
-            } else if (!dl.isEventOverView(this, ev)
+            }
+
+            if (!isFullBleedOpenFolder()
+                    && !dl.isEventOverView(this, ev)
                     && mLauncherDelegate.interceptOutsideTouch(ev, dl, this)) {
                 return true;
-            } else if (isFullBleedOpenFolder()) {
-                // Empty space inside the ColorOS folder dismisses via onTouchEvent.
-                return false;
+            }
+            // ColorOS: outside / empty dismiss is decided on UP (not DOWN).
+            return false;
+        }
+
+        if (action == MotionEvent.ACTION_MOVE) {
+            if (!mIsTouchMoveEvent) {
+                int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                if (Math.abs(ev.getX() - mActionDownPoint.x) >= slop
+                        || Math.abs(ev.getY() - mActionDownPoint.y) >= slop) {
+                    mIsTouchMoveEvent = true;
+                }
+            }
+            return false;
+        }
+
+        if (action == MotionEvent.ACTION_UP && isFullBleedOpenFolder() && !isEditingName()) {
+            // ColorOS OplusFolder: tap dimmed wallpaper outside folder chrome closes on UP.
+            if (!dl.isEventOverView(this, ev) && !mIsTouchMoveEvent && mIsOpen) {
+                close(true);
+                return true;
             }
         }
         return false;
@@ -1845,11 +1982,21 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        // ColorOS: empty-area UP reaches the folder view (icons/title consume their own taps).
+        // Keep move tracking when the gesture is handled by the folder view itself.
+        if (event.getAction() == MotionEvent.ACTION_MOVE && !mIsTouchMoveEvent) {
+            int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+            if (Math.abs(event.getX() - mActionDownPoint.x) >= slop
+                    || Math.abs(event.getY() - mActionDownPoint.y) >= slop) {
+                mIsTouchMoveEvent = true;
+            }
+        }
+        // ColorOS OplusFolder.onTouchEvent: empty chrome UP → close via completeDragExit.
         if (isFullBleedOpenFolder()
                 && !isEditingName()
-                && event.getAction() == MotionEvent.ACTION_UP) {
-            close(true);
+                && event.getAction() == MotionEvent.ACTION_UP
+                && mIsOpen
+                && !mIsTouchMoveEvent) {
+            completeDragExit();
             return true;
         }
         return super.onTouchEvent(event);
@@ -1873,7 +2020,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     @Override
     protected void dispatchDraw(Canvas canvas) {
         if (isFullBleedOpenFolder()) {
-            // No frosted plate — content floats on the wallpaper blur (ColorOS).
+            // No frosted plate — content floats on the darkened wallpaper (ColorOS).
             super.dispatchDraw(canvas);
             return;
         }
@@ -1895,10 +2042,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     }
 
     /**
-     * ColorOS-like open folder: fill the drag layer, no frosted card, icons float on blur.
+     * ColorOS-like open folder: fill the drag layer, no frosted card, icons float on dark dim.
      * Hxy full-folder style enables this.
      */
-    protected boolean isFullBleedOpenFolder() {
+    public boolean isFullBleedOpenFolder() {
         return getResources().getBoolean(R.bool.config_show_full_folder_style);
     }
 

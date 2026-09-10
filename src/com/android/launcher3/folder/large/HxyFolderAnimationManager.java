@@ -30,7 +30,8 @@ import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.FolderPagedView;
 import com.android.launcher3.folder.PreviewBackground;
 import com.android.launcher3.folder.PreviewItemDrawingParams;
-import com.android.launcher3.views.BaseDragLayer;
+import androidx.dynamicanimation.animation.FloatValueHolder;
+
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
@@ -55,6 +56,8 @@ public class HxyFolderAnimationManager {
     private static final float HEADER_SPRING_BOUNCE = 0.0f;
     private static final float HEADER_SPRING_OPEN_RESPONSE = 0.4f;
     private static final float HEADER_SPRING_CLOSE_RESPONSE = 0.15f;
+    /** ColorOS OplusFolderAnimationManager.TEXT_DELAY_PERCENT — title stays 0 until spring ≥ 0.5. */
+    private static final float TEXT_DELAY_PERCENT = 0.5f;
     private static final float OPEN_ANIM_SCALE_RATIO = 0.2f;
     private static final float ONE_THIRD = 0.33f;
     private static final float TWO_THIRD = 0.66f;
@@ -77,6 +80,24 @@ public class HxyFolderAnimationManager {
     private final HxyFolderGridOrganizer mPreviewVerifier;
     private final PreviewItemDrawingParams mTmpParams = new PreviewItemDrawingParams(0f, 0f, 0f);
     private final ArrayList<COUISpringAnimation> mRunningSprings = new ArrayList<>();
+    /** Close-end icon poses; applied when the gate ends so icons don't snap back to grid. */
+    private final ArrayList<IconEndState> mIconEndStates = new ArrayList<>();
+
+    private static final class IconEndState {
+        final BubbleTextView view;
+        final float tx;
+        final float ty;
+        final float scale;
+        final float textAlpha;
+
+        IconEndState(BubbleTextView view, float tx, float ty, float scale, float textAlpha) {
+            this.view = view;
+            this.tx = tx;
+            this.ty = ty;
+            this.scale = scale;
+            this.textAlpha = textAlpha;
+        }
+    }
 
     public HxyFolderAnimationManager(Folder folder, boolean isOpening) {
         mFolder = folder;
@@ -95,6 +116,10 @@ public class HxyFolderAnimationManager {
         mWorkspaceContentDuration = res.getInteger(isOpening
                 ? R.integer.folder_workspace_content_open_duration
                 : R.integer.folder_workspace_content_close_duration);
+        if (!isOpening && mFolderIcon != null) {
+            // Earliest possible suppress — before AnimatorSet listeners run.
+            mFolderIcon.onFolderAnimStartClose(mContent.getCurrentPage());
+        }
     }
 
     private List<BubbleTextView> getPreviewIconsOnPage(int page) {
@@ -104,6 +129,8 @@ public class HxyFolderAnimationManager {
 
     public AnimatorSet getAnimator(Consumer<Animator> call) {
         AnimatorSet a = new AnimatorSet();
+        mIconEndStates.clear();
+        mRunningSprings.clear();
 
         // ColorOS full path keeps the folder container at scale 1; icons spring individually.
         mFolder.setScaleX(1f);
@@ -119,19 +146,26 @@ public class HxyFolderAnimationManager {
 
         playWorkspaceCompanion(a);
 
-        // Folder chrome alpha (container becomes visible immediately; header springs separately).
-        play(a, getAnimator(mFolder, View.ALPHA, 0f, 1f), 0, Math.min(mDuration, 200));
+        // ColorOS full path keeps the folder container opaque; only header/icons spring.
+        mFolder.setAlpha(1f);
+        if (mIsOpening && mFolderIcon != null) {
+            // Hide closed preview before children take their open-start poses — otherwise
+            // the plate minis and springing BTVs double-draw (especially large folders).
+            mFolderIcon.setIconVisible(false);
+            mFolderIcon.setForceHideDot(true);
+        }
 
-        View header = mFolder.mFolderName;
+        // ColorOS animates folder_header (not only the EditText) with open alpha remapped.
+        View header = mFolder.mHeader != null ? mFolder.mHeader : mFolder.mFolderName;
         if (header != null) {
             float headerResponse = mIsOpening
                     ? HEADER_SPRING_OPEN_RESPONSE : HEADER_SPRING_CLOSE_RESPONSE;
             if (mIsOpening) {
                 header.setAlpha(0f);
             }
-            playSpringOnGate(gate, header, COUIDynamicAnimation.ALPHA,
+            playHeaderAlphaSpringOnGate(gate, header,
                     mIsOpening ? 0f : 1f, mIsOpening ? 1f : 0f,
-                    HEADER_SPRING_BOUNCE, headerResponse, COUIDynamicAnimation.MIN_VISIBLE_CHANGE_ALPHA);
+                    HEADER_SPRING_BOUNCE, headerResponse);
         }
 
         play(a, mFolderIcon.getFolderName().createTextAlphaAnimator(!mIsOpening), 0, mDuration);
@@ -146,8 +180,13 @@ public class HxyFolderAnimationManager {
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                cancelSprings();
-                resetChildrenTransforms();
+                // Snap springs to their final values before cancelling so close doesn't
+                // leave icons mid-flight, then reset only after open (close keeps preview
+                // pose until Folder.closeComplete removes this view).
+                finishSpringsAtFinalPosition();
+                if (mIsOpening) {
+                    resetChildrenTransforms();
+                }
                 mFolder.setTranslationX(0f);
                 mFolder.setTranslationY(0f);
                 mFolder.setTranslationZ(0f);
@@ -165,8 +204,10 @@ public class HxyFolderAnimationManager {
 
             @Override
             public void onAnimationCancel(Animator animation) {
-                cancelSprings();
-                resetChildrenTransforms();
+                finishSpringsAtFinalPosition();
+                if (mIsOpening) {
+                    resetChildrenTransforms();
+                }
             }
         });
         return a;
@@ -189,6 +230,7 @@ public class HxyFolderAnimationManager {
             pageIndicator.setPivotX(workspace.getPivotX());
         }
 
+        // Open: 1→0.92 / α 1→0. Close: 0.92→1 / α 0→1 (getAnimator swaps).
         Animator wsAlpha = getAnimator(workspace, View.ALPHA, 1f, 0f);
         wsAlpha.setInterpolator(mIsOpening ? WORKSPACE_ALPHA_OPEN : WORKSPACE_SCALE_INTERPOLATOR);
         play(a, wsAlpha, 0, contentMs);
@@ -229,29 +271,63 @@ public class HxyFolderAnimationManager {
         container.setClipToPadding(false);
 
         DeviceProfile dp = mLauncher.getDeviceProfile();
-        int folderIconSizePx = dp.folderIconSizePx > 0 ? dp.folderIconSizePx : dp.iconSizePx;
-        int iconSizePx = dp.iconSizePx;
-        int folderCellWidthPx = dp.folderCellWidthPx;
-        int folderCellHeightPx = dp.folderCellHeightPx;
+        // Plate size must match PreviewItemManager's rule.init(previewSize).
+        int plateSize = mPreviewBackground.getPreviewSize() > 0
+                ? mPreviewBackground.getPreviewSize()
+                : (dp.folderIconSizePx > 0 ? dp.folderIconSizePx : dp.iconSizePx);
+        int plateW = mPreviewBackground.getPreviewWidth() > 0
+                ? mPreviewBackground.getPreviewWidth() : plateSize;
+        int plateH = mPreviewBackground.getPreviewHeight() > 0
+                ? mPreviewBackground.getPreviewHeight() : plateSize;
+
+        // Open runs before the next layout pass; force measure/layout so content width
+        // and child bounds are valid for start-pose math (large folders were worst).
+        if (mIsOpening) {
+            ensureFolderLaidOutForAnim();
+        }
+
+        // Close: workspace is still at 0.92 when we build animators, but it restores to 1.0
+        // before icon springs finish. Measure FolderIcon at the FINAL scale so landing
+        // matches the settled preview (Oppo snaps workspace to state scale before measure).
+        Workspace<?> workspace = mLauncher.getWorkspace();
+        View hotseat = mLauncher.getHotseat();
+        float savedWsSx = workspace.getScaleX();
+        float savedWsSy = workspace.getScaleY();
+        float savedHsSx = hotseat.getScaleX();
+        float savedHsSy = hotseat.getScaleY();
+        if (!mIsOpening) {
+            workspace.setScaleX(1f);
+            workspace.setScaleY(1f);
+            hotseat.setScaleX(1f);
+            hotseat.setScaleY(1f);
+        }
 
         float[] folderIconLoc = new float[2];
         float scaleRel = mLauncher.getDragLayer()
                 .getDescendantCoordRelativeToSelf(mFolderIcon, folderIconLoc);
-        float folderIconCenterX = ((folderIconSizePx / 2f) + mPreviewBackground.getOffsetX())
+        float folderIconCenterX = ((plateW / 2f) + mPreviewBackground.getOffsetX())
                 * scaleRel + folderIconLoc[0];
-        float folderIconCenterY = ((folderIconSizePx / 2f) + mPreviewBackground.getOffsetY())
+        float folderIconCenterY = ((plateH / 2f) + mPreviewBackground.getOffsetY())
                 * scaleRel + folderIconLoc[1];
 
+        // ColorOS getFolderDistance: preview-plate center vs folder content center.
         float[] contentLoc = new float[2];
         Utilities.getDescendantCoordRelativeToAncestor(mContent, mFolder, contentLoc, false);
-        BaseDragLayer.LayoutParams folderLp =
-                (BaseDragLayer.LayoutParams) mFolder.getLayoutParams();
+        com.android.launcher3.views.BaseDragLayer.LayoutParams folderLp =
+                (com.android.launcher3.views.BaseDragLayer.LayoutParams) mFolder.getLayoutParams();
         float contentCenterX = contentLoc[0] + folderLp.x + mContent.getWidth() / 2f;
         float contentCenterY = contentLoc[1] + folderLp.y + mContent.getHeight() / 2f;
         float[] folderDistance = new float[]{
                 folderIconCenterX - contentCenterX,
                 folderIconCenterY - contentCenterY
         };
+
+        if (!mIsOpening) {
+            workspace.setScaleX(savedWsSx);
+            workspace.setScaleY(savedWsSy);
+            hotseat.setScaleX(savedHsSx);
+            hotseat.setScaleY(savedHsSy);
+        }
 
         int needX = folderIconCenterX <= dp.availableWidthPx * ONE_THIRD ? 1
                 : (folderIconCenterX <= dp.availableWidthPx * TWO_THIRD ? 2 : 3);
@@ -265,6 +341,9 @@ public class HxyFolderAnimationManager {
         int previewCount = previewItems.size();
         int firstPagePreviewCount = isOnFirstPage
                 ? previewCount : ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
+        // Oppo requireScaleChild: indices beyond the closed-folder preview param count.
+        int previewParamCount = Math.min(previewCount,
+                ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW);
 
         int childCount = container.getChildCount();
         int lastCellY = childCount == 0 ? 0
@@ -277,6 +356,9 @@ public class HxyFolderAnimationManager {
                 .getLayoutParams()).getCellX());
 
         int maxLevelClose = getMaxLevel(4 - needX, 4 - needY, lastCellY, lastCellX);
+        int iconSizePx = dp.iconSizePx;
+        int folderCellWidthPx = dp.folderCellWidthPx;
+        int folderCellHeightPx = dp.folderCellHeightPx;
 
         for (int i = 0; i < childCount; i++) {
             View child = container.getChildAt(i);
@@ -287,39 +369,37 @@ public class HxyFolderAnimationManager {
             CellLayoutLayoutParams btvLp = (CellLayoutLayoutParams) btv.getLayoutParams();
             btvLp.isLockedToGrid = true;
             container.setupLp(btv);
+            if (btv.getWidth() <= 0 || btv.getHeight() <= 0) {
+                container.measureChild(btv);
+            }
 
             int previewIndex = previewItems.indexOf(btv);
             boolean inPreview = previewIndex >= 0
                     && previewIndex < ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
-            float previewScale;
-            float previewTransX;
-            float previewTransY;
+            // Oppo requireScaleChild: indices past closed-preview param count.
+            boolean overflow = i >= previewParamCount;
+            // Preview → matching 3×3 slot. Overflow open: stack under last preview
+            // icon (Oppo stacked params). Overflow close: plate-center (≥ MAX).
+            int paramIndex;
             if (inPreview) {
-                rule.computePreviewItemDrawingParams(previewIndex, firstPagePreviewCount, mTmpParams);
-                previewScale = mTmpParams.scale;
-                previewTransX = mTmpParams.transX;
-                previewTransY = mTmpParams.transY;
+                paramIndex = previewIndex;
+            } else if (mIsOpening) {
+                paramIndex = ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW - 1;
             } else {
-                // ColorOS requireScaleChild → start tiny when not part of closed preview.
-                previewScale = rule.scaleForItem(firstPagePreviewCount) * OPEN_ANIM_SCALE_RATIO;
-                previewTransX = folderIconSizePx / 2f;
-                previewTransY = folderIconSizePx / 2f;
+                paramIndex = Math.max(i, ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW);
             }
+            rule.computePreviewItemDrawingParams(paramIndex, firstPagePreviewCount, mTmpParams);
 
-            float f30 = inPreview ? 1f : OPEN_ANIM_SCALE_RATIO;
-            float width = ((((mContent.getWidth() / 2f) - (folderCellWidthPx / 2f))
-                    - btvLp.x)
-                    - mContent.getPaddingLeft())
-                    - cellLayout.getPaddingLeft()
-                    - ((((folderIconSizePx - (iconSizePx * previewScale)) / 2f) - previewTransX)
-                    * scaleRel);
-            float height = ((((mContent.getHeight() / 2f) - (folderCellHeightPx / 2f))
-                    - btvLp.y)
-                    - mContent.getPaddingTop())
-                    - cellLayout.getPaddingTop();
-            float f35 = (folderIconSizePx / 2f) - ((previewScale * folderCellHeightPx) / 2f);
-            float yOffset = height - ((((btv.getPaddingTop() * previewScale) + f35) - previewTransY)
-                    * scaleRel);
+            float previewTransX = mTmpParams.transX;
+            float previewTransY = mTmpParams.transY;
+            // params.scale is ColorOS plate fraction (~0.18).
+            float animScale = mTmpParams.scale;
+            float previewIconSize = rule.getIconSize() * animScale;
+            // Oppo requireScaleChild → OPEN_ANIM_SCALE_RATIO (0.2).
+            float f30 = overflow ? OPEN_ANIM_SCALE_RATIO : 1f;
+            float hotseatScale = 1f;
+            // Lower index draws above so overflow stacked under slot 8 stays covered.
+            btv.setZ(-i);
 
             float startTx;
             float startTy;
@@ -330,24 +410,45 @@ public class HxyFolderAnimationManager {
             float bounce;
             float response;
 
-            int level = getLevel(btvLp.getCellX(), btvLp.getCellY(), needX, needY,
+            int level = mIsOpening
+                    ? getLevel(btvLp.getCellX(), btvLp.getCellY(), needX, needY,
+                    lastCellY, lastCellX)
+                    : getLevel(btvLp.getCellX(), btvLp.getCellY(), 4 - needX, 4 - needY,
                     lastCellY, lastCellX);
+
             if (mIsOpening) {
-                startTx = width + folderDistance[0];
-                startTy = yOffset + folderDistance[1];
-                startScale = previewScale * scaleRel * f30;
+                // Oppo: spring from preview (or stacked last-slot ×0.2 for overflow)
+                // to open grid. DragLayer landing matches drawn plate slots.
+                float[] previewToBtv = computePreviewLandingTranslation(
+                        btv, previewTransX, previewTransY,
+                        previewIconSize * f30 * hotseatScale,
+                        folderIconLoc, scaleRel);
+                startTx = previewToBtv[0];
+                startTy = previewToBtv[1];
+                startScale = previewToBtv[2];
                 endTx = 0f;
                 endTy = 0f;
                 endScale = 1f;
                 bounce = OPEN_TRANS_BOUNCE;
-                response = OPEN_TRANS_RESPONSE; // level * 0 response delay unused (ICON_RESPONSE_DELAY=0)
+                response = OPEN_TRANS_RESPONSE;
+                btv.setTranslationX(startTx);
+                btv.setTranslationY(startTy);
+                btv.setScaleX(startScale);
+                btv.setScaleY(startScale);
+                btv.setAlpha(1f);
+                btv.setTextAlpha(0f);
             } else {
+                // Close: DragLayer mapping so end pose matches drawn preview slots.
+                float[] previewToBtv = computePreviewLandingTranslation(
+                        btv, previewTransX, previewTransY,
+                        previewIconSize * f30 * hotseatScale,
+                        folderIconLoc, scaleRel);
                 startTx = btv.getTranslationX();
                 startTy = btv.getTranslationY();
                 startScale = btv.getScaleX();
-                endTx = width + folderDistance[0];
-                endTy = yOffset + folderDistance[1];
-                endScale = previewScale * scaleRel * f30;
+                endTx = previewToBtv[0];
+                endTy = previewToBtv[1];
+                endScale = previewToBtv[2];
                 float t = ((level + 1f) / (maxLevelClose + 1f));
                 bounce = Utilities.mapRange(t, CLOSE_TRANS_BOUNCE_MAX, CLOSE_TRANS_BOUNCE_MIN);
                 response = CLOSE_TRANS_RESPONSE;
@@ -366,7 +467,8 @@ public class HxyFolderAnimationManager {
                         btv.setTranslationY(sTy);
                         btv.setScaleX(sSc);
                         btv.setScaleY(sSc);
-                        btv.setAlpha(0f);
+                        btv.setAlpha(1f);
+                        btv.setTextAlpha(0f);
                     }
                 }
             });
@@ -375,22 +477,187 @@ public class HxyFolderAnimationManager {
                     startTx, endTx, bounce, response, 0.5f);
             playSpringOnGate(gate, btv, COUIDynamicAnimation.TRANSLATION_Y,
                     startTy, endTy, bounce, response, 0.5f);
-            playSpringOnGate(gate, btv, COUIDynamicAnimation.SCALE_X,
-                    startScale, endScale, bounce, response,
-                    COUIDynamicAnimation.MIN_VISIBLE_CHANGE_SCALE);
-            playSpringOnGate(gate, btv, COUIDynamicAnimation.SCALE_Y,
-                    startScale, endScale, bounce, response,
-                    COUIDynamicAnimation.MIN_VISIBLE_CHANGE_SCALE);
-            playSpringOnGate(gate, btv, COUIDynamicAnimation.ALPHA,
+            playScaleSpringOnGate(gate, btv, startScale, endScale, bounce, response);
+            playTextAlphaSpringOnGate(gate, btv,
                     mIsOpening ? 0f : 1f, mIsOpening ? 1f : 0f,
-                    ICON_ALPHA_BOUNCE, ICON_ALPHA_RESPONSE,
-                    COUIDynamicAnimation.MIN_VISIBLE_CHANGE_ALPHA);
+                    ICON_ALPHA_BOUNCE, ICON_ALPHA_RESPONSE);
+
+            if (!mIsOpening) {
+                mIconEndStates.add(new IconEndState(btv, endTx, endTy, endScale, 0f));
+            }
         }
     }
 
     private void updatePivot(BubbleTextView btv) {
-        btv.setPivotX(btv.getMeasuredWidth() / 2f);
-        btv.setPivotY(btv.getPaddingTop() + btv.getIconSize() / 2f);
+        // ColorOS OplusFolderAnimationManager: pivot at view center.
+        btv.setPivotX(btv.getWidth() / 2f);
+        btv.setPivotY(btv.getHeight() / 2f);
+    }
+
+    /** Measure/layout Folder using DragLayer LayoutParams so open start poses are valid. */
+    private void ensureFolderLaidOutForAnim() {
+        com.android.launcher3.views.BaseDragLayer.LayoutParams lp =
+                (com.android.launcher3.views.BaseDragLayer.LayoutParams) mFolder.getLayoutParams();
+        if (lp == null) {
+            return;
+        }
+        int w = lp.width > 0 ? lp.width : mFolder.getMeasuredWidth();
+        int h = lp.height > 0 ? lp.height : mFolder.getMeasuredHeight();
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+        int wSpec = View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY);
+        int hSpec = View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY);
+        mFolder.measure(wSpec, hSpec);
+        int left = lp.x;
+        int top = lp.y;
+        mFolder.layout(left, top, left + mFolder.getMeasuredWidth(),
+                top + mFolder.getMeasuredHeight());
+        // Ensure current page children have real bounds for DragLayer mapping.
+        CellLayout cellLayout = mContent.getCurrentCellLayout();
+        if (cellLayout != null) {
+            ShortcutAndWidgetContainer container = cellLayout.getShortcutsAndWidgets();
+            if (container != null) {
+                for (int i = 0; i < container.getChildCount(); i++) {
+                    View child = container.getChildAt(i);
+                    if (child.getWidth() <= 0 || child.getHeight() <= 0) {
+                        container.measureChild(child);
+                        // Position from layout params if layout() hasn't assigned bounds yet.
+                        if (child.getLayoutParams() instanceof CellLayoutLayoutParams) {
+                            CellLayoutLayoutParams clp =
+                                    (CellLayoutLayoutParams) child.getLayoutParams();
+                            if (clp.width > 0 && clp.height > 0) {
+                                child.layout(clp.x, clp.y, clp.x + clp.width, clp.y + clp.height);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Translation/scale that places {@code btv}'s icon on the FolderIcon preview slot.
+     * Uses DragLayer mapping so landing matches {@link PreviewItemManager#drawPreviewItem}
+     * regardless of plate vs {@code iconSizePx} differences.
+     *
+     * @return float[]{tx, ty, scale}
+     */
+    private float[] computePreviewLandingTranslation(BubbleTextView btv,
+            float previewTransX, float previewTransY, float previewIconSize,
+            float[] folderIconLoc, float folderIconScaleRel) {
+        float previewLeft = folderIconLoc[0]
+                + (mPreviewBackground.getBasePreviewOffsetX() + previewTransX)
+                * folderIconScaleRel;
+        float previewTop = folderIconLoc[1]
+                + (mPreviewBackground.getBasePreviewOffsetY() + previewTransY)
+                * folderIconScaleRel;
+        float previewSizeOnScreen = previewIconSize * folderIconScaleRel;
+
+        float saveTx = btv.getTranslationX();
+        float saveTy = btv.getTranslationY();
+        float saveSx = btv.getScaleX();
+        float saveSy = btv.getScaleY();
+        btv.setTranslationX(0f);
+        btv.setTranslationY(0f);
+        btv.setScaleX(1f);
+        btv.setScaleY(1f);
+
+        float[] origin = new float[2];
+        float btvScaleRel = mLauncher.getDragLayer()
+                .getDescendantCoordRelativeToSelf(btv, origin);
+
+        Rect iconBounds = new Rect();
+        btv.getIconBounds(iconBounds);
+        float cx = btv.getWidth() / 2f;
+        float cy = btv.getHeight() / 2f;
+        float iconSizeOnScreen = Math.max(1, btv.getIconSize()) * btvScaleRel;
+        float scale = previewSizeOnScreen / iconSizeOnScreen;
+        // Never land larger than the open icon; clamp pathological measure failures.
+        if (!(scale > 0f) || Float.isNaN(scale)) {
+            scale = previewIconSize / Math.max(1, btv.getIconSize());
+        }
+        scale = Math.min(scale, 1f);
+
+        // View maps local point p → parent: (p - pivot) * scale + pivot + translation
+        float iconLeftAtScale = cx + (iconBounds.left - cx) * scale;
+        float iconTopAtScale = cy + (iconBounds.top - cy) * scale;
+        float tx = previewLeft - origin[0] - iconLeftAtScale * btvScaleRel;
+        float ty = previewTop - origin[1] - iconTopAtScale * btvScaleRel;
+        // translation is in the BTV parent's space; convert from DragLayer deltas.
+        if (btvScaleRel != 0f) {
+            tx /= btvScaleRel;
+            ty /= btvScaleRel;
+        }
+
+        btv.setTranslationX(saveTx);
+        btv.setTranslationY(saveTy);
+        btv.setScaleX(saveSx);
+        btv.setScaleY(saveSy);
+        return new float[]{tx, ty, scale};
+    }
+
+    private void playScaleSpringOnGate(ValueAnimator gate, BubbleTextView target,
+            float start, float end, float bounce, float response) {
+        COUISpringForce force = new COUISpringForce(end)
+                .setBounce(bounce)
+                .setResponse(response);
+        COUISpringAnimation spring = new COUISpringAnimation(new FloatValueHolder(start));
+        spring.setSpring(force);
+        spring.setStartValue(start);
+        spring.setMinimumVisibleChange(COUIDynamicAnimation.MIN_VISIBLE_CHANGE_SCALE);
+        spring.addUpdateListener((animation, value, velocity) -> {
+            target.setScaleX(value);
+            target.setScaleY(value);
+        });
+        mRunningSprings.add(spring);
+        gate.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                spring.setStartValue(start);
+                spring.animateToFinalPosition(end);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                if (spring.isRunning()) {
+                    spring.cancel();
+                }
+            }
+        });
+    }
+
+    /** ColorOS: spring drives BubbleTextView.setTextAlpha, not View.ALPHA. */
+    private void playTextAlphaSpringOnGate(ValueAnimator gate, BubbleTextView target,
+            float start, float end, float bounce, float response) {
+        COUISpringForce force = new COUISpringForce(end)
+                .setBounce(bounce)
+                .setResponse(response);
+        COUISpringAnimation spring = new COUISpringAnimation(new FloatValueHolder(start));
+        spring.setSpring(force);
+        spring.setStartValue(start);
+        spring.setMinimumVisibleChange(COUIDynamicAnimation.MIN_VISIBLE_CHANGE_ALPHA);
+        spring.addUpdateListener((animation, value, velocity) -> target.setTextAlpha(value));
+        spring.addEndListener((animation, canceled, value, velocity) -> {
+            if (!canceled) {
+                target.setTextAlpha(end);
+            }
+        });
+        mRunningSprings.add(spring);
+        gate.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                spring.setStartValue(start);
+                spring.animateToFinalPosition(end);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                if (spring.isRunning()) {
+                    spring.cancel();
+                }
+            }
+        });
     }
 
     private void playSpringOnGate(ValueAnimator gate, View target,
@@ -420,7 +687,73 @@ public class HxyFolderAnimationManager {
         });
     }
 
+    /**
+     * ColorOS {@code OplusFolderAnimationManager.getFolderHeaderAnimator}: open alpha is remapped
+     * so the title stays invisible until the spring progress passes {@link #TEXT_DELAY_PERCENT}.
+     */
+    private void playHeaderAlphaSpringOnGate(ValueAnimator gate, View header,
+            float start, float end, float bounce, float response) {
+        COUISpringForce force = new COUISpringForce(end)
+                .setBounce(bounce)
+                .setResponse(response);
+        COUISpringAnimation spring = new COUISpringAnimation(new FloatValueHolder(start));
+        spring.setSpring(force);
+        spring.setStartValue(start);
+        spring.setMinimumVisibleChange(COUIDynamicAnimation.MIN_VISIBLE_CHANGE_ALPHA);
+        spring.addUpdateListener((animation, value, velocity) -> {
+            float alpha = value;
+            if (mIsOpening) {
+                alpha = value < TEXT_DELAY_PERCENT
+                        ? 0f
+                        : (value - TEXT_DELAY_PERCENT) / (1f - TEXT_DELAY_PERCENT);
+            }
+            header.setAlpha(alpha);
+        });
+        spring.addEndListener((animation, canceled, value, velocity) -> {
+            if (!canceled) {
+                header.setAlpha(mIsOpening ? 1f : 0f);
+            }
+        });
+        mRunningSprings.add(spring);
+        gate.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                spring.setStartValue(start);
+                spring.animateToFinalPosition(end);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                if (spring.isRunning()) {
+                    spring.cancel();
+                }
+            }
+        });
+    }
+
+    private void finishSpringsAtFinalPosition() {
+        for (IconEndState state : mIconEndStates) {
+            state.view.setTranslationX(state.tx);
+            state.view.setTranslationY(state.ty);
+            state.view.setScaleX(state.scale);
+            state.view.setScaleY(state.scale);
+            state.view.setAlpha(1f);
+            state.view.setTextAlpha(state.textAlpha);
+        }
+        mIconEndStates.clear();
+        for (COUISpringAnimation spring : mRunningSprings) {
+            if (spring.isRunning()) {
+                if (spring.canSkipToEnd()) {
+                    spring.skipToEnd();
+                }
+                spring.cancel();
+            }
+        }
+        mRunningSprings.clear();
+    }
+
     private void cancelSprings() {
+        mIconEndStates.clear();
         for (COUISpringAnimation spring : mRunningSprings) {
             if (spring.isRunning()) {
                 spring.cancel();
@@ -445,6 +778,12 @@ public class HxyFolderAnimationManager {
             child.setScaleX(1f);
             child.setScaleY(1f);
             child.setAlpha(1f);
+            if (child instanceof BubbleTextView) {
+                ((BubbleTextView) child).setTextAlpha(1f);
+            }
+        }
+        if (mFolder.mHeader != null) {
+            mFolder.mHeader.setAlpha(1f);
         }
         if (mFolder.mFolderName != null) {
             mFolder.mFolderName.setAlpha(1f);
