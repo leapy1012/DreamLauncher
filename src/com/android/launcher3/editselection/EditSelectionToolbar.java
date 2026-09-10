@@ -10,19 +10,31 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.dragndrop.DragLayer;
+import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
+import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
+import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
 
 /**
  * Oppo {@code ToggleStateToolbar}: Cancel | N selected | Done over the workspace in edit mode.
  */
 public class EditSelectionToolbar extends FrameLayout {
 
+    /** Oppo {@code PressFeedbackButton.crossFadeTextChange}. */
+    private static final float HIDE_ALPHA_RESPONSE = 0.15f;
+    private static final float SHOW_ALPHA_RESPONSE = 0.2f;
+    private static final float TEXT_MID_ALPHA = 20f / 255f;
+    private static final long APPLY_TEXT_DELAY_MS = 187L;
+
     private TextView mCancel;
     private TextView mTitle;
     private TextView mDone;
+    @Nullable
+    private COUISpringAnimation mTextSpring;
 
     public EditSelectionToolbar(Context context) {
         this(context, null);
@@ -117,6 +129,7 @@ public class EditSelectionToolbar extends FrameLayout {
 
     /**
      * Reuse this same toolbar for ToggleBar Layout so Apply sits on the Done button.
+     * Oppo delays ops-button text morph by {@code TOGGLE_BAR_OPS_BTN_DELAY} (187ms).
      */
     public void showLayoutMode(OnClickListener cancel, OnClickListener apply) {
         applyPillBackground(mCancel);
@@ -126,7 +139,6 @@ public class EditSelectionToolbar extends FrameLayout {
         mTitle.setVisibility(VISIBLE);
         mTitle.setText(R.string.launcher_layout);
         mDone.setVisibility(VISIBLE);
-        mDone.setText(R.string.apply);
         setCancelClickListener(cancel);
         setDoneClickListener(apply);
         setVisibility(VISIBLE);
@@ -135,13 +147,56 @@ public class EditSelectionToolbar extends FrameLayout {
         if (getParent() instanceof DragLayer dragLayer) {
             dragLayer.bringChildToFront(this);
         }
+        mDone.removeCallbacks(mCrossFadeToApply);
+        mDone.postDelayed(mCrossFadeToApply, APPLY_TEXT_DELAY_MS);
     }
 
+    private final Runnable mCrossFadeToApply = () -> crossFadeDoneText(R.string.apply);
+
     public void restoreEditMode() {
+        mDone.removeCallbacks(mCrossFadeToApply);
+        cancelTextSpring();
+        mDone.setAlpha(1f);
         mDone.setText(R.string.edit_selection_done);
     }
 
+    /** Oppo {@code PressFeedbackButton.crossFadeTextChange}: fade to ~20/255, swap, fade in. */
+    private void crossFadeDoneText(@StringRes int textRes) {
+        cancelTextSpring();
+        COUISpringForce hideForce = new COUISpringForce(TEXT_MID_ALPHA)
+                .setBounce(0f)
+                .setResponse(HIDE_ALPHA_RESPONSE);
+        mTextSpring = new COUISpringAnimation(mDone, COUIDynamicAnimation.ALPHA, TEXT_MID_ALPHA);
+        mTextSpring.setSpring(hideForce);
+        mTextSpring.setStartValue(mDone.getAlpha());
+        mTextSpring.setMinimumVisibleChange(COUIDynamicAnimation.MIN_VISIBLE_CHANGE_ALPHA);
+        mTextSpring.addEndListener((anim, canceled, value, velocity) -> {
+            if (canceled) {
+                return;
+            }
+            mDone.setText(textRes);
+            COUISpringForce showForce = new COUISpringForce(1f)
+                    .setBounce(0f)
+                    .setResponse(SHOW_ALPHA_RESPONSE);
+            mTextSpring = new COUISpringAnimation(mDone, COUIDynamicAnimation.ALPHA, 1f);
+            mTextSpring.setSpring(showForce);
+            mTextSpring.setStartValue(TEXT_MID_ALPHA);
+            mTextSpring.setMinimumVisibleChange(COUIDynamicAnimation.MIN_VISIBLE_CHANGE_ALPHA);
+            mTextSpring.start();
+        });
+        mTextSpring.start();
+    }
+
+    private void cancelTextSpring() {
+        if (mTextSpring != null) {
+            mTextSpring.cancel();
+            mTextSpring = null;
+        }
+    }
+
     public void hide() {
+        mDone.removeCallbacks(mCrossFadeToApply);
+        cancelTextSpring();
         setVisibility(GONE);
     }
 
@@ -181,5 +236,12 @@ public class EditSelectionToolbar extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         updateLayoutPosition();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        mDone.removeCallbacks(mCrossFadeToApply);
+        cancelTextSpring();
+        super.onDetachedFromWindow();
     }
 }

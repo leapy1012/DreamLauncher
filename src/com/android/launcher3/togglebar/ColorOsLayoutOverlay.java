@@ -4,7 +4,6 @@ import static com.android.launcher3.LauncherState.NORMAL;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Color;
@@ -18,6 +17,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.graphics.drawable.Drawable;
 import android.widget.LinearLayout;
@@ -29,7 +29,6 @@ import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
-import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.Insettable;
 import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.InvariantDeviceProfile.GridOption;
@@ -44,6 +43,9 @@ import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.util.SystemUiController;
 import com.android.launcher3.views.OptionsDialogView;
 import com.android.launcher3.widget.LauncherAppWidgetHostView;
+import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
+import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
+import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
 import com.coui.appcompat.couiswitch.COUISwitch;
 
 import java.util.ArrayList;
@@ -57,10 +59,10 @@ import java.util.List;
 public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insettable {
 
     private static final int SHEET_EXTRA_BOTTOM_DP = 12;
-    /** Oppo {@code LayoutSpringAnimationHelper} fade-out / fade-in. */
-    private static final float PREVIEW_FADE_SCALE = 0.9f;
-    private static final long PREVIEW_FADE_OUT_MS = 180;
-    private static final long PREVIEW_FADE_IN_MS = 220;
+    /** Oppo panel enter/exit spring (sheet translation). */
+    private static final float SHEET_SPRING_RESPONSE = 0.3f;
+    private static final long OPTIONS_BAR_FADE_MS = 180L;
+    private static final long APPLY_TEXT_DELAY_MS = 187L;
 
     private Launcher mLauncher;
     private View mSheet;
@@ -76,8 +78,11 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
     private boolean mRestoreNavContrast = true;
     private final List<SavedIcon> mSavedIcons = new ArrayList<>();
     private final List<SavedPage> mSavedPages = new ArrayList<>();
+    private final LayoutSpringAnimationHelper mPreviewSpring = new LayoutSpringAnimationHelper();
     @Nullable
-    private Animator mPreviewAnimator;
+    private COUISpringAnimation mSheetSpring;
+    @Nullable
+    private Animator mOptionsBarAnimator;
 
     public ColorOsLayoutOverlay(Context context) {
         this(context, null);
@@ -154,6 +159,73 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         hideEditChrome();
         setWidgetsVisible(false);
         snapshotIcons();
+        animateSheetIn();
+    }
+
+    /** Oppo COUIBottomSheetDialog slide-up (spring response 0.3). */
+    private void animateSheetIn() {
+        if (mSheet == null) {
+            return;
+        }
+        mSheet.setVisibility(INVISIBLE);
+        mSheet.getViewTreeObserver().addOnGlobalLayoutListener(
+                new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        mSheet.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        float h = mSheet.getHeight();
+                        if (h <= 0) {
+                            mSheet.setVisibility(VISIBLE);
+                            return;
+                        }
+                        mSheet.setTranslationY(h);
+                        mSheet.setVisibility(VISIBLE);
+                        startSheetSpring(h, 0f, null);
+                    }
+                });
+    }
+
+    private void animateSheetOut(@Nullable Runnable onEnd) {
+        if (mSheet == null) {
+            if (onEnd != null) {
+                onEnd.run();
+            }
+            return;
+        }
+        float h = Math.max(mSheet.getHeight(), mSheet.getTranslationY());
+        if (h <= 0) {
+            if (onEnd != null) {
+                onEnd.run();
+            }
+            return;
+        }
+        startSheetSpring(mSheet.getTranslationY(), h, onEnd);
+    }
+
+    private void startSheetSpring(float from, float to, @Nullable Runnable onEnd) {
+        cancelSheetSpring();
+        COUISpringForce force = new COUISpringForce(to)
+                .setBounce(0f)
+                .setResponse(SHEET_SPRING_RESPONSE);
+        mSheetSpring = new COUISpringAnimation(mSheet, COUIDynamicAnimation.TRANSLATION_Y, to);
+        mSheetSpring.setSpring(force);
+        mSheetSpring.setStartValue(from);
+        mSheetSpring.setMinimumVisibleChange(1f);
+        if (onEnd != null) {
+            mSheetSpring.addEndListener((a, canceled, v, vel) -> {
+                if (!canceled) {
+                    onEnd.run();
+                }
+            });
+        }
+        mSheetSpring.start();
+    }
+
+    private void cancelSheetSpring() {
+        if (mSheetSpring != null) {
+            mSheetSpring.cancel();
+            mSheetSpring = null;
+        }
     }
 
     private void inflateTiles() {
@@ -230,50 +302,46 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         if (workspace == null) {
             return;
         }
-        CellLayout current = workspace.getPageAt(workspace.getCurrentPage()) instanceof CellLayout cell
-                ? cell : null;
+        List<View> pages = collectPreviewPages(workspace);
         cancelPreviewAnim();
-        if (!animate || current == null) {
+        if (!animate || pages.isEmpty()) {
             applyPreviewGridNow(cols, rows);
-            resetPageAnim(current);
+            for (View page : pages) {
+                resetPageAnim(page instanceof CellLayout ? (CellLayout) page : null);
+            }
             return;
         }
-        current.setPivotX(workspace.getPivotX());
-        current.setPivotY(Math.max(1, current.getHeight()) / 2f);
-        AnimatorSet fadeOut = new AnimatorSet();
-        fadeOut.playTogether(
-                ObjectAnimator.ofFloat(current, View.ALPHA, current.getAlpha(), 0f),
-                ObjectAnimator.ofFloat(current, View.SCALE_X, current.getScaleX(), PREVIEW_FADE_SCALE),
-                ObjectAnimator.ofFloat(current, View.SCALE_Y, current.getScaleY(), PREVIEW_FADE_SCALE));
-        fadeOut.setDuration(PREVIEW_FADE_OUT_MS);
-        fadeOut.setInterpolator(Interpolators.DEACCEL);
-        fadeOut.addListener(new AnimatorListenerAdapter() {
-            boolean mCanceled;
+        mPreviewSpring.transitionPages(pages,
+                () -> applyPreviewGridNow(cols, rows),
+                null);
+    }
 
-            @Override
-            public void onAnimationCancel(Animator animation) {
-                mCanceled = true;
+    /** Current page plus neighbors — Oppo animates paired pages together. */
+    private List<View> collectPreviewPages(Workspace workspace) {
+        List<View> pages = new ArrayList<>();
+        int current = workspace.getCurrentPage();
+        for (int i = Math.max(0, current - 1);
+                i <= Math.min(workspace.getPageCount() - 1, current + 1); i++) {
+            View page = workspace.getPageAt(i);
+            if (page instanceof CellLayout) {
+                pages.add(page);
             }
+        }
+        return pages;
+    }
 
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                if (mCanceled) {
-                    return;
-                }
-                applyPreviewGridNow(cols, rows);
-                AnimatorSet fadeIn = new AnimatorSet();
-                fadeIn.playTogether(
-                        ObjectAnimator.ofFloat(current, View.ALPHA, 0f, 1f),
-                        ObjectAnimator.ofFloat(current, View.SCALE_X, PREVIEW_FADE_SCALE, 1f),
-                        ObjectAnimator.ofFloat(current, View.SCALE_Y, PREVIEW_FADE_SCALE, 1f));
-                fadeIn.setDuration(PREVIEW_FADE_IN_MS);
-                fadeIn.setInterpolator(Interpolators.ACCEL_DEACCEL);
-                mPreviewAnimator = fadeIn;
-                fadeIn.start();
-            }
-        });
-        mPreviewAnimator = fadeOut;
-        fadeOut.start();
+    private void cancelPreviewAnim() {
+        mPreviewSpring.cancel();
+    }
+
+    private static void resetPageAnim(@Nullable CellLayout cell) {
+        if (cell == null) {
+            return;
+        }
+        cell.animate().cancel();
+        cell.setAlpha(1f);
+        cell.setScaleX(1f);
+        cell.setScaleY(1f);
     }
 
     /**
@@ -334,24 +402,6 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         }
         cell.setTranslationY(translationY);
         cell.setPadding(padHor, padTop, padHor, padBottom);
-    }
-
-    private void cancelPreviewAnim() {
-        if (mPreviewAnimator != null) {
-            mPreviewAnimator.removeAllListeners();
-            mPreviewAnimator.cancel();
-            mPreviewAnimator = null;
-        }
-    }
-
-    private static void resetPageAnim(@Nullable CellLayout cell) {
-        if (cell == null) {
-            return;
-        }
-        cell.animate().cancel();
-        cell.setAlpha(1f);
-        cell.setScaleX(1f);
-        cell.setScaleY(1f);
     }
 
     @Nullable
@@ -567,16 +617,24 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         }
         mIsOpen = false;
         cancelPreviewAnim();
+        cancelSheetSpring();
         ColorOsLayoutSettings.setPreviewHideNames(null);
         if (!mApplied) {
             previewGrid(mOriginalCols, mOriginalRows, false);
             ColorOsLayoutSettings.applyToWorkspace(mLauncher);
         }
-        restoreEditChrome();
-        setWidgetsVisible(true);
-        clearNavBar();
-        if (getParent() instanceof ViewGroup parent) {
-            parent.removeView(this);
+        Runnable finish = () -> {
+            restoreEditChrome();
+            setWidgetsVisible(true);
+            clearNavBar();
+            if (getParent() instanceof ViewGroup parent) {
+                parent.removeView(this);
+            }
+        };
+        if (animate && mSheet != null) {
+            animateSheetOut(finish);
+        } else {
+            finish.run();
         }
     }
 
@@ -652,7 +710,21 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         OptionsDialogView options = AbstractFloatingView.getOpenView(
                 mLauncher, TYPE_OPTIONS_POPUP_DIALOG);
         if (options != null) {
-            options.setVisibility(INVISIBLE);
+            if (mOptionsBarAnimator != null) {
+                mOptionsBarAnimator.cancel();
+            }
+            // Oppo main bar fades out while Layout sheet / Apply chrome come in.
+            ObjectAnimator fade = ObjectAnimator.ofFloat(options, View.ALPHA, options.getAlpha(), 0f);
+            fade.setDuration(OPTIONS_BAR_FADE_MS);
+            fade.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    options.setVisibility(INVISIBLE);
+                    options.setAlpha(1f);
+                }
+            });
+            mOptionsBarAnimator = fade;
+            fade.start();
         }
         mLauncher.getEditSelectionManager().showLayoutChrome(
                 v -> cancelToEditMode(), v -> applyAndExit());
@@ -669,10 +741,19 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
     }
 
     private void restoreEditChrome() {
+        if (mOptionsBarAnimator != null) {
+            mOptionsBarAnimator.cancel();
+            mOptionsBarAnimator = null;
+        }
         OptionsDialogView options = AbstractFloatingView.getOpenView(
                 mLauncher, TYPE_OPTIONS_POPUP_DIALOG);
         if (options != null) {
+            options.setAlpha(0f);
             options.setVisibility(VISIBLE);
+            ObjectAnimator fade = ObjectAnimator.ofFloat(options, View.ALPHA, 0f, 1f);
+            fade.setDuration(OPTIONS_BAR_FADE_MS);
+            mOptionsBarAnimator = fade;
+            fade.start();
         }
         mLauncher.getEditSelectionManager().restoreChromeAfterLayout();
     }
