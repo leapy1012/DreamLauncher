@@ -106,7 +106,8 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
 
     /**
      * ColorOS overflow slot on this page: last cell is a 2×2 stack only when
-     * remaining content on this page exceeds max.
+     * remaining content exceeds a full page. Stack badge aggregates the rest of
+     * {@link #getList()} from this index (see {@code getBFParamsDotInfos}).
      */
     public boolean isCountOut(int position) {
         if (this.mMaxSize <= 0 || this.mList == null) {

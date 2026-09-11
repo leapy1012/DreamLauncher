@@ -664,19 +664,17 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
     }
 
     public void drawDot(Canvas canvas) {
-        boolean isLargeFolder = HxyLargeFolderProxy.isLargeFolder((View) this);
+        // ColorOS: large/extended folders use per-preview-cell badges, not a plate corner badge.
+        if (HxyLargeFolderProxy.isLargeFolder((View) this)) {
+            return;
+        }
         if (!mForceHideDot && ((mDotInfo != null && mDotInfo.hasDot()) || mDotScale > 0)) {
             Rect iconBounds = mDotParams.iconBounds;
             // FolderIcon draws the icon to be top-aligned (with padding) & horizontally-centered
             int iconSize = mActivity.getDeviceProfile().iconSizePx;
             iconBounds.left = (getWidth() - iconSize) / 2;
             iconBounds.right = iconBounds.left + iconSize;
-            if (isLargeFolder) {
-                // 消息圆点位置下移
-                iconBounds.top = getPaddingTop() * 3;
-            } else {
-                iconBounds.top = getPaddingTop();
-            }
+            iconBounds.top = getPaddingTop();
             iconBounds.bottom = iconBounds.top + iconSize;
 
             float iconScale = (float) mBackground.previewSize / iconSize;
@@ -687,7 +685,8 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
             mDotParams.dotColor = mBackground.getDotColor();
             mDotParams.unreadNum = mDotInfo.getNotificationCount();
             if (mDotRenderer.mShowNumber) {
-                DotDrawUtils.draw(canvas, new DotDrawUtils.DotNumParams(mDotRenderer, this.mActivity.getDeviceProfile().iconSizePx, this.mDotParams), isLargeFolder);
+                DotDrawUtils.draw(canvas, new DotDrawUtils.DotNumParams(mDotRenderer,
+                        this.mActivity.getDeviceProfile().iconSizePx, this.mDotParams), false);
             } else {
                 mDotRenderer.draw(canvas, this.mDotParams);
             }

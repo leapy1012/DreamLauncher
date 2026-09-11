@@ -16,6 +16,7 @@ import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.dragndrop.DragView;
+import com.android.launcher3.dot.FolderDotInfo;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.PreviewItemManager;
 import com.android.launcher3.folder.large.listview.BasePageLinearAdapter;
@@ -280,6 +281,17 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         this.mIndicator = findViewById(R.id.folder_icon_indicator);
         this.mAdapter = new HxyLargeFolderAdapter(getContext());
         this.mAdjacentAdapter = new HxyLargeFolderAdapter(getContext());
+        // Per-cell badges may overhang into preview gutters (ColorOS).
+        setClipChildren(false);
+        setClipToPadding(false);
+        if (mListView != null) {
+            mListView.setClipChildren(false);
+            mListView.setClipToPadding(false);
+        }
+        if (mAdjacentListView != null) {
+            mAdjacentListView.setClipChildren(false);
+            mAdjacentListView.setClipToPadding(false);
+        }
         if (mPagingController == null) {
             mPagingController = new HxyLargeFolderPagingController(this);
         }
@@ -603,6 +615,24 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             drawChild(canvas, name, getDrawingTime());
         }
         com.android.launcher3.editselection.EditSelectionFolderBadge.drawIfNecessary(this, canvas);
+    }
+
+    @Override
+    public void setDotInfo(FolderDotInfo dotInfo) {
+        super.setDotInfo(dotInfo);
+        // Preview cells query dots on draw; force them to refresh when aggregates change.
+        invalidatePreviewDotCells(mListView);
+        invalidatePreviewDotCells(mAdjacentListView);
+    }
+
+    private static void invalidatePreviewDotCells(HxyLargeFolderListView list) {
+        if (list == null) {
+            return;
+        }
+        final int count = list.getChildCount();
+        for (int i = 0; i < count; i++) {
+            list.getChildAt(i).invalidate();
+        }
     }
 
     private Path getCachedPlateClipPath() {

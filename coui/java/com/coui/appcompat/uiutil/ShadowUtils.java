@@ -4,6 +4,8 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.view.View;
 
+import androidx.core.content.ContextCompat;
+
 import com.coui.appcompat.R;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.log.COUILog;
@@ -40,12 +42,12 @@ public class ShadowUtils {
         setElevationToView(view, elevationToView, 0, 0, 0);
     }
 
-    public static void setElevationToViewFromLower(View view, int index, int index_2, int index_3) {
+    public static void setElevationToViewFromLower(View view, int elevationPx, int spotShadowColor, int unused) {
         if (view == null) {
             return;
         }
-        view.setOutlineSpotShadowColor(index_2);
-        view.setElevation(index);
+        view.setOutlineSpotShadowColor(spotShadowColor);
+        view.setElevation(elevationPx);
     }
 
     public static void setElevationToViewFromOPlusView(View view, int index, int index_2, int index_3, int index_4, int index_5, int index_6) {
@@ -81,36 +83,82 @@ public class ShadowUtils {
         }
     }
 
-    public static void setElevationToView(View view, int index, int index_2, int index_3, int index_4) {
+    public static void setElevationToView(View view, int level, int elevationPx, int lowerPUnused, int spotShadowColor) {
         if (view == null) {
             COUILog.e(TAG, "setElevationToView view is null");
             return;
         }
+        Resources resources = view.getContext().getResources();
         if (checkOPlusViewElevationSDK()) {
-            Resources resources = view.getContext().getResources();
             int dimensionPixelSize = resources.getDimensionPixelSize(R.dimen.coui_shadow_elevation_default);
-            if (index == 0) {
+            if (level == SHADOW_LV1) {
                 setElevationToViewFromOPlusView(view, dimensionPixelSize, Color.argb(resources.getInteger(R.integer.coui_shadow_color_lv1), 0, 0, 0), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_y_level1), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_z_level1), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_r_level1), resources.getDimensionPixelSize(R.dimen.coui_shadow_blur_r_level1));
                 return;
             }
-            if (index == 1) {
+            if (level == SHADOW_LV2) {
                 setElevationToViewFromOPlusView(view, dimensionPixelSize, Color.argb(resources.getInteger(R.integer.coui_shadow_color_lv2), 0, 0, 0), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_y_level2), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_z_level2), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_r_level2), resources.getDimensionPixelSize(R.dimen.coui_shadow_blur_r_level2));
                 return;
             }
-            if (index == 2) {
+            if (level == SHADOW_LV3) {
                 setElevationToViewFromOPlusView(view, dimensionPixelSize, Color.argb(resources.getInteger(R.integer.coui_shadow_color_lv3), 0, 0, 0), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_y_level3), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_z_level3), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_r_level3), resources.getDimensionPixelSize(R.dimen.coui_shadow_blur_r_level3));
                 return;
-            } else if (index == 3) {
+            } else if (level == SHADOW_LV4) {
                 setElevationToViewFromOPlusView(view, resources.getDimensionPixelSize(R.dimen.coui_shadow_elevation_four), Color.argb(resources.getInteger(R.integer.coui_shadow_color_lv4), 0, 0, 0), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_y_level4), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_z_level4), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_r_level4), resources.getDimensionPixelSize(R.dimen.coui_shadow_blur_r_level4));
                 return;
             } else {
-                if (index == 4) {
+                if (level == SHADOW_LV5) {
                     setElevationToViewFromOPlusView(view, resources.getDimensionPixelSize(R.dimen.coui_shadow_elevation_five), Color.argb(resources.getInteger(R.integer.coui_shadow_color_lv5), 0, 0, 0), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_y_level5), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_z_level5), resources.getDimensionPixelSize(R.dimen.coui_shadow_light_r_level5), resources.getDimensionPixelSize(R.dimen.coui_shadow_blur_r_level5));
                     return;
                 }
                 return;
             }
         }
-        setElevationToViewFromLower(view, index_2, index_4, index_3);
+        // Non-OEM (e.g. MTK AOSP): Oppo ViewExt light-source APIs are absent. Map LV calls
+        // that pass elevation/color as 0 to AOSP elevation + spot color; honor explicit args.
+        int resolvedElevation = elevationPx > 0
+                ? elevationPx
+                : getAospElevationForLevel(resources, level);
+        int resolvedColor = spotShadowColor != 0
+                ? spotShadowColor
+                : getAospSpotShadowColor(view, resources, level);
+        setElevationToViewFromLower(view, resolvedElevation, resolvedColor, lowerPUnused);
+    }
+
+    /**
+     * AOSP elevation sizes aligned with existing COUI non-OEM callers
+     * ({@code RoundFrameLayout}, {@code COUIPopupWindow} use level_five for LV4).
+     */
+    private static int getAospElevationForLevel(Resources resources, int level) {
+        if (level == SHADOW_LV1) {
+            return resources.getDimensionPixelSize(R.dimen.support_shadow_size_level_one);
+        }
+        if (level == SHADOW_LV2) {
+            return resources.getDimensionPixelSize(R.dimen.support_shadow_size_level_for_lowerP);
+        }
+        if (level == SHADOW_LV3) {
+            return resources.getDimensionPixelSize(R.dimen.support_shadow_size_level_three);
+        }
+        if (level == SHADOW_LV4 || level == SHADOW_LV5) {
+            return resources.getDimensionPixelSize(R.dimen.support_shadow_size_level_five);
+        }
+        return resources.getDimensionPixelSize(R.dimen.support_shadow_size_level_three);
+    }
+
+    private static int getAospSpotShadowColor(View view, Resources resources, int level) {
+        int alphaRes;
+        if (level == SHADOW_LV1) {
+            alphaRes = R.integer.coui_shadow_color_lv1;
+        } else if (level == SHADOW_LV2) {
+            alphaRes = R.integer.coui_shadow_color_lv2;
+        } else if (level == SHADOW_LV3) {
+            alphaRes = R.integer.coui_shadow_color_lv3;
+        } else if (level == SHADOW_LV4) {
+            alphaRes = R.integer.coui_shadow_color_lv4;
+        } else if (level == SHADOW_LV5) {
+            alphaRes = R.integer.coui_shadow_color_lv5;
+        } else {
+            return ContextCompat.getColor(view.getContext(), R.color.coui_popup_outline_spot_shadow_color);
+        }
+        return Color.argb(resources.getInteger(alphaRes), 0, 0, 0);
     }
 }

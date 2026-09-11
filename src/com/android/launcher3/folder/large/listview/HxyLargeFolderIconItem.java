@@ -2,18 +2,27 @@ package com.android.launcher3.folder.large.listview;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.ViewParent;
 
 import androidx.annotation.NonNull;
 
+import com.android.launcher3.Utilities;
+import com.android.launcher3.dot.DotDrawUtils;
+import com.android.launcher3.dot.DotInfo;
+import com.android.launcher3.dot.NumberDotRenderer;
+import com.android.launcher3.graphics.IconShape;
 import com.android.launcher3.icons.BitmapInfo;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.big.HxyBubbleTextView;
 import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 import com.android.launcher3.folder.large.HxyLargeFolderUtils;
+import com.android.launcher3.util.Themes;
+import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.R;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,10 +32,16 @@ import java.util.List;
  *
  * When {@code mCountOut} is set (Oppo overflow slot), this draws up to 4 mini-icons
  * in a 2×2 stack with ColorOS gap math — not a full app icon.
+ * Notification badges are drawn per cell (ColorOS BigFolderPreviewItemManager), not on
+ * the folder plate.
  */
 public class HxyLargeFolderIconItem extends HxyBubbleTextView {
     private static final int MAX_OUT_COUNT = 4;
     private static final int SPAN_COUNT = 2;
+    /** ColorOS {@code BigFolderNumBadgeRender.DOT_SCALE} — outward nudge into the gutter. */
+    private static final float STACK_DOT_CORNER_OFFSET_FRAC = 0.05555f;
+    /** ColorOS {@code red_dot_size} (14dp) × {@code dealDotSizePercent(false)} (0.8). */
+    private static final float STACK_DOT_DIAMETER_DP = 14f * 0.8f;
     private String mClassName;
     private final int[] mCoordinateXY;
     private boolean mCountOut;
@@ -36,6 +51,10 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
     private int mBoundPosition = -1;
     private List<WorkspaceItemInfo> mBoundList;
     private int mBoundCellSize = -1;
+    /** Dedicated params — parent {@code HxyCheckBubbleTextView} shadows BTV's NumberDot params. */
+    private final NumberDotRenderer.DrawParams mPreviewDotParams =
+            new NumberDotRenderer.DrawParams(0);
+    private final Paint mStackDotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public HxyLargeFolderIconItem(Context context) {
         this(context, (AttributeSet) null);
@@ -53,6 +72,8 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         this.mCountOut = false;
         this.mIconSize = -1;
         setWillNotDraw(false);
+        // Allow number badges to slightly overhang into preview gutters.
+        setClipToOutline(false);
     }
 
     public void release() {
@@ -72,6 +93,127 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
             this.mDrawableList.get(i).draw(canvas);
         }
         canvas.restoreToCount(save);
+        // ColorOS: per-preview-cell notification badge (plate badge is suppressed).
+        drawPreviewDotIfNecessary(canvas);
+    }
+
+    /**
+     * Mirrors ColorOS {@code BigFolderPreviewItemManager.drawDotIfNecessary}:
+     * <ul>
+     *   <li>Normal cells → that app's {@link DotInfo} (number or red dot)</li>
+     *   <li>Overflow stack → {@code StackedDotInfo}: aggregate remaining apps, but always
+     *       draw a <b>red dot only</b> (never the count)</li>
+     * </ul>
+     */
+    private void drawPreviewDotIfNecessary(Canvas canvas) {
+        ActivityContext activity = ActivityContext.lookupContext(getContext());
+        if (activity == null) {
+            return;
+        }
+        NumberDotRenderer renderer = activity.getDeviceProfile().mDotRendererWorkSpace;
+        if (renderer == null) {
+            return;
+        }
+
+        mPreviewDotParams.scale = 1.0f;
+        mPreviewDotParams.dotColor = Themes.getAttrColor(getContext(), R.attr.notificationDotColor);
+
+        if (mCountOut) {
+            // ColorOS StackedDotInfo.canShowDot() is true for number OR dot → red-dot branch.
+            if (!stackedRangeHasBadge(activity)) {
+                return;
+            }
+            mPreviewDotParams.unreadNum = 0;
+            drawStackedCellRedDot(canvas);
+            return;
+        }
+
+        if (mBoundData == null) {
+            return;
+        }
+        DotInfo dotInfo = activity.getDotInfoForItem(mBoundData);
+        if (dotInfo == null) {
+            return;
+        }
+        int unreadNum = dotInfo.getNotificationCount();
+        if (renderer.mShowNumber && unreadNum <= 0) {
+            return;
+        }
+        mPreviewDotParams.unreadNum = unreadNum;
+        getIconBounds(mPreviewDotParams.iconBounds);
+        Utilities.scaleRectAboutCenter(mPreviewDotParams.iconBounds,
+                IconShape.getNormalizationScale());
+        int iconSize = mIconSize > 0 ? mIconSize : Math.max(getWidth(), 1);
+        if (renderer.mShowNumber) {
+            DotDrawUtils.draw(canvas,
+                    new DotDrawUtils.DotNumParams(renderer, iconSize, mPreviewDotParams),
+                    /* isLargeFolder= */ false);
+        } else {
+            renderer.draw(canvas, mPreviewDotParams);
+        }
+    }
+
+    /**
+     * ColorOS {@code getBFParamsDotInfos}: any badge from the first stacked index through
+     * the end of folder {@code contents} (apps past the 4 minis / later pages).
+     */
+    private boolean stackedRangeHasBadge(ActivityContext activity) {
+        if (mBoundList == null || mBoundPosition < 0) {
+            return false;
+        }
+        for (int i = mBoundList.size() - 1; i >= mBoundPosition; i--) {
+            if (activity.getDotInfoForItem(mBoundList.get(i)) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * ColorOS overflow slot red dot ({@code BigFolderNumBadgeRender.draw}), not workspace
+     * {@link NumberDotRenderer}.
+     * <p>
+     * ColorOS expands the slot by {@code mPreviewSubIconGap} (half the inter-cell gutter),
+     * then pins the dot to the top-right of the slot with a small outward offset so it sits
+     * in the gutter — not on a mini-icon. Our list gap is the full gutter, so half of
+     * {@link PageLinearLayout#getHorizontalSpace()} matches {@code mPreviewSubIconGap}.
+     */
+    private void drawStackedCellRedDot(Canvas canvas) {
+        final int w = Math.max(getWidth(), 1);
+        final int h = Math.max(getHeight(), 1);
+
+        float gapX = 0f;
+        float gapY = 0f;
+        ViewParent parent = getParent();
+        if (parent instanceof PageLinearLayout) {
+            PageLinearLayout list = (PageLinearLayout) parent;
+            // ColorOS: mPreviewSubIconGap = fullGutter / (columns*2) * columns… = half gutter.
+            gapX = list.getHorizontalSpace() * 0.5f;
+            gapY = list.getVerticalSpace() * 0.5f;
+        }
+
+        final float density = getResources().getDisplayMetrics().density;
+        final float dotSize = Math.max(1f, STACK_DOT_DIAMETER_DP * density);
+        final float endOffset = w * STACK_DOT_CORNER_OFFSET_FRAC;
+        final float topOffset = h * STACK_DOT_CORNER_OFFSET_FRAC;
+
+        // Expanded coordinate space: translate(-gap) then iconBounds=(gap,gap,gap+w,gap+h).
+        // Right-align (LTR): same as BigFolderNumBadgeRender.draw.
+        final float iconRight = gapX + w;
+        final float iconTop = gapY;
+        final float containerRight = gapX * 2f + w;
+        float left = Math.min(containerRight - dotSize, (iconRight - dotSize) + endOffset);
+        float top = Math.max(0f, iconTop - topOffset);
+        float centerX = left + dotSize * 0.5f;
+        float centerY = top + dotSize * 0.5f;
+
+        // Convert expanded-space center back to cell-local coords.
+        centerX -= gapX;
+        centerY -= gapY;
+
+        mStackDotPaint.setColor(mPreviewDotParams.dotColor);
+        mStackDotPaint.setStyle(Paint.Style.FILL);
+        canvas.drawCircle(centerX, centerY, dotSize * 0.5f, mStackDotPaint);
     }
 
     public void setCoordinateXY(int x, int y) {

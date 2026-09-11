@@ -211,12 +211,7 @@ public class RoundFrameLayout extends FrameLayout {
             setBackgroundColor(0);
         } else if (clipMode == OUTLINE_CLIP) {
             setClipToOutline(true);
-            if (ShadowUtils.checkOPlusViewElevationSDK()) {
-                ShadowUtils.setElevationToView(this, 3);
-            } else {
-                setElevation(getContext().getResources().getDimensionPixelSize(R.dimen.support_shadow_size_level_five));
-                setOutlineSpotShadowColor(androidx.core.content.ContextCompat.getColor(getContext(), R.color.coui_popup_outline_spot_shadow_color));
-            }
+            ShadowUtils.setElevationToView(this, ShadowUtils.SHADOW_LV4);
             setBackgroundColor(-1);
         }
     }

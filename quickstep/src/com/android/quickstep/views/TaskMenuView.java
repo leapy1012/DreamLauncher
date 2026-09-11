@@ -55,7 +55,6 @@ import com.android.quickstep.views.TaskView.TaskIdAttributeContainer;
 import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
 import com.coui.appcompat.list.COUIForegroundListView;
-import com.coui.appcompat.poplist.DefaultAdapter;
 import com.coui.appcompat.poplist.PopupListItem;
 import com.coui.appcompat.uiutil.ShadowUtils;
 
@@ -64,7 +63,7 @@ import java.util.List;
 
 /**
  * ColorOS-style Recents task ⋮ menu: single COUI popup card ({@link COUIForegroundListView}
- * + {@link DefaultAdapter}), anchored top-right near the menu button — same chrome as Oppo's
+ * + {@link TaskMenuAdapter}), anchored top-right near the menu button — same chrome as Oppo's
  * {@code OplusTaskMenuViewImpl}, without adopting Oppo-only shortcut actions.
  */
 public class TaskMenuView extends AbstractFloatingView {
@@ -175,7 +174,7 @@ public class TaskMenuView extends AbstractFloatingView {
         mActivity.getDragLayer().addView(this);
         mTaskView = taskContainer.getTaskView();
         mTaskContainer = taskContainer;
-        // ColorOS ShadowUtils.e(..., SHADOW_LV4).
+        // ColorOS LV4; ShadowUtils maps to AOSP elevation when Oppo ViewExt is absent.
         ShadowUtils.setElevationToView(this, ShadowUtils.SHADOW_LV4);
         if (!populateAndLayoutMenu()) {
             return false;
@@ -241,10 +240,10 @@ public class TaskMenuView extends AbstractFloatingView {
         addView(content, new LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        DefaultAdapter adapter = new DefaultAdapter(couiContext, mPopupItems);
+        TaskMenuAdapter adapter = new TaskMenuAdapter(couiContext, mPopupItems);
         mListView.setVerticalScrollBarEnabled(false);
         mListView.setHorizontalScrollBarEnabled(false);
-        mListView.setAdapter((ListAdapter) adapter);
+        mListView.setAdapter(adapter);
         mListView.setOnItemClickListener(mItemClickListener);
     }
 
@@ -293,15 +292,11 @@ public class TaskMenuView extends AbstractFloatingView {
 
     private final AdapterView.OnItemClickListener mItemClickListener =
             (parent, view, position, id) -> {
-                int dataIndex = DefaultAdapter.realPositionToDataIndex(position);
-                if (dataIndex < 0 || dataIndex >= mShortcuts.size()) {
+                // TaskMenuAdapter is 1:1 with mShortcuts (same as Oppo OplusTaskMenuAdapter).
+                if (position < 0 || position >= mShortcuts.size()) {
                     return;
                 }
-                // Skip hairline divider rows (odd adapter positions).
-                if ((position & 1) != 0) {
-                    return;
-                }
-                SystemShortcut<?> shortcut = mShortcuts.get(dataIndex);
+                SystemShortcut<?> shortcut = mShortcuts.get(position);
                 if (shortcut != null) {
                     shortcut.onClick(view);
                 }

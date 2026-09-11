@@ -85,12 +85,7 @@ public class COUIPopupWindow extends PopupWindow {
             return;
         }
         setBackgroundDrawable(null);
-        if (ShadowUtils.checkOPlusViewElevationSDK()) {
-            ShadowUtils.setElevationToView(getContentView(), 3);
-        } else {
-            setElevation(mContext.getResources().getDimensionPixelSize(R.dimen.support_shadow_size_level_five));
-            getContentView().setOutlineSpotShadowColor(ContextCompat.getColor(mContext, R.color.coui_popup_outline_spot_shadow_color));
-        }
+        ShadowUtils.setElevationToView(getContentView(), ShadowUtils.SHADOW_LV4);
     }
 
     public void initOutlineRoundRectBackground() {

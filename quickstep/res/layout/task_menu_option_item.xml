@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 1:1 row like Oppo oplus_task_menu_item (not COUI DefaultAdapter item/divider pairs). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/task_menu_item_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:gravity="center_vertical"
+        android:minHeight="@dimen/coui_popup_list_window_item_min_height"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/coui_popup_list_window_item_icon_margin_left"
+        android:paddingTop="@dimen/coui_popup_list_window_item_padding_top_and_bottom"
+        android:paddingEnd="@dimen/coui_popup_list_window_item_icon_margin_left"
+        android:paddingBottom="@dimen/coui_popup_list_window_item_padding_top_and_bottom">
+
+        <ImageView
+            android:id="@id/popup_list_window_item_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginEnd="@dimen/coui_popup_list_window_item_icon_margin_right" />
+
+        <TextView
+            android:id="@id/popup_list_window_item_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-regular"
+            android:maxWidth="@dimen/coui_popup_list_window_item_max_width"
+            android:textAppearance="@style/couiTextAppearanceBodyL"
+            android:textAlignment="viewStart"
+            android:textFontWeight="400" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/task_menu_item_divider"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/coui_popup_list_divider_height"
+        android:layout_marginStart="@dimen/coui_popup_list_default_divider_margin_start_with_icon"
+        android:layout_marginEnd="@dimen/coui_popup_list_window_item_icon_margin_left"
+        android:background="@color/coui_color_disabled_neutral" />
+</LinearLayout>
