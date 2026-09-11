@@ -109,8 +109,23 @@ public abstract class StatefulActivity<STATE_TYPE extends BaseState<STATE_TYPE>>
         }
 
         if (state.hasFlag(FLAG_CLOSE_POPUPS)) {
-            AbstractFloatingView.closeAllOpenViews(this, !state.hasFlag(FLAG_NON_INTERACTIVE));
+            boolean animate = !state.hasFlag(FLAG_NON_INTERACTIVE);
+            int keepOpen = getFloatingViewsKeptOpenOnStateStart(state);
+            if (keepOpen == 0) {
+                AbstractFloatingView.closeAllOpenViews(this, animate);
+            } else {
+                // ColorOS: Overview keeps open folders (unlike stock AOSP).
+                AbstractFloatingView.closeAllOpenViewsExcept(this, animate, keepOpen);
+            }
         }
+    }
+
+    /**
+     * Floating-view types that stay open when {@link #FLAG_CLOSE_POPUPS} applies.
+     * Default closes everything; Launcher keeps folders for Overview.
+     */
+    protected int getFloatingViewsKeptOpenOnStateStart(STATE_TYPE state) {
+        return 0;
     }
 
     /**

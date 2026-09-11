@@ -377,6 +377,12 @@ public class Launcher extends StatefulActivity<LauncherState>
     @Thunk
     ScrimView mScrimView;
 
+    /**
+     * ColorOS: open folder survives Overview. Home may also deliver {@link #onNewIntent} which
+     * would otherwise close it via {@link #closeOpenViews(boolean)}.
+     */
+    private boolean mRetainOpenFolderThroughOverview;
+
     // UI and state for the overview panel
     private View mOverviewPanel;
 
@@ -1249,8 +1255,18 @@ public class Launcher extends StatefulActivity<LauncherState>
     }
 
     @Override
+    protected int getFloatingViewsKeptOpenOnStateStart(LauncherState state) {
+        // ColorOS: pressing Recents leaves an open folder open under Overview.
+        return state.overviewUi ? TYPE_FOLDER : 0;
+    }
+
+    @Override
     public void onStateSetStart(LauncherState state) {
         super.onStateSetStart(state);
+        // ColorOS: mark open folder so Home onNewIntent does not dismiss it under Overview.
+        if (state.overviewUi && Folder.getOpen(this) != null) {
+            setRetainOpenFolderThroughOverview(true);
+        }
         if (mDeferOverlayCallbacks) {
             scheduleDeferredCheck();
         }
@@ -1330,7 +1346,15 @@ public class Launcher extends StatefulActivity<LauncherState>
             }
             AbstractFloatingView topView = AbstractFloatingView.getTopOpenView(Launcher.this);
             if (topView != null) {
-                topView.postDelayed(() -> topView.close(true), delay);
+                // ColorOS: do not auto-dismiss an open folder retained through Overview.
+                if (mRetainOpenFolderThroughOverview && topView instanceof Folder) {
+                    ((Folder) topView).setSuppressedForOverview(false);
+                    setLauncherBlurBg(true);
+                    // Clear immediately so a subsequent desktop Home closes the folder.
+                    mRetainOpenFolderThroughOverview = false;
+                } else {
+                    topView.postDelayed(() -> topView.close(true), delay);
+                }
             }
         }
 
@@ -3523,7 +3547,17 @@ public class Launcher extends StatefulActivity<LauncherState>
     }
 
     protected void closeOpenViews(boolean animate) {
+        if (mRetainOpenFolderThroughOverview) {
+            // ColorOS: survive Home-from-Overview (and empty-tap until we close after NORMAL).
+            AbstractFloatingView.closeAllOpenViewsExcept(this, animate, TYPE_FOLDER);
+            return;
+        }
         AbstractFloatingView.closeAllOpenViews(this, animate);
+    }
+
+    /** Called when an open folder is hidden under Overview (ColorOS keep-open). */
+    public void setRetainOpenFolderThroughOverview(boolean retain) {
+        mRetainOpenFolderThroughOverview = retain;
     }
 
     public Stream<SystemShortcut.Factory> getSupportedShortcuts() {

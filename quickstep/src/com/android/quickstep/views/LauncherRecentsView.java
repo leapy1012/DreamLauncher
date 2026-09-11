@@ -37,6 +37,7 @@ import androidx.annotation.Nullable;
 
 import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.LauncherState;
+import com.android.launcher3.folder.Folder;
 import com.android.launcher3.logging.StatsLogManager;
 import com.android.launcher3.statehandlers.DepthController;
 import com.android.launcher3.statehandlers.DesktopVisibilityController;
@@ -85,8 +86,15 @@ public class LauncherRecentsView extends RecentsView<QuickstepLauncher, Launcher
     public void startHome(boolean animated) {
         StateManager stateManager = mActivity.getStateManager();
         animated &= stateManager.shouldAnimateStateChange();
+        final Folder openFolder = Folder.getOpen(mActivity);
         stateManager.goToState(NORMAL, animated);
-        AbstractFloatingView.closeAllOpenViews(mActivity, animated);
+        if (openFolder == null) {
+            AbstractFloatingView.closeAllOpenViews(mActivity, animated);
+            return;
+        }
+        // ColorOS: dismissing Recents (Home or empty tap) keeps an open folder.
+        AbstractFloatingView.closeAllOpenViewsExcept(
+                mActivity, animated, AbstractFloatingView.TYPE_FOLDER);
     }
 
     @Override

@@ -185,9 +185,11 @@ public class NavBarToHomeTouchController implements TouchController,
             if (mStartState != mEndState) {
                 logHomeGesture();
             }
+            // ColorOS: gesture Home keeps an open folder; only close other floating views.
             AbstractFloatingView topOpenView = AbstractFloatingView.getTopOpenView(mLauncher);
             if (topOpenView != null) {
-                AbstractFloatingView.closeAllOpenViews(mLauncher);
+                AbstractFloatingView.closeAllOpenViewsExcept(
+                        mLauncher, AbstractFloatingView.TYPE_FOLDER);
                 // TODO: add to WW log
             }
             TaskUtils.closeSystemWindowsAsync(CLOSE_SYSTEM_WINDOWS_REASON_RECENTS);

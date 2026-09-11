@@ -59,6 +59,7 @@ import com.android.launcher3.LauncherState.ScaleAndTranslation;
 import com.android.launcher3.anim.PendingAnimation;
 import com.android.launcher3.anim.PropertySetter;
 import com.android.launcher3.anim.SpringAnimationBuilder;
+import com.android.launcher3.folder.Folder;
 import com.android.launcher3.graphics.Scrim;
 import com.android.launcher3.graphics.SysUiScrim;
 import com.android.launcher3.states.EditModeState;
@@ -66,6 +67,8 @@ import com.android.launcher3.states.SpringLoadedState;
 import com.android.launcher3.states.StateAnimationConfig;
 import com.android.launcher3.util.DynamicResource;
 import com.android.systemui.plugins.ResourceProvider;
+
+import com.android.launcher3.R;
 
 /**
  * Manages the animations between each of the workspace states.
@@ -111,17 +114,28 @@ public class WorkspaceStateTransitionAnimation {
      */
     private void setWorkspaceProperty(LauncherState state, PropertySetter propertySetter,
             StateAnimationConfig config) {
+        Folder openFolder = Folder.getOpen(mLauncher);
+        // Retained open folder under Overview→NORMAL: hold companions + folder dim so the
+        // Overview exit does not flash a bright undimmed desktop (white wash).
+        final boolean holdOpenFolderUi = openFolder != null && !state.overviewUi;
+
         ScaleAndTranslation scaleAndTranslation = state.getWorkspaceScaleAndTranslation(mLauncher);
         ScaleAndTranslation hotseatScaleAndTranslation = state.getHotseatScaleAndTranslation(
                 mLauncher);
         ScaleAndTranslation pageIndicatorScaleAndTranslation =
                 state.getPageIndicatorScaleAndTranslation(mLauncher);
-        mNewScale = scaleAndTranslation.scale;
+        mNewScale = holdOpenFolderUi ? 0.92f : scaleAndTranslation.scale;
         PageAlphaProvider pageAlphaProvider = state.getWorkspacePageAlphaProvider(mLauncher);
         final int childCount = mWorkspace.getChildCount();
         for (int i = 0; i < childCount; i++) {
             applyChildState(state, (CellLayout) mWorkspace.getChildAt(i), i, pageAlphaProvider,
                     propertySetter, config);
+            if (holdOpenFolderUi) {
+                // Keep pages invisible while the open folder is still the foreground.
+                propertySetter.setFloat(
+                        ((CellLayout) mWorkspace.getChildAt(i)).getShortcutsAndWidgets(),
+                        VIEW_ALPHA, 0f, LINEAR);
+            }
         }
 
         int elements = state.getVisibleElements(mLauncher);
@@ -140,7 +154,7 @@ public class WorkspaceStateTransitionAnimation {
         }
 
         mWorkspace.setPivotToScaleWithSelf(hotseat);
-        float hotseatScale = hotseatScaleAndTranslation.scale;
+        float hotseatScale = holdOpenFolderUi ? 0.92f : hotseatScaleAndTranslation.scale;
         if (shouldSpring) {
             PendingAnimation pa = (PendingAnimation) propertySetter;
             pa.add(getSpringScaleAnimator(mLauncher, hotseat, hotseatScale,
@@ -154,17 +168,31 @@ public class WorkspaceStateTransitionAnimation {
 
         Interpolator workspaceFadeInterpolator = config.getInterpolator(ANIM_WORKSPACE_FADE,
                 pageAlphaProvider.interpolator);
-        float workspacePageIndicatorAlpha = (elements & WORKSPACE_PAGE_INDICATOR) != 0 ? 1 : 0;
+        float workspacePageIndicatorAlpha = holdOpenFolderUi
+                ? 0f
+                : ((elements & WORKSPACE_PAGE_INDICATOR) != 0 ? 1 : 0);
         propertySetter.setViewAlpha(mLauncher.getWorkspace().getPageIndicator(),
                 workspacePageIndicatorAlpha, workspaceFadeInterpolator);
         Interpolator pageIndicatorScaleInterpolator = config.getInterpolator(ANIM_HOTSEAT_SCALE,
                 scaleInterpolator);
         propertySetter.setFloat(mWorkspace.getPageIndicator(), SCALE_PROPERTY,
-                pageIndicatorScaleAndTranslation.scale, pageIndicatorScaleInterpolator);
+                holdOpenFolderUi ? 0.92f : pageIndicatorScaleAndTranslation.scale,
+                pageIndicatorScaleInterpolator);
         Interpolator hotseatFadeInterpolator = config.getInterpolator(ANIM_HOTSEAT_FADE,
                 workspaceFadeInterpolator);
-        float hotseatIconsAlpha = (elements & HOTSEAT_ICONS) != 0 ? 1 : 0;
+        float hotseatIconsAlpha = holdOpenFolderUi
+                ? 0f
+                : ((elements & HOTSEAT_ICONS) != 0 ? 1 : 0);
         propertySetter.setViewAlpha(hotseat, hotseatIconsAlpha, hotseatFadeInterpolator);
+
+        // ColorOS: keep folder hidden for the whole Overview→NORMAL transition; reveal
+        // only in onStateSetEnd once scrim/companions have settled (avoids white flash).
+        if (openFolder != null) {
+            if (state.overviewUi) {
+                openFolder.setSuppressedForOverview(true);
+            }
+            // else: stay suppressed until Launcher.onStateSetEnd unsuppresses.
+        }
 
         // Update the accessibility flags for hotseat based on launcher state.
         hotseat.setImportantForAccessibility(
@@ -195,12 +223,17 @@ public class WorkspaceStateTransitionAnimation {
                 pageIndicatorScaleAndTranslation.translationY, hotseatTranslationInterpolator);
 
         if (!config.hasAnimationFlag(SKIP_SCRIM)) {
-            setScrim(propertySetter, state, config);
+            setScrim(propertySetter, state, config, holdOpenFolderUi);
         }
     }
 
     public void setScrim(PropertySetter propertySetter, LauncherState state,
             StateAnimationConfig config) {
+        setScrim(propertySetter, state, config, false /* holdOpenFolderUi */);
+    }
+
+    private void setScrim(PropertySetter propertySetter, LauncherState state,
+            StateAnimationConfig config, boolean holdOpenFolderUi) {
         Scrim workspaceDragScrim = mLauncher.getDragLayer().getWorkspaceDragScrim();
         float workspaceBackgroundAlpha = state == BACKGROUND_APP
                 ? SCRIM_PROGRESS.get(workspaceDragScrim)
@@ -212,8 +245,17 @@ public class WorkspaceStateTransitionAnimation {
         propertySetter.setFloat(sysUiScrim, SYSUI_PROGRESS,
                 state.hasFlag(FLAG_HAS_SYS_UI_SCRIM) ? 1 : 0, LINEAR);
 
+        // Never animate Overview dark-wash → TRANSPARENT when a folder stays open — that
+        // dip in scrim alpha is the bright/white flash. Target folder dim from the start.
+        int scrimColor = holdOpenFolderUi
+                ? mLauncher.getColor(R.color.coloros_folder_open_scrim)
+                : state.getWorkspaceScrimColor(mLauncher);
+        if (holdOpenFolderUi) {
+            // Snap first so the first Overview-exit frame is already dimmed.
+            mLauncher.setLauncherBlurBg(true);
+        }
         propertySetter.setViewBackgroundColor(mLauncher.getScrimView(),
-                state.getWorkspaceScrimColor(mLauncher),
+                scrimColor,
                 config.getInterpolator(ANIM_SCRIM_FADE, ACCEL_2));
     }
 

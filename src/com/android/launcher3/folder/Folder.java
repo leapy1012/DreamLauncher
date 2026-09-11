@@ -916,6 +916,9 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     @Override
     protected void handleClose(boolean animate) {
         mIsOpen = false;
+        if (mLauncher != null) {
+            mLauncher.setRetainOpenFolderThroughOverview(false);
+        }
 
         if (!animate && mCurrentAnimator != null && mCurrentAnimator.isRunning()) {
             mCurrentAnimator.cancel();
@@ -932,6 +935,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         if (animate) {
             animateClosed();
         } else {
+            // Non-animated close must still undo open-companion transforms. Hxy open
+            // sets Workspace/Hotseat View.SCALE_* / ALPHA directly; skipping that leave
+            // the desktop stuck faded/scaled (looks like a black/broken home).
+            restoreWorkspaceAfterFolderDismiss();
             closeComplete(false);
             post(this::announceAccessibilityChanges);
             mLauncher.setLauncherBlurBg(false);
@@ -941,6 +948,39 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         // longer occludes the workspace items
         mActivityContext.getDragLayer().sendAccessibilityEvent(
                 AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
+    }
+
+    /**
+     * Snap workspace chrome back after a non-animated folder dismiss.
+     * Matches the end state of {@link HxyFolderAnimationManager} close companions.
+     */
+    private void restoreWorkspaceAfterFolderDismiss() {
+        if (mLauncher == null) {
+            return;
+        }
+        Workspace<?> workspace = mLauncher.getWorkspace();
+        View hotseat = mLauncher.getHotseat();
+        View pageIndicator = workspace != null ? workspace.getPageIndicator() : null;
+        if (workspace != null) {
+            workspace.setAlpha(1f);
+            workspace.setScaleX(1f);
+            workspace.setScaleY(1f);
+            workspace.setTranslationX(0f);
+            workspace.setTranslationY(0f);
+        }
+        if (hotseat != null) {
+            hotseat.setAlpha(1f);
+            hotseat.setScaleX(1f);
+            hotseat.setScaleY(1f);
+            hotseat.setTranslationX(0f);
+            hotseat.setTranslationY(0f);
+        }
+        if (pageIndicator != null) {
+            pageIndicator.setAlpha(1f);
+            pageIndicator.setScaleX(1f);
+            pageIndicator.setScaleY(1f);
+        }
+        resetPivot();
     }
 
     private void cancelRunningAnimations() {
@@ -1045,9 +1085,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             mFolderIcon.setVisibility(View.VISIBLE);
             mFolderIcon.setIconVisible(true);
             mFolderIcon.mFolderName.setTextVisibility(true);
+            // Always clear preview suppress (large-list / small PreviewItemManager).
+            // Gating this on wasAnimated left icons blank after Recents empty-tap close(false).
+            mFolderIcon.onFolderClose(mContent.getCurrentPage());
             if (wasAnimated) {
                 mFolderIcon.animateBgShadowAndStroke();
-                mFolderIcon.onFolderClose(mContent.getCurrentPage());
                 if (mFolderIcon.hasDot()) {
                     mFolderIcon.animateDotScale(0f, 1f);
                 }
@@ -1927,6 +1969,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     @Override
     public boolean onControllerInterceptTouchEvent(MotionEvent ev) {
+        // ColorOS: while Overview is up the folder stays open but must not steal
+        // empty-space taps — RecentsView needs them for startHome().
+        if (isHiddenForOverview()) {
+            return false;
+        }
         BaseDragLayer dl = (BaseDragLayer) getParent();
         if (dl == null) {
             return false;
@@ -1982,6 +2029,9 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (isHiddenForOverview()) {
+            return false;
+        }
         // Keep move tracking when the gesture is handled by the folder view itself.
         if (event.getAction() == MotionEvent.ACTION_MOVE && !mIsTouchMoveEvent) {
             int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
@@ -2004,7 +2054,62 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     @Override
     public boolean canInterceptEventsInSystemGestureRegion() {
-        return true;
+        return !isHiddenForOverview();
+    }
+
+    /**
+     * True while Overview owns the screen: folder remains open (ColorOS) but is not interactive.
+     */
+    private boolean isHiddenForOverview() {
+        return mLauncher != null && mLauncher.getStateManager().getState().overviewUi;
+    }
+
+    /** Show/hide for Overview without closing — alpha alone still receives touches. */
+    public void setSuppressedForOverview(boolean suppressed) {
+        if (suppressed) {
+            setAlpha(0f);
+            setVisibility(INVISIBLE);
+            if (mLauncher != null) {
+                mLauncher.setRetainOpenFolderThroughOverview(true);
+            }
+        } else if (mIsOpen) {
+            setVisibility(VISIBLE);
+            setAlpha(1f);
+            // Overview→NORMAL resets workspace chrome; re-apply open-folder companions + dim.
+            applyOpenWorkspaceCompanions();
+            if (mLauncher != null) {
+                mLauncher.setLauncherBlurBg(true);
+            }
+        }
+    }
+
+    /**
+     * Snap workspace to ColorOS open-folder companion end state (faded / slightly scaled).
+     * Overview state transitions otherwise restore full desktop under an open folder.
+     */
+    public void applyOpenWorkspaceCompanions() {
+        if (mLauncher == null) {
+            return;
+        }
+        final float scale = 0.92f;
+        Workspace<?> workspace = mLauncher.getWorkspace();
+        View hotseat = mLauncher.getHotseat();
+        View pageIndicator = workspace != null ? workspace.getPageIndicator() : null;
+        if (workspace != null) {
+            workspace.setAlpha(0f);
+            workspace.setScaleX(scale);
+            workspace.setScaleY(scale);
+        }
+        if (hotseat != null) {
+            hotseat.setAlpha(0f);
+            hotseat.setScaleX(scale);
+            hotseat.setScaleY(scale);
+        }
+        if (pageIndicator != null) {
+            pageIndicator.setAlpha(0f);
+            pageIndicator.setScaleX(scale);
+            pageIndicator.setScaleY(scale);
+        }
     }
 
     /**

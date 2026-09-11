@@ -57,6 +57,11 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     private boolean mScrolling;
     private boolean mIndicatorShowing;
     private boolean mPagingTookOver;
+    /**
+     * Like {@link PreviewItemManager}'s close suppress: keep the frosted plate visible
+     * but skip drawing list preview cells so Folder children can spring without dual-draw.
+     */
+    private boolean mSuppressListPreview;
     /** Neighbor page currently bound on {@link #mAdjacentListView}. */
     private int mAdjacentBoundPage = -1;
     private float mLastIndicatorFrac = -1f;
@@ -426,7 +431,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private void applyIdlePageLayout() {
-        if (mListView == null) {
+        if (mListView == null || mSuppressListPreview) {
             return;
         }
         mListView.setTranslationX(0f);
@@ -543,6 +548,9 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private void setListViewVisible(boolean visible) {
+        if (mSuppressListPreview && visible) {
+            return;
+        }
         if (visible && this.mListView.getVisibility() != View.VISIBLE) {
             this.mListView.setVisibility(View.VISIBLE);
         } else if (!visible && this.mListView.getVisibility() == View.VISIBLE) {
@@ -574,15 +582,18 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             return;
         }
         drawPreviewBackground(canvas);
-        int save = canvas.save();
-        canvas.clipPath(getCachedPlateClipPath());
-        if (mListView != null && mListView.getVisibility() == View.VISIBLE) {
-            drawChild(canvas, mListView, getDrawingTime());
+        // Plate stays; list cells stay hidden while Folder BTVs spring closed.
+        if (!mSuppressListPreview) {
+            int save = canvas.save();
+            canvas.clipPath(getCachedPlateClipPath());
+            if (mListView != null && mListView.getVisibility() == View.VISIBLE) {
+                drawChild(canvas, mListView, getDrawingTime());
+            }
+            if (mAdjacentListView != null && mAdjacentListView.getVisibility() == View.VISIBLE) {
+                drawChild(canvas, mAdjacentListView, getDrawingTime());
+            }
+            canvas.restoreToCount(save);
         }
-        if (mAdjacentListView != null && mAdjacentListView.getVisibility() == View.VISIBLE) {
-            drawChild(canvas, mAdjacentListView, getDrawingTime());
-        }
-        canvas.restoreToCount(save);
         if (mIndicator != null && mIndicator.getVisibility() == View.VISIBLE
                 && mIndicator.getAlpha() > 0f) {
             drawChild(canvas, mIndicator, getDrawingTime());
@@ -1010,6 +1021,99 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (!isLargeFolder()) {
             super.drawPreviewItems(canvas, manager);
         }
+    }
+
+    @Override
+    public void onFolderAnimStartClose(int currentPage) {
+        super.onFolderAnimStartClose(currentPage);
+        // Always suppress list when this icon has one — don't gate on isLargeFolder()
+        // (tag/span edge cases left preview cells drawing under Folder BTVs).
+        if (mListView != null) {
+            setListPreviewSuppressed(true);
+        }
+    }
+
+    @Override
+    public void onFolderClose(int currentPage) {
+        if (mListView != null) {
+            setListPreviewSuppressed(false);
+        }
+        super.onFolderClose(currentPage);
+    }
+
+    private void setListPreviewSuppressed(boolean suppressed) {
+        mSuppressListPreview = suppressed;
+        if (mListView != null) {
+            if (suppressed) {
+                // Drop any hardware-layer cache that still holds list pixels —
+                // otherwise BTVs spring over a stale preview (dual-draw ghosts).
+                mListView.setLayerType(View.LAYER_TYPE_NONE, null);
+                setLayerType(View.LAYER_TYPE_NONE, null);
+                mListView.setVisibility(View.GONE);
+                mListView.setAlpha(0f);
+            } else {
+                mListView.setAlpha(1f);
+                mListView.setVisibility(View.VISIBLE);
+            }
+        }
+        if (mAdjacentListView != null && suppressed) {
+            mAdjacentListView.setLayerType(View.LAYER_TYPE_NONE, null);
+            mAdjacentListView.setVisibility(View.GONE);
+            mAdjacentListView.setAlpha(0f);
+        }
+        invalidate();
+        if (getParent() instanceof View) {
+            ((View) getParent()).invalidate();
+        }
+    }
+
+    /**
+     * DragLayer bounds of a closed large-folder preview cell (for open/close landing).
+     * Overflow indices clamp to the last visible preview cell.
+     */
+    public boolean getPreviewItemBoundsInDragLayer(int index, Rect out) {
+        if (!isLargeFolder() || mListView == null || mActivity == null || out == null) {
+            return false;
+        }
+        int childCount = mListView.getChildCount();
+        if (childCount < 1) {
+            return false;
+        }
+        int max = mAdapter != null ? Math.min(mAdapter.getMaxSize(), childCount) : childCount;
+        int slot = Math.max(0, Math.min(index, max - 1));
+        View child = mListView.getChildAt(slot);
+        if (child == null || child.getWidth() <= 0 || child.getHeight() <= 0) {
+            int[] xy = mListView.getCoordinateXY(slot);
+            float[] iconLoc = new float[2];
+            float scale = mActivity.getDragLayer()
+                    .getDescendantCoordRelativeToSelf(mListView, iconLoc);
+            int size = mListView.getChildSize();
+            float left = iconLoc[0] + xy[0] * scale;
+            float top = iconLoc[1] + xy[1] * scale;
+            float s = size * scale;
+            out.set(Math.round(left), Math.round(top),
+                    Math.round(left + s), Math.round(top + s));
+            return true;
+        }
+        float[] loc = new float[2];
+        float scale = mActivity.getDragLayer().getDescendantCoordRelativeToSelf(child, loc);
+        float w = child.getWidth() * scale;
+        float h = child.getHeight() * scale;
+        out.set(Math.round(loc[0]), Math.round(loc[1]),
+                Math.round(loc[0] + w), Math.round(loc[1] + h));
+        return true;
+    }
+
+    /** Visible preview cell count on the current large-folder page. */
+    public int getLargePreviewParamCount() {
+        if (!isLargeFolder() || mListView == null) {
+            return 0;
+        }
+        int childCount = mListView.getChildCount();
+        if (mAdapter == null) {
+            return childCount;
+        }
+        return Math.min(mAdapter.getMaxSize(), childCount);
     }
 
     public void onSwitchFolderBegin() {

@@ -152,19 +152,18 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         this.mBoundCellSize = this.mIconSize;
         if (isCountOut) {
             setIcon(null);
+            setCompoundDrawables(null, null, null, null);
             addOutDrawables(mBoundPosition, mBoundList, this.mIconSize);
         } else if (data != null) {
+            // Draw only via mDrawableList in onDraw. Never setIcon/setIconDrawable —
+            // sharing the same FastBitmapDrawable with BubbleTextView.mIcon caused a
+            // second up-left ghost in large-folder preview cells.
+            setIcon(null);
+            setCompoundDrawables(null, null, null, null);
             Drawable icon = getDrawable(getContext(), data, this.mIconSize);
             this.mDrawableList.add(icon);
-            bindIcon();
         }
         invalidate();
-    }
-
-    private void bindIcon() {
-        if (!this.mDrawableList.isEmpty()) {
-            setIconDrawable(this.mDrawableList.get(0));
-        }
     }
 
     public void setIconVisible(boolean visible) {

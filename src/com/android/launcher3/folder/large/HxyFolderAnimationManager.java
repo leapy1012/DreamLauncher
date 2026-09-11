@@ -117,8 +117,12 @@ public class HxyFolderAnimationManager {
                 ? R.integer.folder_workspace_content_open_duration
                 : R.integer.folder_workspace_content_close_duration);
         if (!isOpening && mFolderIcon != null) {
-            // Earliest possible suppress — before AnimatorSet listeners run.
-            mFolderIcon.onFolderAnimStartClose(mContent.getCurrentPage());
+            // Small folders: suppress PreviewItemManager immediately.
+            // Large folders: defer until after landing math (list must stay laid out).
+            if (!(mFolderIcon instanceof HxyLargeFolderIcon
+                    && HxyLargeFolderProxy.isLargeFolder(mFolderIcon))) {
+                mFolderIcon.onFolderAnimStartClose(mContent.getCurrentPage());
+            }
         }
     }
 
@@ -230,9 +234,31 @@ public class HxyFolderAnimationManager {
             pageIndicator.setPivotX(workspace.getPivotX());
         }
 
-        // Open: 1→0.92 / α 1→0. Close: 0.92→1 / α 0→1 (getAnimator swaps).
+        // Close: Oppo snaps workspace to final scale before icon springs so the
+        // FolderIcon plate stays aligned with DragLayer landing (esp. large folders).
+        // Only fade α 0→1; scale is already 1.
+        if (!mIsOpening) {
+            workspace.setScaleX(1f);
+            workspace.setScaleY(1f);
+            hotseat.setScaleX(1f);
+            hotseat.setScaleY(1f);
+            if (pageIndicator != null) {
+                pageIndicator.setScaleX(1f);
+                pageIndicator.setScaleY(1f);
+            }
+            Animator wsAlpha = getAnimator(workspace, View.ALPHA, 1f, 0f);
+            wsAlpha.setInterpolator(WORKSPACE_SCALE_INTERPOLATOR);
+            play(a, wsAlpha, 0, contentMs);
+            play(a, getAnimator(hotseat, View.ALPHA, 1f, 0f), 0, contentMs);
+            if (pageIndicator != null) {
+                play(a, getAnimator(pageIndicator, View.ALPHA, 1f, 0f), 0, contentMs);
+            }
+            return;
+        }
+
+        // Open: 1→0.92 / α 1→0.
         Animator wsAlpha = getAnimator(workspace, View.ALPHA, 1f, 0f);
-        wsAlpha.setInterpolator(mIsOpening ? WORKSPACE_ALPHA_OPEN : WORKSPACE_SCALE_INTERPOLATOR);
+        wsAlpha.setInterpolator(WORKSPACE_ALPHA_OPEN);
         play(a, wsAlpha, 0, contentMs);
 
         play(a, getAnimator(hotseat, View.ALPHA, 1f, 0f), 0, contentMs);
@@ -322,12 +348,8 @@ public class HxyFolderAnimationManager {
                 folderIconCenterY - contentCenterY
         };
 
-        if (!mIsOpening) {
-            workspace.setScaleX(savedWsSx);
-            workspace.setScaleY(savedWsSy);
-            hotseat.setScaleX(savedHsSx);
-            hotseat.setScaleY(savedHsSy);
-        }
+        // Keep workspace at final scale 1.0 through landing math (incl. large-folder
+        // list getDescendantCoord). Restored after the children loop below.
 
         int needX = folderIconCenterX <= dp.availableWidthPx * ONE_THIRD ? 1
                 : (folderIconCenterX <= dp.availableWidthPx * TWO_THIRD ? 2 : 3);
@@ -344,6 +366,13 @@ public class HxyFolderAnimationManager {
         // Oppo requireScaleChild: indices beyond the closed-folder preview param count.
         int previewParamCount = Math.min(previewCount,
                 ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW);
+        if (HxyLargeFolderProxy.isLargeFolder(mFolderIcon)
+                && mFolderIcon instanceof HxyLargeFolderIcon) {
+            int largeCount = ((HxyLargeFolderIcon) mFolderIcon).getLargePreviewParamCount();
+            if (largeCount > 0) {
+                previewParamCount = largeCount;
+            }
+        }
 
         int childCount = container.getChildCount();
         int lastCellY = childCount == 0 ? 0
@@ -416,13 +445,13 @@ public class HxyFolderAnimationManager {
                     : getLevel(btvLp.getCellX(), btvLp.getCellY(), 4 - needX, 4 - needY,
                     lastCellY, lastCellX);
 
+            float[] previewToBtv = resolvePreviewLanding(btv, previewIndex, overflow,
+                    previewParamCount, previewTransX, previewTransY,
+                    previewIconSize * f30 * hotseatScale, folderIconLoc, scaleRel);
+
             if (mIsOpening) {
                 // Oppo: spring from preview (or stacked last-slot ×0.2 for overflow)
                 // to open grid. DragLayer landing matches drawn plate slots.
-                float[] previewToBtv = computePreviewLandingTranslation(
-                        btv, previewTransX, previewTransY,
-                        previewIconSize * f30 * hotseatScale,
-                        folderIconLoc, scaleRel);
                 startTx = previewToBtv[0];
                 startTy = previewToBtv[1];
                 startScale = previewToBtv[2];
@@ -439,10 +468,6 @@ public class HxyFolderAnimationManager {
                 btv.setTextAlpha(0f);
             } else {
                 // Close: DragLayer mapping so end pose matches drawn preview slots.
-                float[] previewToBtv = computePreviewLandingTranslation(
-                        btv, previewTransX, previewTransY,
-                        previewIconSize * f30 * hotseatScale,
-                        folderIconLoc, scaleRel);
                 startTx = btv.getTranslationX();
                 startTy = btv.getTranslationY();
                 startScale = btv.getScaleX();
@@ -484,6 +509,15 @@ public class HxyFolderAnimationManager {
 
             if (!mIsOpening) {
                 mIconEndStates.add(new IconEndState(btv, endTx, endTy, endScale, 0f));
+            }
+        }
+
+        if (!mIsOpening) {
+            // Keep workspace at 1.0 (already snapped in playWorkspaceCompanion).
+            // Restoring 0.92 here reintroduced plate vs landing mismatch for large folders.
+            if (mFolderIcon instanceof HxyLargeFolderIcon
+                    && HxyLargeFolderProxy.isLargeFolder(mFolderIcon)) {
+                mFolderIcon.onFolderAnimStartClose(mContent.getCurrentPage());
             }
         }
     }
@@ -537,6 +571,49 @@ public class HxyFolderAnimationManager {
     }
 
     /**
+     * Resolve open-start / close-end pose. Large folders land on
+     * {@link HxyLargeFolderListView} cells; small folders use ClippedFolder rule offsets.
+     */
+    private float[] resolvePreviewLanding(BubbleTextView btv, int previewIndex,
+            boolean overflow, int previewParamCount,
+            float previewTransX, float previewTransY, float previewIconSize,
+            float[] folderIconLoc, float folderIconScaleRel) {
+        if (HxyLargeFolderProxy.isLargeFolder(mFolderIcon)
+                && mFolderIcon instanceof HxyLargeFolderIcon) {
+            HxyLargeFolderIcon largeIcon = (HxyLargeFolderIcon) mFolderIcon;
+            int largeCount = largeIcon.getLargePreviewParamCount();
+            if (largeCount > 0) {
+                int slot;
+                if (previewIndex >= 0 && previewIndex < largeCount) {
+                    slot = previewIndex;
+                } else if (overflow || previewIndex < 0) {
+                    slot = largeCount - 1;
+                } else {
+                    slot = Math.min(previewIndex, largeCount - 1);
+                }
+                Rect slotBounds = new Rect();
+                if (largeIcon.getPreviewItemBoundsInDragLayer(slot, slotBounds)) {
+                    float size = Math.min(slotBounds.width(), slotBounds.height());
+                    float left = slotBounds.left;
+                    float top = slotBounds.top;
+                    // Oppo requireScaleChild: shrink overflow toward the last cell center.
+                    if (overflow) {
+                        float shrunk = size * OPEN_ANIM_SCALE_RATIO;
+                        left += (size - shrunk) / 2f;
+                        top += (size - shrunk) / 2f;
+                        size = shrunk;
+                    }
+                    return computePreviewLandingTranslation(
+                            btv, left, top, size);
+                }
+            }
+        }
+        return computePreviewLandingTranslation(
+                btv, previewTransX, previewTransY, previewIconSize,
+                folderIconLoc, folderIconScaleRel);
+    }
+
+    /**
      * Translation/scale that places {@code btv}'s icon on the FolderIcon preview slot.
      * Uses DragLayer mapping so landing matches {@link PreviewItemManager#drawPreviewItem}
      * regardless of plate vs {@code iconSizePx} differences.
@@ -553,7 +630,12 @@ public class HxyFolderAnimationManager {
                 + (mPreviewBackground.getBasePreviewOffsetY() + previewTransY)
                 * folderIconScaleRel;
         float previewSizeOnScreen = previewIconSize * folderIconScaleRel;
+        return computePreviewLandingTranslation(btv, previewLeft, previewTop, previewSizeOnScreen);
+    }
 
+    /** Landing from absolute DragLayer preview-icon bounds (large-folder list cells). */
+    private float[] computePreviewLandingTranslation(BubbleTextView btv,
+            float previewLeft, float previewTop, float previewSizeOnScreen) {
         float saveTx = btv.getTranslationX();
         float saveTy = btv.getTranslationY();
         float saveSx = btv.getScaleX();
@@ -572,10 +654,10 @@ public class HxyFolderAnimationManager {
         float cx = btv.getWidth() / 2f;
         float cy = btv.getHeight() / 2f;
         float iconSizeOnScreen = Math.max(1, btv.getIconSize()) * btvScaleRel;
-        float scale = previewSizeOnScreen / iconSizeOnScreen;
+        float scale = previewSizeOnScreen / Math.max(1f, iconSizeOnScreen);
         // Never land larger than the open icon; clamp pathological measure failures.
         if (!(scale > 0f) || Float.isNaN(scale)) {
-            scale = previewIconSize / Math.max(1, btv.getIconSize());
+            scale = previewSizeOnScreen / Math.max(1, btv.getIconSize());
         }
         scale = Math.min(scale, 1f);
 

@@ -582,8 +582,9 @@ public abstract class AbsSwipeUpHandler<T extends StatefulActivity<S>,
                 initAnimFactory.run();
             }
         }
+        // ColorOS: keep an open folder under Recents (hidden separately).
         AbstractFloatingView.closeAllOpenViewsExcept(activity, mWasLauncherAlreadyVisible,
-                AbstractFloatingView.TYPE_LISTENER);
+                AbstractFloatingView.TYPE_LISTENER | AbstractFloatingView.TYPE_FOLDER);
 
         if (mWasLauncherAlreadyVisible) {
             mStateCallback.setState(STATE_LAUNCHER_DRAWN);
