@@ -21,6 +21,7 @@ import static android.text.TextUtils.isEmpty;
 import static com.android.launcher3.LauncherAnimUtils.SPRING_LOADED_EXIT_DELAY;
 import static com.android.launcher3.LauncherState.EDIT_MODE;
 import static com.android.launcher3.LauncherState.NORMAL;
+import static com.android.launcher3.LauncherState.SPRING_LOADED;
 import static com.android.launcher3.compat.AccessibilityManagerCompat.sendCustomAccessibilityEvent;
 import static com.android.launcher3.config.FeatureFlags.ALWAYS_USE_HARDWARE_OPTIMIZATION_FOR_FOLDER_ANIMATIONS;
 import static com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_FOLDER_LABEL_UPDATED;
@@ -953,9 +954,17 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     /**
      * Snap workspace chrome back after a non-animated folder dismiss.
      * Matches the end state of {@link HxyFolderAnimationManager} close companions.
+     * When editing ({@link LauncherState#SPRING_LOADED}), reapply state scale/ty —
+     * do not force normal-desktop 1.0 / 0 (that breaks the toggle-bar layout).
      */
     private void restoreWorkspaceAfterFolderDismiss() {
         if (mLauncher == null) {
+            return;
+        }
+        if (mLauncher.isInState(SPRING_LOADED)
+                || mLauncher.isInState(EDIT_MODE)) {
+            mLauncher.getStateManager().reapplyState(false);
+            resetPivot();
             return;
         }
         Workspace<?> workspace = mLauncher.getWorkspace();
@@ -1035,6 +1044,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                         }
                         mFolderIcon.setForceHideDot(keepHidden);
                         resetPivot();
+                        // Ensure SPRING_LOADED scale/ty survive close (Oppo endTransition).
+                        if (mLauncher.isInState(SPRING_LOADED)
+                                || mLauncher.isInState(EDIT_MODE)) {
+                            mLauncher.getStateManager().reapplyState(false);
+                        }
                     }
                 });
             }

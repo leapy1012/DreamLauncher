@@ -1,5 +1,10 @@
 package com.android.launcher3.editselection;
 
+import static com.android.launcher3.folder.ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
+
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -14,6 +19,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -27,7 +33,6 @@ import com.android.launcher3.LauncherSettings;
 import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.R;
 import com.android.launcher3.Workspace;
-import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
@@ -35,6 +40,8 @@ import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.util.IntSet;
+
+import com.coui.appcompat.animation.COUISpringInterpolator;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,8 +55,11 @@ import java.util.function.Consumer;
  */
 public final class EditSelectionActions {
 
-    /** Oppo {@code BatchDragViewManager.generateFolderIcon} drop-in delay. */
+    /** Oppo {@code BatchDragViewManager.generateFolderIcon} / {@code FolderDropManager} drop. */
     private static final long GENERATE_FOLDER_ANIM_MS = 600L;
+    /** Oppo {@code AnimationConstant.FOLDER_DROP} = COUISpringInterpolator(0.8, 0). */
+    private static final COUISpringInterpolator FOLDER_DROP =
+            new COUISpringInterpolator(0.8d, 0.0d);
 
     private EditSelectionActions() {}
 
@@ -129,7 +139,7 @@ public final class EditSelectionActions {
             screenId = workspace.getIdForScreen(target);
         }
 
-        List<FlyIn> flyIns = snapshotFlyIns(launcher, selectedViews, occupyInfo);
+        List<FlyIn> flyIns = snapshotFlyIns(launcher, infos, selectedViews);
 
         AbstractFloatingView.closeOpenViews(launcher, true, AbstractFloatingView.TYPE_FOLDER);
 
@@ -171,9 +181,14 @@ public final class EditSelectionActions {
             info.cellY = -1;
             folderInfo.add(info, false);
         }
+        // Hide plate previews while ghosts fly in (Oppo hidePreviewItem during drop).
+        int previewCount = Math.min(MAX_NUM_ITEMS_IN_PREVIEW, infos.size());
+        for (int i = 0; i < previewCount; i++) {
+            folderIcon.getPreviewItemManager().hidePreviewItem(i, true);
+        }
         folderIcon.invalidate();
 
-        animateFlyIn(launcher, flyIns, folderIcon);
+        animateFlyIn(launcher, flyIns, folderIcon, infos.size());
         folderIcon.postDelayed(() -> {
             folderIcon.setEnabled(true);
             workspace.reorderIfNeed();
@@ -280,15 +295,22 @@ public final class EditSelectionActions {
         return a == b || (a.id != ItemInfo.NO_ID && a.id == b.id);
     }
 
-    private static List<FlyIn> snapshotFlyIns(Launcher launcher, Iterable<View> selectedViews,
-            @Nullable WorkspaceItemInfo occupyInfo) {
+    /**
+     * Snapshot selected icons in folder-contents order (includes occupy cell).
+     * Oppo {@code createAnimateViewsToFolder} keeps every selected drag view.
+     */
+    private static List<FlyIn> snapshotFlyIns(Launcher launcher, List<WorkspaceItemInfo> infos,
+            Iterable<View> selectedViews) {
         List<FlyIn> out = new ArrayList<>();
         DragLayer dragLayer = launcher.getDragLayer();
-        for (View view : selectedViews) {
-            if (!(view.getTag() instanceof WorkspaceItemInfo info)) {
-                continue;
+        Workspace workspace = launcher.getWorkspace();
+        for (int i = 0; i < infos.size(); i++) {
+            WorkspaceItemInfo info = infos.get(i);
+            View view = findView(selectedViews, info);
+            if (view == null && workspace != null) {
+                view = findWorkspaceView(workspace, info);
             }
-            if (occupyInfo != null && sameItem(info, occupyInfo)) {
+            if (view == null) {
                 continue;
             }
             Bitmap bitmap = snapshotIcon(view);
@@ -297,7 +319,7 @@ public final class EditSelectionActions {
             }
             Rect from = new Rect();
             dragLayer.getDescendantRectRelativeToSelf(view, from);
-            out.add(new FlyIn(bitmap, from));
+            out.add(new FlyIn(bitmap, from, i));
         }
         return out;
     }
@@ -317,8 +339,6 @@ public final class EditSelectionActions {
                     ? src.getConstantState().newDrawable().mutate()
                     : src.mutate();
             final int iconSize = size;
-            // Use Picture recording: hardware icon bitmaps cannot be drawn onto a
-            // software Canvas (ARGB_8888), which caused create-folder fly-in crashes.
             return snapshotWithPicture(iconSize, iconSize, canvas -> {
                 icon.setBounds(0, 0, iconSize, iconSize);
                 icon.draw(canvas);
@@ -341,13 +361,47 @@ public final class EditSelectionActions {
         return Bitmap.createBitmap(picture);
     }
 
-    private static void animateFlyIn(Launcher launcher, List<FlyIn> flyIns, FolderIcon folderIcon) {
+    /**
+     * Oppo {@code FolderDropManager.onDrop} for generate-folder:
+     * each icon flies to its preview-slot center/scale inside the new folder plate,
+     * 600ms with {@code AnimationConstant.FOLDER_DROP} spring interpolator.
+     */
+    private static void animateFlyIn(Launcher launcher, List<FlyIn> flyIns, FolderIcon folderIcon,
+            int totalItems) {
         if (flyIns.isEmpty()) {
+            revealPreviewItems(folderIcon, totalItems);
             return;
         }
+        ViewTreeObserver observer = folderIcon.getViewTreeObserver();
+        observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                if (observer.isAlive()) {
+                    observer.removeOnPreDrawListener(this);
+                }
+                startPreviewSlotFlyIns(launcher, flyIns, folderIcon, totalItems);
+                return true;
+            }
+        });
+        folderIcon.invalidate();
+    }
+
+    private static void startPreviewSlotFlyIns(Launcher launcher, List<FlyIn> flyIns,
+            FolderIcon folderIcon, int totalItems) {
         DragLayer dragLayer = launcher.getDragLayer();
-        Rect to = new Rect();
-        dragLayer.getDescendantRectRelativeToSelf(folderIcon, to);
+        Rect folderBounds = new Rect();
+        float scaleRel = dragLayer.getDescendantRectRelativeToSelf(folderIcon, folderBounds);
+        int curNumItems = Math.min(MAX_NUM_ITEMS_IN_PREVIEW, totalItems);
+        final int[] pending = {flyIns.size()};
+
+        Runnable onOneEnded = () -> {
+            pending[0]--;
+            if (pending[0] <= 0) {
+                revealPreviewItems(folderIcon, totalItems);
+            }
+        };
+
+        int[] center = new int[2];
         for (FlyIn flyIn : flyIns) {
             ImageView ghost = new ImageView(launcher);
             ghost.setImageBitmap(flyIn.bitmap);
@@ -357,36 +411,78 @@ public final class EditSelectionActions {
             int height = flyIn.bitmap.getHeight();
             DragLayer.LayoutParams lp = new DragLayer.LayoutParams(width, height);
             lp.customPosition = true;
-            lp.x = flyIn.from.centerX() - width / 2;
-            lp.y = flyIn.from.centerY() - height / 2;
+            float startX = flyIn.from.centerX() - width / 2f;
+            float startY = flyIn.from.centerY() - height / 2f;
+            lp.x = Math.round(startX);
+            lp.y = Math.round(startY);
             dragLayer.addView(ghost, lp);
-            float destX = to.centerX() - width / 2f;
-            float destY = to.centerY() - height / 2f;
-            ghost.post(() -> {
-                if (ghost.getParent() == null) {
-                    return;
-                }
-                ghost.animate()
-                        .x(destX)
-                        .y(destY)
-                        .scaleX(0.2f)
-                        .scaleY(0.2f)
-                        .alpha(0f)
-                        .setDuration(GENERATE_FOLDER_ANIM_MS)
-                        .setInterpolator(Interpolators.DEACCEL_2)
-                        .withEndAction(() -> dragLayer.removeView(ghost))
-                        .start();
+            ghost.setPivotX(width / 2f);
+            ghost.setPivotY(height / 2f);
+            ghost.setScaleX(1f);
+            ghost.setScaleY(1f);
+            ghost.setAlpha(1f);
+
+            float previewScale = folderIcon.getPreviewItemCenter(
+                    flyIn.index, curNumItems, center);
+            int cx = Math.round(center[0] * scaleRel);
+            int cy = Math.round(center[1] * scaleRel);
+            float destX = folderBounds.left + cx - width / 2f;
+            float destY = folderBounds.top + cy - height / 2f;
+            float finalScale = previewScale * scaleRel;
+            // Oppo: visible preview slots keep alpha 1; overflow fades out.
+            float finalAlpha = flyIn.index < MAX_NUM_ITEMS_IN_PREVIEW ? 1f : 0f;
+
+            ValueAnimator anim = ValueAnimator.ofFloat(0f, 1f);
+            anim.setDuration(GENERATE_FOLDER_ANIM_MS);
+            anim.setInterpolator(FOLDER_DROP);
+            anim.addUpdateListener(a -> {
+                float t = (Float) a.getAnimatedValue();
+                float u = 1f - t;
+                ghost.setX(startX * u + destX * t);
+                ghost.setY(startY * u + destY * t);
+                float s = u + finalScale * t;
+                ghost.setScaleX(s);
+                ghost.setScaleY(s);
+                ghost.setAlpha(u + finalAlpha * t);
             });
+            anim.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    if (ghost.getParent() != null) {
+                        dragLayer.removeView(ghost);
+                    }
+                    onOneEnded.run();
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animation) {
+                    if (ghost.getParent() != null) {
+                        dragLayer.removeView(ghost);
+                    }
+                    onOneEnded.run();
+                }
+            });
+            anim.start();
         }
+    }
+
+    private static void revealPreviewItems(FolderIcon folderIcon, int totalItems) {
+        int previewCount = Math.min(MAX_NUM_ITEMS_IN_PREVIEW, totalItems);
+        for (int i = 0; i < previewCount; i++) {
+            folderIcon.getPreviewItemManager().hidePreviewItem(i, false);
+        }
+        folderIcon.invalidate();
     }
 
     private static final class FlyIn {
         final Bitmap bitmap;
         final Rect from;
+        final int index;
 
-        FlyIn(Bitmap bitmap, Rect from) {
+        FlyIn(Bitmap bitmap, Rect from, int index) {
             this.bitmap = bitmap;
             this.from = from;
+            this.index = index;
         }
     }
 

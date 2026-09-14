@@ -495,28 +495,39 @@ public class COUISnackBar extends RelativeLayout {
 
     @Override
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int index_2;
         int mode = View.MeasureSpec.getMode(widthMeasureSpec);
         int size = View.MeasureSpec.getSize(widthMeasureSpec);
-        this.mContentTextWidth = ((int) this.mContentView.getPaint().measureText(this.mContentText)) + (this.DEFAULT_CONTENT_MARGIN_HORIZONTAL << 1);
-        int maxWidth = getMaxWidth() + this.mSnackBarLayout.getPaddingLeft() + this.mSnackBarLayout.getPaddingRight();
+        String content = this.mContentText != null ? this.mContentText : "";
+        this.mContentTextWidth = ((int) this.mContentView.getPaint().measureText(content))
+                + (this.DEFAULT_CONTENT_MARGIN_HORIZONTAL << 1);
+        int barPadding = this.mSnackBarLayout.getPaddingLeft()
+                + this.mSnackBarLayout.getPaddingRight();
+        int maxWidth = getMaxWidth() + barPadding;
         if (maxWidth > size) {
-            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) this.mSnackBarLayout.getLayoutParams();
+            RelativeLayout.LayoutParams layoutParams =
+                    (RelativeLayout.LayoutParams) this.mSnackBarLayout.getLayoutParams();
             layoutParams.setMarginStart(this.mCardMarginStart);
             layoutParams.setMarginEnd(this.mCardMarginEnd);
             this.mSnackBarLayout.setLayoutParams(layoutParams);
-            index_2 = (size - this.mCardMarginStart) - this.mCardMarginEnd;
-        } else {
-            index_2 = (maxWidth <= 0 || mode == 0) ? size : maxWidth;
+            maxWidth = (size - this.mCardMarginStart) - this.mCardMarginEnd;
         }
-        if (!isVertical(index_2) && this.mLastLayoutType == 1) {
+        // Wrap short tips to content width; only grow up to the responsive max (not always max).
+        int contentWidth = getContainerWidth() + barPadding;
+        int desiredWidth = contentWidth;
+        if (maxWidth > 0) {
+            desiredWidth = Math.min(contentWidth, maxWidth);
+        }
+        desiredWidth = Math.min(Math.max(desiredWidth, 0), size);
+        if (!isVertical(desiredWidth) && this.mLastLayoutType == 1) {
             resetMarginHorizontal();
         }
-        if (maxWidth > 0 && mode != 0) {
-            widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(Math.min(maxWidth, size), mode);
+        if (mode != View.MeasureSpec.UNSPECIFIED && desiredWidth > 0) {
+            widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(
+                    desiredWidth, View.MeasureSpec.EXACTLY);
         }
         if (this.mIsTiny) {
-            RelativeLayout.LayoutParams layoutParams_2 = (RelativeLayout.LayoutParams) this.mSnackBarLayout.getLayoutParams();
+            RelativeLayout.LayoutParams layoutParams_2 =
+                    (RelativeLayout.LayoutParams) this.mSnackBarLayout.getLayoutParams();
             Resources resources = getResources();
             int index = R.dimen.coui_snack_bar_layout_margin_tiny;
             layoutParams_2.setMarginStart(resources.getDimensionPixelOffset(index));

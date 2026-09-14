@@ -255,8 +255,23 @@ public class TaskMenuView extends AbstractFloatingView {
             return R.drawable.ic_oplus_task_shortcut_app_info;
         }
         if (stockIconRes == R.drawable.ic_screenshot) {
-            // Same path as Oppo {@code ic_screenshot}; keep local copy for menu tinting.
             return R.drawable.ic_oplus_task_shortcut_screenshot;
+        }
+        // AOSP split glyphs → Oppo multi-window outline icons.
+        if (stockIconRes == R.drawable.ic_split_vertical) {
+            return R.drawable.ic_oplus_task_shortcut_multi_window_portrait;
+        }
+        if (stockIconRes == R.drawable.ic_split_horizontal) {
+            return R.drawable.ic_oplus_task_shortcut_multi_window_landscape;
+        }
+        if (stockIconRes == R.drawable.ic_pin) {
+            return R.drawable.ic_oplus_task_shortcut_pin;
+        }
+        if (stockIconRes == R.drawable.ic_caption_desktop_button_foreground) {
+            return R.drawable.ic_oplus_task_shortcut_floating_window;
+        }
+        if (stockIconRes == R.drawable.ic_oplus_task_shortcut_hide_content) {
+            return R.drawable.ic_oplus_task_shortcut_hide_content;
         }
         return stockIconRes;
     }

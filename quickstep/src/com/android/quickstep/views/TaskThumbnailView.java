@@ -50,6 +50,7 @@ import androidx.core.graphics.ColorUtils;
 
 import com.android.launcher3.BaseActivity;
 import com.android.launcher3.DeviceProfile;
+import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.touch.PagedOrientationHandler;
 import com.android.launcher3.util.MainThreadInitializedObject;
@@ -131,6 +132,14 @@ public class TaskThumbnailView extends View {
     private final Paint mClearPaint = new Paint();
     private final Paint mDimmingPaintAfterClearing = new Paint();
     private final int mDimColor;
+    @Nullable
+    private Paint mContentProtectBgPaint;
+    @Nullable
+    private Paint mContentProtectTextPaint;
+    @Nullable
+    private Paint mContentProtectIconPaint;
+    @Nullable
+    private Bitmap mContentProtectIconBitmap;
 
     // Contains the portion of the thumbnail that is clipped when fullscreen progress = 0.
     private final Rect mPreviewRect = new Rect();
@@ -186,11 +195,14 @@ public class TaskThumbnailView extends View {
     public void bind(Task task) {
         getTaskOverlay().reset();
         mTask = task;
+        if (mTask != null) {
+            com.android.quickstep.ContentProtectHelper.applyToTask(getContext(), mTask);
+        }
         int color = task == null ? Color.BLACK : task.colorBackground | 0xFF000000;
         mPaint.setColor(color);
         mBackgroundPaint.setColor(color);
         mSplashBackgroundPaint.setColor(color);
-        updateSplashView(mTask.icon);
+        updateSplashView(mTask != null ? mTask.icon : null);
     }
 
     /**
@@ -205,6 +217,9 @@ public class TaskThumbnailView extends View {
     public void setThumbnail(@Nullable Task task, @Nullable ThumbnailData thumbnailData,
             boolean refreshNow) {
         mTask = task;
+        if (mTask != null) {
+            com.android.quickstep.ContentProtectHelper.applyToTask(getContext(), mTask);
+        }
         boolean thumbnailWasNull = mThumbnailData == null;
         mThumbnailData =
                 (thumbnailData != null && thumbnailData.thumbnail != null) ? thumbnailData : null;
@@ -357,6 +372,15 @@ public class TaskThumbnailView extends View {
 
     public void drawOnCanvas(Canvas canvas, float x, float y, float width, float height,
             float cornerRadius) {
+        // Hide content must win over the running-task live-tile CLEAR hole, otherwise the
+        // real app surface remains visible through the thumbnail.
+        if (mTask != null && mTask.isContentProtect) {
+            canvas.drawRoundRect(x, y + 1, width, height - 1, cornerRadius,
+                    cornerRadius, mBackgroundPaint);
+            drawContentProtectOverlay(canvas, x, y, width, height, cornerRadius);
+            return;
+        }
+
         if (mTask != null && getTaskView().isRunningTask() && !getTaskView().showScreenshot()) {
             canvas.drawRoundRect(x, y, width, height, cornerRadius, cornerRadius, mClearPaint);
             canvas.drawRoundRect(x, y, width, height, cornerRadius, cornerRadius,
@@ -396,6 +420,65 @@ public class TaskThumbnailView extends View {
                 mSplashView.draw(canvas);
             }
         }
+    }
+
+    private void drawContentProtectOverlay(Canvas canvas, float x, float y, float width,
+            float height, float cornerRadius) {
+        ensureContentProtectPaints();
+        canvas.drawRoundRect(x, y, width, height, cornerRadius, cornerRadius, mContentProtectBgPaint);
+
+        // Oppo layout: centered eye icon above "App content hidden".
+        Bitmap icon = getContentProtectIconBitmap();
+        String label = getResources().getString(R.string.oplus_privacy_app_preview_closed);
+        float iconH = icon != null ? icon.getHeight() : 0f;
+        float textSize = mContentProtectTextPaint.getTextSize();
+        float iconMargin = getResources().getDimension(R.dimen.oplus_content_protect_icon_margin);
+        float blockH = iconH + (icon != null ? iconMargin : 0f) + textSize;
+        float top = y + (height - blockH) / 2f;
+        float cx = x + width / 2f;
+
+        if (icon != null) {
+            float iconLeft = cx - icon.getWidth() / 2f;
+            canvas.drawBitmap(icon, iconLeft, top, mContentProtectIconPaint);
+            top += iconH + iconMargin;
+        }
+        // Text baseline centered under icon.
+        float textY = top - mContentProtectTextPaint.ascent();
+        canvas.drawText(label, cx, textY, mContentProtectTextPaint);
+    }
+
+    private void ensureContentProtectPaints() {
+        if (mContentProtectBgPaint != null) {
+            return;
+        }
+        mContentProtectBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mContentProtectBgPaint.setColor(getResources().getColor(R.color.content_protect_bg_color));
+        mContentProtectTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mContentProtectTextPaint.setColor(getResources().getColor(R.color.content_protect_text_color));
+        mContentProtectTextPaint.setTextAlign(Paint.Align.CENTER);
+        mContentProtectTextPaint.setTextSize(
+                getResources().getDimension(R.dimen.oplus_content_protect_text_size));
+        mContentProtectIconPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+    }
+
+    @Nullable
+    private Bitmap getContentProtectIconBitmap() {
+        if (mContentProtectIconBitmap != null) {
+            return mContentProtectIconBitmap;
+        }
+        Drawable d = getContext().getDrawable(R.drawable.content_protect_icon);
+        if (d == null) {
+            return null;
+        }
+        int w = d.getIntrinsicWidth() > 0 ? d.getIntrinsicWidth()
+                : Math.round(36 * getResources().getDisplayMetrics().density);
+        int h = d.getIntrinsicHeight() > 0 ? d.getIntrinsicHeight()
+                : Math.round(36 * getResources().getDisplayMetrics().density);
+        mContentProtectIconBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(mContentProtectIconBitmap);
+        d.setBounds(0, 0, w, h);
+        d.draw(c);
+        return mContentProtectIconBitmap;
     }
 
     /** See {@link #SPLIT_SELECT_TRANSLATE_X} */

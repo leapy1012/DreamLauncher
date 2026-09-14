@@ -150,4 +150,7 @@
     <string name="coloros_alphabet_sort">By name</string>
     <string name="coloros_frequence_sort">By usage</string>
     <string name="coloros_time_sort">By install time</string>
+    <string name="oplus_privacy_not_show_preview">Hide content</string>
+    <string name="oplus_privacy_show_preview">Show content</string>
+    <string name="oplus_privacy_app_preview_closed">App content hidden</string>
 </resources>

@@ -90,6 +90,7 @@ import com.android.launcher3.util.SplitConfigurationOptions;
 import com.android.launcher3.util.SplitConfigurationOptions.SplitPositionOption;
 import com.android.launcher3.util.TransformingTouchDelegate;
 import com.android.launcher3.util.ViewPool.Reusable;
+import com.android.quickstep.ContentProtectHelper;
 import com.android.quickstep.RecentsModel;
 import com.android.quickstep.RemoteAnimationTargets;
 import com.android.quickstep.RemoteTargetGluer.RemoteTargetHandle;
@@ -111,6 +112,7 @@ import com.android.systemui.shared.recents.model.ThumbnailData;
 import com.android.systemui.shared.recents.utilities.PreviewPositionHelper;
 import com.android.systemui.shared.system.ActivityManagerWrapper;
 import com.android.systemui.shared.system.QuickStepContract;
+import com.android.systemui.navigationbar.buttons.KeyButtonRipple;
 
 import java.lang.annotation.Retention;
 import java.util.Arrays;
@@ -588,6 +590,11 @@ public class TaskView extends FrameLayout implements Reusable {
     public void bind(Task task, RecentsOrientedState orientedState) {
         cancelPendingLoadTasks();
         mTask = task;
+        ContentProtectHelper.applyToTask(getContext(), mTask);
+        // Protected tasks must not use the live-tile CLEAR hole when this card is the running task.
+        if (mTask != null && mTask.isContentProtect) {
+            setShowScreenshot(true);
+        }
         mTaskIdContainer[0] = mTask.key.id;
         mTaskIdAttributeContainer[0] = new TaskIdAttributeContainer(task, mSnapshotView,
                 mIconView, STAGE_POSITION_UNDEFINED);
@@ -1131,6 +1138,7 @@ public class TaskView extends FrameLayout implements Reusable {
                 mHxyMenu.setClickable(true);
                 mHxyMenu.setFocusable(true);
                 mHxyMenu.setVisibility(VISIBLE);
+                ensureMenuButtonRipple();
                 mHxyMenu.setOnClickListener(v -> {
                     if (confirmSecondSplitSelectApp()) {
                         return;
@@ -1305,6 +1313,20 @@ public class TaskView extends FrameLayout implements Reusable {
         mHxyMenu.setEnabled(interactive);
         mHxyMenu.setClickable(interactive);
         mHxyMenu.setFocusable(interactive);
+    }
+
+    /** ColorOS {@code OplusKeyButtonRipple} oval press feedback on the ⋮ control. */
+    private void ensureMenuButtonRipple() {
+        if (mHxyMenu == null) {
+            return;
+        }
+        if (mHxyMenu.getBackground() instanceof KeyButtonRipple) {
+            return;
+        }
+        KeyButtonRipple ripple = new KeyButtonRipple(
+                getContext(), mHxyMenu, R.dimen.hxy_task_menu_icon_size);
+        ripple.setType(KeyButtonRipple.Type.OVAL);
+        mHxyMenu.setBackground(ripple);
     }
 
     @Override

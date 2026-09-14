@@ -13,8 +13,14 @@ public class HxyLargeFolder extends Folder {
     @Override
     public void closeComplete(boolean wasAnimated) {
         super.closeComplete(wasAnimated);
-        if ((getFolderIcon() instanceof HxyLargeFolderIcon) && HxyLargeFolderProxy.isLargeFolder((View) getFolderIcon())) {
-            ((HxyLargeFolderIcon) getFolderIcon()).refreshListData();
+        if (!(getFolderIcon() instanceof HxyLargeFolderIcon icon)) {
+            return;
+        }
+        if (HxyLargeFolderProxy.isLargeFolder((View) icon)) {
+            icon.refreshListData();
+        } else {
+            // After shrink, ensure list preview stays hidden (clipped preview only).
+            icon.initLoadListData();
         }
     }
 }

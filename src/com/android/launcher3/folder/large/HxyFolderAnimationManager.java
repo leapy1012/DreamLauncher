@@ -197,6 +197,10 @@ public class HxyFolderAnimationManager {
                 mFolder.setScaleX(1f);
                 mFolder.setScaleY(1f);
                 mFolder.setAlpha(1f);
+                if (!mIsOpening) {
+                    // Re-apply SPRING_LOADED shrink after close companions (Oppo endTransition).
+                    reapplyWorkspaceStateIfEditing();
+                }
                 if (mLauncher.isInState(LauncherState.OVERVIEW)) {
                     View pi = mLauncher.getDragLayer().findViewById(R.id.page_indicator);
                     if (pi != null) {
@@ -234,18 +238,11 @@ public class HxyFolderAnimationManager {
             pageIndicator.setPivotX(workspace.getPivotX());
         }
 
-        // Close: Oppo snaps workspace to final scale before icon springs so the
-        // FolderIcon plate stays aligned with DragLayer landing (esp. large folders).
-        // Only fade α 0→1; scale is already 1.
+        // Close: Oppo snaps workspace to *current state* scale (SPRING_LOADED shrink,
+        // or 1.0 in NORMAL) before icon springs — never hardcode 1.0 while editing.
+        // Only fade α 0→1 (getAnimator swaps ends when closing).
         if (!mIsOpening) {
-            workspace.setScaleX(1f);
-            workspace.setScaleY(1f);
-            hotseat.setScaleX(1f);
-            hotseat.setScaleY(1f);
-            if (pageIndicator != null) {
-                pageIndicator.setScaleX(1f);
-                pageIndicator.setScaleY(1f);
-            }
+            snapWorkspaceChromeToCurrentState();
             Animator wsAlpha = getAnimator(workspace, View.ALPHA, 1f, 0f);
             wsAlpha.setInterpolator(WORKSPACE_SCALE_INTERPOLATOR);
             play(a, wsAlpha, 0, contentMs);
@@ -256,25 +253,64 @@ public class HxyFolderAnimationManager {
             return;
         }
 
-        // Open: 1→0.92 / α 1→0.
+        // Open: current scale → 0.92 / α 1→0 (preserve SPRING_LOADED start scale).
+        float fromWs = workspace.getScaleX();
+        float fromHs = hotseat.getScaleX();
+        float fromPi = pageIndicator != null ? pageIndicator.getScaleX() : fromWs;
         Animator wsAlpha = getAnimator(workspace, View.ALPHA, 1f, 0f);
         wsAlpha.setInterpolator(WORKSPACE_ALPHA_OPEN);
         play(a, wsAlpha, 0, contentMs);
 
         play(a, getAnimator(hotseat, View.ALPHA, 1f, 0f), 0, contentMs);
-        play(a, getAnimator(hotseat, View.SCALE_X, 1f, workspaceTarget), 0, contentMs);
-        play(a, getAnimator(hotseat, View.SCALE_Y, 1f, workspaceTarget), 0, contentMs);
-        play(a, getAnimator(workspace, View.SCALE_X, 1f, workspaceTarget), 0, contentMs);
-        play(a, getAnimator(workspace, View.SCALE_Y, 1f, workspaceTarget), 0, contentMs);
+        play(a, getAnimator(hotseat, View.SCALE_X, fromHs, workspaceTarget), 0, contentMs);
+        play(a, getAnimator(hotseat, View.SCALE_Y, fromHs, workspaceTarget), 0, contentMs);
+        play(a, getAnimator(workspace, View.SCALE_X, fromWs, workspaceTarget), 0, contentMs);
+        play(a, getAnimator(workspace, View.SCALE_Y, fromWs, workspaceTarget), 0, contentMs);
         if (pageIndicator != null) {
             play(a, getAnimator(pageIndicator, View.ALPHA, 1f, 0f), 0, contentMs);
-            play(a, getAnimator(pageIndicator, View.SCALE_X, 1f, workspaceTarget), 0, contentMs);
-            play(a, getAnimator(pageIndicator, View.SCALE_Y, 1f, workspaceTarget), 0, contentMs);
+            play(a, getAnimator(pageIndicator, View.SCALE_X, fromPi, workspaceTarget), 0, contentMs);
+            play(a, getAnimator(pageIndicator, View.SCALE_Y, fromPi, workspaceTarget), 0, contentMs);
         }
         for (Animator child : a.getChildAnimations()) {
             if (child != wsAlpha && child.getDuration() == contentMs) {
                 child.setInterpolator(WORKSPACE_SCALE_INTERPOLATOR);
             }
+        }
+    }
+
+    /**
+     * Oppo {@code OplusFolderAnimationManager}: on close, snap chrome to
+     * {@code state.getWorkspaceScaleAndTranslation} so SPRING_LOADED edit layout is kept.
+     */
+    private void snapWorkspaceChromeToCurrentState() {
+        LauncherState state = mLauncher.getStateManager().getState();
+        LauncherState.ScaleAndTranslation wsSt = state.getWorkspaceScaleAndTranslation(mLauncher);
+        LauncherState.ScaleAndTranslation hsSt = state.getHotseatScaleAndTranslation(mLauncher);
+        LauncherState.ScaleAndTranslation piSt =
+                state.getPageIndicatorScaleAndTranslation(mLauncher);
+
+        Workspace<?> workspace = mLauncher.getWorkspace();
+        View hotseat = mLauncher.getHotseat();
+        View pageIndicator = mLauncher.getDragLayer().findViewById(R.id.page_indicator);
+
+        workspace.setScaleX(wsSt.scale);
+        workspace.setScaleY(wsSt.scale);
+        workspace.setTranslationX(wsSt.translationX);
+        workspace.setTranslationY(wsSt.translationY);
+
+        // Oppo only forces hotseat to 1 when not SPRING_LOADED (or folder is in hotseat).
+        // Always apply the state scale so edit-mode shrink is restored.
+        if (hotseat != null) {
+            hotseat.setScaleX(hsSt.scale);
+            hotseat.setScaleY(hsSt.scale);
+            hotseat.setTranslationX(hsSt.translationX);
+            hotseat.setTranslationY(hsSt.translationY);
+        }
+        if (pageIndicator != null) {
+            pageIndicator.setScaleX(piSt.scale);
+            pageIndicator.setScaleY(piSt.scale);
+            pageIndicator.setTranslationX(piSt.translationX);
+            pageIndicator.setTranslationY(piSt.translationY);
         }
     }
 
@@ -312,20 +348,10 @@ public class HxyFolderAnimationManager {
             ensureFolderLaidOutForAnim();
         }
 
-        // Close: workspace is still at 0.92 when we build animators, but it restores to 1.0
-        // before icon springs finish. Measure FolderIcon at the FINAL scale so landing
-        // matches the settled preview (Oppo snaps workspace to state scale before measure).
-        Workspace<?> workspace = mLauncher.getWorkspace();
-        View hotseat = mLauncher.getHotseat();
-        float savedWsSx = workspace.getScaleX();
-        float savedWsSy = workspace.getScaleY();
-        float savedHsSx = hotseat.getScaleX();
-        float savedHsSy = hotseat.getScaleY();
+        // Close: workspace may still be at 0.92 when we build animators; Oppo snaps to
+        // *state* scale (SPRING_LOADED or 1.0) before measure so landing matches preview.
         if (!mIsOpening) {
-            workspace.setScaleX(1f);
-            workspace.setScaleY(1f);
-            hotseat.setScaleX(1f);
-            hotseat.setScaleY(1f);
+            snapWorkspaceChromeToCurrentState();
         }
 
         float[] folderIconLoc = new float[2];
@@ -348,8 +374,7 @@ public class HxyFolderAnimationManager {
                 folderIconCenterY - contentCenterY
         };
 
-        // Keep workspace at final scale 1.0 through landing math (incl. large-folder
-        // list getDescendantCoord). Restored after the children loop below.
+        // Keep workspace at state scale through landing math (incl. large-folder list).
 
         int needX = folderIconCenterX <= dp.availableWidthPx * ONE_THIRD ? 1
                 : (folderIconCenterX <= dp.availableWidthPx * TWO_THIRD ? 2 : 3);
@@ -513,8 +538,7 @@ public class HxyFolderAnimationManager {
         }
 
         if (!mIsOpening) {
-            // Keep workspace at 1.0 (already snapped in playWorkspaceCompanion).
-            // Restoring 0.92 here reintroduced plate vs landing mismatch for large folders.
+            // Keep workspace at state scale (already snapped in playWorkspaceCompanion).
             if (mFolderIcon instanceof HxyLargeFolderIcon
                     && HxyLargeFolderProxy.isLargeFolder(mFolderIcon)) {
                 mFolderIcon.onFolderAnimStartClose(mContent.getCurrentPage());
@@ -965,5 +989,12 @@ public class HxyFolderAnimationManager {
             return ObjectAnimator.ofFloat(view, property, v1, v2);
         }
         return ObjectAnimator.ofFloat(view, property, v2, v1);
+    }
+
+    private void reapplyWorkspaceStateIfEditing() {
+        if (mLauncher.isInState(LauncherState.SPRING_LOADED)
+                || mLauncher.isInState(LauncherState.EDIT_MODE)) {
+            mLauncher.getStateManager().reapplyState(false);
+        }
     }
 }

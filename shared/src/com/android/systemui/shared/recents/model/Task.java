@@ -239,6 +239,13 @@ public class Task {
     @ViewDebug.ExportedProperty(category="recents")
     public boolean isLocked;
 
+    /**
+     * When true, Recents hides the task thumbnail (ColorOS "Hide content").
+     * Persisted via {@link com.android.quickstep.ContentProtectHelper}.
+     */
+    @ViewDebug.ExportedProperty(category="recents")
+    public boolean isContentProtect;
+
     public Point positionInParent;
 
     public Rect appBounds;
@@ -280,6 +287,7 @@ public class Task {
         lastSnapshotData.set(other.lastSnapshotData);
         positionInParent = other.positionInParent;
         appBounds = other.appBounds;
+        isContentProtect = other.isContentProtect;
     }
 
     /**

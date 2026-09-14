@@ -23,7 +23,9 @@ import com.android.launcher3.model.data.WorkspaceItemInfo;
 /**
  * Rules for which workspace icons show edit-mode selection checkmarks / actions.
  * <p>
- * Always excludes hotseat and launcher utilities (Cleanup / Switch wallpaper).<br>
+ * Always excludes hotseat.<br>
+ * Cleanup / Switch wallpaper show checks and can be removed from Home, but never
+ * uninstalled (they are launcher-owned activities).<br>
  * Workspace icons with a DB id can be selected (Create folder, etc.).<br>
  * Checkmarks still show on system apps (Oppo); Uninstall is gated separately.
  */
@@ -51,9 +53,6 @@ public final class EditSelectionEligibility {
             return false;
         }
         if (isHotseat(info)) {
-            return false;
-        }
-        if (isLauncherUtility(info)) {
             return false;
         }
         // Folders draw their own chrome (check / count badge); not via BubbleTextView.
@@ -97,7 +96,7 @@ public final class EditSelectionEligibility {
             for (ItemInfo info : selected) {
                 if (isUninstallable(context, info)) {
                     uninstallable = true;
-                } else if (isRemovableShortcut(info)) {
+                } else if (canRemoveFromHome(info)) {
                     removable = true;
                 }
             }
@@ -150,7 +149,7 @@ public final class EditSelectionEligibility {
 
     /** Workspace / folder items that can leave Home without uninstalling the package. */
     public static boolean canRemoveFromHome(@Nullable ItemInfo info) {
-        if (info == null || isHotseat(info) || isLauncherUtility(info)) {
+        if (info == null || isHotseat(info)) {
             return false;
         }
         return canRemoveFromWorkspace(info);
@@ -159,10 +158,14 @@ public final class EditSelectionEligibility {
     /**
      * Whether Uninstall/Remove should apply to this item
      * (Oppo {@code PackageUtils.isCanUninstall || isCanDeleteIcon}).
+     * Launcher utilities are remove-from-Home only (never package uninstall).
      */
     public static boolean isUninstallOrRemoveEligible(Context context, @Nullable ItemInfo info) {
-        if (info == null || isHotseat(info) || isLauncherUtility(info)) {
+        if (info == null || isHotseat(info)) {
             return false;
+        }
+        if (isLauncherUtility(info)) {
+            return canRemoveFromWorkspace(info);
         }
         return isUninstallable(context, info) || isRemovableShortcut(info);
     }
@@ -172,7 +175,7 @@ public final class EditSelectionEligibility {
                 || info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION;
     }
 
-    /** Cleanup / Switch wallpaper — launcher-owned utilities, not user apps. */
+    /** Cleanup / Switch wallpaper — launcher-owned utilities (remove icon, never uninstall). */
     private static boolean isLauncherUtility(ItemInfo info) {
         ComponentName cn = info.getTargetComponent();
         if (cn == null) {
@@ -193,6 +196,9 @@ public final class EditSelectionEligibility {
 
     /** Mirrors {@link com.android.launcher3.SecondaryDropTarget} uninstall eligibility. */
     private static boolean isUninstallable(Context context, ItemInfo item) {
+        if (isLauncherUtility(item)) {
+            return false;
+        }
         if (item.itemType != LauncherSettings.Favorites.ITEM_TYPE_APPLICATION) {
             return false;
         }

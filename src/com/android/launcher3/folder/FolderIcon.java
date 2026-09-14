@@ -616,6 +616,14 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         return mTmpParams.scale;
     }
 
+    /**
+     * Preview-slot center in FolderIcon local coords (for create-folder / drop fly-in).
+     * @return preview item scale (before DragLayer relative scale)
+     */
+    public float getPreviewItemCenter(int index, int curNumItems, int[] center) {
+        return getLocalCenterForIndex(index, curNumItems, center);
+    }
+
     public void setFolderBackground(PreviewBackground bg) {
         mBackground = bg;
         mBackground.setInvalidateDelegate(this);

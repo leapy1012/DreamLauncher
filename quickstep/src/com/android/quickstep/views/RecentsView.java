@@ -168,6 +168,7 @@ import com.android.launcher3.util.TranslateEdgeEffect;
 import com.android.launcher3.util.VibratorWrapper;
 import com.android.launcher3.util.ViewPool;
 import com.android.quickstep.BaseActivityInterface;
+import com.android.quickstep.ContentProtectHelper;
 import com.android.quickstep.GestureState;
 import com.android.quickstep.RecentsAnimationController;
 import com.android.quickstep.RecentsAnimationTargets;
@@ -3002,11 +3003,48 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     }
 
     private void setRunningTaskViewShowScreenshot(boolean showScreenshot) {
-        mRunningTaskShowScreenshot = showScreenshot;
         TaskView runningTaskView = getRunningTaskView();
         if (runningTaskView != null) {
-            runningTaskView.setShowScreenshot(mRunningTaskShowScreenshot);
+            Task task = runningTaskView.getTask();
+            if (task != null) {
+                ContentProtectHelper.applyToTask(getContext(), task);
+                // Keep opaque thumbnail/protect panel instead of live-tile hole.
+                if (task.isContentProtect) {
+                    showScreenshot = true;
+                }
+            }
         }
+        mRunningTaskShowScreenshot = showScreenshot;
+        if (runningTaskView != null) {
+            runningTaskView.setShowScreenshot(mRunningTaskShowScreenshot);
+            if (runningTaskView.getTask() != null && runningTaskView.getTask().isContentProtect) {
+                for (TaskView.TaskIdAttributeContainer container
+                        : runningTaskView.getTaskIdAttributeContainers()) {
+                    if (container != null && container.getThumbnailView() != null) {
+                        container.getThumbnailView().invalidate();
+                    }
+                }
+            }
+        }
+    }
+
+    public void redrawLiveTile() {
+        TaskView running = getRunningTaskView();
+        final boolean hideForProtect = running != null
+                && running.getTask() != null
+                && running.getTask().isContentProtect;
+        runActionOnRemoteHandles(remoteTargetHandle -> {
+            TransformParams params = remoteTargetHandle.getTransformParams();
+            // Hide the live app leash under the protect panel when content is hidden.
+            if (hideForProtect) {
+                params.setTargetAlpha(0f);
+            } else if (params.getTargetAlpha() == 0f) {
+                params.setTargetAlpha(1f);
+            }
+            if (params.getTargetSet() != null) {
+                remoteTargetHandle.getTaskViewSimulator().apply(params);
+            }
+        });
     }
 
     public void setTaskIconScaledDown(boolean isScaledDown) {
@@ -5612,15 +5650,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         mEnableDrawingLiveTile = enableDrawingLiveTile;
     }
 
-    public void redrawLiveTile() {
-        runActionOnRemoteHandles(remoteTargetHandle -> {
-            TransformParams params = remoteTargetHandle.getTransformParams();
-            if (params.getTargetSet() != null) {
-                remoteTargetHandle.getTaskViewSimulator().apply(params);
-            }
-        });
-    }
-
     public RemoteTargetHandle[] getRemoteTargetHandles() {
         return mRemoteTargetHandles;
     }
@@ -6690,9 +6719,22 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                         Formatter.formatShortFileSize(getContext(), detaMemory));
             }
 
-            // COUI tip UI (same wording as MTK; not a system Toast).
+            // ColorOS tip: compact wrap-content COUISnackBar on the drag layer (not a stretched
+            // Recents child), with bottom inset above the nav bar.
             final String message = str;
-            post(() -> COUISnackBar.make(this, message, 2500).show());
+            post(() -> {
+                View host = mActivity != null ? mActivity.getDragLayer() : this;
+                if (host == null) {
+                    host = this;
+                }
+                int bottomMargin = getResources().getDimensionPixelSize(
+                        com.coui.appcompat.R.dimen.coui_snack_bar_margin_bottom);
+                android.view.WindowInsets insets = host.getRootWindowInsets();
+                if (insets != null) {
+                    bottomMargin += insets.getSystemWindowInsetBottom();
+                }
+                COUISnackBar.make(host.getContext(), host, message, 2500, bottomMargin).show();
+            });
         }
     }
 }

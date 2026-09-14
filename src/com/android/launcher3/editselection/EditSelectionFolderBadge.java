@@ -8,6 +8,7 @@ import android.graphics.Typeface;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
+import com.android.launcher3.folder.PreviewBackground;
 import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 import com.android.launcher3.model.data.FolderInfo;
 
@@ -82,13 +83,21 @@ public final class EditSelectionFolderBadge {
         }
         boolean isLargeFolder = HxyLargeFolderProxy.isLargeFolder(folderIcon);
         if (isLargeFolder) {
-            // Use the large-folder plate (full cell content area).
-            out.left = folderIcon.getPaddingLeft();
-            out.top = folderIcon.getPaddingTop();
-            out.right = folderIcon.getWidth() - folderIcon.getPaddingRight();
-            out.bottom = folderIcon.getHeight() - folderIcon.getPaddingBottom();
-            if (folderIcon.getFolderName() != null) {
-                out.bottom = Math.min(out.bottom, folderIcon.getFolderName().getTop());
+            // Oppo uses PreviewBackground / plate bounds, not the full cell padding box.
+            PreviewBackground bg = folderIcon.getFolderBackground();
+            if (bg != null && bg.getPreviewWidth() > 0 && bg.getPreviewHeight() > 0) {
+                out.left = bg.getBasePreviewOffsetX();
+                out.top = bg.getBasePreviewOffsetY();
+                out.right = out.left + bg.getPreviewWidth();
+                out.bottom = out.top + bg.getPreviewHeight();
+            } else {
+                out.left = folderIcon.getPaddingLeft();
+                out.top = folderIcon.getPaddingTop();
+                out.right = folderIcon.getWidth() - folderIcon.getPaddingRight();
+                out.bottom = folderIcon.getHeight() - folderIcon.getPaddingBottom();
+                if (folderIcon.getFolderName() != null) {
+                    out.bottom = Math.min(out.bottom, folderIcon.getFolderName().getTop());
+                }
             }
         } else {
             int iconSize = folderIcon.mActivity.getDeviceProfile().iconSizePx;

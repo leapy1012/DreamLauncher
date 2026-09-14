@@ -392,6 +392,76 @@ public interface TaskShortcutFactory {
         }
     }
 
+    /**
+     * ColorOS Hide content / Show content — obscures the Recents thumbnail for this package.
+     */
+    TaskShortcutFactory CONTENT_PROTECT = new TaskShortcutFactory() {
+        @Override
+        public List<SystemShortcut> getShortcuts(BaseDraggingActivity activity,
+                TaskIdAttributeContainer taskContainer) {
+            Task task = taskContainer.getTask();
+            if (task == null || task.key == null) {
+                return null;
+            }
+            ContentProtectHelper.applyToTask(activity, task);
+            return Collections.singletonList(
+                    new ContentProtectSystemShortcut(activity, taskContainer, task.isContentProtect));
+        }
+    };
+
+    class ContentProtectSystemShortcut extends SystemShortcut<BaseDraggingActivity> {
+        private final TaskView mTaskView;
+        private final boolean mIsProtected;
+
+        ContentProtectSystemShortcut(BaseDraggingActivity target,
+                TaskIdAttributeContainer taskContainer, boolean isProtected) {
+            super(R.drawable.ic_oplus_task_shortcut_hide_content,
+                    isProtected
+                            ? R.string.oplus_privacy_show_preview
+                            : R.string.oplus_privacy_not_show_preview,
+                    target, taskContainer.getItemInfo(), taskContainer.getTaskView());
+            mTaskView = taskContainer.getTaskView();
+            mIsProtected = isProtected;
+        }
+
+        @Override
+        public void onClick(View view) {
+            boolean newProtect = !mIsProtected;
+            // Cover the live-tile CLEAR hole so the protect panel is opaque.
+            if (newProtect) {
+                mTaskView.setShowScreenshot(true);
+            } else if (mTaskView.isRunningTask()) {
+                mTaskView.setShowScreenshot(false);
+            }
+            TaskView.TaskIdAttributeContainer[] containers =
+                    mTaskView.getTaskIdAttributeContainers();
+            if (containers != null) {
+                for (TaskView.TaskIdAttributeContainer container : containers) {
+                    if (container == null || container.getTask() == null) {
+                        continue;
+                    }
+                    Task task = container.getTask();
+                    task.isContentProtect = newProtect;
+                    ContentProtectHelper.setProtected(mTarget, task.key, newProtect);
+                    TaskThumbnailView thumbnail = container.getThumbnailView();
+                    if (thumbnail != null) {
+                        thumbnail.invalidate();
+                    }
+                }
+            }
+            mTaskView.invalidate();
+            RecentsView recentsView = mTaskView.getRecentsView();
+            if (recentsView != null) {
+                // Force screenshot mode + hide live leash when protecting the running task.
+                if (newProtect && mTaskView.isRunningTask()) {
+                    mTaskView.setShowScreenshot(true);
+                }
+                recentsView.redrawLiveTile();
+            }
+            dismissTaskMenuView(mTarget);
+        }
+    }
+
     TaskShortcutFactory INSTALL = new TaskShortcutFactory() {
         @Override
         public List<SystemShortcut> getShortcuts(BaseDraggingActivity activity,

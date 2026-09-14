@@ -490,11 +490,24 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         mPreviewPage = 0;
         mScrollDistance = 0f;
         mLastIndicatorFrac = -1f;
+        mSuppressListPreview = false;
         if (mIndicator != null) {
             mIndicator.animate().cancel();
             mIndicator.setDotsCount(0);
             mIndicator.setVisibility(INVISIBLE);
             mIndicator.setAlpha(0f);
+        }
+        // Keep large-folder list sheets detached after shrink so a later open→close
+        // cannot unsuppress them onto the 1×1 cell.
+        if (mListView != null) {
+            mListView.setVisibility(GONE);
+            mListView.setAlpha(0f);
+            mListView.setTranslationX(0f);
+        }
+        if (mAdjacentListView != null) {
+            mAdjacentListView.setVisibility(GONE);
+            mAdjacentListView.setAlpha(0f);
+            mAdjacentListView.setTranslationX(0f);
         }
         View name = getFolderName();
         if (name != null) {
@@ -1081,9 +1094,15 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
                 setLayerType(View.LAYER_TYPE_NONE, null);
                 mListView.setVisibility(View.GONE);
                 mListView.setAlpha(0f);
-            } else {
+            } else if (isLargeFolder()) {
+                // Revive list only while still 2×2. After shrink→open→close, forcing
+                // VISIBLE left populated list cells painting via small-folder
+                // dispatchDraw (mini-grid ghosts beside the 1×1 plate).
                 mListView.setAlpha(1f);
-                mListView.setVisibility(View.VISIBLE);
+                setListViewVisible(true);
+            } else {
+                mListView.setAlpha(0f);
+                setListViewVisible(false);
             }
         }
         if (mAdjacentListView != null && suppressed) {

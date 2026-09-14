@@ -46,6 +46,7 @@ public class ShadowUtils {
         if (view == null) {
             return;
         }
+        view.setOutlineAmbientShadowColor(spotShadowColor);
         view.setOutlineSpotShadowColor(spotShadowColor);
         view.setElevation(elevationPx);
     }
@@ -139,12 +140,17 @@ public class ShadowUtils {
             return resources.getDimensionPixelSize(R.dimen.support_shadow_size_level_three);
         }
         if (level == SHADOW_LV4 || level == SHADOW_LV5) {
-            return resources.getDimensionPixelSize(R.dimen.support_shadow_size_level_five);
+            // Stronger than plain level_five so AOSP popup cards read closer to ColorOS OEM light-source shadows.
+            return resources.getDimensionPixelSize(R.dimen.support_shadow_size_level_popup);
         }
         return resources.getDimensionPixelSize(R.dimen.support_shadow_size_level_three);
     }
 
     private static int getAospSpotShadowColor(View view, Resources resources, int level) {
+        // LV4/LV5 popups: use the darker COUI popup spot color (RoundFrameLayout / COUIPopupWindow).
+        if (level == SHADOW_LV4 || level == SHADOW_LV5) {
+            return ContextCompat.getColor(view.getContext(), R.color.coui_popup_outline_spot_shadow_color);
+        }
         int alphaRes;
         if (level == SHADOW_LV1) {
             alphaRes = R.integer.coui_shadow_color_lv1;
@@ -152,10 +158,6 @@ public class ShadowUtils {
             alphaRes = R.integer.coui_shadow_color_lv2;
         } else if (level == SHADOW_LV3) {
             alphaRes = R.integer.coui_shadow_color_lv3;
-        } else if (level == SHADOW_LV4) {
-            alphaRes = R.integer.coui_shadow_color_lv4;
-        } else if (level == SHADOW_LV5) {
-            alphaRes = R.integer.coui_shadow_color_lv5;
         } else {
             return ContextCompat.getColor(view.getContext(), R.color.coui_popup_outline_spot_shadow_color);
         }

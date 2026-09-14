@@ -115,4 +115,7 @@
     <string name="coloros_drawer_columns_five">5 列</string>
     <string name="colorrect_tips">此页空间不足</string>
     <string name="generate_failed_folder">无法重复组成文件夹</string>
+    <string name="oplus_privacy_not_show_preview">隐藏内容</string>
+    <string name="oplus_privacy_show_preview">显示内容</string>
+    <string name="oplus_privacy_app_preview_closed">此应用内容已隐藏</string>
 </resources>

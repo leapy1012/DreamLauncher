@@ -77,6 +77,8 @@
     <color name="recents_filter_icon">#333333</color>
     <!-- Oppo recent_task_popup_shortcut_primary_bg_color -->
     <color name="task_menu_popup_bg">#FFFFFFFF</color>
+    <color name="content_protect_text_color">#8a000000</color>
+    <color name="content_protect_bg_color">#FFF5F5F5</color>
 
     <!-- Lottie light theme colors. -->
     <color name="lottie_blue400">#669df6</color>

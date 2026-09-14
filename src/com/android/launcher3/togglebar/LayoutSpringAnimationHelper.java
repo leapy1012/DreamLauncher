@@ -31,10 +31,13 @@ public final class LayoutSpringAnimationHelper {
 
     public void cancel() {
         mCanceled = true;
-        for (COUISpringAnimation spring : mRunning) {
+        // Oppo cancels via a single AnimationSet; cancel() fires end listeners that
+        // remove from mRunning — snapshot+clear first to avoid CME during iteration.
+        List<COUISpringAnimation> running = new ArrayList<>(mRunning);
+        mRunning.clear();
+        for (COUISpringAnimation spring : running) {
             spring.cancel();
         }
-        mRunning.clear();
     }
 
     public boolean isRunning() {
