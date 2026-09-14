@@ -6,7 +6,6 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -24,21 +23,24 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.views.OptionsDialogView;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
  * Oppo page-preview bottom chrome while apps are selected:
  * page thumbnails + Create folder | Remove (drawer) or Uninstall (standard).
+ * <p>
+ * Highlight source of truth is workspace destination ({@link Workspace#getNextPage()}),
+ * which equals {@link Workspace#getCurrentPage()} once settled. Selection toggles update
+ * chip state in place — they must not rebuild the strip and clobber an in-flight snap.
  */
 public class EditSelectionBottomBar extends FrameLayout {
 
     private LinearLayout mPageStrip;
     private View mCreateFolder;
     private View mUninstall;
-    @Nullable
-    private ViewTreeObserver.OnScrollChangedListener mWorkspaceScrollListener;
-    @Nullable
-    private Workspace mListeningWorkspace;
+    /** Last page with the selection stroke; matches workspace destination when in sync. */
+    private int mHighlightedPage = -1;
 
     public EditSelectionBottomBar(Context context) {
         this(context, null);
@@ -92,7 +94,6 @@ public class EditSelectionBottomBar extends FrameLayout {
         updateBottomInset();
         setPageIndicatorVisible(false);
         rebuildPageStrip(selectedItems);
-        attachWorkspaceScrollListener();
         boolean canFolder = selectedCount >= 2;
         mCreateFolder.setEnabled(canFolder);
         mCreateFolder.setAlpha(canFolder ? 1f : 0.4f);
@@ -104,23 +105,58 @@ public class EditSelectionBottomBar extends FrameLayout {
             dragLayer.bringChildToFront(this);
         }
         setOptionsMenuVisible(false);
-        syncCurrentPageHighlight();
+        scrollStripToHighlighted(false);
     }
 
     public void hide() {
-        detachWorkspaceScrollListener();
         setVisibility(GONE);
         setPageIndicatorVisible(true);
         setOptionsMenuVisible(true);
+        mHighlightedPage = -1;
     }
 
+    /**
+     * Selection-count updates: refresh chips/actions in place when the strip already matches
+     * workspace page count. Full rebuild only when first shown or page count changed.
+     */
     public void updateForSelectionCount(int count,
             @Nullable java.util.Collection<ItemInfo> selectedItems) {
         if (count <= 0) {
             hide();
             return;
         }
-        show(count, selectedItems);
+        if (!(getContext() instanceof Launcher launcher)) {
+            return;
+        }
+        Workspace workspace = launcher.getWorkspace();
+        boolean needRebuild = getVisibility() != VISIBLE
+                || mPageStrip == null
+                || mPageStrip.getChildCount() == 0
+                || (workspace != null && mPageStrip.getChildCount() != workspace.getPageCount());
+        if (needRebuild) {
+            show(count, selectedItems);
+            return;
+        }
+
+        Set<ItemInfo> selected = toSelectedSet(selectedItems);
+        for (int i = 0; i < mPageStrip.getChildCount(); i++) {
+            View child = mPageStrip.getChildAt(i);
+            if (child instanceof EditSelectionPagePreviewView preview) {
+                preview.setSelectedItems(selected);
+            }
+        }
+        boolean canFolder = count >= 2;
+        mCreateFolder.setEnabled(canFolder);
+        mCreateFolder.setAlpha(canFolder ? 1f : 0.4f);
+        updateRemoveButton(selectedItems);
+        setPageIndicatorVisible(false);
+        setOptionsMenuVisible(false);
+        bringToFront();
+        if (getParent() instanceof DragLayer dragLayer) {
+            dragLayer.bringChildToFront(this);
+        }
+        // Re-assert destination highlight without clobbering an in-flight snap target.
+        syncCurrentPageHighlight();
     }
 
     /**
@@ -137,7 +173,11 @@ public class EditSelectionBottomBar extends FrameLayout {
         mUninstall.setAlpha(enabled ? 1f : 0.4f);
     }
 
-    /** Highlight the preview matching the workspace's current/next page. */
+    /**
+     * Oppo {@code PagePreviewListContainer.onPageEndTransition}: update selection stroke
+     * after the workspace page settles. Uses {@link Workspace#getNextPage()} so an in-flight
+     * destination (click or fling) wins over a stale {@code getCurrentPage()}.
+     */
     public void syncCurrentPageHighlight() {
         if (getVisibility() != VISIBLE || mPageStrip == null) {
             return;
@@ -149,48 +189,43 @@ public class EditSelectionBottomBar extends FrameLayout {
         if (workspace == null) {
             return;
         }
-        int page = workspace.getNextPage();
-        for (int c = 0; c < mPageStrip.getChildCount(); c++) {
-            View child = mPageStrip.getChildAt(c);
-            if (child instanceof EditSelectionPagePreviewView preview) {
-                preview.setSelectedPage(c == page);
-            }
+        int page = resolveHighlightPage(workspace);
+        if (page == mHighlightedPage) {
+            return;
         }
+        applyHighlight(page, true /* animate */);
         scrollStripToPage(page, true);
     }
 
-    private void attachWorkspaceScrollListener() {
-        if (!(getContext() instanceof Launcher launcher)) {
-            return;
-        }
-        Workspace workspace = launcher.getWorkspace();
-        if (workspace == null) {
-            return;
-        }
-        if (mListeningWorkspace == workspace && mWorkspaceScrollListener != null) {
-            return;
-        }
-        detachWorkspaceScrollListener();
-        mListeningWorkspace = workspace;
-        mWorkspaceScrollListener = this::syncCurrentPageHighlight;
-        workspace.getViewTreeObserver().addOnScrollChangedListener(mWorkspaceScrollListener);
+    /** Used to detect empty-page strip / page-count changes without always rebuilding. */
+    public int getPageStripChildCount() {
+        return mPageStrip != null ? mPageStrip.getChildCount() : 0;
     }
 
-    private void detachWorkspaceScrollListener() {
-        if (mListeningWorkspace != null && mWorkspaceScrollListener != null) {
-            ViewTreeObserver observer = mListeningWorkspace.getViewTreeObserver();
-            if (observer.isAlive()) {
-                observer.removeOnScrollChangedListener(mWorkspaceScrollListener);
+    /**
+     * Destination page while settling; equals current page once the scroller finishes.
+     */
+    private static int resolveHighlightPage(Workspace workspace) {
+        return workspace.getNextPage();
+    }
+
+    private void applyHighlight(int page, boolean animate) {
+        if (mPageStrip == null) {
+            return;
+        }
+        mHighlightedPage = page;
+        for (int c = 0; c < mPageStrip.getChildCount(); c++) {
+            View child = mPageStrip.getChildAt(c);
+            if (child instanceof EditSelectionPagePreviewView preview) {
+                preview.setSelectedPage(c == page, animate);
             }
         }
-        mListeningWorkspace = null;
-        mWorkspaceScrollListener = null;
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        detachWorkspaceScrollListener();
-        super.onDetachedFromWindow();
+    private void scrollStripToHighlighted(boolean smooth) {
+        if (mHighlightedPage >= 0) {
+            scrollStripToPage(mHighlightedPage, smooth);
+        }
     }
 
     private void setPageIndicatorVisible(boolean visible) {
@@ -238,15 +273,12 @@ public class EditSelectionBottomBar extends FrameLayout {
         if (workspace == null || mPageStrip == null) {
             return;
         }
-        Set<ItemInfo> selected = selectedItems != null
-                ? (selectedItems instanceof Set
-                        ? (Set<ItemInfo>) selectedItems
-                        : new java.util.HashSet<>(selectedItems))
-                : Collections.emptySet();
+        Set<ItemInfo> selected = toSelectedSet(selectedItems);
+        // Prefer destination so a rebuild mid-snap does not snap the stroke back to the old page.
+        int highlight = resolveHighlightPage(workspace);
         mPageStrip.removeAllViews();
         DeviceProfile dp = launcher.getDeviceProfile();
         int pageCount = workspace.getPageCount();
-        int current = workspace.getCurrentPage();
         int width = getResources().getDimensionPixelSize(R.dimen.edit_selection_page_preview_width);
         int height = getResources().getDimensionPixelSize(R.dimen.edit_selection_page_preview_height);
         int gap = getResources().getDimensionPixelSize(R.dimen.edit_selection_page_preview_gap);
@@ -260,21 +292,30 @@ public class EditSelectionBottomBar extends FrameLayout {
                 lp.setMarginEnd(gap);
             }
             thumb.setLayoutParams(lp);
-            thumb.bind(cell, dp.inv.numColumns, dp.inv.numRows, i == current, selected);
+            thumb.bind(cell, dp.inv.numColumns, dp.inv.numRows, i == highlight, selected);
             final int pageIndex = i;
             thumb.setOnClickListener(v -> {
-                workspace.snapToPage(pageIndex);
-                for (int c = 0; c < mPageStrip.getChildCount(); c++) {
-                    View child = mPageStrip.getChildAt(c);
-                    if (child instanceof EditSelectionPagePreviewView preview) {
-                        preview.setSelectedPage(c == pageIndex);
-                    }
-                }
+                // Oppo click → updateSelectedPos before snap settles.
+                applyHighlight(pageIndex, true);
                 scrollStripToPage(pageIndex, true);
+                workspace.snapToPage(pageIndex);
             });
             mPageStrip.addView(thumb);
         }
-        mPageStrip.post(() -> scrollStripToPage(workspace.getNextPage(), false));
+        mHighlightedPage = highlight;
+        final int scrollTo = highlight;
+        mPageStrip.post(() -> scrollStripToPage(scrollTo, false));
+    }
+
+    private static Set<ItemInfo> toSelectedSet(
+            @Nullable java.util.Collection<ItemInfo> selectedItems) {
+        if (selectedItems == null) {
+            return Collections.emptySet();
+        }
+        if (selectedItems instanceof Set) {
+            return (Set<ItemInfo>) selectedItems;
+        }
+        return new HashSet<>(selectedItems);
     }
 
     private void scrollStripToPage(int pageIndex, boolean smooth) {

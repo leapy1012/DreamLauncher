@@ -1,11 +1,16 @@
 package com.android.launcher3.editselection;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.animation.PathInterpolator;
 
 import androidx.annotation.Nullable;
 
@@ -22,21 +27,26 @@ import java.util.Set;
  * Mini page thumbnail for the edit-selection strip (Oppo {@code PagePreviewItemView} style).
  * <p>
  * Icon chips: square rounded rects ({@code preview_item_cell_width}=6dp, radius=2dp).
- * Colors:
- * <ul>
- *   <li>Selected icons → accent blue</li>
- *   <li>Unselected on the <b>current</b> page → white</li>
- *   <li>Unselected on other pages → gray</li>
- * </ul>
+ * Selection stroke: Oppo {@code PressFeedbackPreviewWrapper.selectedStrokeAnimation}
+ * (280ms in / 150ms out, PathInterpolator 0.33,0,0.67,1).
  */
 public class EditSelectionPagePreviewView extends View {
 
     private static final int COLOR_CELL_SELECTED = 0xFF3478F6;
     private static final int COLOR_CELL_ACTIVE_PAGE = 0xFFFFFFFF;
     private static final int COLOR_CELL_OTHER_PAGE = 0x66FFFFFF;
+    private static final int COLOR_STROKE = 0xFFFFFFFF;
+
+    /** Oppo {@code ToggleBarAnimHelper.INTERPOLATOR_SELECTED_STROKE}. */
+    private static final PathInterpolator STROKE_INTERPOLATOR =
+            new PathInterpolator(0.33f, 0.0f, 0.67f, 1.0f);
+    private static final long STROKE_IN_MS = 280L;
+    private static final long STROKE_OUT_MS = 150L;
 
     private final Paint mCellPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint mStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF mTmpRect = new RectF();
+    private final RectF mStrokeRect = new RectF();
     private int mCountX = 4;
     private int mCountY = 6;
     @Nullable
@@ -48,6 +58,11 @@ public class EditSelectionPagePreviewView extends View {
     private float mCellRadius;
     private float mCellPadding;
     private float mWidgetRadius;
+    private float mCornerRadius;
+    private float mStrokeWidth;
+    private int mStrokeAlpha;
+    @Nullable
+    private ValueAnimator mStrokeAnimator;
 
     public EditSelectionPagePreviewView(Context context) {
         this(context, null);
@@ -61,11 +76,16 @@ public class EditSelectionPagePreviewView extends View {
             int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         mCellPaint.setStyle(Paint.Style.FILL);
+        mStrokePaint.setStyle(Paint.Style.STROKE);
         mCellSize = getResources().getDimension(R.dimen.edit_selection_page_preview_cell_size);
         mCellRadius = getResources().getDimension(R.dimen.edit_selection_page_preview_cell_radius);
         mCellPadding = getResources().getDimension(R.dimen.edit_selection_page_preview_cell_padding);
         mWidgetRadius = getResources().getDimension(R.dimen.edit_selection_page_preview_widget_radius);
-        setSelectedPage(false);
+        mCornerRadius = getResources().getDimension(R.dimen.edit_selection_page_preview_corner_radius);
+        mStrokeWidth = getResources().getDimension(R.dimen.edit_selection_page_preview_stroke_width);
+        mStrokePaint.setStrokeWidth(mStrokeWidth);
+        setBackgroundResource(R.drawable.edit_selection_page_preview_bg);
+        setSelectedPage(false, false);
     }
 
     public void bind(@Nullable CellLayout cellLayout, int countX, int countY, boolean selectedPage,
@@ -76,17 +96,38 @@ public class EditSelectionPagePreviewView extends View {
         mSelectedItems = selectedItems != null
                 ? Collections.unmodifiableSet(new HashSet<>(selectedItems))
                 : Collections.emptySet();
-        setSelectedPage(selectedPage);
+        setSelectedPage(selectedPage, false);
         invalidate();
     }
 
     public void setSelectedPage(boolean selected) {
+        setSelectedPage(selected, true);
+    }
+
+    /**
+     * @param animate when true, matches Oppo stroke fade; false snaps (bind / first layout).
+     */
+    public void setSelectedPage(boolean selected, boolean animate) {
+        int targetAlpha = selected ? 255 : 0;
+        if (mSelectedPage == selected) {
+            // Repair cancelled mid-stroke so early-return never leaves a partial border.
+            if (!animate || mStrokeAlpha != targetAlpha) {
+                cancelStrokeAnimator();
+                mStrokeAlpha = targetAlpha;
+                invalidate();
+            }
+            return;
+        }
         mSelectedPage = selected;
-        setBackgroundResource(selected
-                ? R.drawable.edit_selection_page_preview_bg_selected
-                : R.drawable.edit_selection_page_preview_bg);
-        setAlpha(selected ? 1f : 0.78f);
-        invalidate();
+        if (animate) {
+            // Chip colors flip immediately; stroke alpha eases (Oppo setSelected).
+            invalidate();
+            animateStroke(selected);
+        } else {
+            cancelStrokeAnimator();
+            mStrokeAlpha = targetAlpha;
+            invalidate();
+        }
     }
 
     public void setSelectedItems(@Nullable Set<ItemInfo> selectedItems) {
@@ -96,9 +137,65 @@ public class EditSelectionPagePreviewView extends View {
         invalidate();
     }
 
+    private void animateStroke(boolean selected) {
+        cancelStrokeAnimator();
+        int target = selected ? 255 : 0;
+        if (mStrokeAlpha == target) {
+            invalidate();
+            return;
+        }
+        ValueAnimator anim = ValueAnimator.ofInt(mStrokeAlpha, target);
+        mStrokeAnimator = anim;
+        anim.setDuration(selected ? STROKE_IN_MS : STROKE_OUT_MS);
+        anim.setInterpolator(STROKE_INTERPOLATOR);
+        anim.addUpdateListener(a -> {
+            mStrokeAlpha = (Integer) a.getAnimatedValue();
+            invalidate();
+        });
+        anim.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (mStrokeAnimator == animation) {
+                    mStrokeAnimator = null;
+                }
+            }
+        });
+        anim.start();
+    }
+
+    private void cancelStrokeAnimator() {
+        if (mStrokeAnimator != null) {
+            mStrokeAnimator.cancel();
+            mStrokeAnimator = null;
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        cancelStrokeAnimator();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        drawCells(canvas);
+        drawSelectionStroke(canvas);
+    }
+
+    private void drawSelectionStroke(Canvas canvas) {
+        if (mStrokeAlpha <= 0 || getWidth() <= 0 || getHeight() <= 0) {
+            return;
+        }
+        float half = mStrokeWidth / 2f;
+        mStrokeRect.set(half, half, getWidth() - half, getHeight() - half);
+        mStrokePaint.setColor(Color.argb(mStrokeAlpha,
+                Color.red(COLOR_STROKE), Color.green(COLOR_STROKE), Color.blue(COLOR_STROKE)));
+        float radius = Math.max(0f, mCornerRadius - mStrokeWidth);
+        canvas.drawRoundRect(mStrokeRect, radius, radius, mStrokePaint);
+    }
+
+    private void drawCells(Canvas canvas) {
         if (mCellLayout == null) {
             return;
         }

@@ -14,6 +14,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.SparseIntArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.PixelCopy;
@@ -25,6 +26,7 @@ import androidx.annotation.Nullable;
 
 import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.Launcher;
+import com.android.launcher3.R;
 import com.android.launcher3.dragndrop.DragLayer;
 
 /**
@@ -35,6 +37,10 @@ import com.android.launcher3.dragndrop.DragLayer;
  * {@code HardwareDrawCallback}, so we composite wallpaper under a window
  * PixelCopy (launcher windows are translucent — icons alone look black)
  * and warp that bitmap with {@link Canvas#drawBitmapMesh}.
+ *
+ * <p>While the wave runs, live DragLayer siblings and {@code wallpaper_set_anim}
+ * are hidden so clear-all layout cannot poke through under the snapshot. Wallpaper
+ * in the composite is center-cropped to match the on-screen art (not page parallax).
  */
 public class BoosterOverlayView extends AbstractFloatingView {
 
@@ -54,6 +60,9 @@ public class BoosterOverlayView extends AbstractFloatingView {
     private static final float ORIGIN_X_NUDGE_DP = 1f;
     private static final float ORIGIN_Y_NUDGE_DP = 9f;
 
+    /** True while PixelCopy / attach is in flight — blocks re-entrant show(). */
+    private static boolean sCapturing;
+
     private Bitmap mSnapshot;
     private float[] mOrigVerts;
     private float[] mVerts;
@@ -65,6 +74,11 @@ public class BoosterOverlayView extends AbstractFloatingView {
     private float mMaxRadius;
     private final Paint mPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
     private ValueAnimator mAnim;
+
+    /** Prior visibility of DragLayer siblings we hid under the snapshot. */
+    private SparseIntArray mHiddenSiblingVisibility;
+    @Nullable private View mWallpaperAnimView;
+    private int mWallpaperAnimVisibility = View.GONE;
 
     public BoosterOverlayView(Context context) {
         this(context, null);
@@ -82,12 +96,20 @@ public class BoosterOverlayView extends AbstractFloatingView {
         setBackgroundColor(Color.TRANSPARENT);
     }
 
+    /** True while a wave is open or a home snapshot is being captured. */
+    public static boolean isBusy(Launcher launcher) {
+        return sCapturing || hasOpenView(launcher, TYPE_BOOSTER_OVERLAY);
+    }
+
     /**
      * @param originX epicenter X in DragLayer coordinates (CleanUp icon center)
      * @param originY epicenter Y in DragLayer coordinates
      */
     public static void show(Launcher launcher, float originX, float originY) {
-        closeOpenViews(launcher, false, TYPE_BOOSTER_OVERLAY);
+        if (isBusy(launcher)) {
+            Log.d(TAG, "Wave already active, ignore re-entrant show");
+            return;
+        }
         DragLayer dragLayer = launcher.getDragLayer();
         final int w = dragLayer.getWidth();
         final int h = dragLayer.getHeight();
@@ -100,9 +122,21 @@ public class BoosterOverlayView extends AbstractFloatingView {
         final float ox = originX - ORIGIN_X_NUDGE_DP * density;
         final float oy = originY + ORIGIN_Y_NUDGE_DP * density;
 
+        sCapturing = true;
         captureHomeComposite(launcher, w, h, snapshot -> {
+            sCapturing = false;
             if (snapshot == null) {
                 Log.w(TAG, "Home capture failed, skip wave");
+                return;
+            }
+            if (launcher.isDestroyed()) {
+                snapshot.recycle();
+                return;
+            }
+            // Another show may have raced after we cleared sCapturing; still
+            // refuse if an overlay somehow attached meanwhile.
+            if (hasOpenView(launcher, TYPE_BOOSTER_OVERLAY)) {
+                snapshot.recycle();
                 return;
             }
             attachAndStart(launcher, snapshot, ox, oy);
@@ -194,19 +228,12 @@ public class BoosterOverlayView extends AbstractFloatingView {
                 return;
             }
 
-            // Match system wallpaper: scale-to-cover (center-crop), then pan with
-            // the same X offset Workspace uses for parallax on the current page.
-            float alignX = 0.5f;
-            float alignY = 0.5f;
-            try {
-                if (launcher.getWorkspace() != null) {
-                    alignX = launcher.getWorkspace().getWallpaperOffsetForCenterPage();
-                }
-            } catch (Throwable ignored) {
-                // Keep centered.
-            }
-            alignX = Math.max(0f, Math.min(1f, alignX));
-            alignY = Math.max(0f, Math.min(1f, alignY));
+            // Live wallpaper is visually centered here (workspace parallax sync is
+            // disabled). Do NOT use getWallpaperOffsetForCenterPage() — on page 0
+            // with MIN_PARALLAX_PAGE_SPAN that returns ~0 and left-crops the art,
+            // which is exactly the mtk → mtk1 shift during the Cleanup wave.
+            final float alignX = 0.5f;
+            final float alignY = 0.5f;
 
             float scale = Math.max(dstW / (float) srcW, dstH / (float) srcH);
             int scaledW = Math.round(srcW * scale);
@@ -248,12 +275,6 @@ public class BoosterOverlayView extends AbstractFloatingView {
 
     private static void attachAndStart(Launcher launcher, Bitmap snapshot,
             float originX, float originY) {
-        if (launcher.isDestroyed()) {
-            snapshot.recycle();
-            return;
-        }
-        closeOpenViews(launcher, false, TYPE_BOOSTER_OVERLAY);
-
         float density = launcher.getResources().getDisplayMetrics().density;
         BoosterOverlayView overlay = new BoosterOverlayView(launcher);
         overlay.mSnapshot = snapshot;
@@ -268,9 +289,62 @@ public class BoosterOverlayView extends AbstractFloatingView {
         lp.gravity = Gravity.FILL;
         lp.ignoreInsets = true;
         launcher.getDragLayer().addView(overlay, lp);
+        overlay.freezeHomeUnderlay(launcher);
         overlay.applyWave(0f);
         overlay.invalidate();
         overlay.post(overlay::startWave);
+    }
+
+    /**
+     * Hide live chrome under the snapshot so clear-all / layout / a second Cleanup
+     * cannot show or pan the real background mid-wave.
+     */
+    private void freezeHomeUnderlay(Launcher launcher) {
+        DragLayer dragLayer = launcher.getDragLayer();
+        mHiddenSiblingVisibility = new SparseIntArray();
+        for (int i = 0; i < dragLayer.getChildCount(); i++) {
+            View child = dragLayer.getChildAt(i);
+            if (child == this) {
+                continue;
+            }
+            int vis = child.getVisibility();
+            if (vis != View.GONE) {
+                mHiddenSiblingVisibility.put(System.identityHashCode(child), vis);
+                child.setVisibility(View.INVISIBLE);
+            }
+        }
+
+        // wallpaper_set_anim is a DragLayer sibling in launcher.xml — still live
+        // behind the translucent window and can animate under the mesh.
+        View wallpaperAnim = launcher.findViewById(R.id.wallpaper_set_anim);
+        if (wallpaperAnim != null && wallpaperAnim.getVisibility() != View.GONE) {
+            mWallpaperAnimView = wallpaperAnim;
+            mWallpaperAnimVisibility = wallpaperAnim.getVisibility();
+            wallpaperAnim.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void unfreezeHomeUnderlay() {
+        if (mHiddenSiblingVisibility != null && getParent() instanceof DragLayer) {
+            DragLayer dragLayer = (DragLayer) getParent();
+            for (int i = 0; i < dragLayer.getChildCount(); i++) {
+                View child = dragLayer.getChildAt(i);
+                if (child == this) {
+                    continue;
+                }
+                int key = System.identityHashCode(child);
+                int idx = mHiddenSiblingVisibility.indexOfKey(key);
+                if (idx >= 0) {
+                    child.setVisibility(mHiddenSiblingVisibility.valueAt(idx));
+                }
+            }
+        }
+        mHiddenSiblingVisibility = null;
+
+        if (mWallpaperAnimView != null) {
+            mWallpaperAnimView.setVisibility(mWallpaperAnimVisibility);
+            mWallpaperAnimView = null;
+        }
     }
 
     private void initMesh(int width, int height, float density) {
@@ -359,6 +433,9 @@ public class BoosterOverlayView extends AbstractFloatingView {
     @Override
     protected void dispatchDraw(Canvas canvas) {
         if (mSnapshot != null && !mSnapshot.isRecycled() && mVerts != null) {
+            // Unwarped underlay so mesh UV gaps never flash black / live wallpaper
+            // (which would read as a left shift + dark strip on the right).
+            canvas.drawBitmap(mSnapshot, 0, 0, mPaint);
             canvas.drawBitmapMesh(mSnapshot, mMeshW, mMeshH, mVerts, 0, null, 0, mPaint);
             return;
         }
@@ -377,6 +454,7 @@ public class BoosterOverlayView extends AbstractFloatingView {
             mAnim = null;
         }
         mIsOpen = false;
+        unfreezeHomeUnderlay();
         if (mSnapshot != null) {
             if (!mSnapshot.isRecycled()) {
                 mSnapshot.recycle();

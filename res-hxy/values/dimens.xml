@@ -50,6 +50,9 @@
     <dimen name="edit_selection_page_preview_cell_radius">2dp</dimen>
     <dimen name="edit_selection_page_preview_cell_padding">6dp</dimen>
     <dimen name="edit_selection_page_preview_widget_radius">4dp</dimen>
+    <!-- Oppo page_preview_item_background_radius + launcher_toggle_bar_preview_selected_stroke_width -->
+    <dimen name="edit_selection_page_preview_corner_radius">10dp</dimen>
+    <dimen name="edit_selection_page_preview_stroke_width">1.2dp</dimen>
     <!-- Oppo page_preview_btn_width ≈ 135dp, gap 10dp — keep actions close. -->
     <dimen name="edit_selection_action_btn_width">120dp</dimen>
     <dimen name="edit_selection_action_btn_gap">24dp</dimen>

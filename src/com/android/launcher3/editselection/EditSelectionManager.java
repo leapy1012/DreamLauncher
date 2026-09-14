@@ -288,15 +288,22 @@ public final class EditSelectionManager {
         }
     }
 
-    /** Keep page-preview highlight in sync when the workspace is swiped or a page is stripped. */
+    /**
+     * Oppo page-preview: sync highlight when the workspace page transition ends.
+     * Rebuild only if page count changed (empty pages stripped); never rebuild on a normal swipe.
+     */
     public void onWorkspacePageChanged() {
-        if (!mActive || mBottomBar == null) {
+        if (!mActive || mBottomBar == null || mSelectedItems.isEmpty()) {
             return;
         }
-        if (mSelectedItems.isEmpty()) {
+        Workspace workspace = mLauncher.getWorkspace();
+        if (workspace != null
+                && mBottomBar.getPageStripChildCount() != workspace.getPageCount()) {
+            // Page count changed — must rebuild; updateForSelectionCount will still use
+            // getNextPage() so an in-flight destination is preserved.
+            mBottomBar.updateForSelectionCount(mSelectedItems.size(), mSelectedItems);
             return;
         }
-        mBottomBar.updateForSelectionCount(mSelectedItems.size(), mSelectedItems);
         mBottomBar.syncCurrentPageHighlight();
     }
 

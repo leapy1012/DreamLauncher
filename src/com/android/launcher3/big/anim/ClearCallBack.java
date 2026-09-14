@@ -53,8 +53,17 @@ public class ClearCallBack extends BaseCallback {
         this.mIcon.post(this::showBoosterWave);
     }
 
+    /**
+     * @return {@code true} if the click was consumed (wave already running) so
+     *         Rotate/Translate params must not restart the Cleanup icon anim.
+     */
     public boolean onClick() {
-        return false;
+        try {
+            Launcher launcher = Launcher.getLauncher(mIcon.getContext());
+            return BoosterOverlayView.isBusy(launcher);
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private void sendMemoryCleanBroadcast(Context context) {
@@ -67,6 +76,9 @@ public class ClearCallBack extends BaseCallback {
         Context context = this.mIcon.getContext();
         try {
             Launcher launcher = Launcher.getLauncher(context);
+            if (BoosterOverlayView.isBusy(launcher)) {
+                return;
+            }
             DragLayer dragLayer = launcher.getDragLayer();
             int[] iconLoc = new int[2];
             int[] layerLoc = new int[2];

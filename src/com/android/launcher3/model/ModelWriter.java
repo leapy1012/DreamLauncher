@@ -494,6 +494,9 @@ public class ModelWriter {
         protected void updateItemArrays(ItemInfo item, int itemId) {
             // Lock on mBgLock *after* the db operation
             synchronized (mBgDataModel) {
+                // Autofill/compact may write a View-tag ItemInfo that is no longer the
+                // BgDataModel instance (same id, different object). Adopt it before verify.
+                reconcileItemIdentityLocked(item, itemId);
                 checkItemInfoLocked(itemId, item, mStackTrace);
 
                 if (item.container != Favorites.CONTAINER_DESKTOP &&
@@ -531,6 +534,37 @@ public class ModelWriter {
                     mBgDataModel.workspaceItems.remove(modelItem);
                 }
                 mVerifier.verifyModel();
+            }
+        }
+
+        /**
+         * When UI code (e.g. {@code Workspace.compactWorkspaceIfNeeded}) mutates the View's
+         * {@link ItemInfo} and persists it, that object can diverge from
+         * {@link BgDataModel#itemsIdMap}. Replace the map entry so verification and later
+         * writes use one canonical instance.
+         */
+        private void reconcileItemIdentityLocked(ItemInfo item, int itemId) {
+            ItemInfo previous = mBgDataModel.itemsIdMap.get(itemId);
+            if (previous == null || previous == item) {
+                return;
+            }
+            mBgDataModel.itemsIdMap.put(itemId, item);
+            int workspaceIndex = mBgDataModel.workspaceItems.indexOf(previous);
+            if (workspaceIndex >= 0) {
+                mBgDataModel.workspaceItems.set(workspaceIndex, item);
+            }
+            if (item instanceof FolderInfo) {
+                mBgDataModel.folders.put(item.id, (FolderInfo) item);
+            }
+            // Folder contents hold WorkspaceItemInfo references by identity.
+            if (previous.container >= 0 && item instanceof WorkspaceItemInfo) {
+                FolderInfo folder = mBgDataModel.folders.get(previous.container);
+                if (folder != null) {
+                    int contentIndex = folder.contents.indexOf(previous);
+                    if (contentIndex >= 0) {
+                        folder.contents.set(contentIndex, (WorkspaceItemInfo) item);
+                    }
+                }
             }
         }
     }
