@@ -68,6 +68,7 @@
     <string name="accessibility_text_reading_options_title">Display size and text</string>
     <string name="home_screen_layout_lock">Lock layout</string>
     <string name="home_screen_layout_lock_tips">Home screen layout has been locked and cannot be edited.</string>
+    <string name="launcher_locked_description">Lock items on your Home screen to prevent them from being moved or deleted.</string>
     <string name="launcher_locked_toast_look_setting">View settings</string>
     <string name="launcher_layout">Layout</string>
     <string name="coloros_layout_hide_icon_names">Hide icon names</string>

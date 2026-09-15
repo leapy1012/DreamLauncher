@@ -102,6 +102,7 @@ import androidx.preference.PreferenceCategory;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherApplication;
 import com.android.launcher3.model.data.ItemInfo;
+import com.coui.appcompat.preference.COUIPreference;
 import com.coui.appcompat.preference.COUIPreferenceFragment;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
 import com.coui.appcompat.toolbar.COUIToolbar;
@@ -344,11 +345,9 @@ public class SettingsActivity extends AppCompatActivity
             setPreferencesFromResource(R.xml.launcher_preferences, rootKey);
 
 			//hxy-feature: add launcher style function  202312
-			int style = LauncherStyle.get(getActivity());
 			mLauncherStylePref = (Preference) findPreference(LAUNCHER_STYLE_PREFERENCE_KEY);
 			if (mLauncherStylePref != null) {
-				mLauncherStylePref.setSummary(style == LauncherStyle.APP_DRAWER ? 
-					getString(R.string.home_screen_style_single) : getString(R.string.home_screen_style_regular));
+                updateLauncherStyleAssignment();
                 mLauncherStylePref.setOnPreferenceClickListener(this);
 			}
 			//hxy-feature: add launcher style function  202312
@@ -358,6 +357,8 @@ public class SettingsActivity extends AppCompatActivity
             mHomeLayoutPref = findPreference("pref_workspace_layout");
             if (mHomeLayoutPref != null) {
                 mHomeLayoutPref.setOnPreferenceClickListener(this);
+                // Keep Oppo-style subtitle; grid size goes in the trailing assignment.
+                mHomeLayoutPref.setSummary(R.string.tog_title_layout_summary);
                 updateHomeLayoutSummary();
             }
             mIconSizePref = findPreference(WORKSPACE_ICON_SIZE);
@@ -511,8 +512,32 @@ public class SettingsActivity extends AppCompatActivity
         }
 
         private void updateHomeLayoutSummary(int columns, int rows) {
-            if (mHomeLayoutPref != null) {
-                mHomeLayoutPref.setSummary(columns + " x " + rows);
+            if (mHomeLayoutPref == null) {
+                return;
+            }
+            // Oppo: summary stays "Set Home screen app layouts."; value is trailing.
+            mHomeLayoutPref.setSummary(R.string.tog_title_layout_summary);
+            setPreferenceAssignment(mHomeLayoutPref, columns + " \u00d7 " + rows);
+        }
+
+        private void updateLauncherStyleAssignment() {
+            if (mLauncherStylePref == null || getActivity() == null) {
+                return;
+            }
+            int style = LauncherStyle.get(getActivity());
+            CharSequence value = style == LauncherStyle.APP_DRAWER
+                    ? getString(R.string.home_screen_style_single)
+                    : getString(R.string.home_screen_style_regular);
+            // Oppo: no subtitle; current mode is the trailing assignment.
+            mLauncherStylePref.setSummary(null);
+            setPreferenceAssignment(mLauncherStylePref, value);
+        }
+
+        private static void setPreferenceAssignment(Preference preference, CharSequence value) {
+            if (preference instanceof COUIPreference) {
+                ((COUIPreference) preference).setAssignment(value);
+            } else {
+                preference.setSummary(value);
             }
         }
 
@@ -681,11 +706,8 @@ public class SettingsActivity extends AppCompatActivity
                 }
             }
 			//hxy-feature: add launcher style function  202312
-            int style = LauncherStyle.get(getActivity());
-			if (mLauncherStylePref != null) {
-				mLauncherStylePref.setSummary(style == LauncherStyle.APP_DRAWER ? 
-					getString(R.string.home_screen_style_single) : getString(R.string.home_screen_style_regular));
-			}
+            updateLauncherStyleAssignment();
+            updateHomeLayoutSummary();
 			//hxy-feature: add launcher style function  202312
             updateThemePref();  //hxy-feature: desktop theme 202312
             if (mPlusPref != null) {

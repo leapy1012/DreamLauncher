@@ -440,7 +440,8 @@
 
     <!-- Theme for the popup container -->
     <style name="PopupItem">
-        <item name="android:colorControlHighlight">?attr/popupColorTertiary</item>
+        <!-- COUI/Oppo press highlight for any GradientDrawable→ripple path. -->
+        <item name="android:colorControlHighlight">@color/coui_color_press</item>
     </style>
 
     <style name="PopupItemIconOnly">

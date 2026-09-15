@@ -21,18 +21,17 @@
         android:key="hxyos_desktop_layout"
         android:title="@string/launcher_layout"
         android:order="10">
-        <!-- Keep workspace layout picker from fresh. -->
+        <!-- Oppo Layout (+ Icon Custom): Home screen → layout → Icon Custom → Lock → autofill -->
+        <com.coui.appcompat.preference.COUIJumpPreference
+            android:key="pref_launcher_style"
+            android:title="@string/home_screen_style_title"
+            android:fragment="com.android.launcher3.settings.LauncherStyleFragment"
+            android:persistent="true"/>
         <com.coui.appcompat.preference.COUIJumpPreference
             android:key="pref_workspace_layout"
             android:title="@string/tog_title_layout"
             android:summary="@string/tog_title_layout_summary"
             android:persistent="false"/>
-        <com.coui.appcompat.preference.COUIJumpPreference
-            android:key="pref_text_size"
-            android:title="@string/accessibility_text_reading_options_title"
-            android:persistent="true">
-            <intent android:action="android.settings.TEXT_READING_SETTINGS"/>
-        </com.coui.appcompat.preference.COUIJumpPreference>
         <com.coui.appcompat.preference.COUIJumpPreference
             android:key="pref_icon_size"
             android:title="@string/home_screen_icon_custom"
@@ -42,7 +41,12 @@
         <com.coui.appcompat.preference.COUISwitchPreference
             android:key="pref_layout_dock"
             android:title="@string/home_screen_layout_lock"
-            android:summary="@string/home_screen_layout_lock_tips"
+            android:summary="@string/launcher_locked_description"
+            android:defaultValue="false"
+            android:persistent="true"/>
+        <com.coui.appcompat.preference.COUISwitchPreference
+            android:key="pref_fill_cell"
+            android:title="@string/launcher_is_compact_arrangement_title"
             android:defaultValue="false"
             android:persistent="true"/>
     </com.coui.appcompat.preference.COUIPreferenceCategory>
@@ -51,6 +55,12 @@
         android:key="hxyos_desktop_display"
         android:title="@string/launcher_settings_display"
         android:order="15">
+        <com.coui.appcompat.preference.COUIJumpPreference
+            android:key="pref_text_size"
+            android:title="@string/accessibility_text_reading_options_title"
+            android:persistent="true">
+            <intent android:action="android.settings.TEXT_READING_SETTINGS"/>
+        </com.coui.appcompat.preference.COUIJumpPreference>
         <com.coui.appcompat.preference.COUISwitchPreference
             android:key="pref_docked_app"
             android:title="@string/home_screen_docked_app"
@@ -62,11 +72,6 @@
             android:title="@string/home_screen_app_name_length"
             android:summary="@string/home_screen_app_name_length_tips"
             android:defaultValue="true"
-            android:persistent="true"/>
-        <com.coui.appcompat.preference.COUISwitchPreference
-            android:key="pref_fill_cell"
-            android:title="@string/home_screen_fill_cell"
-            android:defaultValue="false"
             android:persistent="true"/>
     </com.coui.appcompat.preference.COUIPreferenceCategory>
 
@@ -112,14 +117,6 @@
         android:key="hxyos_desktop_settings"
         android:title="@string/launcher_settings_style"
         android:order="20">
-        <!-- hxy-feature: add launcher style function -->
-        <com.coui.appcompat.preference.COUIJumpPreference
-            android:key="pref_launcher_style"
-            android:title="@string/home_screen_style_title"
-            android:summary="@string/launcher_style_summary"
-            android:fragment="com.android.launcher3.settings.LauncherStyleFragment"
-            android:persistent="true" />
-        <!-- hxy-feature: add launcher style function -->
         <com.coui.appcompat.preference.COUIJumpPreference
             android:key="pref_developer_options"
             android:persistent="false"

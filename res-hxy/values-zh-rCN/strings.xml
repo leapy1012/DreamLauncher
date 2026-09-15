@@ -72,11 +72,13 @@
     <string name="accessibility_text_reading_options_title">显示大小和文字</string>
     <string name="home_screen_layout_lock">布局锁定</string>
     <string name="home_screen_layout_lock_tips">布局锁定后，应用将不能被移动</string>
+    <string name="launcher_locked_description">不可改变桌面布局，删除或移动图标</string>
     <string name="home_screen_docked_app">底部dock栏标题</string>
     <string name="home_screen_docked_app_tips">开启显示标题，关闭隐藏标题</string>
     <string name="home_screen_app_name_length">单行显示</string>
     <string name="home_screen_app_name_length_tips">桌面图标标题单行显示</string>
     <string name="home_screen_fill_cell">卸载应用后自动补位</string>
+    <string name="launcher_is_compact_arrangement_title">图标自动补位</string>
     <string name="home_screen_double_tap_to_off">双击息屏</string>
     <string name="home_screen_double_tap_to_off_summary">锁屏或桌面空白处双击，可息屏</string>
     <string name="home_screen_memory_clean">一键清理</string>
