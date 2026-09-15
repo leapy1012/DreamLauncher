@@ -4,7 +4,9 @@
     xmlns:launcher="http://schemas.android.com/apk/res-auto"
     android:layout_width="@dimen/coloros_popup_item_width"
     android:layout_height="wrap_content"
-    android:background="@drawable/coloros_popup_item_bg"
+    android:background="@drawable/coloros_popup_item_press"
+    android:clickable="true"
+    android:focusable="true"
     android:minHeight="@dimen/coloros_popup_item_height"
     android:theme="@style/PopupItem">
 
@@ -13,9 +15,14 @@
         android:layout_width="@dimen/coloros_popup_item_width"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
+        android:background="@null"
+        android:clickable="false"
+        android:defaultFocusHighlightEnabled="false"
         android:ellipsize="end"
+        android:focusable="false"
         android:fontFamily="sans-serif-regular"
         android:gravity="start|center_vertical"
+        android:longClickable="false"
         android:minHeight="@dimen/coloros_popup_item_height"
         android:paddingStart="@dimen/coloros_popup_text_padding_start"
         android:paddingEnd="@dimen/coloros_popup_padding_end"
@@ -39,5 +46,7 @@
         android:layout_gravity="start|center_vertical"
         android:layout_marginStart="@dimen/coloros_popup_icon_margin_start"
         android:background="@drawable/ic_deepshortcut_placeholder"
+        android:clickable="false"
+        android:focusable="false"
         android:forceDarkAllowed="false" />
 </com.android.launcher3.shortcuts.DeepShortcutView>

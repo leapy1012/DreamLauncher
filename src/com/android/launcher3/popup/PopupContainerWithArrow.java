@@ -31,7 +31,6 @@ import android.animation.AnimatorSet;
 import android.animation.LayoutTransition;
 import android.annotation.TargetApi;
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -121,6 +120,8 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
 
     protected PopupItemDragHandler mPopupItemDragHandler;
     protected LauncherAccessibilityDelegate mAccessibilityDelegate;
+    /** ColorOS single-card popup: no AOSP pointer arrow; Oppo-style flat system icons. */
+    private boolean mColorOsStylePopup;
 
     public PopupContainerWithArrow(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
@@ -136,6 +137,12 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
 
     public PopupContainerWithArrow(Context context) {
         this(context, null, 0);
+    }
+
+    @Override
+    protected boolean shouldAddArrow() {
+        // Oppo long-press menu is a floating card with no visible pointer.
+        return !mColorOsStylePopup && super.shouldAddArrow();
     }
 
     @Override
@@ -285,9 +292,8 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     private void configureForLauncher(Launcher launcher, ItemInfo itemInfo) {
         addOnAttachStateChangeListener(new LauncherPopupLiveUpdateHandler(
                 launcher, (PopupContainerWithArrow<Launcher>) this));
-        if (!(itemInfo instanceof ItemInfoWithIcon itemInfoWithIcon)) {
-            mPopupItemDragHandler = new LauncherPopupItemDragHandler(launcher, this);
-        }
+        // Always install drag handler — workspace apps are ItemInfoWithIcon; Oppo does the same.
+        mPopupItemDragHandler = new LauncherPopupItemDragHandler(launcher, this);
         mAccessibilityDelegate = new ShortcutMenuAccessibilityDelegate(launcher);
         launcher.getDragController().addDragListener(this);
     }
@@ -410,14 +416,13 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
      */
     public void populateAndShowColorOs(final BubbleTextView originalIcon,
             int deepShortcutCount, List<SystemShortcut> systemShortcuts) {
+        mColorOsStylePopup = true;
         mOriginalIcon = originalIcon;
         mContainerWidth = getResources().getDimensionPixelSize(R.dimen.coloros_popup_item_width);
         final int popupSurface = getContext().getColor(R.color.coloros_popup_surface);
         final int popupBand = getContext().getColor(R.color.coloros_popup_group_band);
         // Oppo oplus_deep_shortcut: coui primary neutral (~90% black), not pure #000.
         final int popupText = getContext().getColor(R.color.coloros_text_primary);
-        final ColorOsPopupIcons.Theme iconTheme =
-                ColorOsPopupIcons.Theme.fromSurface(popupSurface);
         mArrowColor = popupSurface;
 
         ViewGroup card = inflateAndAdd(R.layout.coloros_popup_card, this);
@@ -444,8 +449,9 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                         R.layout.coloros_popup_shortcut, mDeepShortcutContainer);
                 v.getLayoutParams().width = mContainerWidth;
                 v.setForceDarkAllowed(false);
-                v.setBackgroundColor(Color.TRANSPARENT);
-                v.setColorOsPopupIconTheme(iconTheme);
+                v.setColorOsPopupIcons(true);
+                // Keep Oppo press selector from coloros_popup_shortcut — do not wipe it.
+                ensureColorOsPopupItemPress(v);
                 applyColorOsPopupLabel(v.getBubbleText(), popupText);
                 mDeepShortcuts.add(v);
             }
@@ -470,15 +476,14 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                         false);
                 row.getLayoutParams().width = mContainerWidth;
                 row.setForceDarkAllowed(false);
-                row.setBackgroundColor(Color.TRANSPARENT);
+                ensureColorOsPopupItemPress(row);
                 if (row instanceof DeepShortcutView) {
                     DeepShortcutView dsv = (DeepShortcutView) row;
-                    dsv.setColorOsPopupIconTheme(iconTheme);
+                    dsv.setColorOsPopupIcons(true);
                     applyColorOsPopupLabel(dsv.getBubbleText(), popupText);
-                    View icon = dsv.getIconView();
-                    icon.setForceDarkAllowed(false);
-                    icon.setBackground(ColorOsPopupIcons.forSystemShortcut(
-                            getContext(), shortcut.getIconResId(), iconTheme));
+                    // Oppo SystemShortcut.updateIcon: setBackgroundResource + tint, no remask.
+                    applyColorOsSystemPopupIcon(dsv.getIconView(), shortcut.getIconResId(),
+                            popupText);
                 }
             }
         }
@@ -499,10 +504,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                 }
                 DeepShortcutView dsv = (DeepShortcutView) child;
                 SystemShortcut shortcut = (SystemShortcut) child.getTag();
-                View icon = dsv.getIconView();
-                icon.setForceDarkAllowed(false);
-                icon.setBackground(ColorOsPopupIcons.forSystemShortcut(
-                        getContext(), shortcut.getIconResId(), iconTheme));
+                applyColorOsSystemPopupIcon(dsv.getIconView(), shortcut.getIconResId(), popupText);
             }
         }
         loadAppShortcuts((ItemInfo) originalIcon.getTag(), /* notificationKeys= */ emptyList());
@@ -512,6 +514,17 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     private static void applyColorOsPopupLabel(BubbleTextView label, int color) {
         DeepShortcutView.applyColorOsPopupTypeface(label);
         label.setTextColor(color);
+        // Clicks / press belong on the DeepShortcutView row (Oppo), not the label.
+        label.setClickable(false);
+        label.setLongClickable(false);
+        label.setBackground(null);
+    }
+
+    /** Oppo oplus_shortcut_background_click_color — pressed fill on the row. */
+    private static void ensureColorOsPopupItemPress(View row) {
+        row.setBackgroundResource(R.drawable.coloros_popup_item_press);
+        row.setClickable(true);
+        row.setFocusable(true);
     }
 
     /**
@@ -940,11 +953,17 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         @Override
         public boolean onTouch(View v, MotionEvent ev) {
             // Touched a shortcut, update where it was touched so we can drag from there on
-            // long click.
+            // long click. Coordinates are relative to v; convert into DeepShortcutView space.
             switch (ev.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                 case MotionEvent.ACTION_MOVE:
-                    mIconLastTouchPos.set((int) ev.getX(), (int) ev.getY());
+                    DeepShortcutView sv = findDeepShortcutView(v);
+                    if (sv != null && v != sv) {
+                        mIconLastTouchPos.set((int) (ev.getX() + v.getLeft()),
+                                (int) (ev.getY() + v.getTop()));
+                    } else {
+                        mIconLastTouchPos.set((int) ev.getX(), (int) ev.getY());
+                    }
                     break;
             }
             return false;
@@ -953,11 +972,10 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         @Override
         public boolean onLongClick(View v) {
             if (!ItemLongClickListener.canStartDrag(mLauncher)) return false;
-            // Return early if not the correct view
-            if (!(v.getParent() instanceof DeepShortcutView)) return false;
+            DeepShortcutView sv = findDeepShortcutView(v);
+            // Deep shortcuts only (system rows have no ShortcutInfo detail).
+            if (sv == null || sv.getDetail() == null) return false;
 
-            // Long clicked on a shortcut.
-            DeepShortcutView sv = (DeepShortcutView) v.getParent();
             sv.setWillDrawIcon(false);
 
             // Move the icon to align with the center-top of the touch point
@@ -977,6 +995,17 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
             // TODO: support dragging from within folder without having to close it
             AbstractFloatingView.closeOpenContainer(mLauncher, AbstractFloatingView.TYPE_FOLDER);
             return false;
+        }
+
+        /** Row itself (ColorOS) or child label (AOSP). */
+        private static DeepShortcutView findDeepShortcutView(View v) {
+            if (v instanceof DeepShortcutView) {
+                return (DeepShortcutView) v;
+            }
+            if (v != null && v.getParent() instanceof DeepShortcutView) {
+                return (DeepShortcutView) v.getParent();
+            }
+            return null;
         }
     }
 
@@ -1049,6 +1078,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
      */
     public void populateAndShowColorOsForFolder(List<SystemShortcut> shortcuts,
             HxyLargeFolderIcon folderIcon) {
+        mColorOsStylePopup = true;
         mFolderIcon = folderIcon;
         mContainerWidth = getResources().getDimensionPixelSize(R.dimen.coloros_popup_item_width);
         final int popupSurface = getContext().getColor(R.color.coloros_popup_surface);
@@ -1088,7 +1118,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                     false);
             row.getLayoutParams().width = mContainerWidth;
             row.setForceDarkAllowed(false);
-            row.setBackgroundColor(Color.TRANSPARENT);
+            ensureColorOsPopupItemPress(row);
             if (row instanceof DeepShortcutView) {
                 DeepShortcutView dsv = (DeepShortcutView) row;
                 applyColorOsPopupLabel(dsv.getBubbleText(), popupText);
@@ -1130,5 +1160,16 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         icon = icon.mutate();
         icon.setTint(tintColor);
         iconView.setBackground(icon);
+    }
+
+    /**
+     * Oppo workspace popup system icons: thin PNG/vector + tint at 24dp.
+     * Widgets uses a ColorOS stroked grid (AOSP {@code ic_widget} is a filled blob).
+     */
+    private void applyColorOsSystemPopupIcon(View iconView, int iconResId, int tintColor) {
+        int resId = iconResId == R.drawable.ic_widget
+                ? R.drawable.ic_widget_coloros_popup
+                : iconResId;
+        applyFlatFolderPopupIcon(iconView, resId, tintColor);
     }
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Oppo oplus_shortcut_background_click_color: pressed fill on the shortcut row. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:state_selected="true"
+        android:color="@color/coui_color_card_pressed" />
+    <item
+        android:state_pressed="true"
+        android:color="@color/coui_color_press" />
+    <item android:color="@color/coui_transparence" />
+</selector>

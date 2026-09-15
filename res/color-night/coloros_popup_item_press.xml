@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark popup surface (#333): white-alpha press like COUI dark list items. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:state_selected="true"
+        android:color="@color/coui_color_card_pressed_dark" />
+    <item
+        android:state_pressed="true"
+        android:color="@color/coui_color_press_background_dark" />
+    <item android:color="@color/coui_transparence" />
+</selector>

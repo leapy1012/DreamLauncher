@@ -38,15 +38,21 @@ import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.R;
 
 /**
- * ColorOS popup row icons: shared 24dp circular plate + mono glyph for deep and system rows.
- *
+ * ColorOS popup row icons:
+ * <ul>
+ *   <li>Deep shortcuts — 24dp circular plate + mono glyph</li>
+ *   <li>System shortcuts (App info / Widgets / …) — flat mono glyph, no plate (Oppo)</li>
+ * </ul>
  * Deep shortcuts load the raw {@link ShortcutInfo} drawable (usually adaptive). We rasterize it
  * and convert luminance→alpha so white-on-dark Material glyphs become a clean silhouette on a
  * muted ColorOS plate — without keeping the purple adaptive plate.
  */
 public final class ColorOsPopupIcons {
 
-    private static final float SYSTEM_GLYPH_INSET = 0.20f;
+    /** Inset of line glyph inside the deep-shortcut plate (Oppo line-art look). */
+    private static final float DEEP_GLYPH_INSET = 0.22f;
+    /** System vectors are already padded; keep almost full size. */
+    private static final float SYSTEM_GLYPH_INSET = 0.06f;
 
     private ColorOsPopupIcons() {}
 
@@ -62,7 +68,7 @@ public final class ColorOsPopupIcons {
         @NonNull
         public static Theme fromSurface(@ColorInt int popupSurface) {
             boolean dark = Color.luminance(popupSurface) < 0.5f;
-            return new Theme(dark ? 0xFF4A4A4A : 0xFFD8DCE0,
+            return new Theme(dark ? 0xFF4A4A4A : 0xFFEEF0F2,
                     dark ? Color.WHITE : Color.BLACK);
         }
     }
@@ -72,11 +78,11 @@ public final class ColorOsPopupIcons {
             @NonNull Theme theme) {
         int sizePx = context.getResources().getDimensionPixelSize(R.dimen.coloros_popup_icon_size);
         Drawable raw = loadShortcutDrawable(context, detail);
-        // Never rasterize the full adaptive (Material plate becomes a dark disk). Glyph only.
+        // Prefer monochrome / FG only — keep line art; do not dilate into a filled blob.
         Drawable glyph = extractGlyph(raw);
         boolean adaptiveFg = glyph != null && raw instanceof AdaptiveIconDrawable;
         return renderOnPlate(context, sizePx, theme, glyph != null ? glyph : raw,
-                /* insetFraction= */ 0f, adaptiveFg);
+                DEEP_GLYPH_INSET, /* expandAdaptiveFg= */ adaptiveFg);
     }
 
     @Nullable
@@ -98,13 +104,16 @@ public final class ColorOsPopupIcons {
         return src.mutate();
     }
 
+    /**
+     * Oppo {@code SystemShortcut.updateIcon}: flat vector glyph, no grey circular plate.
+     */
     @NonNull
     public static Drawable forSystemShortcut(@NonNull Context context, int iconResId,
             @NonNull Theme theme) {
-        int sizePx = context.getResources().getDimensionPixelSize(R.dimen.coloros_popup_icon_size);
+        int sizePx = context.getResources().getDimensionPixelSize(
+                R.dimen.coloros_popup_system_icon_size);
         Drawable src = ContextCompat.getDrawable(context, iconResId);
-        return renderOnPlate(context, sizePx, theme, src, SYSTEM_GLYPH_INSET,
-                /* undoAdaptive= */ false);
+        return renderFlatGlyph(context, sizePx, theme, src, SYSTEM_GLYPH_INSET);
     }
 
     @Nullable
@@ -119,8 +128,38 @@ public final class ColorOsPopupIcons {
     }
 
     @NonNull
+    private static Drawable renderFlatGlyph(Context context, int sizePx, Theme theme,
+            @Nullable Drawable src, float insetFraction) {
+        Bitmap out = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(out);
+        if (src != null) {
+            Drawable d = src.mutate();
+            d.setTintList(null);
+            d.setColorFilter(null);
+            int inset = Math.round(sizePx * insetFraction);
+            d.setBounds(inset, inset, sizePx - inset, sizePx - inset);
+
+            Bitmap tmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+            Canvas tmpCanvas = new Canvas(tmp);
+            d.draw(tmpCanvas);
+
+            Bitmap mask = luminanceToAlphaMask(tmp);
+            tmp.recycle();
+
+            Paint mono = new Paint(Paint.ANTI_ALIAS_FLAG);
+            mono.setFilterBitmap(false);
+            mono.setColorFilter(new PorterDuffColorFilter(theme.glyph, PorterDuff.Mode.SRC_IN));
+            canvas.drawBitmap(mask, 0, 0, mono);
+            mask.recycle();
+        }
+        BitmapDrawable bd = new BitmapDrawable(context.getResources(), out);
+        bd.setBounds(0, 0, sizePx, sizePx);
+        return bd;
+    }
+
+    @NonNull
     private static Drawable renderOnPlate(Context context, int sizePx, Theme theme,
-            @Nullable Drawable src, float insetFraction, boolean undoAdaptive) {
+            @Nullable Drawable src, float insetFraction, boolean expandAdaptiveFg) {
         Bitmap out = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(out);
 
@@ -134,7 +173,8 @@ public final class ColorOsPopupIcons {
             d.setTintList(null);
             d.setColorFilter(null);
 
-            int expand = undoAdaptive
+            // Undo adaptive safe-zone so stroked glyphs fill the plate, then apply Oppo inset.
+            int expand = expandAdaptiveFg
                     ? Math.round(sizePx * AdaptiveIconDrawable.getExtraInsetFraction())
                     : 0;
             int inset = Math.round(sizePx * insetFraction);
@@ -147,20 +187,14 @@ public final class ColorOsPopupIcons {
 
             Bitmap mask = luminanceToAlphaMask(tmp);
             tmp.recycle();
-            // Material adaptive FGs are thin line-art; dilate so they optically match
-            // thicker system-shortcut vectors (solid black, not washed-out gray).
-            if (undoAdaptive) {
-                Bitmap thick = dilateOpaque(mask, /* radiusPx= */ 2);
-                mask.recycle();
-                mask = thick;
-            }
+            // Keep thin line art — do not dilate adaptive FGs into filled blobs.
 
             Path clip = new Path();
             clip.addCircle(r, r, r, Path.Direction.CW);
             canvas.save();
             canvas.clipPath(clip);
             Paint mono = new Paint(Paint.ANTI_ALIAS_FLAG);
-            mono.setFilterBitmap(false);
+            mono.setFilterBitmap(true);
             mono.setColorFilter(new PorterDuffColorFilter(theme.glyph, PorterDuff.Mode.SRC_IN));
             canvas.drawBitmap(mask, 0, 0, mono);
             canvas.restore();
@@ -174,7 +208,7 @@ public final class ColorOsPopupIcons {
 
     /**
      * Builds an ARGB mask whose alpha follows glyph ink: light-on-dark icons use luminance as
-     * alpha; dark-on-light icons invert. Opaque Material plates become transparent.
+     * alpha; dark-on-light icons invert. Soft AA is preserved for a line-icon look.
      */
     @NonNull
     private static Bitmap luminanceToAlphaMask(@NonNull Bitmap src) {
@@ -201,7 +235,7 @@ public final class ColorOsPopupIcons {
         for (int i = 0; i < pixels.length; i++) {
             int c = pixels[i];
             int a = (c >>> 24) & 0xff;
-            if (a < 16) {
+            if (a < 8) {
                 pixels[i] = 0;
                 continue;
             }
@@ -210,50 +244,17 @@ public final class ColorOsPopupIcons {
             int b = c & 0xff;
             int lum = Math.max(r, Math.max(g, b));
             int ink = lightInkOnDark ? lum : (255 - lum);
-            // Soft AA → transparent; solid ink → opaque white mask so SRC_IN yields solid black.
-            if (ink < 64) {
+            // Preserve AA so stroked/line glyphs stay thin (Oppo), not filled.
+            int alpha = Math.min(255, (ink * a) / 255);
+            if (alpha < 24) {
                 pixels[i] = 0;
-                continue;
+            } else {
+                pixels[i] = (alpha << 24) | 0x00FFFFFF;
             }
-            pixels[i] = 0xFFFFFFFF;
         }
 
         Bitmap mask = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         mask.setPixels(pixels, 0, w, 0, 0, w, h);
         return mask;
-    }
-
-    /** Expands opaque mask pixels so thin Material glyphs read as solid black. */
-    @NonNull
-    private static Bitmap dilateOpaque(@NonNull Bitmap src, int radiusPx) {
-        int w = src.getWidth();
-        int h = src.getHeight();
-        int[] in = new int[w * h];
-        int[] out = new int[w * h];
-        src.getPixels(in, 0, w, 0, 0, w, h);
-        System.arraycopy(in, 0, out, 0, in.length);
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                if ((in[y * w + x] >>> 24) < 128) {
-                    continue;
-                }
-                for (int dy = -radiusPx; dy <= radiusPx; dy++) {
-                    int yy = y + dy;
-                    if (yy < 0 || yy >= h) {
-                        continue;
-                    }
-                    for (int dx = -radiusPx; dx <= radiusPx; dx++) {
-                        int xx = x + dx;
-                        if (xx < 0 || xx >= w) {
-                            continue;
-                        }
-                        out[yy * w + xx] = 0xFFFFFFFF;
-                    }
-                }
-            }
-        }
-        Bitmap dilated = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        dilated.setPixels(out, 0, w, 0, 0, w, h);
-        return dilated;
     }
 }

@@ -35,7 +35,6 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
-import com.android.launcher3.popup.ColorOsPopupIcons;
 import com.android.launcher3.popup.PopupContainerWithArrow;
 import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.BubbleTextHolder;
@@ -56,9 +55,8 @@ public class DeepShortcutView extends FrameLayout implements BubbleTextHolder {
 
     private WorkspaceItemInfo mInfo;
     private ShortcutInfo mDetail;
-    /** When true, popup icons use ColorOS plate/glyph treatment instead of raw adaptive bitmaps. */
+    /** ColorOS popup row: Oppo label typeface/press; icons use IconCache / flat system drawables. */
     private boolean mColorOsPopupIcons;
-    private ColorOsPopupIcons.Theme mColorOsPopupIconTheme;
 
     public DeepShortcutView(Context context) {
         this(context, null, 0);
@@ -72,14 +70,9 @@ public class DeepShortcutView extends FrameLayout implements BubbleTextHolder {
         super(context, attrs, defStyle);
     }
 
-    /** Enables ColorOS popup icon rendering for this row (deep + system share 24dp optics). */
+    /** Enables ColorOS popup row styling (label + touch routing). */
     public void setColorOsPopupIcons(boolean enabled) {
         mColorOsPopupIcons = enabled;
-    }
-
-    public void setColorOsPopupIconTheme(ColorOsPopupIcons.Theme theme) {
-        mColorOsPopupIconTheme = theme;
-        mColorOsPopupIcons = theme != null;
     }
 
     public boolean isColorOsPopupIcons() {
@@ -155,24 +148,28 @@ public class DeepShortcutView extends FrameLayout implements BubbleTextHolder {
         return sTempPoint;
     }
 
+    @Override
+    public boolean onInterceptTouchEvent(android.view.MotionEvent ev) {
+        // ColorOS: children (label/icon) must not steal touches — row owns press + click + drag.
+        if (mColorOsPopupIcons) {
+            return true;
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
     /** package private **/
     public void applyShortcutInfo(WorkspaceItemInfo info, ShortcutInfo detail,
             PopupContainerWithArrow container) {
         mInfo = info;
         mDetail = detail;
         mBubbleText.applyFromWorkspaceItem(info);
+        // Oppo: mIconView.setBackground(mBubbleText.getIcon()) — UX/IconCache bitmap already
+        // has plate + correctly sized glyph. Do not re-rasterize with ColorOsPopupIcons inset.
+        mIconView.setBackground(mBubbleText.getIcon());
         if (mColorOsPopupIcons) {
-            ColorOsPopupIcons.Theme theme = mColorOsPopupIconTheme != null
-                    ? mColorOsPopupIconTheme
-                    : ColorOsPopupIcons.Theme.fromSurface(
-                            getContext().getColor(R.color.coloros_popup_surface));
-            // Hide BTV compound icon — otherwise the adaptive shortcut bleeds through plate AA.
             mBubbleText.setIconVisible(false);
-            mIconView.setBackground(ColorOsPopupIcons.forDeepShortcut(getContext(), detail, theme));
             applyColorOsPopupTypeface(mBubbleText);
             mBubbleText.setTextColor(getContext().getColor(R.color.coloros_text_primary));
-        } else {
-            mIconView.setBackground(mBubbleText.getIcon());
         }
 
         // Use the long label as long as it exists and fits.
@@ -186,12 +183,34 @@ public class DeepShortcutView extends FrameLayout implements BubbleTextHolder {
         if (mColorOsPopupIcons) {
             applyColorOsPopupTypeface(mBubbleText);
             mBubbleText.setTextColor(getContext().getColor(R.color.coloros_text_primary));
+            // Oppo: listeners + ItemInfo tag on the row so press + click + drag work.
+            mBubbleText.setClickable(false);
+            mBubbleText.setLongClickable(false);
+            mBubbleText.setOnClickListener(null);
+            mBubbleText.setOnLongClickListener(null);
+            mBubbleText.setOnTouchListener(null);
+            mBubbleText.setBackground(null);
+            mIconView.setClickable(false);
+            mIconView.setFocusable(false);
+            setTag(mBubbleText.getTag());
+            setBackgroundResource(R.drawable.coloros_popup_item_press);
+            setClickable(true);
+            setLongClickable(true);
+            PopupContainerWithArrow.PopupItemDragHandler drag = container.getItemDragHandler();
+            setOnClickListener(container.getItemClickListener());
+            if (drag != null) {
+                setOnLongClickListener(drag);
+                setOnTouchListener(drag);
+            }
+        } else {
+            // TODO: Add the click handler to this view directly and not the child view.
+            mBubbleText.setOnClickListener(container.getItemClickListener());
+            PopupContainerWithArrow.PopupItemDragHandler drag = container.getItemDragHandler();
+            if (drag != null) {
+                mBubbleText.setOnLongClickListener(drag);
+                mBubbleText.setOnTouchListener(drag);
+            }
         }
-
-        // TODO: Add the click handler to this view directly and not the child view.
-        mBubbleText.setOnClickListener(container.getItemClickListener());
-        mBubbleText.setOnLongClickListener(container.getItemDragHandler());
-        mBubbleText.setOnTouchListener(container.getItemDragHandler());
     }
 
     /**

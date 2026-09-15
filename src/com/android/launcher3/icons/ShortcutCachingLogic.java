@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.pm.LauncherApps;
 import android.content.pm.PackageInfo;
 import android.content.pm.ShortcutInfo;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.UserHandle;
 import android.text.TextUtils;
@@ -32,7 +33,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.launcher3.LauncherAppState;
-import com.android.launcher3.icons.BaseIconFactory.IconOptions;
 import com.android.launcher3.icons.cache.CachingLogic;
 import com.android.launcher3.shortcuts.ShortcutKey;
 import com.android.launcher3.util.Themes;
@@ -73,13 +73,15 @@ public class ShortcutCachingLogic implements CachingLogic<ShortcutInfo> {
     @NonNull
     @Override
     public BitmapInfo loadIcon(@NonNull Context context, @NonNull ShortcutInfo info) {
-        try (LauncherIcons li = LauncherIcons.obtain(context)) {
-            Drawable unbadgedDrawable = ShortcutCachingLogic.getIcon(
-                    context, info, LauncherAppState.getIDP(context).fillResIconDpi);
-            if (unbadgedDrawable == null) return BitmapInfo.LOW_RES_INFO;
-            return li.createBadgedIconBitmap(unbadgedDrawable,
-                    new IconOptions().setExtractedColor(Themes.getColorAccent(context)));
-        }
+        Drawable unbadgedDrawable = ShortcutCachingLogic.getIcon(
+                context, info, LauncherAppState.getIDP(context).fillResIconDpi);
+        if (unbadgedDrawable == null) return BitmapInfo.LOW_RES_INFO;
+        // Oppo ShortcutCachingLogic → convertToThemeStyle / UX shortcut morph.
+        // Without device UX packs, remask to circular ColorOS plate + mono glyph so popup
+        // and workspace shortcuts match (do not use device IconShape squircle).
+        int sizePx = LauncherAppState.getIDP(context).iconBitmapSize;
+        Bitmap themed = ColorOsShortcutIcons.theme(context, unbadgedDrawable, sizePx);
+        return BitmapInfo.of(themed, Themes.getColorAccent(context));
     }
 
     @Override
