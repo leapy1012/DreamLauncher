@@ -26,6 +26,6 @@
     <string name="dynamic_clock_pkg" >com.android.deskclock</string>
     <bool name="show_clock_second">true</bool>
     <!--hxy_leifengqi update to Dynamic clock 20230303 end-->
-    <bool name="config_minusEnabled">true</bool>
-    <bool name="config_plusEnabled">true</bool>
+    <bool name="config_minusEnabled">false</bool>
+    <bool name="config_plusEnabled">false</bool>
 </resources>

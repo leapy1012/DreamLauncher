@@ -628,7 +628,7 @@ public class HxyFolderAnimationManager {
                         size = shrunk;
                     }
                     return computePreviewLandingTranslation(
-                            btv, left, top, size);
+                            btv, left, top, size, true /* allowScaleUp */);
                 }
             }
         }
@@ -654,12 +654,21 @@ public class HxyFolderAnimationManager {
                 + (mPreviewBackground.getBasePreviewOffsetY() + previewTransY)
                 * folderIconScaleRel;
         float previewSizeOnScreen = previewIconSize * folderIconScaleRel;
-        return computePreviewLandingTranslation(btv, previewLeft, previewTop, previewSizeOnScreen);
+        // Small-folder preview cells are always smaller than the open icon.
+        return computePreviewLandingTranslation(
+                btv, previewLeft, previewTop, previewSizeOnScreen, false);
     }
 
-    /** Landing from absolute DragLayer preview-icon bounds (large-folder list cells). */
+    /**
+     * Landing from absolute DragLayer preview-icon bounds (large-folder list cells).
+     *
+     * @param allowScaleUp when true (large-folder / highlight featured slot), scale may
+     *        exceed 1 so the open icon can grow into a larger preview cell — Oppo
+     *        highlight index-0 is ~2×2. Cap only guards pathological measure failures.
+     */
     private float[] computePreviewLandingTranslation(BubbleTextView btv,
-            float previewLeft, float previewTop, float previewSizeOnScreen) {
+            float previewLeft, float previewTop, float previewSizeOnScreen,
+            boolean allowScaleUp) {
         float saveTx = btv.getTranslationX();
         float saveTy = btv.getTranslationY();
         float saveSx = btv.getScaleX();
@@ -679,11 +688,16 @@ public class HxyFolderAnimationManager {
         float cy = btv.getHeight() / 2f;
         float iconSizeOnScreen = Math.max(1, btv.getIconSize()) * btvScaleRel;
         float scale = previewSizeOnScreen / Math.max(1f, iconSizeOnScreen);
-        // Never land larger than the open icon; clamp pathological measure failures.
         if (!(scale > 0f) || Float.isNaN(scale)) {
             scale = previewSizeOnScreen / Math.max(1, btv.getIconSize());
         }
-        scale = Math.min(scale, 1f);
+        if (allowScaleUp) {
+            // Highlight featured cell is larger than the open icon; Oppo grows into it.
+            // Still reject absurd ratios from a broken measure (e.g. zero-size icon).
+            scale = Math.min(scale, 3f);
+        } else {
+            scale = Math.min(scale, 1f);
+        }
 
         // View maps local point p → parent: (p - pivot) * scale + pivot + translation
         float iconLeftAtScale = cx + (iconBounds.left - cx) * scale;

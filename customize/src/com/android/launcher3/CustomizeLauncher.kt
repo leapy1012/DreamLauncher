@@ -13,7 +13,6 @@ import com.android.customize.overlay.preference.OverlayPreference
 import com.android.launcher3.statemanager.StateManager
 import com.android.launcher3.uioverrides.QuickstepLauncher
 import com.android.systemui.plugins.shared.LauncherOverlayManager
-import android.provider.Settings
 
 class CustomizeLauncher : QuickstepLauncher() {
     val container = LauncherContainer(this)
@@ -76,27 +75,7 @@ class CustomizeLauncher : QuickstepLauncher() {
 
     override fun onStateSetEnd(state: LauncherState) {
         super.onStateSetEnd(state)
-        var minusEnabled : Boolean = false
-        var plusEnabled : Boolean = false
-        if (state == LauncherState.SPRING_LOADED) {
-            minusEnabled = Settings.Global.getInt(contentResolver, "persist.sys.desktop_minus", 1) == 1
-            plusEnabled = Settings.Global.getInt(contentResolver, "persist.sys.desktop_plus", 1) == 1
-            if (minusEnabled) {
-                overlayPreference.setMinusEnabled(false)
-            }
-            if (plusEnabled) {
-                overlayPreference.setPlusEnabled(false)
-            }
-        } else if (state == LauncherState.NORMAL) {
-            minusEnabled = Settings.Global.getInt(contentResolver, "persist.sys.desktop_minus", 1) == 1
-            plusEnabled = Settings.Global.getInt(contentResolver, "persist.sys.desktop_plus", 1) == 1
-            if (minusEnabled) {
-                overlayPreference.setMinusEnabled(true)
-            }
-            if (plusEnabled) {
-                overlayPreference.setPlusEnabled(true)
-            }
-        }
+        // Left/right side screens removed — do not restore overlays from Settings.Global.
     }
 
     fun getOpenScreenView(): AbstractFloatingView? {

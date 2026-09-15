@@ -98,22 +98,6 @@
     </com.coui.appcompat.preference.COUIPreferenceCategory>
 
     <com.coui.appcompat.preference.COUIPreferenceCategory
-        android:key="hxyos_desktop_side_screens"
-        android:title="@string/launcher_settings_side_screens"
-        android:order="19">
-        <com.coui.appcompat.preference.COUISwitchPreference
-            android:key="pref_minusEnabled"
-            android:title="@string/pref_minusEnabled"
-            android:defaultValue="@bool/config_minusEnabled"
-            android:persistent="true" />
-        <com.coui.appcompat.preference.COUISwitchPreference
-            android:key="pref_plusEnabled"
-            android:title="@string/pref_plusEnabled"
-            android:defaultValue="@bool/config_plusEnabled"
-            android:persistent="true" />
-    </com.coui.appcompat.preference.COUIPreferenceCategory>
-
-    <com.coui.appcompat.preference.COUIPreferenceCategory
         android:key="hxyos_desktop_settings"
         android:title="@string/launcher_settings_style"
         android:order="20">

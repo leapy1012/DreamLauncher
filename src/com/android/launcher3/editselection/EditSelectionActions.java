@@ -265,7 +265,7 @@ public final class EditSelectionActions {
     }
 
     @Nullable
-    private static View findView(Iterable<View> views, WorkspaceItemInfo info) {
+    private static View findView(Iterable<View> views, ItemInfo info) {
         for (View view : views) {
             Object tag = view.getTag();
             if (tag == info || (tag instanceof ItemInfo item && sameItem(item, info))) {
@@ -273,6 +273,44 @@ public final class EditSelectionActions {
             }
         }
         return null;
+    }
+
+    /**
+     * Resolve a live icon for {@code info}. Folder contents may be unbound after the folder
+     * closes — then return null and let {@link Launcher#removeItem} remove via FolderInfo.
+     */
+    @Nullable
+    private static View resolveSelectedView(Launcher launcher, ItemInfo info,
+            Iterable<View> selectedViews) {
+        View view = findView(selectedViews, info);
+        if (view != null) {
+            return view;
+        }
+        Workspace workspace = launcher.getWorkspace();
+        if (workspace != null && info instanceof WorkspaceItemInfo wi
+                && (wi.container == LauncherSettings.Favorites.CONTAINER_DESKTOP
+                || wi.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT)) {
+            return findWorkspaceView(workspace, wi);
+        }
+        Folder open = Folder.getOpen(launcher);
+        if (open != null) {
+            for (View icon : open.getIconsInReadingOrder()) {
+                if (icon == null) {
+                    continue;
+                }
+                Object tag = icon.getTag();
+                if (tag == info || (tag instanceof ItemInfo item && sameItem(item, info))) {
+                    return icon;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean isInFolder(ItemInfo info) {
+        return info.container != LauncherSettings.Favorites.CONTAINER_DESKTOP
+                && info.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT
+                && info.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION;
     }
 
     @Nullable
@@ -486,30 +524,36 @@ public final class EditSelectionActions {
         }
     }
 
-    public static void uninstallOrRemove(Launcher launcher, Iterable<View> selected) {
-        List<View> snapshot = new ArrayList<>();
-        for (View v : selected) {
-            snapshot.add(v);
-        }
+    /**
+     * Oppo {@code PagePreviewButtonContainer.dealAppIcons}:
+     * drawer → remove from Home (including folder contents); regular → uninstall or remove.
+     * <p>
+     * Must use {@code selectedItems} (not only live views): folder icons unbind when the
+     * folder closes while selection ItemInfos remain.
+     */
+    public static void uninstallOrRemove(Launcher launcher, Collection<ItemInfo> selectedItems,
+            Iterable<View> selectedViews) {
+        List<ItemInfo> items = new ArrayList<>(selectedItems);
         // Oppo PagePreviewButtonContainer.dealAppIcons(): drawer → removeApps().
         if (LauncherStyle.isAppDrawer(launcher)) {
+            // Unbind open-folder content views; remove via FolderInfo + workspace FolderIcon.
+            AbstractFloatingView.closeOpenViews(launcher, true, AbstractFloatingView.TYPE_FOLDER);
             boolean removedAny = false;
-            for (View v : snapshot) {
-                Object tag = v.getTag();
-                if (!(tag instanceof ItemInfo info)) {
+            for (ItemInfo info : items) {
+                if (!EditSelectionEligibility.canRemoveFromHome(info)) {
                     continue;
                 }
-                if (!EditSelectionEligibility.canRemoveFromHome(info)) {
+                View v = resolveSelectedView(launcher, info, selectedViews);
+                // Folder contents: view may be null after close; removeItem still works.
+                if (v == null && !isInFolder(info)) {
                     continue;
                 }
                 if (launcher.removeItem(v, info, true)) {
                     removedAny = true;
                 }
             }
-            if (!removedAny) {
-                Toast.makeText(launcher, R.string.uninstall_system_app_text, Toast.LENGTH_SHORT)
-                        .show();
-            } else {
+            // Do not misuse uninstall_system_app_text — drawer Remove is never package uninstall.
+            if (removedAny) {
                 stripEmptyWorkspaceScreens(launcher);
             }
             return;
@@ -517,12 +561,9 @@ public final class EditSelectionActions {
 
         boolean startedUninstall = false;
         boolean removedAny = false;
+        boolean hadSystemOnlyFailure = false;
 
-        for (View v : snapshot) {
-            Object tag = v.getTag();
-            if (!(tag instanceof ItemInfo info)) {
-                continue;
-            }
+        for (ItemInfo info : items) {
             if (!EditSelectionEligibility.isUninstallOrRemoveEligible(launcher, info)) {
                 continue;
             }
@@ -532,13 +573,21 @@ public final class EditSelectionActions {
                 if (startUninstallActivity(launcher, uninstallCn, info)) {
                     startedUninstall = true;
                 }
-            } else if (launcher.removeItem(v, info, true)) {
-                // Shortcut / deep shortcut — remove from workspace.
-                removedAny = true;
+            } else if (EditSelectionEligibility.canRemoveFromHome(info)) {
+                View v = resolveSelectedView(launcher, info, selectedViews);
+                if (v == null && !isInFolder(info)) {
+                    continue;
+                }
+                if (launcher.removeItem(v, info, true)) {
+                    removedAny = true;
+                }
+            } else if (info.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPLICATION) {
+                // Genuine system app — cannot uninstall and not a removable shortcut.
+                hadSystemOnlyFailure = true;
             }
         }
 
-        if (!startedUninstall && !removedAny) {
+        if (!startedUninstall && !removedAny && hadSystemOnlyFailure) {
             Toast.makeText(launcher, R.string.uninstall_system_app_text, Toast.LENGTH_SHORT).show();
         } else if (removedAny) {
             stripEmptyWorkspaceScreens(launcher);

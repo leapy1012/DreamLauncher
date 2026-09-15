@@ -6,13 +6,13 @@ import com.android.launcher3.uioverrides.flags.FlagsFactory
 object CustomizeFeatureFlags {
     @JvmField
     val ENABLE_OVERLAY_MINUS: FeatureFlags.BooleanFlag = FlagsFactory.getDebugFlag(
-        0, "ENABLE_OVERLAY_MINUS", FlagState.ENABLED,
+        0, "ENABLE_OVERLAY_MINUS", FlagState.DISABLED,
         "ENABLE_OVERLAY_MINUS"
     )
 
     @JvmField
     val ENABLE_OVERLAY_PLUS: FeatureFlags.BooleanFlag = FlagsFactory.getDebugFlag(
-        0, "ENABLE_OVERLAY_PLUS", FlagState.ENABLED,
+        0, "ENABLE_OVERLAY_PLUS", FlagState.DISABLED,
         "ENABLE_OVERLAY_PLUS"
     )
 }

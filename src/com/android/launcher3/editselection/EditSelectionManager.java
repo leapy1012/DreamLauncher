@@ -335,7 +335,8 @@ public final class EditSelectionManager {
                 }
             });
             mBottomBar.setUninstallClickListener(v -> {
-                EditSelectionActions.uninstallOrRemove(mLauncher, getSelectedViews());
+                EditSelectionActions.uninstallOrRemove(
+                        mLauncher, getSelectedItems(), getSelectedViews());
                 clearSelection();
             });
         }

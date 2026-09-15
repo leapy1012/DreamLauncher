@@ -25,13 +25,15 @@ class OverlayManagerImpl(val launcher: CustomizeLauncher) : OverlayManagerLifecy
                 .flowWithLifecycle(lifecycle, Lifecycle.State.CREATED)
                 .collectLatest {
                     overlay?.removeView()
-                    overlay = if (it) {
-                        OverlayCombine()
+                    if (it) {
+                        overlay = OverlayCombine()
+                        launcher.setLauncherOverlay(overlay)
+                        overlay?.addView(launcher)
                     } else {
-                        OverlayFallback()
+                        // Do not use OverlayFallback — that still installs empty overscroll edges.
+                        overlay = null
+                        launcher.setLauncherOverlay(null)
                     }
-                    launcher.setLauncherOverlay(overlay)
-                    overlay?.addView(launcher)
                 }
         }
 

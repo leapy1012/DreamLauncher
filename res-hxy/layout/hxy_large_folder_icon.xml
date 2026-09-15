@@ -44,6 +44,7 @@
         style="@style/BaseIcon.Workspace"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="top"
+        android:layout_gravity="top|center_horizontal"
+        android:minHeight="0dp"
         android:focusable="false" />
 </com.android.launcher3.folder.large.HxyLargeFolderIcon>

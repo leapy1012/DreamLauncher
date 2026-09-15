@@ -177,6 +177,13 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
             this.mPreviewWidth = HxyLargeFolderProxy.computePreviewWidth(invalidateDelegate, availableSpaceX, this.previewSize);
             this.mPreviewHeight = HxyLargeFolderProxy.computePreviewHeight(invalidateDelegate, availableSpaceY, this.previewSize);
             this.basePreviewOffsetX = HxyLargeFolderProxy.getPreviewOffsetX(availableSpaceX, this.mPreviewWidth);
+            // Reserve the workspace label band under the plate — otherwise
+            // folder_icon_name is measured to ~20px and the title clips.
+            int labelBand = grid.getOppoFolderWorkspaceContentHeight() - grid.folderIconSizePx;
+            int maxPreviewH = availableSpaceY - basePreviewOffsetY - Math.max(0, labelBand);
+            if (maxPreviewH > 0 && this.mPreviewHeight > maxPreviewH) {
+                this.mPreviewHeight = maxPreviewH;
+            }
             this.previewSize = (this.mPreviewWidth + this.mPreviewHeight) / 2;
         } else if (HxyLargeFolderProxy.SUPPORT_LARGE_FOLDER) {
             this.mPreviewWidth = this.previewSize;
@@ -509,6 +516,22 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
 
     public int getPreviewHeight() {
         return this.mPreviewHeight;
+    }
+
+    /**
+     * Shrink the large-folder plate so a label band of {@code labelBandPx} fits under it
+     * inside {@code availableSpaceY}.
+     */
+    public void capPreviewHeightForLabelBand(int availableSpaceY, int labelBandPx) {
+        if (!HxyLargeFolderProxy.isLargeFolder(mInvalidateDelegate) || labelBandPx <= 0) {
+            return;
+        }
+        int maxPreviewH = availableSpaceY - basePreviewOffsetY - labelBandPx;
+        if (maxPreviewH > 0 && mPreviewHeight > maxPreviewH) {
+            mPreviewHeight = maxPreviewH;
+            previewSize = (mPreviewWidth + mPreviewHeight) / 2;
+            invalidate();
+        }
     }
 
     /** Space passed to {@link ClippedFolderIconLayoutRule#init}; plate edge length for 1×1. */

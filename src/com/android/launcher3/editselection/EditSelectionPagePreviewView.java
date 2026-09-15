@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.R;
 import com.android.launcher3.ShortcutAndWidgetContainer;
+import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.model.data.ItemInfo;
 
 import java.util.Collections;
@@ -245,7 +246,9 @@ public class EditSelectionPagePreviewView extends View {
             }
             int spanX = Math.max(1, info.spanX);
             int spanY = Math.max(1, info.spanY);
-            boolean isSelectedItem = mSelectedItems.contains(info);
+            // Oppo isFolderContentSelected: folder chip turns blue when any inner app is selected.
+            boolean isSelectedItem = mSelectedItems.contains(info)
+                    || isFolderContentSelected(info);
             if (isSelectedItem) {
                 mCellPaint.setColor(COLOR_CELL_SELECTED);
             } else if (mSelectedPage) {
@@ -263,5 +266,25 @@ public class EditSelectionPagePreviewView extends View {
             float radius = (spanX == 1 && spanY == 1) ? mCellRadius : mWidgetRadius;
             canvas.drawRoundRect(mTmpRect, radius, radius, mCellPaint);
         }
+    }
+
+    /**
+     * Oppo {@code BatchDragViewManager.isFolderContentSelected}: mark the folder cell in the
+     * mini preview when selected items live inside that folder (not the FolderInfo itself).
+     */
+    private boolean isFolderContentSelected(ItemInfo info) {
+        if (!(info instanceof FolderInfo) || mSelectedItems.isEmpty()) {
+            return false;
+        }
+        int folderId = info.id;
+        if (folderId == ItemInfo.NO_ID) {
+            return false;
+        }
+        for (ItemInfo selected : mSelectedItems) {
+            if (selected.container == folderId) {
+                return true;
+            }
+        }
+        return false;
     }
 }

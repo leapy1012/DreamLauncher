@@ -90,8 +90,6 @@ import static com.android.launcher3.LauncherPrefs.WORKSPACE_TEXT_SIZE;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_INSTALL_BEHAVIOR;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_MEMORY_CLEAN;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_WALLPAPER_SET;
-import static com.android.launcher3.LauncherPrefs.WORKSPACE_MINUS;
-import static com.android.launcher3.LauncherPrefs.WORKSPACE_PLUS;
 import java.util.Objects;
 import java.util.Optional;
 import android.os.Process;
@@ -218,10 +216,6 @@ public class SettingsActivity extends AppCompatActivity
             Settings.Global.putInt(getContentResolver(), "persist.sys.double_tap_to_off", sharedPreferences.getBoolean("pref_double_tap", false) ? 1 : 0);
         } else if (LauncherPrefs.WORKSPACE_LAYOUT_DOCK.equals(key)) {
             Settings.Global.putInt(getContentResolver(), "persist.sys.desktop_layout_docked", sharedPreferences.getBoolean("pref_layout_dock", false) ? 1 : 0);
-        } else if (LauncherPrefs.WORKSPACE_MINUS.equals(key)) {
-            Settings.Global.putInt(getContentResolver(), "persist.sys.desktop_minus", LauncherPrefs.getPrefs(this).getBoolean("pref_minusEnabled", true) ? 1 : 0);
-        } else if (LauncherPrefs.WORKSPACE_PLUS.equals(key)) {
-            Settings.Global.putInt(getContentResolver(), "persist.sys.desktop_plus", LauncherPrefs.getPrefs(this).getBoolean("pref_plusEnabled", true) ? 1 : 0);
         } else {
             if (LauncherPrefs.WORKSPACE_MEMORY_CLEAN.equals(key) && !sharedPreferences.getBoolean(key, false) && LauncherApplication.getLauncher() != null) {
                 ComponentName componentName = new ComponentName(BuildConfig.APPLICATION_ID, "com.android.launcher3.big.memoryclean.MemoryCleanActivity");
@@ -322,12 +316,10 @@ public class SettingsActivity extends AppCompatActivity
         private static final String LAUNCHER_THEME_PREFERENCE_KEY = "pref_theme_style";
         private Preference mLauncherThemePref;
         //hxy-feature: desktop theme 202312
-        private SwitchPreference mPlusPref;
-        private SwitchPreference mMinusPref;
+        private SwitchPreference mIconAutofillPref;
         private Preference mHomeLayoutPref;
         private Preference mIconSizePref;
         private SwitchPreference mLayoutLockPref;
-        private SwitchPreference mIconAutofillPref;
 
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -381,14 +373,6 @@ public class SettingsActivity extends AppCompatActivity
                     }
                     return true;
                 });
-            }
-            pref = findPreference("pref_plusEnabled");
-            if (pref instanceof SwitchPreference) {
-                mPlusPref = (SwitchPreference) pref;
-            }
-            pref = findPreference("pref_minusEnabled");
-            if (pref instanceof SwitchPreference) {
-                mMinusPref = (SwitchPreference) pref;
             }
             PreferenceScreen screen = getPreferenceScreen();
             for (int i = screen.getPreferenceCount() - 1; i >= 0; i--) {
@@ -662,10 +646,6 @@ public class SettingsActivity extends AppCompatActivity
                     return false;
                 case WORKSPACE_MEMORY_CLEAN:
                     return false;
-                case WORKSPACE_MINUS:
-                    return true;
-                case WORKSPACE_PLUS:
-                    return true;
             }
 
             return true;
@@ -710,14 +690,6 @@ public class SettingsActivity extends AppCompatActivity
             updateHomeLayoutSummary();
 			//hxy-feature: add launcher style function  202312
             updateThemePref();  //hxy-feature: desktop theme 202312
-            if (mPlusPref != null) {
-                android.util.Log.e("zsq","SHOW_PLUS = " + Settings.Global.getInt(getActivity().getContentResolver(), "persist.sys.desktop_plus", 1));
-                mPlusPref.setChecked(Settings.Global.getInt(getActivity().getContentResolver(), "persist.sys.desktop_plus", 1) == 1);
-            }
-            if (mMinusPref != null) {
-                android.util.Log.e("zsq","SHOW_MINUS = " + Settings.Global.getInt(getActivity().getContentResolver(), "persist.sys.desktop_minus", 1));
-                mMinusPref.setChecked(Settings.Global.getInt(getActivity().getContentResolver(), "persist.sys.desktop_minus", 1) == 1);
-            }
         }
 
         private PreferenceHighlighter createHighlighter() {

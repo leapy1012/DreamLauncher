@@ -2,6 +2,7 @@ package com.android.launcher3.folder.large;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.os.Handler;
@@ -9,12 +10,14 @@ import android.os.Looper;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.animation.PathInterpolator;
 import android.widget.FrameLayout;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Launcher;
+import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.dragndrop.DragView;
 import com.android.launcher3.dot.FolderDotInfo;
 import com.android.launcher3.folder.FolderIcon;
@@ -25,6 +28,7 @@ import com.android.launcher3.folder.large.listview.HxyLargeFolderIconItem;
 import com.android.launcher3.folder.large.listview.HxyLargeFolderListView;
 import com.android.launcher3.folder.large.switchparams.ISwitchFolderAnimation;
 import com.android.launcher3.folder.large.switchparams.HxyLargeFolderSwitcher;
+import com.android.launcher3.graphics.DragPreviewProvider;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.touch.ItemClickHandler;
@@ -38,6 +42,12 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     public static final int LARGE_FOLDER_SPAN_X = 2;
     public static final int LARGE_FOLDER_SPAN_Y = 2;
     private static final int RECURSION_LOAD_COUNT = 3;
+    /**
+     * Oppo {@code ResizeFolderByMenuAnimUtils.buildConvertAnim} same-size menu convert
+     * (bounce/response passed into {@code doPreviewSpringAnim}).
+     */
+    private static final float PREVIEW_MORPH_BOUNCE = 0.15f;
+    private static final float PREVIEW_MORPH_RESPONSE = 0.45f;
     private static final long SCROLL_SHOW_DURATION_MS = 300;
     private static final long SCROLL_SHOW_DELAY_MS = 67;
     private static final long SCROLL_HIDE_DURATION_MS = 300;
@@ -63,6 +73,12 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
      * but skip drawing list preview cells so Folder children can spring without dual-draw.
      */
     private boolean mSuppressListPreview;
+    /** True while preview-mode cells are springing between layouts. */
+    private boolean mPreviewMorphing;
+    private com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation mPreviewMorphSpring;
+    private View[] mMorphChildren;
+    private Rect[] mPendingMorphFromBounds;
+    private ViewTreeObserver.OnPreDrawListener mMorphPreDrawListener;
     /** Neighbor page currently bound on {@link #mAdjacentListView}. */
     private int mAdjacentBoundPage = -1;
     private float mLastIndicatorFrac = -1f;
@@ -88,6 +104,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     public void release() {
         mHandler.removeCallbacks(mRestoreChromeRunnable);
+        cancelPreviewModeMorph();
         if (mPagingController != null) {
             mPagingController.abort();
             mPagingController = null;
@@ -131,6 +148,55 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         refreshListData();
     }
 
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        if (isLargeFolder() && mActivity != null) {
+            setFolderNameTop();
+        }
+        super.onLayout(changed, left, top, right, bottom);
+        if (!isLargeFolder() || mActivity == null) {
+            return;
+        }
+        // FrameLayout laid out the title with a too-low topMargin / match_parent height.
+        // Pin it fully inside the cell using the reserved label band.
+        View name = getFolderName();
+        if (name == null || name.getVisibility() == GONE) {
+            return;
+        }
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) name.getLayoutParams();
+        DeviceProfile grid = mActivity.getDeviceProfile();
+        int band = Math.max(
+                grid.iconDrawablePaddingPx + Math.max(48, grid.iconTextSizePx * 2),
+                getLargeFolderLabelBand());
+        int nameH = Math.max(name.getMeasuredHeight(), band - grid.iconDrawablePaddingPx);
+        int nameTop = Math.max(0, (bottom - top) - getPaddingBottom() - nameH);
+        if (lp.topMargin != nameTop - getPaddingTop()) {
+            lp.topMargin = Math.max(0, nameTop - getPaddingTop());
+        }
+        name.layout(name.getLeft(), nameTop, name.getRight(), nameTop + nameH);
+        if (mIndicator != null && mIndicator.getVisibility() != GONE) {
+            mIndicator.layout(
+                    mIndicator.getLeft(),
+                    nameTop,
+                    mIndicator.getRight(),
+                    nameTop + mIndicator.getMeasuredHeight());
+        }
+        // Keep preview lists above the title band.
+        int plateBottom = Math.max(0, nameTop - grid.iconDrawablePaddingPx);
+        if (mListView != null && mListView.getVisibility() != GONE
+                && mListView.getBottom() > plateBottom) {
+            mListView.layout(
+                    mListView.getLeft(), mListView.getTop(),
+                    mListView.getRight(), plateBottom);
+        }
+        if (mAdjacentListView != null && mAdjacentListView.getVisibility() != GONE
+                && mAdjacentListView.getBottom() > plateBottom) {
+            mAdjacentListView.layout(
+                    mAdjacentListView.getLeft(), mAdjacentListView.getTop(),
+                    mAdjacentListView.getRight(), plateBottom);
+        }
+    }
+
     /** Force PreviewBackground.setup — large folders may lack a reference drawable. */
     private void ensureLargePreviewBackground() {
         if (mActivity == null || getMeasuredWidth() < 1 || getMeasuredHeight() < 1) {
@@ -143,6 +209,48 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
                 getMeasuredWidth(),
                 getMeasuredHeight(),
                 getPaddingTop());
+        // Plate formula alone still leaves ~20px; reserve real title metrics and shrink.
+        getFolderBackground().capPreviewHeightForLabelBand(
+                getMeasuredHeight(), getLargeFolderLabelBand());
+    }
+
+    /**
+     * Vertical space required under the plate for an unclipped folder title.
+     * Prefer measuring the real title view — paint metrics alone under-reserve (~20px).
+     */
+    private int getLargeFolderLabelBand() {
+        DeviceProfile grid = mActivity.getDeviceProfile();
+        int width = Math.max(1, getMeasuredWidth() - getPaddingLeft() - getPaddingRight());
+        getFolderName().measure(
+                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.AT_MOST),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int measuredNameH = getFolderName().getMeasuredHeight();
+        Paint.FontMetrics fm = getFolderName().getPaint().getFontMetrics();
+        int textH = (int) Math.ceil(fm.bottom - fm.top);
+        int lineH = getFolderName().getLineHeight();
+        int namePad = getFolderName().getPaddingTop() + getFolderName().getPaddingBottom();
+        int fromView = measuredNameH > 0
+                ? measuredNameH + grid.iconDrawablePaddingPx
+                : grid.iconDrawablePaddingPx + Math.max(lineH, textH) + namePad;
+        int fromProfile = grid.getOppoFolderWorkspaceContentHeight() - grid.folderIconSizePx;
+        // Workspace icon labels are fully visible; never reserve less than that text band.
+        int workspaceTextBand = grid.getOppoWorkspaceContentHeight() - grid.iconSizePx;
+        return Math.max(fromView, Math.max(fromProfile, workspaceTextBand));
+    }
+
+    private int getLargeFolderNameTop() {
+        // Title sits below the frosted plate and must remain fully inside the cell.
+        DeviceProfile grid = this.mActivity.getDeviceProfile();
+        int previewH = getFolderBackground().getPreviewHeight();
+        int plateBottom = getFolderBackground().getBasePreviewOffsetY() + previewH;
+        if (previewH <= 0) {
+            plateBottom = HxyLargeFolderProxy.computePreviewHeight(
+                    this, getMeasuredHeight(), grid.folderIconSizePx);
+        }
+        int gap = grid.iconDrawablePaddingPx;
+        int labelBand = getLargeFolderLabelBand();
+        int maxTop = Math.max(0, getMeasuredHeight() - labelBand);
+        return Math.min(Math.max(0, plateBottom + gap), maxTop);
     }
 
     @Override
@@ -159,33 +267,30 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     private void setFolderNameTop() {
         if (this.mActivity != null && getMeasuredHeight() >= 1) {
-            int top = isLargeFolder() ? getLargeFolderNameTop() : getFolderNameTop();
-            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) getFolderName().getLayoutParams();
-            if (lp.topMargin != top) {
-                lp.topMargin = top;
-                getFolderName().setLayoutParams(lp);
+            final int measuredH = getMeasuredHeight();
+            int top;
+            if (isLargeFolder()) {
+                // Always leave enough room for the title inside the cell. Paint metrics
+                // alone under-reserve (~29px) and clip glyph bottoms / shadows.
+                DeviceProfile grid = mActivity.getDeviceProfile();
+                int band = Math.max(
+                        grid.iconDrawablePaddingPx + Math.max(48, grid.iconTextSizePx * 2),
+                        getLargeFolderLabelBand());
+                getFolderBackground().capPreviewHeightForLabelBand(measuredH, band);
+                int plateTop = getLargeFolderNameTop();
+                top = Math.min(plateTop, Math.max(0, measuredH - band));
+            } else {
+                top = getFolderNameTop();
             }
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) getFolderName().getLayoutParams();
+            // Mutate in place — setLayoutParams() during onMeasure is deferred/ignored.
+            lp.topMargin = top;
+            lp.height = LayoutParams.WRAP_CONTENT;
             if (mIndicator != null) {
                 FrameLayout.LayoutParams ilp = (FrameLayout.LayoutParams) mIndicator.getLayoutParams();
-                if (ilp.topMargin != top) {
-                    ilp.topMargin = top;
-                    mIndicator.setLayoutParams(ilp);
-                }
+                ilp.topMargin = top;
             }
         }
-    }
-
-    private int getLargeFolderNameTop() {
-        // Title sits below the frosted plate. Prefer live plate metrics; fall back to
-        // computePreviewHeight when background has not been set up yet.
-        DeviceProfile grid = this.mActivity.getDeviceProfile();
-        int previewH = getFolderBackground().getPreviewHeight();
-        int plateBottom = getFolderBackground().getBasePreviewOffsetY() + previewH;
-        if (previewH <= 0) {
-            plateBottom = HxyLargeFolderProxy.computePreviewHeight(
-                    this, getMeasuredHeight(), grid.folderIconSizePx);
-        }
-        return plateBottom + grid.iconDrawablePaddingPx;
     }
 
     private void updateListViewPadding() {
@@ -346,6 +451,199 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         prepareForDragPreviewCapture();
         requestLayout();
         invalidate();
+    }
+
+    /**
+     * Oppo {@code convertBigFolder(isSameSizeChange)} → {@code doPreviewSpringAnim}:
+     * spring each preview cell from its old slot to the new 3×3 / 2×2 / highlight slot.
+     * <p>
+     * Apply origin transforms in {@link ViewTreeObserver.OnPreDrawListener} so the first
+     * painted frame never flashes destination size then snaps back.
+     */
+    public void applyPreviewModeAnimated() {
+        if (mAdapter == null || mListView == null) {
+            applyPreviewMode();
+            return;
+        }
+        cancelPreviewModeMorph();
+
+        int fromCount = mListView.getChildCount();
+        final Rect[] fromBounds = new Rect[fromCount];
+        for (int i = 0; i < fromCount; i++) {
+            View child = mListView.getChildAt(i);
+            if (child != null && child.getVisibility() != GONE
+                    && child.getWidth() > 0 && child.getHeight() > 0) {
+                fromBounds[i] = new Rect(
+                        child.getLeft(), child.getTop(), child.getRight(), child.getBottom());
+            }
+        }
+
+        mPreviewMorphing = true;
+        mPendingMorphFromBounds = fromBounds;
+        mMorphPreDrawListener = () -> {
+            if (mMorphPreDrawListener != null) {
+                getViewTreeObserver().removeOnPreDrawListener(mMorphPreDrawListener);
+                mMorphPreDrawListener = null;
+            }
+            if (!mPreviewMorphing || mListView == null) {
+                return true;
+            }
+            prepareForDragPreviewCapture();
+            Rect[] pending = mPendingMorphFromBounds;
+            mPendingMorphFromBounds = null;
+            startPreviewModeMorph(pending);
+            // Draw this frame with origin-looking transforms already applied.
+            return true;
+        };
+        getViewTreeObserver().addOnPreDrawListener(mMorphPreDrawListener);
+
+        applyPreviewMode();
+        if (mListView != null) {
+            mListView.setVisibility(VISIBLE);
+            mListView.setAlpha(1f);
+        }
+        // Ensure a draw pass so OnPreDraw runs even if layout was already dirty.
+        invalidate();
+    }
+
+    private void startPreviewModeMorph(Rect[] fromBounds) {
+        if (mListView == null) {
+            finishPreviewModeMorph();
+            return;
+        }
+        int count = mListView.getChildCount();
+        final View[] children = new View[count];
+        final float[] startTx = new float[count];
+        final float[] startTy = new float[count];
+        final float[] startSx = new float[count];
+        final float[] startSy = new float[count];
+        final boolean[] animate = new boolean[count];
+        boolean any = false;
+        for (int i = 0; i < count; i++) {
+            View child = mListView.getChildAt(i);
+            children[i] = child;
+            if (child == null || child.getVisibility() == GONE
+                    || fromBounds == null || i >= fromBounds.length || fromBounds[i] == null) {
+                continue;
+            }
+            float newW = child.getWidth();
+            float newH = child.getHeight();
+            if (newW <= 0f || newH <= 0f) {
+                continue;
+            }
+            Rect from = fromBounds[i];
+            float sx = from.width() / newW;
+            float sy = from.height() / newH;
+            // Pivot top-left so translation maps old top-left → new top-left while scaling.
+            child.setPivotX(0f);
+            child.setPivotY(0f);
+            float tx = from.left - child.getLeft();
+            float ty = from.top - child.getTop();
+            startTx[i] = tx;
+            startTy[i] = ty;
+            startSx[i] = sx;
+            startSy[i] = sy;
+            animate[i] = true;
+            child.setTranslationX(tx);
+            child.setTranslationY(ty);
+            child.setScaleX(sx);
+            child.setScaleY(sy);
+            any = true;
+        }
+        mMorphChildren = children;
+        if (!any) {
+            finishPreviewModeMorph();
+            return;
+        }
+
+        androidx.dynamicanimation.animation.FloatValueHolder holder =
+                new androidx.dynamicanimation.animation.FloatValueHolder(0f);
+        com.coui.appcompat.animation.dynamicanimation.COUISpringForce force =
+                new com.coui.appcompat.animation.dynamicanimation.COUISpringForce(1f)
+                        .setBounce(PREVIEW_MORPH_BOUNCE)
+                        .setResponse(PREVIEW_MORPH_RESPONSE);
+        com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation spring =
+                new com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation(holder);
+        spring.setSpring(force);
+        spring.setStartValue(0f);
+        spring.setMinimumVisibleChange(
+                com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation
+                        .MIN_VISIBLE_CHANGE_SCALE);
+        spring.addUpdateListener((animation, value, velocity) -> {
+            float t = Math.max(0f, Math.min(1f, value));
+            for (int i = 0; i < children.length; i++) {
+                if (!animate[i] || children[i] == null) {
+                    continue;
+                }
+                View child = children[i];
+                child.setTranslationX(startTx[i] * (1f - t));
+                child.setTranslationY(startTy[i] * (1f - t));
+                child.setScaleX(startSx[i] + (1f - startSx[i]) * t);
+                child.setScaleY(startSy[i] + (1f - startSy[i]) * t);
+            }
+        });
+        spring.addEndListener((animation, canceled, value, velocity) -> {
+            mPreviewMorphSpring = null;
+            finishPreviewModeMorph();
+        });
+        mPreviewMorphSpring = spring;
+        spring.animateToFinalPosition(1f);
+    }
+
+    private void cancelPreviewModeMorph() {
+        if (mMorphPreDrawListener != null) {
+            ViewTreeObserver observer = getViewTreeObserver();
+            if (observer.isAlive()) {
+                observer.removeOnPreDrawListener(mMorphPreDrawListener);
+            }
+            mMorphPreDrawListener = null;
+        }
+        mPendingMorphFromBounds = null;
+        if (mPreviewMorphSpring != null) {
+            if (mPreviewMorphSpring.isRunning()) {
+                mPreviewMorphSpring.cancel();
+            }
+            mPreviewMorphSpring = null;
+        }
+        clearMorphChildTransforms();
+        mPreviewMorphing = false;
+    }
+
+    private void finishPreviewModeMorph() {
+        mPreviewMorphing = false;
+        clearMorphChildTransforms();
+        applyIdlePageLayout();
+        invalidate();
+    }
+
+    private void clearMorphChildTransforms() {
+        if (mMorphChildren != null) {
+            for (View child : mMorphChildren) {
+                if (child == null) {
+                    continue;
+                }
+                child.setTranslationX(0f);
+                child.setTranslationY(0f);
+                child.setScaleX(1f);
+                child.setScaleY(1f);
+                child.setPivotX(child.getWidth() / 2f);
+                child.setPivotY(child.getHeight() / 2f);
+            }
+            mMorphChildren = null;
+        }
+        if (mListView != null) {
+            int count = mListView.getChildCount();
+            for (int i = 0; i < count; i++) {
+                View child = mListView.getChildAt(i);
+                if (child == null) {
+                    continue;
+                }
+                child.setTranslationX(0f);
+                child.setTranslationY(0f);
+                child.setScaleX(1f);
+                child.setScaleY(1f);
+            }
+        }
     }
 
     /**
@@ -1136,7 +1434,12 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             float[] iconLoc = new float[2];
             float scale = mActivity.getDragLayer()
                     .getDescendantCoordRelativeToSelf(mListView, iconLoc);
+            // Highlight index-0 is the 2×2 featured cell, not the small grid cell.
             int size = mListView.getChildSize();
+            if (mListView.isHighlightLayout() && slot == 0) {
+                int gap = mListView.getHorizontalSpace();
+                size = size * 2 + gap;
+            }
             float left = iconLoc[0] + xy[0] * scale;
             float top = iconLoc[1] + xy[1] * scale;
             float s = size * scale;

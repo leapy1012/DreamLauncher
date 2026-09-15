@@ -33,9 +33,10 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
 
     override fun setLauncherOverlay(overlay: LauncherOverlay?) {
         val newEffect: EdgeEffectCompat
-        var newRightEffect: EdgeEffectCompat? = null
+        val newRightEffect: EdgeEffectCompat
         if (overlay == null) {
             newEffect = EdgeEffectCompat(context)
+            newRightEffect = EdgeEffectCompat(context)
             mOverlayEdgeEffect = null
         } else {
             mOverlayEdgeEffect = CustomizeOverlayEdgeEffect(context, overlay, false)
