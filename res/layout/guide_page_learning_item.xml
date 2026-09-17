@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="@dimen/guide_page_learning_item_margin_start"
+    android:layout_marginTop="@dimen/guide_page_learning_item_margin_top"
+    android:background="@drawable/gesture_learning_card_bg"
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/image"
+        android:layout_width="@dimen/guide_page_learning_item_image_width"
+        android:layout_height="@dimen/guide_page_learning_item_image_height"
+        android:layout_marginStart="@dimen/guide_page_learning_item_image_margin_start"
+        android:layout_marginTop="@dimen/guide_page_learning_item_image_margin_top"
+        android:layout_marginEnd="@dimen/guide_page_learning_item_image_margin_end"
+        android:forceDarkAllowed="false"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY" />
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/guide_page_learning_item_text_margin_top"
+        android:layout_marginBottom="@dimen/guide_page_learning_item_text_margin_bottom"
+        android:alpha="0.55"
+        android:fontFamily="OPlusSans 4.0"
+        android:forceDarkAllowed="true"
+        android:gravity="center"
+        android:text="@string/side_gestures_back_msg"
+        android:textColor="@color/gestures_guide_text_color"
+        android:textSize="12dp" />
+</LinearLayout>

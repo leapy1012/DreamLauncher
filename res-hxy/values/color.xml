@@ -17,4 +17,11 @@
       Alpha applied via oplus_home_edit_wallpaper_scrim_alpha.
     -->
     <color name="oplus_home_edit_wallpaper_scrim">#FF000000</color>
+    <!-- Oppo OplusDropTargetBar / cancel strip. -->
+    <color name="drop_bar_color">#1AFFFFFF</color>
+    <color name="drop_bar_stroke">#4DFFFFFF</color>
+    <color name="drop_bar_normal_color_dark">#66E0E0E0</color>
+    <color name="drop_bar_normal_color_bright">#66A6A6A6</color>
+    <color name="drop_bar_reb_bg_end">#99EB493D</color>
+    <color name="drop_bar_reb_bg_start">#00EB493D</color>
 </resources>

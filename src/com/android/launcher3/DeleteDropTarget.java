@@ -58,6 +58,15 @@ public class DeleteDropTarget extends ButtonDropTarget {
     }
 
     @Override
+    public void setSelected(boolean selected) {
+        boolean wasSelected = isSelected();
+        super.setSelected(selected);
+        if (wasSelected != selected && mDropTargetBar != null) {
+            mDropTargetBar.animateHoverScale(selected);
+        }
+    }
+
+    @Override
     public void onDragStart(DropTarget.DragObject dragObject, DragOptions options) {
         super.onDragStart(dragObject, options);
         setTextBasedOnDragSource(dragObject.dragInfo);

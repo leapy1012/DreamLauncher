@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.appbar.AppBarLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/appBarLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/gesture_learning_appbar_background_color"
+    app:elevation="0dp">
+
+    <com.coui.appcompat.toolbar.COUIToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/gesture_learning_appbar_background_color"
+        android:paddingTop="@dimen/toolbar_margin_top"
+        app:supportTitleTextAppearance="@style/textAppearanceSecondTitle" />
+
+    <View
+        android:id="@+id/divider_line"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/toolbar_divider_height"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginStart="@dimen/common_margin"
+        android:layout_marginEnd="@dimen/common_margin"
+        android:alpha="0"
+        android:background="?attr/couiColorDivider"
+        android:forceDarkAllowed="false" />
+</com.google.android.material.appbar.AppBarLayout>

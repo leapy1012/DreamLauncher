@@ -59,6 +59,9 @@
     <!-- Oppo popup_no_blur_background #73000000 → 115/255 -->
     <item name="oplus_home_edit_wallpaper_scrim_alpha" format="float" type="dimen">0.45</item>
 
+    <!-- Oppo cancel strip padding (height lives in res/values/dimens.xml). -->
+    <dimen name="cancel_bar_padding_top">20dp</dimen>
+
     <dimen name="hxy_large_folder_horizontal_space_4x4">6dp</dimen>
     <dimen name="hxy_large_folder_horizontal_space_4x5">7dp</dimen>
     <dimen name="hxy_large_folder_horizontal_space_4x6">6dp</dimen>

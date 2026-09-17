@@ -48,14 +48,13 @@ public class SpringLoadedState extends LauncherState {
     }
 
     /**
-     * Fade hotseat via WorkspaceStateTransitionAnimation (Oppo HotSeatSpring),
-     * instead of snapping it GONE on long-press. Hide page indicator so it does
-     * not keep scaling/settling under the toggle bar after the bar spring ends
-     * (that relative motion looks like the toggle icons "reposition").
+     * Oppo {@code SpringLoadedState} keeps dock + page indicator (default
+     * {@link LauncherState#getVisibleElements}). Hide only for EditMode/ToggleBar
+     * ({@link EditModeState}), not during icon rearrange.
      */
     @Override
     public int getVisibleElements(Launcher launcher) {
-        return VERTICAL_SWIPE_INDICATOR;
+        return HOTSEAT_ICONS | WORKSPACE_PAGE_INDICATOR | VERTICAL_SWIPE_INDICATOR;
     }
 
     @Override
@@ -87,9 +86,8 @@ public class SpringLoadedState extends LauncherState {
 
     @Override
     public ScaleAndTranslation getHotseatScaleAndTranslation(Launcher launcher) {
-        // Scale with workspace while fading, matching Oppo ScaleTarget(workspace, hotseat, PI).
-        float scale = getWorkspaceScaleAndTranslation(launcher).scale;
-        return new ScaleAndTranslation(scale, 0, 0);
+        // Oppo SpringLoadedState: hotseat stays at scale 1 (not shrunk with workspace).
+        return new ScaleAndTranslation(1f, 0, 0);
     }
 
     /**

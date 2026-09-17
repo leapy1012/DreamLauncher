@@ -80,6 +80,9 @@ public class FastBitmapDrawable extends Drawable implements Drawable.Callback {
     private ObjectAnimator mScaleAnimation;
     /** Drawn via {@link #draw}; animated by ColorOS icon-change springs (Oppo parity). */
     public float mScale = 1;
+    /** Folder-create preview offset, kept on the drawable so the workspace view does not move. */
+    public float mTranslateX;
+    public float mTranslateY;
     private int mAlpha = 255;
 
     private Drawable mBadge;
@@ -116,9 +119,10 @@ public class FastBitmapDrawable extends Drawable implements Drawable.Callback {
 
     @Override
     public final void draw(Canvas canvas) {
-        if (mScale != 1f) {
+        if (mScale != 1f || mTranslateX != 0f || mTranslateY != 0f) {
             int count = canvas.save();
             Rect bounds = getBounds();
+            canvas.translate(mTranslateX, mTranslateY);
             canvas.scale(mScale, mScale, bounds.exactCenterX(), bounds.exactCenterY());
             drawInternal(canvas, bounds);
             if (mBadge != null) {
@@ -194,6 +198,8 @@ public class FastBitmapDrawable extends Drawable implements Drawable.Callback {
             mScaleAnimation = null;
         }
         mScale = 1;
+        mTranslateX = 0f;
+        mTranslateY = 0f;
         invalidateSelf();
     }
 

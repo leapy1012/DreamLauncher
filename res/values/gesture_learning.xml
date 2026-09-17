@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launcher_activity_background_color">#f5f5f5</color>
+    <color name="gesture_learning_appbar_background_color">#f0f1f2</color>
+    <color name="gestures_guide_text_color">#8c000000</color>
+
+    <dimen name="common_margin">24dp</dimen>
+    <dimen name="guide_page_learning_item_image_height">209dp</dimen>
+    <dimen name="guide_page_learning_item_image_margin_end">24dp</dimen>
+    <dimen name="guide_page_learning_item_image_margin_start">25dp</dimen>
+    <dimen name="guide_page_learning_item_image_margin_top">23dp</dimen>
+    <dimen name="guide_page_learning_item_image_width">96dp</dimen>
+    <dimen name="guide_page_learning_item_margin_start">24dp</dimen>
+    <dimen name="guide_page_learning_item_margin_top">20dp</dimen>
+    <dimen name="guide_page_learning_item_text_margin_bottom">15dp</dimen>
+    <dimen name="guide_page_learning_item_text_margin_top">10dp</dimen>
+
+    <style name="SideGesturesGuideLearningTheme" parent="@style/HomeSettings.Theme">
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:forceDarkAllowed">true</item>
+    </style>
+</resources>

@@ -252,12 +252,20 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     final WallpaperOffsetInterpolator mWallpaperOffset;
     private boolean mUnlockWallpaperFromDefaultPageOnLayout;
 
-    public static final int REORDER_TIMEOUT = 650;
+    /** Oppo CardReorderInject uses a fixed 400 ms dwell for BubbleTextView app icons. */
+    public static final int REORDER_TIMEOUT = 400;
     protected final Alarm mReorderAlarm = new Alarm();
     private PreviewBackground mFolderCreateBg;
+    /** Target icon morphing into folder preview while CREATE_FOLDER is active (Oppo DragOverViewHelper). */
+    private View mFolderCreateDragOverView;
+    private ValueAnimator mFolderCreateHoverAnimator;
     private FolderIcon mDragOverFolderIcon = null;
     private boolean mCreateUserFolderOnDrop = false;
     private boolean mAddToExistingFolderOnDrop = false;
+
+    /** Oppo SizeSpacingConfig.SMALL_FOLDER_ICON_SCALE_FACTOR (~0.18). */
+    private static final float FOLDER_CREATE_HOVER_SCALE = 0.18f;
+    private static final long FOLDER_CREATE_HOVER_DURATION_MS = 300L;
 
     // Variables relating to touch disambiguation (scrolling workspace vs. scrolling a widget)
     private float mXDown;
@@ -496,6 +504,11 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         }
 
         if (mDragInfo != null && mDragInfo.cell != null) {
+            // Ensure source is gone once the real drag begins (Oppo holdOriginalView /
+            // INVISIBLE). Covers resize-frame race where onDragStart fired before the frame
+            // could hide the icon.
+            mDragInfo.cell.setVisibility(INVISIBLE);
+
             CellLayout layout = null;
             if (mDragInfo.cell instanceof LauncherAppWidgetHostView) {
                 ViewGroup contentParent = dragObject.dragView.getContentViewParent();
@@ -1867,14 +1880,11 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         if (child instanceof HxyLargeFolderIcon) {
             ((HxyLargeFolderIcon) child).abortPagingGesture();
         }
-        // Keep resizable workspace icons visible during pre-drag so the resize frame is seen
-        // (Oppo draws the outline on the icon in place).
-        boolean keepVisibleForResize = child instanceof BubbleTextView
-                && com.android.launcher3.iconresize.IconResizeHelper.canResize(
-                        (ItemInfo) child.getTag());
-        if (!keepVisibleForResize) {
-            child.setVisibility(INVISIBLE);
-        }
+        // Oppo rearranges hide the source immediately. Keeping resizable icons visible
+        // for the resize frame caused a second "ghost" icon beside the DragView when
+        // drag started without a pre-drag phase (callOnDragStart runs before the frame
+        // registers). Always hide here; the resize frame draws its own chrome.
+        child.setVisibility(INVISIBLE);
 
         if (options.isAccessibleDrag) {
             mDragController.addDragListener(
@@ -2201,6 +2211,15 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         if (aboveShortcut && willBecomeShortcut) {
             WorkspaceItemInfo sourceInfo = (WorkspaceItemInfo) newView.getTag();
             WorkspaceItemInfo destInfo = (WorkspaceItemInfo) v.getTag();
+            // Oppo removes the still-morphed target and lets FolderIcon's independently loaded
+            // preview drawable continue the create animation. Do not snap the target back first.
+            if (v == mFolderCreateDragOverView) {
+                if (mFolderCreateHoverAnimator != null) {
+                    mFolderCreateHoverAnimator.cancel();
+                    mFolderCreateHoverAnimator = null;
+                }
+                mFolderCreateDragOverView = null;
+            }
             // if the drag started here, we need to remove it from the workspace
             if (!external) {
                 getParentCellLayoutForView(mDragInfo.cell).removeView(mDragInfo.cell);
@@ -2672,6 +2691,141 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         if (mFolderCreateBg != null) {
             mFolderCreateBg.animateToRest();
         }
+        animateFolderCreateHover(null, false /* accept */);
+    }
+
+    /**
+     * Oppo DragOverViewHelper: shrink/fade only the under-icon (and label) into the first
+     * folder-preview slot — not the whole BubbleTextView transform (that squashes text oddly).
+     */
+    private void animateFolderCreateHover(View target, boolean accept) {
+        if (!accept) {
+            View previous = mFolderCreateDragOverView;
+            mFolderCreateDragOverView = null;
+            if (previous != null && previous.isAttachedToWindow()) {
+                startFolderCreateHoverAnimator(previous, /* toAccept= */ false);
+            } else if (mFolderCreateHoverAnimator != null) {
+                mFolderCreateHoverAnimator.cancel();
+                mFolderCreateHoverAnimator = null;
+            }
+            return;
+        }
+        if (target == null || target == mFolderCreateDragOverView) {
+            return;
+        }
+        if (mFolderCreateDragOverView != null && mFolderCreateDragOverView != target) {
+            animateFolderCreateHover(null, false);
+        }
+        mFolderCreateDragOverView = target;
+        startFolderCreateHoverAnimator(target, /* toAccept= */ true);
+    }
+
+    private void startFolderCreateHoverAnimator(View target, boolean toAccept) {
+        if (mFolderCreateHoverAnimator != null) {
+            mFolderCreateHoverAnimator.cancel();
+            mFolderCreateHoverAnimator = null;
+        }
+        final FastBitmapDrawable icon;
+        final BubbleTextView btv;
+        if (target instanceof BubbleTextView) {
+            btv = (BubbleTextView) target;
+            Drawable d = btv.getIcon();
+            icon = d instanceof FastBitmapDrawable ? (FastBitmapDrawable) d : null;
+        } else {
+            btv = null;
+            icon = null;
+        }
+        if (icon == null && btv == null) {
+            // Fallback: whole-view morph for non-BTV targets.
+            float s = toAccept ? FOLDER_CREATE_HOVER_SCALE : 1f;
+            float a = toAccept ? 0f : 1f;
+            target.animate().cancel();
+            target.animate()
+                    .scaleX(s).scaleY(s).alpha(a)
+                    .setDuration(FOLDER_CREATE_HOVER_DURATION_MS)
+                    .setInterpolator(Interpolators.CREATE_FOLDER_PREVIEW)
+                    .start();
+            return;
+        }
+
+        final float fromScale = icon != null ? icon.mScale : 1f;
+        final float toScale = toAccept ? FOLDER_CREATE_HOVER_SCALE : 1f;
+        final float fromTranslateX = icon != null ? icon.mTranslateX : 0f;
+        final float fromTranslateY = icon != null ? icon.mTranslateY : 0f;
+        float acceptTranslateX = 0f;
+        float acceptTranslateY = 0f;
+        if (toAccept && icon != null && btv != null && mFolderCreateBg != null) {
+            Rect bounds = new Rect();
+            btv.getIconBounds(bounds);
+            float plate = mFolderCreateBg.getPreviewSize();
+            float previewIconSize = plate * FOLDER_CREATE_HOVER_SCALE;
+            float padding = (plate - previewIconSize * 3f) / 3.2f;
+            float gap = ((plate - padding * 2f) - previewIconSize * 3f) / 6f;
+            float endLeft = mFolderCreateBg.getBasePreviewOffsetX() + padding + gap;
+            if (btv.getLayoutDirection() == LAYOUT_DIRECTION_RTL) {
+                endLeft = mFolderCreateBg.getBasePreviewOffsetX()
+                        + plate - padding - gap - previewIconSize;
+            }
+            float endTop = mFolderCreateBg.getBasePreviewOffsetY() + padding + gap;
+            acceptTranslateX = endLeft + previewIconSize / 2f - bounds.exactCenterX();
+            acceptTranslateY = endTop + previewIconSize / 2f - bounds.exactCenterY();
+        }
+        final float toTranslateX = toAccept ? acceptTranslateX : 0f;
+        final float toTranslateY = toAccept ? acceptTranslateY : 0f;
+        final float fromText = btv != null ? btv.getTextAlpha() : 1f;
+        final float toText = toAccept ? 0f : 1f;
+
+        ValueAnimator va = ValueAnimator.ofFloat(0f, 1f);
+        va.setDuration(FOLDER_CREATE_HOVER_DURATION_MS);
+        va.setInterpolator(Interpolators.CREATE_FOLDER_PREVIEW);
+        va.addUpdateListener(animation -> {
+            float r = (Float) animation.getAnimatedValue();
+            float inv = 1f - r;
+            if (icon != null) {
+                icon.mScale = toScale * r + fromScale * inv;
+                icon.mTranslateX = toTranslateX * r + fromTranslateX * inv;
+                icon.mTranslateY = toTranslateY * r + fromTranslateY * inv;
+                icon.invalidateSelf();
+            }
+            if (btv != null) {
+                btv.setTextAlpha(toText * r + fromText * inv);
+                btv.invalidate();
+            }
+        });
+        va.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (mFolderCreateHoverAnimator == va) {
+                    mFolderCreateHoverAnimator = null;
+                }
+            }
+        });
+        mFolderCreateHoverAnimator = va;
+        va.start();
+    }
+
+    private void resetFolderCreateHoverImmediate(View target) {
+        if (mFolderCreateHoverAnimator != null) {
+            mFolderCreateHoverAnimator.cancel();
+            mFolderCreateHoverAnimator = null;
+        }
+        target.animate().cancel();
+        target.setScaleX(1f);
+        target.setScaleY(1f);
+        target.setAlpha(1f);
+        target.setTranslationX(0f);
+        target.setTranslationY(0f);
+        if (target instanceof BubbleTextView) {
+            BubbleTextView btv = (BubbleTextView) target;
+            btv.setTextAlpha(1f);
+            Drawable d = btv.getIcon();
+            if (d instanceof FastBitmapDrawable) {
+                FastBitmapDrawable icon = (FastBitmapDrawable) d;
+                icon.resetScale();
+                icon.setAlpha(255);
+            }
+            btv.invalidate();
+        }
     }
 
     private void cleanupAddToFolder() {
@@ -2960,6 +3114,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             mFolderCreateBg.isClipping = false;
 
             mFolderCreateBg.animateToAccept(mDragTargetLayout, mTargetCell[0], mTargetCell[1]);
+            animateFolderCreateHover(dragOverView, true /* accept */);
             mDragTargetLayout.clearDragOutlines();
             setDragMode(DRAG_MODE_CREATE_FOLDER);
 

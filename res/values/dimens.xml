@@ -44,7 +44,7 @@
     <dimen name="workspace_page_indicator_bottom_padding_offset">2dp</dimen>
 
     <!-- Drop target bar -->
-    <dimen name="dynamic_grid_drop_target_size">36dp</dimen>
+    <dimen name="dynamic_grid_drop_target_size">56dp</dimen>
     <dimen name="drop_target_vertical_gap">20dp</dimen>
     <dimen name="drop_target_top_margin">32dp</dimen>
     <dimen name="drop_target_bottom_margin">16dp</dimen>
@@ -266,6 +266,9 @@
          and drop targets like all-apps and folders -->
     <dimen name="drag_elevation">30dp</dimen>
 
+    <!-- Oppo cancel strip height (stroke for drop chip is 3px hardcoded in CellLayout). -->
+    <dimen name="cancel_bar_height">84dp</dimen>
+
     <dimen name="drag_flingToDeleteMinVelocity">-1500dp</dimen>
 
     <dimen name="spring_loaded_panel_border">2dp</dimen>
@@ -312,7 +315,7 @@
 
     <!-- Shadows and outlines -->
     <dimen name="blur_size_thin_outline">1dp</dimen>
-    <dimen name="blur_size_medium_outline">2dp</dimen>
+    <dimen name="blur_size_medium_outline">0dp</dimen>
     <dimen name="blur_size_click_shadow">4dp</dimen>
     <dimen name="click_shadow_high_shift">2dp</dimen>
 

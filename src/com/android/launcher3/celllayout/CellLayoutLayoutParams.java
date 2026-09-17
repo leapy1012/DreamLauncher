@@ -75,6 +75,10 @@ public class CellLayoutLayoutParams extends ViewGroup.MarginLayoutParams {
     @ViewDebug.ExportedProperty
     public int y;
 
+    /** Destination of the currently running reorder animation, or -1 when idle. */
+    public int reorderToCellX = -1;
+    public int reorderToCellY = -1;
+
     public boolean dropped;
 
     public CellLayoutLayoutParams(Context c, AttributeSet attrs) {
@@ -98,6 +102,8 @@ public class CellLayoutLayoutParams extends ViewGroup.MarginLayoutParams {
         this.mTmpCellX = source.getTmpCellX();
         this.mTmpCellY = source.getTmpCellY();
         this.useTmpCoords = source.useTmpCoords;
+        this.reorderToCellX = source.reorderToCellX;
+        this.reorderToCellY = source.reorderToCellY;
     }
 
     public CellLayoutLayoutParams(int cellX, int cellY, int cellHSpan, int cellVSpan) {

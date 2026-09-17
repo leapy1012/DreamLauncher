@@ -54,14 +54,6 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
         }
         onOverlayScrollChanged(0f)
     }
-
-    override fun onDragStart(dragObject: DragObject?, options: DragOptions?) {
-        super.onDragStart(dragObject, options)
-
-        if (mLauncher.isInState(LauncherState.EDIT_MODE)) {
-            mLauncher.stateManager.goToState(LauncherState.SPRING_LOADED)
-        }
-    }
 }
 
 private const val DRAG_MODE_NONE = 0

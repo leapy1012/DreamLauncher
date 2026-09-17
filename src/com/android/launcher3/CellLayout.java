@@ -16,10 +16,12 @@
 
 package com.android.launcher3;
 
+import static android.app.WallpaperColors.HINT_SUPPORTS_DARK_TEXT;
 import static android.animation.ValueAnimator.areAnimatorsEnabled;
 
 import static com.android.launcher3.LauncherState.EDIT_MODE;
 import static com.android.launcher3.anim.Interpolators.DEACCEL_1_5;
+import static com.android.launcher3.anim.Interpolators.GRID_CHANGE_INTERPOLATOR;
 import static com.android.launcher3.dragndrop.DraggableView.DRAGGABLE_ICON;
 import static com.android.launcher3.icons.IconNormalizer.ICON_VISIBLE_AREA_FACTOR;
 import static com.android.launcher3.util.MultiTranslateDelegate.INDEX_REORDER_BOUNCE_OFFSET;
@@ -32,6 +34,8 @@ import android.animation.TimeInterpolator;
 import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.annotation.SuppressLint;
+import android.app.WallpaperColors;
+import android.app.WallpaperManager;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
@@ -57,7 +61,6 @@ import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityEvent;
 
 import androidx.annotation.IntDef;
-import androidx.core.graphics.ColorUtils;
 import androidx.core.view.ViewCompat;
 
 import com.android.launcher3.LauncherSettings.Favorites;
@@ -160,6 +163,7 @@ public class CellLayout extends ViewGroup {
     private boolean mVisualizeDropLocation = true;
     private RectF mVisualizeGridRect = new RectF();
     private Paint mVisualizeGridPaint = new Paint();
+    private final Paint mVisualizeGridPaintStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     private int mGridVisualizationRoundingRadius;
     private float mGridAlpha = 0f;
     private int mGridColor = 0;
@@ -195,7 +199,11 @@ public class CellLayout extends ViewGroup {
     private static final boolean DEBUG_VISUALIZE_OCCUPIED = false;
 
     private static final float REORDER_PREVIEW_MAGNITUDE = 0.12f;
-    private static final int REORDER_ANIMATION_DURATION = 150;
+    // Oppo CellLayout.REORDER_ANIMATION_DURATION — slide into freed cell.
+    private static final int REORDER_ANIMATION_DURATION = 450;
+    // Oppo ReorderAnimationDelayLogic: base delay then +17ms per cell step in the chain.
+    private static final int REORDER_STAGGER_BASE_MS = 50;
+    private static final int REORDER_STAGGER_STEP_MS = 17;
     @Thunk final float mReorderPreviewAnimationMagnitude;
 
     private final ArrayList<View> mIntersectingViews = new ArrayList<>();
@@ -270,6 +278,10 @@ public class CellLayout extends ViewGroup {
         mGridColor = Themes.getAttrColor(getContext(), R.attr.workspaceAccentColor);
         mGridVisualizationRoundingRadius =
                 res.getDimensionPixelSize(R.dimen.grid_visualization_rounding_radius);
+        mVisualizeGridPaint.setAntiAlias(true);
+        mVisualizeGridPaintStroke.setStyle(Paint.Style.STROKE);
+        // Oppo CellLayout: hardcoded 3px (not 3dp) — thicker strokes look hollow.
+        mVisualizeGridPaintStroke.setStrokeWidth(3f);
         mReorderPreviewAnimationMagnitude = (REORDER_PREVIEW_MAGNITUDE * deviceProfile.iconSizePx);
 
         // Initialize the data structures used for the drag visualization.
@@ -537,7 +549,7 @@ public class CellLayout extends ViewGroup {
             canvas.restore();
         }
 
-        if (mVisualizeCells || mVisualizeDropLocation) {
+        if (mVisualizeCells) {
             visualizeGrid(canvas);
         }
     }
@@ -573,9 +585,26 @@ public class CellLayout extends ViewGroup {
     }
 
     protected void updateBgAlpha() {
-        // ColorOS home-edit has no frosted page cards — keep the spring-loaded
-        // CellLayout panel fully transparent in all states (edit + drag).
+        // ColorOS: no AOSP frosted page card. Oppo SinglePanelCellLayoutBgRender only
+        // fills when shortcutsAndWidgets.alpha drops (adjacent tip pages), not on the
+        // current page during normal rearrange — so keep mBackground fully transparent.
         mBackground.setAlpha(0);
+    }
+
+    /**
+     * Oppo {@code WallpaperResolver.isWorkspaceWpBright}: bright wallpapers get black
+     * drag chips; dark wallpapers get white.
+     */
+    private int getDragVisualizationRgb() {
+        if (Utilities.ATLEAST_S) {
+            WallpaperColors colors = getContext().getSystemService(WallpaperManager.class)
+                    .getWallpaperColors(WallpaperManager.FLAG_SYSTEM);
+            if (colors != null
+                    && (colors.getColorHints() & HINT_SUPPORTS_DARK_TEXT) != 0) {
+                return 0;
+            }
+        }
+        return 255;
     }
 
     /**
@@ -599,61 +628,30 @@ public class CellLayout extends ViewGroup {
 
     protected void visualizeGrid(Canvas canvas) {
         DeviceProfile dp = mActivity.getDeviceProfile();
-        int paddingX = Math.min((mCellWidth - dp.iconSizePx) / 2, dp.gridVisualizationPaddingX);
-        int paddingY = Math.min((mCellHeight - dp.iconSizePx) / 2, dp.gridVisualizationPaddingY);
-        mVisualizeGridRect.set(paddingX, paddingY,
-                mCellWidth - paddingX,
-                mCellHeight - paddingY);
-
-        mVisualizeGridPaint.setStrokeWidth(8);
-        int paintAlpha = (int) (120 * mGridAlpha);
-        mVisualizeGridPaint.setColor(ColorUtils.setAlphaComponent(mGridColor, paintAlpha));
+        // Oppo icon footprint inside the cell (not the full label band).
+        int iconPadX = Math.max(0, (mCellWidth - dp.iconSizePx) / 2);
+        int iconTop = Math.max(0,
+                ((mCellHeight - (dp.iconSizePx + dp.iconDrawablePaddingPx
+                        + Utilities.calculateTextHeight(dp.iconTextSizePx))) / 3) * 2);
+        if (mContainerType == HOTSEAT) {
+            iconTop = Math.max(0, (mCellHeight - dp.iconSizePx) / 2);
+        }
+        int rgb = getDragVisualizationRgb();
 
         if (mVisualizeCells) {
+            int paintAlpha = (int) (120 * mGridAlpha);
+            mVisualizeGridPaint.setStyle(Paint.Style.FILL);
+            mVisualizeGridPaint.setColor(Color.argb(0, rgb, rgb, rgb));
+            mVisualizeGridPaint.setAlpha(paintAlpha);
             for (int i = 0; i < mCountX; i++) {
                 for (int j = 0; j < mCountY; j++) {
-                    int transX = i * mCellWidth + (i * mBorderSpace.x) + getPaddingLeft()
-                            + paddingX;
-                    int transY = j * mCellHeight + (j * mBorderSpace.y) + getPaddingTop()
-                            + paddingY;
-
-                    mVisualizeGridRect.offsetTo(transX, transY);
-                    mVisualizeGridPaint.setStyle(Paint.Style.FILL);
+                    int transX = getPaddingLeft() + i * (mCellWidth + mBorderSpace.x) + iconPadX;
+                    int transY = getPaddingTop() + j * (mCellHeight + mBorderSpace.y) + iconTop;
+                    mVisualizeGridRect.set(transX, transY,
+                            transX + dp.iconSizePx, transY + dp.iconSizePx);
                     canvas.drawRoundRect(mVisualizeGridRect, mGridVisualizationRoundingRadius,
                             mGridVisualizationRoundingRadius, mVisualizeGridPaint);
                 }
-            }
-        }
-
-        if (mVisualizeDropLocation) {
-            for (int i = 0; i < mDragOutlines.length; i++) {
-                final float alpha = mDragOutlineAlphas[i];
-                if (alpha <= 0) continue;
-
-                mVisualizeGridPaint.setAlpha(255);
-                int x = mDragOutlines[i].getCellX();
-                int y = mDragOutlines[i].getCellY();
-                int spanX = mDragOutlines[i].cellHSpan;
-                int spanY = mDragOutlines[i].cellVSpan;
-
-                // TODO b/194414754 clean this up, reconcile with cellToRect
-                mVisualizeGridRect.set(paddingX, paddingY,
-                        mCellWidth * spanX + mBorderSpace.x * (spanX - 1) - paddingX,
-                        mCellHeight * spanY + mBorderSpace.y * (spanY - 1) - paddingY);
-
-                int transX = x * mCellWidth + (x * mBorderSpace.x)
-                        + getPaddingLeft() + paddingX;
-                int transY = y * mCellHeight + (y * mBorderSpace.y)
-                        + getPaddingTop() + paddingY;
-
-                mVisualizeGridRect.offsetTo(transX, transY);
-
-                mVisualizeGridPaint.setStyle(Paint.Style.STROKE);
-                mVisualizeGridPaint.setColor(Color.argb((int) (alpha),
-                        Color.red(mGridColor), Color.green(mGridColor), Color.blue(mGridColor)));
-
-                canvas.drawRoundRect(mVisualizeGridRect, mGridVisualizationRoundingRadius,
-                        mGridVisualizationRoundingRadius, mVisualizeGridPaint);
             }
         }
     }
@@ -662,6 +660,11 @@ public class CellLayout extends ViewGroup {
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
 
+        // Oppo soft pad above empty cells (DragView still above on DragLayer).
+        if (mVisualizeDropLocation && mDragging) {
+            visualizeDropChipsOnly(canvas);
+        }
+
         for (int i = 0; i < mDelegatedCellDrawings.size(); i++) {
             DelegatedCellDrawing bg = mDelegatedCellDrawings.get(i);
             cellToPoint(bg.mDelegateCellX, bg.mDelegateCellY, mTempLocation);
@@ -669,6 +672,49 @@ public class CellLayout extends ViewGroup {
             canvas.translate(mTempLocation[0], mTempLocation[1]);
             bg.drawOverItem(canvas);
             canvas.restore();
+        }
+    }
+
+    /** Oppo drop-location chip: fill α/3 + 3px stroke at icon bounds. */
+    private void visualizeDropChipsOnly(Canvas canvas) {
+        DeviceProfile dp = mActivity.getDeviceProfile();
+        int iconPadX = Math.max(0, (mCellWidth - dp.iconSizePx) / 2);
+        int iconTop = Math.max(0,
+                ((mCellHeight - (dp.iconSizePx + dp.iconDrawablePaddingPx
+                        + Utilities.calculateTextHeight(dp.iconTextSizePx))) / 3) * 2);
+        if (mContainerType == HOTSEAT) {
+            iconTop = Math.max(0, (mCellHeight - dp.iconSizePx) / 2);
+        }
+        int rgb = getDragVisualizationRgb();
+        for (int i = 0; i < mDragOutlines.length; i++) {
+            final float alpha = mDragOutlineAlphas[i];
+            if (alpha <= 0) continue;
+            int x = mDragOutlines[i].getCellX();
+            int y = mDragOutlines[i].getCellY();
+            int spanX = mDragOutlines[i].cellHSpan;
+            int spanY = mDragOutlines[i].cellVSpan;
+            if (x < 0 || y < 0) continue;
+            int outlineW = spanX <= 1 && spanY <= 1
+                    ? dp.iconSizePx
+                    : Math.max(dp.iconSizePx,
+                            mCellWidth * spanX + mBorderSpace.x * (spanX - 1) - 2 * iconPadX);
+            int outlineH = spanX <= 1 && spanY <= 1
+                    ? dp.iconSizePx
+                    : Math.max(dp.iconSizePx,
+                            mCellHeight * spanY + mBorderSpace.y * (spanY - 1) - 2 * iconTop);
+            int transX = getPaddingLeft() + x * (mCellWidth + mBorderSpace.x) + iconPadX;
+            int transY = getPaddingTop() + y * (mCellHeight + mBorderSpace.y) + iconTop;
+            mVisualizeGridRect.set(transX, transY, transX + outlineW, transY + outlineH);
+            int a = Math.round(alpha);
+            mVisualizeGridPaint.setStyle(Paint.Style.FILL);
+            mVisualizeGridPaint.setColor(Color.argb(0, rgb, rgb, rgb));
+            mVisualizeGridPaint.setAlpha(a / 3);
+            canvas.drawRoundRect(mVisualizeGridRect, mGridVisualizationRoundingRadius,
+                    mGridVisualizationRoundingRadius, mVisualizeGridPaint);
+            mVisualizeGridPaintStroke.setColor(Color.argb(0, rgb, rgb, rgb));
+            mVisualizeGridPaintStroke.setAlpha(a);
+            canvas.drawRoundRect(mVisualizeGridRect, mGridVisualizationRoundingRadius,
+                    mGridVisualizationRoundingRadius, mVisualizeGridPaintStroke);
         }
     }
 
@@ -932,12 +978,16 @@ public class CellLayout extends ViewGroup {
 
     /**
      * Returns the max distance from the center of a cell that can accept a drop to create a folder.
+     * Oppo: {@code (reorderRadius + iconSize*0.92/2) / 2} so the outer ring of an occupied
+     * cell can still trigger push-reorder instead of always creating a folder.
      */
     public float getFolderCreationRadius(int[] targetCell) {
         DeviceProfile grid = mActivity.getDeviceProfile();
         float iconVisibleRadius = ICON_VISIBLE_AREA_FACTOR * grid.iconSizePx / 2;
-        // Halfway between reorder radius and icon.
-        return (getReorderRadius(targetCell, 1, 1) + (isLargeFolder(targetCell) ? HxyLargeFolderProxy.getMaxDistanceForFolderCreation() : iconVisibleRadius) / 2);
+        float iconPart = isLargeFolder(targetCell)
+                ? HxyLargeFolderProxy.getMaxDistanceForFolderCreation()
+                : iconVisibleRadius;
+        return (getReorderRadius(targetCell, 1, 1) + iconPart) / 2f;
     }
 
     /**
@@ -1088,10 +1138,17 @@ public class CellLayout extends ViewGroup {
             final ItemInfo info = (ItemInfo) child.getTag();
             final Reorderable item = (Reorderable) child;
 
-            // We cancel any existing animations
-            if (mReorderAnimators.containsKey(lp)) {
-                mReorderAnimators.get(lp).cancel();
-                mReorderAnimators.remove(lp);
+            // Drag-over can submit the same solution every frame. Oppo keeps that animation
+            // running; cancelling and recreating it is the main source of visible judder.
+            Animator running = mReorderAnimators.get(lp);
+            if (running != null) {
+                if (lp.reorderToCellX == cellX && lp.reorderToCellY == cellY) {
+                    return true;
+                }
+                running.cancel();
+                if (mReorderAnimators.get(lp) == running) {
+                    mReorderAnimators.remove(lp);
+                }
             }
 
 
@@ -1122,30 +1179,34 @@ public class CellLayout extends ViewGroup {
             lp.isLockedToGrid = false;
             // End compute new x and y
 
-            MultiTranslateDelegate mtd = item.getTranslateDelegate();
-            float initPreviewOffsetX = mtd.getTranslationX(INDEX_REORDER_PREVIEW_OFFSET).getValue();
-            float initPreviewOffsetY = mtd.getTranslationY(INDEX_REORDER_PREVIEW_OFFSET).getValue();
-            final float finalPreviewOffsetX = newX - oldX;
-            final float finalPreviewOffsetY = newY - oldY;
+            // Clear translate overlay — Oppo slides real layout coords, not a preview offset.
+            item.getTranslateDelegate().setTranslation(INDEX_REORDER_PREVIEW_OFFSET, 0, 0);
 
             // Exit early if we're not actually moving the view
-            if (finalPreviewOffsetX == 0 && finalPreviewOffsetY == 0
-                    && initPreviewOffsetX == 0 && initPreviewOffsetY == 0) {
+            if (newX == oldX && newY == oldY) {
                 lp.isLockedToGrid = true;
                 return true;
             }
 
             ValueAnimator va = ValueAnimator.ofFloat(0f, 1f);
             va.setDuration(duration);
+            va.setInterpolator(GRID_CHANGE_INTERPOLATOR);
+            lp.reorderToCellX = cellX;
+            lp.reorderToCellY = cellY;
             mReorderAnimators.put(lp, va);
 
             va.addUpdateListener(new AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator animation) {
                     float r = (Float) animation.getAnimatedValue();
-                    float x = (1 - r) * initPreviewOffsetX + r * finalPreviewOffsetX;
-                    float y = (1 - r) * initPreviewOffsetY + r * finalPreviewOffsetY;
-                    item.getTranslateDelegate().setTranslation(INDEX_REORDER_PREVIEW_OFFSET, x, y);
+                    float inv = 1f - r;
+                    // Oppo OplusCellLayout.animateChildToPosition: lerp lp.x/y + requestLayout.
+                    lp.x = (int) (newX * r + oldX * inv);
+                    lp.y = (int) (newY * r + oldY * inv);
+                    // Position directly without scheduling a full workspace measure/layout on
+                    // every frame. Final grid state is reconciled in onAnimationEnd.
+                    child.layout(lp.x, lp.y,
+                            lp.x + child.getMeasuredWidth(), lp.y + child.getMeasuredHeight());
                 }
             });
             va.addListener(new AnimatorListenerAdapter() {
@@ -1156,16 +1217,22 @@ public class CellLayout extends ViewGroup {
                     // place just yet.
                     if (!cancelled) {
                         lp.isLockedToGrid = true;
+                        lp.reorderToCellX = -1;
+                        lp.reorderToCellY = -1;
                         item.getTranslateDelegate()
                                 .setTranslation(INDEX_REORDER_PREVIEW_OFFSET, 0, 0);
                         child.requestLayout();
                     }
-                    if (mReorderAnimators.containsKey(lp)) {
+                    if (mReorderAnimators.get(lp) == animation) {
                         mReorderAnimators.remove(lp);
                     }
                 }
                 public void onAnimationCancel(Animator animation) {
                     cancelled = true;
+                    if (mReorderAnimators.get(lp) == animation) {
+                        lp.reorderToCellX = -1;
+                        lp.reorderToCellY = -1;
+                    }
                 }
             });
             va.setStartDelay(delay);
@@ -1521,14 +1588,83 @@ public class CellLayout extends ViewGroup {
         GridOccupancy occupied = DESTRUCTIVE_REORDER ? mOccupied : mTmpOccupied;
         occupied.clear();
 
+        // Oppo CardReorderInject + ReorderAnimationDelayLogic: cascade icons with a wave delay.
+        ArrayList<View> moveUp = new ArrayList<>();
+        ArrayList<View> moveDown = new ArrayList<>();
+        ArrayList<View> moveLeft = new ArrayList<>();
+        ArrayList<View> moveRight = new ArrayList<>();
         int childCount = mShortcutsAndWidgets.getChildCount();
         for (int i = 0; i < childCount; i++) {
             View child = mShortcutsAndWidgets.getChildAt(i);
             if (child == dragView) continue;
             CellAndSpan c = solution.map.get(child);
+            if (c == null) continue;
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) child.getLayoutParams();
+            // copySolutionToTempState has already written destination tmp coords here.
+            // Compare against committed coords so moved icons are actually detected.
+            int fromX = lp.getCellX();
+            int fromY = lp.getCellY();
+            if (c.cellY < fromY) {
+                moveUp.add(child);
+            } else if (c.cellY > fromY) {
+                moveDown.add(child);
+            } else if (c.cellX < fromX) {
+                moveLeft.add(child);
+            } else if (c.cellX > fromX) {
+                moveRight.add(child);
+            }
+        }
+        Collections.sort(moveUp, (a, b) -> {
+            CellLayoutLayoutParams lpa = (CellLayoutLayoutParams) a.getLayoutParams();
+            CellLayoutLayoutParams lpb = (CellLayoutLayoutParams) b.getLayoutParams();
+            return Integer.compare(lpa.getCellY(), lpb.getCellY());
+        });
+        Collections.sort(moveDown, (a, b) -> {
+            CellLayoutLayoutParams lpa = (CellLayoutLayoutParams) a.getLayoutParams();
+            CellLayoutLayoutParams lpb = (CellLayoutLayoutParams) b.getLayoutParams();
+            return Integer.compare(lpb.getCellY(), lpa.getCellY());
+        });
+        Collections.sort(moveLeft, (a, b) -> {
+            CellLayoutLayoutParams lpa = (CellLayoutLayoutParams) a.getLayoutParams();
+            CellLayoutLayoutParams lpb = (CellLayoutLayoutParams) b.getLayoutParams();
+            return Integer.compare(lpa.getCellX(), lpb.getCellX());
+        });
+        Collections.sort(moveRight, (a, b) -> {
+            CellLayoutLayoutParams lpa = (CellLayoutLayoutParams) a.getLayoutParams();
+            CellLayoutLayoutParams lpb = (CellLayoutLayoutParams) b.getLayoutParams();
+            return Integer.compare(lpb.getCellX(), lpa.getCellX());
+        });
+
+        ArrayMap<View, Integer> delays = new ArrayMap<>();
+        ArrayList<ArrayList<View>> queues = new ArrayList<>();
+        queues.add(moveUp);
+        queues.add(moveDown);
+        queues.add(moveLeft);
+        queues.add(moveRight);
+        for (int queueIndex = 0; queueIndex < queues.size(); queueIndex++) {
+            ArrayList<View> queue = queues.get(queueIndex);
+            int delay = REORDER_STAGGER_BASE_MS;
+            int lastPos = Integer.MIN_VALUE;
+            boolean vertical = queueIndex < 2;
+            for (View child : queue) {
+                CellLayoutLayoutParams lp = (CellLayoutLayoutParams) child.getLayoutParams();
+                int pos = vertical ? lp.getCellY() : lp.getCellX();
+                if (lastPos != Integer.MIN_VALUE && pos != lastPos) {
+                    delay += REORDER_STAGGER_STEP_MS;
+                }
+                delays.put(child, delay);
+                lastPos = pos;
+            }
+        }
+
+        for (int i = 0; i < childCount; i++) {
+            View child = mShortcutsAndWidgets.getChildAt(i);
+            if (child == dragView) continue;
+            CellAndSpan c = solution.map.get(child);
             if (c != null) {
-                animateChildToPosition(child, c.cellX, c.cellY, REORDER_ANIMATION_DURATION, 0,
-                        DESTRUCTIVE_REORDER, false);
+                int startDelay = delays.containsKey(child) ? delays.get(child) : 0;
+                animateChildToPosition(child, c.cellX, c.cellY, REORDER_ANIMATION_DURATION,
+                        startDelay, DESTRUCTIVE_REORDER, false);
                 occupied.markCells(c, true);
             }
         }
@@ -2507,7 +2643,10 @@ public class CellLayout extends ViewGroup {
             resultDirection[0] = 1;
             resultDirection[1] = 0;
         } else {
-            computeDirectionVector(deltaX, deltaY, resultDirection);
+            // Oppo reorders app icons as a row-major sequence. Vertical movement comes from
+            // wrapping between rows, not from a column push.
+            resultDirection[0] = deltaX == 0 ? 1 : (deltaX > 0 ? 1 : -1);
+            resultDirection[1] = 0;
         }
     }
 
@@ -2866,6 +3005,7 @@ public class CellLayout extends ViewGroup {
     void onDragEnter() {
         mDragging = true;
         mPreviousSolution = null;
+        invalidate();
     }
 
     /**
@@ -2877,6 +3017,7 @@ public class CellLayout extends ViewGroup {
         // Guard against that case.
         if (mDragging) {
             mDragging = false;
+            invalidate();
         }
 
         // Invalidate the drag data

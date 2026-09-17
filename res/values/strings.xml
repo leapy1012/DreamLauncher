@@ -453,4 +453,17 @@
     <!-- Failed action error message: e.g. Failed: Pause -->
     <string name="remote_action_failed">Failed: <xliff:g id="what" example="Pause">%1$s</xliff:g></string>
     <string name="daily_apps">Daily apps</string>
+
+    <!-- ColorOS-style system navigation gesture learning. -->
+    <string name="oplus_learn_gestures">Learn gestures</string>
+    <string name="side_gestures_left_title">Swipe in from the left</string>
+    <string name="side_gestures_right_title">Swipe left from the right side</string>
+    <string name="side_gestures_home_title">Swipe up from the bottom</string>
+    <string name="side_gestures_recents_title">Swipe up and hold</string>
+    <string name="side_gestures_switch_title">Slide across the bottom edge</string>
+    <string name="side_gestures_back_msg">Go back to the previous page</string>
+    <string name="side_gestures_home_msg">Go back to the Home screen</string>
+    <string name="side_gestures_recents_msg">View recent tasks</string>
+    <string name="side_gestures_switch_app_msg">Switch between recently opened apps</string>
+    <string name="side_gestures_success">Well done!</string>
 </resources>

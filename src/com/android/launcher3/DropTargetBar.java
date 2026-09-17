@@ -17,6 +17,7 @@
 package com.android.launcher3;
 
 import static com.android.launcher3.ButtonDropTarget.TOOLTIP_DEFAULT;
+import static com.android.launcher3.LauncherState.ALL_APPS;
 import static com.android.launcher3.anim.AlphaUpdateListener.updateVisibility;
 
 import android.animation.TimeInterpolator;
@@ -30,10 +31,13 @@ import android.view.ViewDebug;
 import android.view.ViewPropertyAnimator;
 import android.widget.FrameLayout;
 
+import com.android.launcher3.allapps.ActivityAllAppsContainerView;
 import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.dragndrop.DragController;
 import com.android.launcher3.dragndrop.DragController.DragListener;
 import com.android.launcher3.dragndrop.DragOptions;
+import com.android.launcher3.editselection.EditSelectionManager;
+import com.android.launcher3.folder.Folder;
 
 /*
  * The top bar containing various drop targets: Delete/App Info/Uninstall.
@@ -80,6 +84,9 @@ public class DropTargetBar extends FrameLayout
             mDropTargets[i].setDropTargetBar(this);
         }
         mTempTargets = new ButtonDropTarget[getChildCount()];
+        if (getBackground() == null) {
+            setBackgroundResource(R.drawable.drop_bar_background);
+        }
     }
 
     @Override
@@ -108,12 +115,14 @@ public class DropTargetBar extends FrameLayout
         }
         lp.topMargin += grid.dropTargetBarTopMarginPx / 2;
         lp.bottomMargin += grid.dropTargetBarBottomMarginPx;
+        // Oppo cancel strip is full available width under the status bar.
         lp.width = grid.availableWidthPx - 2 * horizontalMargin;
         if (mIsVertical) {
             lp.leftMargin = (grid.widthPx - lp.width) / 2;
             lp.rightMargin = (grid.widthPx - lp.width) / 2;
         }
-        lp.height = grid.dropTargetBarSizePx;
+        int cancelH = getResources().getDimensionPixelSize(R.dimen.cancel_bar_height);
+        lp.height = Math.max(grid.dropTargetBarSizePx, cancelH);
         lp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
 
         DeviceProfile dp = mLauncher.getDeviceProfile();
@@ -125,7 +134,14 @@ public class DropTargetBar extends FrameLayout
             button.setToolTipLocation(tooltipLocation);
             button.setPadding(horizontalPadding, verticalPadding, horizontalPadding,
                     verticalPadding);
+            button.setTextColor(0xFFFFFFFF);
         }
+    }
+
+    /** Oppo OplusDeleteDropTarget: cancel strip scales to 1.3f on hover. */
+    void animateHoverScale(boolean hovered) {
+        float target = hovered ? 1.3f : 1f;
+        animate().scaleX(target).scaleY(target).setDuration(175).start();
     }
 
     public void setup(DragController dragController) {
@@ -322,7 +338,38 @@ public class DropTargetBar extends FrameLayout
      */
     @Override
     public void onDragStart(DropTarget.DragObject dragObject, DragOptions options) {
-        animateToVisibility(true);
+        // Oppo OplusDropTargetBar: cancel strip is for All Apps / batch, not every
+        // workspace rearrange (ColorOS leaves the top clear while reordering icons).
+        if (shouldShowCancelStrip(dragObject)) {
+            animateToVisibility(true);
+        }
+    }
+
+    /**
+     * Mirrors Oppo {@code OplusDropTargetBar.animateToVisibility(true)} gates:
+     * All Apps / batch(edit-selection) / external add — not normal desktop or folder reorder.
+     */
+    private boolean shouldShowCancelStrip(DropTarget.DragObject dragObject) {
+        if (mLauncher.isInState(ALL_APPS)) {
+            return true;
+        }
+        EditSelectionManager selection = mLauncher.getEditSelectionManager();
+        if (selection != null && selection.isActive()) {
+            return true;
+        }
+        if (dragObject == null) {
+            return false;
+        }
+        DragSource source = dragObject.dragSource;
+        // Workspace / folder rearrange: Oppo keeps the cancel strip hidden.
+        if (source instanceof Workspace || source instanceof Folder) {
+            return false;
+        }
+        if (source instanceof ActivityAllAppsContainerView) {
+            return true;
+        }
+        // Widget tray / other external sources need a cancel target.
+        return source != null;
     }
 
     /**

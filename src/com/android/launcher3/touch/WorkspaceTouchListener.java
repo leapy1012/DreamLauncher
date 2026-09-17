@@ -49,7 +49,7 @@ import com.android.launcher3.util.TouchUtil;
 import android.os.Vibrator;
 import android.content.Context;
 
-import static com.android.launcher3.LauncherState.SPRING_LOADED;
+import static com.android.launcher3.LauncherState.EDIT_MODE;
 
 import android.content.Intent;
 import android.provider.Settings;
@@ -247,12 +247,12 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
             //            HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
                 mLauncher.getStatsLogManager().logger().log(LAUNCHER_WORKSPACE_LONGPRESS);
                 // Hide dock immediately so it cannot sit on top of / fight the toggle bar.
-                // SPRING_LOADED still fades it; this avoids a visible dock when the options
-                // panel is delayed by layout.
                 mLauncher.getHotseat().setAlpha(0f);
                 mLauncher.getHotseat().setVisibility(View.INVISIBLE);
                 mLauncher.showDefaultOptions(mTouchDownPoint.x, mTouchDownPoint.y);
-                mLauncher.getStateManager().goToState(SPRING_LOADED);
+                // Oppo ToggleBar uses a dedicated edit state (not rearrange spring-loaded)
+                // so dock + page indicator stay hidden under the options bar.
+                mLauncher.getStateManager().goToState(EDIT_MODE);
                 // Oppo ToggleBar: hide status bar when entering edit mode via long-press.
                 SystemBarHelper.hideStatusBar(mLauncher.getWindow(), false /* animate */);
             } else {

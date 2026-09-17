@@ -1189,6 +1189,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         }
     }
 
+    public float getTextAlpha() {
+        return mTextAlpha;
+    }
+
     private int getModifiedColor() {
         if (mTextAlpha == 0) {
             // Special case to prevent text shadows in high contrast mode

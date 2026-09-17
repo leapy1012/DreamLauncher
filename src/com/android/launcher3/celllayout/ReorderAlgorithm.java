@@ -18,6 +18,7 @@ package com.android.launcher3.celllayout;
 import android.view.View;
 
 import com.android.launcher3.CellLayout;
+import com.android.launcher3.util.CellAndSpan;
 
 /**
  * Contains the logic of a reorder.
@@ -158,6 +159,102 @@ public class ReorderAlgorithm {
     }
 
     /**
+     * Oppo's app-icon path treats the workspace as one row-major sequence. It inserts the
+     * dragged icon at the target and propagates the nearest hole through all intervening 1x1
+     * items, including across row boundaries.
+     */
+    private CellLayout.ItemConfiguration findSequenceReorderSolution(int pixelX, int pixelY,
+            int[] direction, View dragView) {
+        CellLayout.ItemConfiguration solution = new CellLayout.ItemConfiguration();
+        mCellLayout.copyCurrentStateToSolution(solution, false);
+
+        int[] target = mCellLayout.findNearestAreaIgnoreOccupied(
+                pixelX, pixelY, 1, 1, new int[2]);
+        int countX = mCellLayout.getCountX();
+        int countY = mCellLayout.getCountY();
+        int cellCount = countX * countY;
+        int targetIndex = target[1] * countX + target[0];
+
+        View[] views = new View[cellCount];
+        boolean[] occupied = new boolean[cellCount];
+        for (View view : solution.map.keySet()) {
+            if (view == dragView) {
+                continue;
+            }
+            CellAndSpan c = solution.map.get(view);
+            for (int y = c.cellY; y < c.cellY + c.spanY; y++) {
+                for (int x = c.cellX; x < c.cellX + c.spanX; x++) {
+                    if (x >= 0 && x < countX && y >= 0 && y < countY) {
+                        occupied[y * countX + x] = true;
+                    }
+                }
+            }
+            if (c.spanX == 1 && c.spanY == 1) {
+                views[c.cellY * countX + c.cellX] = view;
+            }
+        }
+        if (!occupied[targetIndex]) {
+            return null;
+        }
+
+        // DreamLauncher permits arbitrary workspace gaps, so use Oppo's FREE arrangement:
+        // consume the nearest hole in the selected sequence direction, then try the other side.
+        int hole = -1;
+        int step = direction[0] < 0 ? -1 : 1;
+        for (int i = targetIndex + step; i >= 0 && i < cellCount; i += step) {
+            if (!occupied[i]) {
+                hole = i;
+                break;
+            }
+        }
+        if (hole < 0) {
+            step = -step;
+            for (int i = targetIndex + step; i >= 0 && i < cellCount; i += step) {
+                if (!occupied[i]) {
+                    hole = i;
+                    break;
+                }
+            }
+        }
+        if (hole < 0 || hole == targetIndex) {
+            return null;
+        }
+
+        if (hole < targetIndex) {
+            for (int i = hole + 1; i <= targetIndex; i++) {
+                View view = views[i];
+                CellAndSpan c = view == null ? null : solution.map.get(view);
+                CellLayoutLayoutParams lp = view == null
+                        ? null : (CellLayoutLayoutParams) view.getLayoutParams();
+                if (c == null || c.spanX != 1 || c.spanY != 1 || !lp.canReorder) {
+                    return null;
+                }
+                c.cellX = (i - 1) % countX;
+                c.cellY = (i - 1) / countX;
+            }
+        } else {
+            for (int i = hole - 1; i >= targetIndex; i--) {
+                View view = views[i];
+                CellAndSpan c = view == null ? null : solution.map.get(view);
+                CellLayoutLayoutParams lp = view == null
+                        ? null : (CellLayoutLayoutParams) view.getLayoutParams();
+                if (c == null || c.spanX != 1 || c.spanY != 1 || !lp.canReorder) {
+                    return null;
+                }
+                c.cellX = (i + 1) % countX;
+                c.cellY = (i + 1) / countX;
+            }
+        }
+
+        solution.cellX = target[0];
+        solution.cellY = target[1];
+        solution.spanX = 1;
+        solution.spanY = 1;
+        solution.isSolution = true;
+        return solution;
+    }
+
+    /**
      * When the user drags an Item in the workspace sometimes we need to move the items already in
      * the workspace to make space for the new item, this function return a solution for that
      * reorder.
@@ -181,10 +278,18 @@ public class ReorderAlgorithm {
                 spanX, spanY,
                 dragView);
 
-        // Find a solution involving pushing / displacing any items in the way
-        CellLayout.ItemConfiguration swapSolution = findReorderSolution(pixelX, pixelY, minSpanX,
-                minSpanY, spanX, spanY, mCellLayout.mDirectionVector, dragView, true,
-                new CellLayout.ItemConfiguration());
+        // Ordinary app icons use Oppo's sequence insertion. Widgets and mixed-span clusters retain
+        // AOSP's two-dimensional push solver.
+        CellLayout.ItemConfiguration swapSolution =
+                spanX == 1 && spanY == 1 && minSpanX == 1 && minSpanY == 1 && dragView != null
+                        ? findSequenceReorderSolution(pixelX, pixelY,
+                                mCellLayout.mDirectionVector, dragView)
+                        : null;
+        if (swapSolution == null) {
+            swapSolution = findReorderSolution(pixelX, pixelY, minSpanX, minSpanY, spanX, spanY,
+                    mCellLayout.mDirectionVector, dragView, true,
+                    new CellLayout.ItemConfiguration());
+        }
 
         // We attempt the approach which doesn't shuffle views at all
         CellLayout.ItemConfiguration closestSpaceSolution = closestEmptySpaceReorder(

@@ -29,6 +29,18 @@
         <item name="android:windowShowWallpaper">true</item>
     </style>
 
+    <style name="SideGesturesGuideTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#3B78E7</item>
+    </style>
+
     <style name="LauncherTheme" parent="@style/BaseLauncherTheme">
         <item name="android:textColorSecondary">#DE000000</item>
         <item name="allAppsScrimColor">?attr/materialColorSurfaceDim</item>

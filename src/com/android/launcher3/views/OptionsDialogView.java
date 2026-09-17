@@ -232,7 +232,7 @@ public class OptionsDialogView extends AbstractFloatingView {
     }
 
     private void scheduleEnterAnimationAfterLayout() {
-        // IMPORTANT: do not wait for "stable height". goToState(SPRING_LOADED) keeps
+        // IMPORTANT: do not wait for "stable height". goToState(EDIT_MODE) keeps
         // relayouting DragLayer, which previously reset our stable-frame counter forever
         // and left this view stuck at alpha=0 (edit chrome visible, toggle bar missing).
         getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {

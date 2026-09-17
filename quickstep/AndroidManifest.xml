@@ -104,12 +104,31 @@
             android:excludeFromRecents="true"
             android:theme="@style/GestureTutorialActivity"
             android:exported="true"
-            android:configChanges="orientation">
+            android:configChanges="orientation"/>
+
+        <activity
+            android:name="com.android.launcher.guide.side.SideSlipGesturesGuideActivity"
+            android:autoRemoveFromRecents="true"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="behind"
+            android:resizeableActivity="false"
+            android:theme="@style/SideGesturesGuideTheme">
             <intent-filter>
                 <action android:name="com.android.quickstep.action.GESTURE_SANDBOX"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.android.launcher.guide.side.LearningGesturesActivity"
+            android:label="@string/oplus_learn_gestures"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:resizeableActivity="false"
+            android:configChanges="screenSize|screenLayout|orientation"
+            android:theme="@style/SideGesturesGuideLearningTheme"/>
 
         <!--
         Activity following gesture nav onboarding.

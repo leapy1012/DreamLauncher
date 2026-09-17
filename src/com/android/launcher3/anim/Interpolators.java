@@ -91,6 +91,11 @@ public class Interpolators {
 
     public static final Interpolator TOUCH_RESPONSE_INTERPOLATOR =
             new PathInterpolator(0.3f, 0f, 0.1f, 1f);
+    /** Oppo LayoutSettingsHelper.GRID_CHANGE_INTERPOLATOR — icon reorder slide. */
+    public static final Interpolator GRID_CHANGE_INTERPOLATOR = TOUCH_RESPONSE_INTERPOLATOR;
+    /** Oppo AnimationConstant.CREATE_FOLDER_PREVIEW — target icon morph on folder hover. */
+    public static final Interpolator CREATE_FOLDER_PREVIEW =
+            new PathInterpolator(0.0f, 0.0f, 0.1f, 1.0f);
     public static final Interpolator TOUCH_RESPONSE_INTERPOLATOR_ACCEL_DEACCEL =
             v -> ACCEL_DEACCEL.getInterpolation(TOUCH_RESPONSE_INTERPOLATOR.getInterpolation(v));
 

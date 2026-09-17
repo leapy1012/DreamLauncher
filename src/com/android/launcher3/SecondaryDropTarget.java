@@ -102,6 +102,15 @@ public class SecondaryDropTarget extends ButtonDropTarget implements OnAlarmList
         setupUi(UNINSTALL);
     }
 
+    @Override
+    public void setSelected(boolean selected) {
+        boolean wasSelected = isSelected();
+        super.setSelected(selected);
+        if (wasSelected != selected && mDropTargetBar != null) {
+            mDropTargetBar.animateHoverScale(selected);
+        }
+    }
+
     protected void setupUi(int action) {
         if (action == mCurrentAccessibilityAction) {
             return;
