@@ -69,9 +69,11 @@ import com.android.launcher3.widget.WidgetManagerHelper;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import static com.android.launcher3.LauncherState.EDIT_MODE;
 import static com.android.launcher3.LauncherState.NORMAL;
 import static com.android.launcher3.LauncherState.SPRING_LOADED;
 import com.android.launcher3.AbstractFloatingView;
+import com.android.launcher3.LauncherState;
 import com.android.launcher3.big.HxyAnimBubbleTextView;
 
 /**
@@ -93,7 +95,10 @@ public class ItemClickHandler {
 
         Launcher launcher = Launcher.getLauncher(v.getContext());
         if (!launcher.getWorkspace().isFinishedSwitchingState()) return;
-        if (launcher.getStateManager().getState() == SPRING_LOADED) {
+        LauncherState state = launcher.getStateManager().getState();
+        // Edit gardening uses EDIT_MODE (Oppo ToggleBar). Selection must be handled here —
+        // previously only SPRING_LOADED was checked, so EDIT_MODE taps launched apps.
+        if (state == SPRING_LOADED || state == EDIT_MODE) {
             // Oppo PAGE_PREVIEW: tap folder opens it so apps inside can be selected;
             // tap an app toggles selection (does not launch).
             if (v instanceof FolderIcon) {
@@ -103,6 +108,8 @@ public class ItemClickHandler {
             if (launcher.getEditSelectionManager().toggle(v)) {
                 return;
             }
+            // Consume the click in edit / spring-loaded even if selection is inactive
+            // (e.g. Transitions strip) so we never launch from the scaled workspace.
             return;
         }
         // ColorOS drawer overflow → Select: toggle instead of launching.

@@ -61,6 +61,7 @@ import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityEvent;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 
 import com.android.launcher3.LauncherSettings.Favorites;
@@ -175,6 +176,8 @@ public class CellLayout extends ViewGroup {
     private final int[] mDragCellSpan = new int[2];
 
     private boolean mDragging = false;
+    /** Active drag object for Oppo-style drop-chip gating (apps only, not widgets). */
+    @Nullable private DropTarget.DragObject mDragObject;
 
     private final TimeInterpolator mEaseOutInterpolator;
     protected final ShortcutAndWidgetContainer mShortcutsAndWidgets;
@@ -661,7 +664,8 @@ public class CellLayout extends ViewGroup {
         super.dispatchDraw(canvas);
 
         // Oppo soft pad above empty cells (DragView still above on DragLayer).
-        if (mVisualizeDropLocation && mDragging) {
+        // Oppo visualizeGrid: chips only for apps/shortcuts — never for widgets.
+        if (mVisualizeDropLocation && mDragging && shouldDrawDropChips()) {
             visualizeDropChipsOnly(canvas);
         }
 
@@ -675,15 +679,39 @@ public class CellLayout extends ViewGroup {
         }
     }
 
+    /** Oppo: drop chips only for icons/shortcuts, not APPWIDGET / CUSTOM_APPWIDGET. */
+    private boolean shouldDrawDropChips() {
+        if (mDragObject == null || mDragObject.dragInfo == null) {
+            return true;
+        }
+        int type = mDragObject.dragInfo.itemType;
+        return type != Favorites.ITEM_TYPE_APPWIDGET
+                && type != Favorites.ITEM_TYPE_CUSTOM_APPWIDGET;
+    }
+
     /** Oppo drop-location chip: fill α/3 + 3px stroke at icon bounds. */
     private void visualizeDropChipsOnly(Canvas canvas) {
         DeviceProfile dp = mActivity.getDeviceProfile();
-        int iconPadX = Math.max(0, (mCellWidth - dp.iconSizePx) / 2);
-        int iconTop = Math.max(0,
-                ((mCellHeight - (dp.iconSizePx + dp.iconDrawablePaddingPx
-                        + Utilities.calculateTextHeight(dp.iconTextSizePx))) / 3) * 2);
-        if (mContainerType == HOTSEAT) {
-            iconTop = Math.max(0, (mCellHeight - dp.iconSizePx) / 2);
+        final int iconSize;
+        final int iconPadX;
+        final int iconTop;
+        if (mContainerType == FOLDER) {
+            // Oppo OplusFolderPagedView branch: chip sized to folder child icon.
+            iconSize = dp.folderChildIconSizePx;
+            iconPadX = Math.max(0, (mCellWidth - iconSize) / 2);
+            int textH = Utilities.calculateTextHeight(dp.iconTextSizePx);
+            iconTop = Math.max(0,
+                    (mCellHeight - iconSize - dp.iconDrawablePaddingPx - textH) / 3);
+        } else if (mContainerType == HOTSEAT) {
+            iconSize = dp.iconSizePx;
+            iconPadX = Math.max(0, (mCellWidth - iconSize) / 2);
+            iconTop = Math.max(0, (mCellHeight - iconSize) / 2);
+        } else {
+            iconSize = dp.iconSizePx;
+            iconPadX = Math.max(0, (mCellWidth - iconSize) / 2);
+            iconTop = Math.max(0,
+                    ((mCellHeight - (iconSize + dp.iconDrawablePaddingPx
+                            + Utilities.calculateTextHeight(dp.iconTextSizePx))) / 3) * 2);
         }
         int rgb = getDragVisualizationRgb();
         for (int i = 0; i < mDragOutlines.length; i++) {
@@ -695,12 +723,12 @@ public class CellLayout extends ViewGroup {
             int spanY = mDragOutlines[i].cellVSpan;
             if (x < 0 || y < 0) continue;
             int outlineW = spanX <= 1 && spanY <= 1
-                    ? dp.iconSizePx
-                    : Math.max(dp.iconSizePx,
+                    ? iconSize
+                    : Math.max(iconSize,
                             mCellWidth * spanX + mBorderSpace.x * (spanX - 1) - 2 * iconPadX);
             int outlineH = spanX <= 1 && spanY <= 1
-                    ? dp.iconSizePx
-                    : Math.max(dp.iconSizePx,
+                    ? iconSize
+                    : Math.max(iconSize,
                             mCellHeight * spanY + mBorderSpace.y * (spanY - 1) - 2 * iconTop);
             int transX = getPaddingLeft() + x * (mCellWidth + mBorderSpace.x) + iconPadX;
             int transY = getPaddingTop() + y * (mCellHeight + mBorderSpace.y) + iconTop;
@@ -1242,8 +1270,9 @@ public class CellLayout extends ViewGroup {
         return false;
     }
 
-    void visualizeDropLocation(int cellX, int cellY, int spanX, int spanY,
+    public void visualizeDropLocation(int cellX, int cellY, int spanX, int spanY,
             DropTarget.DragObject dragObject) {
+        mDragObject = dragObject;
         if (mDragCell[0] != cellX || mDragCell[1] != cellY || mDragCellSpan[0] != spanX
                 || mDragCellSpan[1] != spanY) {
             mDragCell[0] = cellX;
@@ -3002,7 +3031,7 @@ public class CellLayout extends ViewGroup {
      * It may have begun over this layout (in which case onDragChild is called first),
      * or it may have begun on another layout.
      */
-    void onDragEnter() {
+    public void onDragEnter() {
         mDragging = true;
         mPreviousSolution = null;
         invalidate();
@@ -3011,7 +3040,7 @@ public class CellLayout extends ViewGroup {
     /**
      * Called when drag has left this CellLayout or has been completed (successfully or not)
      */
-    void onDragExit() {
+    public void onDragExit() {
         // This can actually be called when we aren't in a drag, e.g. when adding a new
         // item to this layout via the customize drawer.
         // Guard against that case.
@@ -3022,6 +3051,7 @@ public class CellLayout extends ViewGroup {
 
         // Invalidate the drag data
         mPreviousSolution = null;
+        mDragObject = null;
         mDragCell[0] = mDragCell[1] = -1;
         mDragCellSpan[0] = mDragCellSpan[1] = -1;
         mDragOutlineAnims[mDragOutlineCurrent].animateOut();

@@ -42,7 +42,11 @@ public final class AppWidgetHostViewDragListener implements DragController.DragL
 
     @Override
     public void onDragEnd() {
-        mAppWidgetHostView.endDrag();
+        // Null when the gesture ends in pre-drag (popup shown, no move) before onDragStart.
+        if (mAppWidgetHostView != null) {
+            mAppWidgetHostView.endDrag();
+            mAppWidgetHostView = null;
+        }
         mLauncher.getDragController().removeDragListener(this);
     }
 }

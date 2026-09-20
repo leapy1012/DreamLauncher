@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Oppo ColorOS: circled Remove glyph (same family as App info). -->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@drawable/ic_system_shortcut_delete"
+    android:tint="?android:attr/textColorPrimary" />

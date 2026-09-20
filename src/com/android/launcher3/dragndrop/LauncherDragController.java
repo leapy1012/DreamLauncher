@@ -36,8 +36,6 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.accessibility.DragViewStateAnnouncer;
 import com.android.launcher3.model.data.ItemInfo;
-import com.android.launcher3.LauncherApplication;
-import com.android.launcher3.LauncherPrefs;
 
 /**
  * Drag controller for Launcher activity
@@ -72,7 +70,6 @@ public class LauncherDragController extends DragController<Launcher> {
 
         mActivity.hideKeyboard();
         AbstractFloatingView.closeOpenViews(mActivity, false, TYPE_DISCOVERY_BOUNCE);
-        boolean dockedStatus = LauncherPrefs.getPrefs(LauncherApplication.getContext()).getBoolean(LauncherPrefs.WORKSPACE_LAYOUT_DOCK, false);
         mOptions = options;
         if (mOptions.simulatedDndStartPoint != null) {
             mLastTouch.x = mMotionDown.x = mOptions.simulatedDndStartPoint.x;
@@ -144,7 +141,7 @@ public class LauncherDragController extends DragController<Launcher> {
         dragView.show(mLastTouch.x, mLastTouch.y);
         mDistanceSinceScroll = 0;
 
-        if (!mIsInPreDrag && !dockedStatus) {
+        if (!mIsInPreDrag) {
             callOnDragStart();
         } else if (mOptions.preDragCondition != null) {
             mOptions.preDragCondition.onPreDragStart(mDragObject);

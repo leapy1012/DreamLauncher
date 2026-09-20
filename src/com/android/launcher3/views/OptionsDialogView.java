@@ -40,6 +40,7 @@ import com.android.launcher3.testing.shared.TestProtocol;
 import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.widget.picker.WidgetsFullSheet;
 import com.android.launcher3.util.PackageManagerHelper;
+import static com.android.launcher3.AbstractFloatingView.TYPE_OPTIONS_POPUP_DIALOG;
 import static com.android.launcher3.LauncherState.NORMAL;
 import com.android.launcher3.screenedit.ScrollEffectAdapter;
 import com.android.launcher3.togglebar.ColorOsLayoutOverlay;
@@ -97,6 +98,9 @@ public class OptionsDialogView extends AbstractFloatingView {
     @Nullable private AnimatorSet mEnterExitAnimator;
     // 当前面板状态
     private State currentState;
+    private boolean mEffectsCommitted;
+    /** When true, {@link #onClosed()} only removes chrome — stays in EDIT_MODE. */
+    private boolean mPreserveEditModeOnClose;
     public enum State {
         NONE,
         MAIN_MENU,
@@ -137,10 +141,28 @@ public class OptionsDialogView extends AbstractFloatingView {
     }
 
     public final void switchToEffectsState() {
-        GridGalleryAdapter adapter = effectGridGallery.getAdapter();
+        // OPPO's 117dp second-level root ignores navigation insets; the nav region is part of
+        // that fixed-height band rather than extra padding below it.
+        setPadding(getPaddingLeft(), getPaddingTop(), getPaddingRight(), 0);
+        scrollEffectAdapter.beginPreview();
+        mEffectsCommitted = false;
+        GridGalleryAdapter adapter = effectGridGallery.getAdapterData();
         if (adapter != scrollEffectAdapter) {
-            effectGridGallery.setAdapter(scrollEffectAdapter);
+            effectGridGallery.setGalleryAdapter(scrollEffectAdapter);
         }
+        scrollEffectAdapter.updateIconTextViewSelection(
+                scrollEffectAdapter.getSelectedPosition());
+        effectGridGallery.setCurrentItem(scrollEffectAdapter.getSelectedPosition());
+        launcher.getEditSelectionManager().showEffectsChrome(
+                v -> {
+                    scrollEffectAdapter.cancelPreview();
+                    close(true);
+                },
+                v -> {
+                    scrollEffectAdapter.applyPreview();
+                    mEffectsCommitted = true;
+                    close(true);
+                });
         switchPanelState(State.EFFECTS, false);
     }
 
@@ -201,10 +223,26 @@ public class OptionsDialogView extends AbstractFloatingView {
     }
 
     public static <T extends Context & ActivityContext> void show(T activity, Runnable onDismissed, @Nullable Runnable onActionClicked) {
+        showInternal(activity, onDismissed, false);
+    }
+
+    /**
+     * Opens directly in the effects state. The state is prepared while detached, so the main
+     * ToggleBar content can never be drawn for an intermediate frame.
+     */
+    public static void showEffects(Launcher launcher, Runnable onDismissed) {
+        showInternal(launcher, onDismissed, true);
+    }
+
+    private static <T extends Context & ActivityContext> void showInternal(
+            T activity, Runnable onDismissed, boolean effects) {
         closeOpenViews(activity, true, TYPE_OPTIONS_POPUP_DIALOG);
         OptionsDialogView optionsDialog = new OptionsDialogView(activity, null);
         optionsDialog.mOnDismissed = onDismissed;
         optionsDialog.mIsOpen = true;
+        if (effects) {
+            optionsDialog.switchToEffectsState();
+        }
         BaseDragLayer dragLayer = activity.getDragLayer();
         dragLayer.addView(optionsDialog);
         DragLayer.LayoutParams params = (DragLayer.LayoutParams) optionsDialog.getLayoutParams();
@@ -214,7 +252,7 @@ public class OptionsDialogView extends AbstractFloatingView {
         params.ignoreInsets = true;
         params.bottomMargin = 0;
         int navInset = 0;
-        if (activity instanceof Launcher) {
+        if (!effects && activity instanceof Launcher) {
             navInset = ((Launcher) activity).getDeviceProfile().getInsets().bottom;
         }
         optionsDialog.setPadding(optionsDialog.getPaddingLeft(), optionsDialog.getPaddingTop(),
@@ -235,6 +273,10 @@ public class OptionsDialogView extends AbstractFloatingView {
         // IMPORTANT: do not wait for "stable height". goToState(EDIT_MODE) keeps
         // relayouting DragLayer, which previously reset our stable-frame counter forever
         // and left this view stuck at alpha=0 (edit chrome visible, toggle bar missing).
+        if (getWidth() > 0) {
+            post(this::playEnterAnimation);
+            return;
+        }
         getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
@@ -250,6 +292,15 @@ public class OptionsDialogView extends AbstractFloatingView {
                 return true;
             }
         });
+        // Failsafe: if pre-draw never fires with a valid width, force the strip visible.
+        postDelayed(() -> {
+            if (mIsOpen && getParent() != null && getAlpha() < 0.01f
+                    && (mEnterExitAnimator == null || !mEnterExitAnimator.isRunning())) {
+                cancelEnterExitAnimation();
+                setTranslationY(0f);
+                setAlpha(1f);
+            }
+        }, ENTER_EXIT_DURATION_MS);
     }
 
     /**
@@ -325,7 +376,28 @@ public class OptionsDialogView extends AbstractFloatingView {
         }
     }
 
+    /**
+     * Hide the bottom ToggleBar chrome without exiting {@link LauncherState#EDIT_MODE}.
+     * Used when an open folder should keep Done/selection (Oppo hideToggleBarBottom).
+     * Plain {@link #close} → {@link #onClosed} would {@code goToState(NORMAL)} and leave
+     * workspace icons invisible after the folder open companion fade.
+     */
+    public static void hidePreservingEditMode(Launcher launcher) {
+        if (launcher == null) {
+            return;
+        }
+        AbstractFloatingView open = AbstractFloatingView.getOpenView(launcher,
+                TYPE_OPTIONS_POPUP_DIALOG);
+        if (open instanceof OptionsDialogView options) {
+            options.mPreserveEditModeOnClose = true;
+            options.close(false /* animate */);
+        }
+    }
+
     private void onClosed() {
+        if (currentState == State.EFFECTS && !mEffectsCommitted) {
+            scrollEffectAdapter.cancelPreview();
+        }
         cancelEnterExitAnimation();
         setTranslationY(0f);
         setAlpha(1f);
@@ -335,7 +407,12 @@ public class OptionsDialogView extends AbstractFloatingView {
             mOnDismissed.run();
             mOnDismissed = null;
         }
+        if (mPreserveEditModeOnClose) {
+            mPreserveEditModeOnClose = false;
+            return;
+        }
         Launcher launcher = Launcher.getLauncher(this.getContext());
+        launcher.setTransitionEffectsMode(false);
         launcher.getEditSelectionManager().exit();
         launcher.getStateManager().goToState(NORMAL);
     }
@@ -469,10 +546,6 @@ public class OptionsDialogView extends AbstractFloatingView {
 
     @Override
     public void onBackInvoked() {
-        if (currentState != State.EFFECTS) {
-            close(true);
-        } else {
-            switchToMainMenuState();
-        }
+        close(true);
     }
 }

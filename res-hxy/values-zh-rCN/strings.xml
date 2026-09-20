@@ -111,6 +111,7 @@
     <string name="coloros_drawer_show_app_names">显示应用名称</string>
     <string name="coloros_home_screen_in_use">已应用</string>
     <string name="coloros_switch_home_screen_mode_message">切换桌面模式可能会重新排布图标位置，是否切换？</string>
+    <string name="layout_apply_change_positive">切换</string>
     <string name="coloros_floating_tab_all">全部</string>
     <string name="coloros_floating_tab_category">分类</string>
     <string name="coloros_drawer_columns_four">4 列</string>
@@ -120,4 +121,5 @@
     <string name="oplus_privacy_not_show_preview">隐藏内容</string>
     <string name="oplus_privacy_show_preview">显示内容</string>
     <string name="oplus_privacy_app_preview_closed">此应用内容已隐藏</string>
+    <string name="remove_widget_panel_title">移除插件</string>
 </resources>

@@ -77,6 +77,7 @@ import com.android.launcher3.iconresize.MorphPlateColorHelper;
 import com.android.launcher3.iconresize.MorphShapeHelper;
 import com.android.launcher3.iconresize.MorphWorkspaceIconDrawable;
 import com.android.launcher3.iconresize.ResizeFrameStrokeState;
+import com.android.launcher3.editselection.EditSelectionBadgeLayout;
 import com.android.launcher3.editselection.EditSelectionEligibility;
 import com.android.launcher3.editselection.EditSelectionManager;
 import com.android.launcher3.graphics.IconShape;
@@ -818,14 +819,9 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         int topOffset = getResources().getDimensionPixelSize(R.dimen.edit_selection_check_top_offset);
         int rightOffset = getResources().getDimensionPixelSize(
                 R.dimen.edit_selection_check_right_offset);
-        boolean rtl = getLayoutDirection() == LAYOUT_DIRECTION_RTL;
-        int left;
-        if (rtl) {
-            left = iconBounds.left - rightOffset;
-        } else {
-            left = iconBounds.right - size + rightOffset;
-        }
-        int top = iconBounds.top - topOffset;
+        Rect checkBounds = new Rect();
+        EditSelectionBadgeLayout.getAppCheckBounds(iconBounds, size, rightOffset, topOffset,
+                EditSelectionBadgeLayout.isRtl(this), checkBounds);
         Drawable check = getContext().getDrawable(selection.isSelected(this)
                 ? R.drawable.launcher_ic_app_selected
                 : R.drawable.launcher_ic_app_unselected);
@@ -833,7 +829,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
             return;
         }
         check = check.mutate();
-        check.setBounds(left, top, left + size, top + size);
+        check.setBounds(checkBounds);
         check.draw(canvas);
     }
 
@@ -986,22 +982,45 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
      * @param canvas The canvas to draw to.
      */
     protected void drawDotIfNecessary(Canvas canvas) {
-        if (!mForceHideDot && hasDot() && mDotParams.scale > 0) {
-            getIconBounds(mDotParams.iconBounds);
+        if (mForceHideDot || !hasDot() || mDotParams.scale <= 0) {
+            return;
+        }
+        // Oppo SelectStateIconRenderer: while edit-selection checkmarks are shown,
+        // suppress notification badges (workspace, hotseat, and open-folder icons).
+        if (isNotificationDotSuppressedBySelection()) {
+            return;
+        }
+        getIconBounds(mDotParams.iconBounds);
+        // Number badges use full iconBounds (Oppo / folder plate style). Plain dots
+        // still track the normalized glyph edge.
+        if (!mDotRenderer.mShowNumber) {
             Utilities.scaleRectAboutCenter(mDotParams.iconBounds,
                     IconShape.getNormalizationScale());
-            final int scrollX = getScrollX();
-            final int scrollY = getScrollY();
-            canvas.translate(scrollX, scrollY);
-            mDotParams.scale = 1.0f;
-            mDotParams.unreadNum = mDotInfo.getNotificationCount();
-            if (mDotRenderer.mShowNumber) {
-                DotDrawUtils.draw(canvas, new DotDrawUtils.DotNumParams(mDotRenderer, mIconSize, mDotParams), false);
-            } else {
-                mDotRenderer.draw(canvas, mDotParams);
-            }
-            canvas.translate(-scrollX, -scrollY);
         }
+        final int scrollX = getScrollX();
+        final int scrollY = getScrollY();
+        canvas.translate(scrollX, scrollY);
+        mDotParams.scale = 1.0f;
+        mDotParams.unreadNum = mDotInfo.getNotificationCount();
+        if (mDotRenderer.mShowNumber) {
+            DotDrawUtils.draw(canvas, getContext(),
+                    new DotDrawUtils.DotNumParams(mDotRenderer, mIconSize, mDotParams));
+        } else {
+            mDotRenderer.draw(canvas, mDotParams);
+        }
+        canvas.translate(-scrollX, -scrollY);
+    }
+
+    /**
+     * True when ColorOS-style selection checkmarks own the badge corner — notification
+     * dots must not paint on top (especially icons inside an open folder).
+     */
+    private boolean isNotificationDotSuppressedBySelection() {
+        if (!(mActivity instanceof Launcher launcher)) {
+            return false;
+        }
+        // Workspace / open-folder multi-select (Oppo SelectStateIconRenderer.hideDot).
+        return launcher.getEditSelectionManager().shouldDrawChecks();
     }
 
     @Override

@@ -294,6 +294,8 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
     protected void dispatchDraw(Canvas canvas) {
         if (EditSelectionWidgetBadge.shouldDraw(this)) {
             setClipToOutline(false);
+            // Oppo CustomLauncherAppWidgetHostView.dispatchDraw: plate under content.
+            EditSelectionWidgetBadge.drawBackgroundIfNecessary(this, canvas);
         }
         super.dispatchDraw(canvas);
         EditSelectionWidgetBadge.drawIfNecessary(this, canvas);

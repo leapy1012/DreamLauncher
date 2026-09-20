@@ -50,6 +50,7 @@ import android.util.Log;
 import android.util.Pair;
 import android.util.TypedValue;
 import android.view.FocusFinder;
+import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -61,6 +62,7 @@ import android.view.WindowInsets;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
+import android.os.Vibrator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -121,6 +123,7 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.android.launcher3.views.FloatingIconView;
+import com.android.launcher3.views.OptionsDialogView;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.util.window.RefreshRateTracker;
@@ -268,6 +271,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     /** ColorOS OplusFolder: outside-tap dismiss waits for UP without move. */
     private final PointF mActionDownPoint = new PointF();
     private boolean mIsTouchMoveEvent;
+    /** Oppo: long-press empty area outside folder content → EDIT_MODE. */
+    private boolean mEmptyLongPressEnabled;
+    private boolean mEmptyLongPressOccurred;
+    private GestureDetector mEmptyLongPressDetector;
 
     /**
      * Used to inflate the Workspace from XML.
@@ -290,6 +297,52 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         setFocusableInTouchMode(true);
         // Full-bleed folder must receive empty-area taps to dismiss (ColorOS).
         setClickable(true);
+        // Oppo OplusFolder GestureDetector: long-press dimmed area outside content → ToggleBar.
+        mEmptyLongPressDetector = new GestureDetector(context,
+                new GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public void onLongPress(MotionEvent e) {
+                        if (mEmptyLongPressEnabled
+                                && handleEmptyLongPressToEditMode()) {
+                            mEmptyLongPressOccurred = true;
+                            if (mFolderIcon != null) {
+                                mFolderIcon.cancelLongPress();
+                            }
+                        }
+                    }
+                });
+    }
+
+    /**
+     * Oppo {@code ToggleBarUtils.handleToToggleBarForFolder}: empty-space long-press inside an
+     * open folder enters ToggleBar / {@link LauncherState#EDIT_MODE} without closing the folder.
+     * <p>
+     * Oppo only {@code goToState(TOGGLE_BAR)}; chrome is shown by ToggleBar enable.
+     * Dream mirrors that: state transition only — {@link Launcher#onStateSetEnd} installs
+     * OptionsDialog / EditSelection when entering EDIT_MODE (workspace path may already
+     * have called {@link Launcher#showDefaultOptions}).
+     */
+    public boolean handleEmptyLongPressToEditMode() {
+        if (mLauncher == null || !mIsOpen || mIsAnimatingClosed) {
+            return false;
+        }
+        // Oppo allowToToggleBar + handleToToggleBarForFolder guards.
+        if (!mLauncher.isInState(NORMAL) || mLauncher.isWorkspaceLoading()
+                || !mLauncher.hasBeenResumed()) {
+            return false;
+        }
+        if (mLauncher.isInMultiWindowMode()) {
+            return false;
+        }
+        if (mInfo != null && mInfo.isInHotseat()) {
+            return false;
+        }
+        Vibrator vibrator = (Vibrator) mLauncher.getSystemService(Context.VIBRATOR_SERVICE);
+        if (vibrator != null) {
+            vibrator.vibrate(20);
+        }
+        mLauncher.getStateManager().goToState(EDIT_MODE);
+        return true;
     }
 
     @Override
@@ -844,6 +897,17 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                         mFolderIcon.drawLeaveBehindIfExists();
                         mFolderIcon.setForceHideDot(true);
                         mLauncher.setLauncherBlurBg(true);
+                        // Hide bottom ToggleBar without exiting EDIT_MODE. Using
+                        // closeOpenViews → OptionsDialog.onClosed would goToState(NORMAL)
+                        // mid-open and leave Workspace alpha at 0 after companion fade.
+                        if (mLauncher != null && mLauncher.isInState(EDIT_MODE)) {
+                            OptionsDialogView.hidePreservingEditMode(mLauncher);
+                            View hotseat = mLauncher.getHotseat();
+                            if (hotseat != null) {
+                                hotseat.setAlpha(0f);
+                                hotseat.setVisibility(INVISIBLE);
+                            }
+                        }
                     }
 
                     @Override
@@ -853,6 +917,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                         AccessibilityManagerCompat.sendFolderOpenedEventToTest(getContext());
 
                         mContent.setFocusOnFirstChild();
+                        if (mLauncher != null && mLauncher.isInState(EDIT_MODE)) {
+                            // Re-layout bottom-aligned after edit-chrome removal.
+                            centerAboutIcon();
+                            requestLayout();
+                        }
                     }
                 });
             }
@@ -955,15 +1024,20 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
      * Snap workspace chrome back after a non-animated folder dismiss.
      * Matches the end state of {@link HxyFolderAnimationManager} close companions.
      * When editing ({@link LauncherState#SPRING_LOADED}), reapply state scale/ty —
-     * do not force normal-desktop 1.0 / 0 (that breaks the toggle-bar layout).
+     * do not force normal-desktop scale 1.0 (that breaks the toggle-bar layout).
+     * Always restore companion {@code View.ALPHA}: open-folder fades Workspace itself to 0,
+     * and {@code reapplyState} only touches per-page container alphas — not Workspace alpha.
      */
     private void restoreWorkspaceAfterFolderDismiss() {
         if (mLauncher == null) {
             return;
         }
+        restoreWorkspaceCompanionAlpha();
         if (mLauncher.isInState(SPRING_LOADED)
                 || mLauncher.isInState(EDIT_MODE)) {
             mLauncher.getStateManager().reapplyState(false);
+            // reapplyState does not reset Workspace View.ALPHA after folder open fade.
+            restoreWorkspaceCompanionAlpha();
             resetPivot();
             return;
         }
@@ -971,25 +1045,46 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         View hotseat = mLauncher.getHotseat();
         View pageIndicator = workspace != null ? workspace.getPageIndicator() : null;
         if (workspace != null) {
-            workspace.setAlpha(1f);
             workspace.setScaleX(1f);
             workspace.setScaleY(1f);
             workspace.setTranslationX(0f);
             workspace.setTranslationY(0f);
         }
         if (hotseat != null) {
-            hotseat.setAlpha(1f);
             hotseat.setScaleX(1f);
             hotseat.setScaleY(1f);
             hotseat.setTranslationX(0f);
             hotseat.setTranslationY(0f);
         }
         if (pageIndicator != null) {
-            pageIndicator.setAlpha(1f);
             pageIndicator.setScaleX(1f);
             pageIndicator.setScaleY(1f);
         }
         resetPivot();
+    }
+
+    /**
+     * Undo {@link HxyFolderAnimationManager} open companion fade (Workspace/Hotseat α → 0).
+     */
+    public void restoreWorkspaceCompanionAlpha() {
+        if (mLauncher == null) {
+            return;
+        }
+        Workspace<?> workspace = mLauncher.getWorkspace();
+        View hotseat = mLauncher.getHotseat();
+        View pageIndicator = workspace != null ? workspace.getPageIndicator() : null;
+        if (workspace != null) {
+            workspace.setAlpha(1f);
+        }
+        if (hotseat != null) {
+            // Keep hidden if edit-mode long-press already hid the dock.
+            if (hotseat.getVisibility() == VISIBLE) {
+                hotseat.setAlpha(1f);
+            }
+        }
+        if (pageIndicator != null && !mLauncher.getStateManager().getState().overviewUi) {
+            pageIndicator.setAlpha(1f);
+        }
     }
 
     private void cancelRunningAnimations() {
@@ -1019,6 +1114,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                         mIsAnimatingClosed = true;
                         // ColorOS clears dim with content restore, not before icon springs start.
                         mLauncher.setLauncherBlurBg(false);
+                        // Oppo Folder.animateClosed: clear in-folder drop outlines.
+                        clearFolderDropOutlines();
                         if (mFolderIcon != null) {
                             // Suppress preview items before making the plate visible so the
                             // first close frame cannot double-draw preview + Folder children.
@@ -1048,6 +1145,14 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                         if (mLauncher.isInState(SPRING_LOADED)
                                 || mLauncher.isInState(EDIT_MODE)) {
                             mLauncher.getStateManager().reapplyState(false);
+                        }
+                        // Oppo: closing folder while still in TOGGLE_BAR restores bottom ToggleBar.
+                        if (mLauncher.isInState(EDIT_MODE)
+                                && mLauncher.getEditSelectionManager().isActive()
+                                && !mLauncher.getTransitionEffectsManager().isEffectSession()
+                                && AbstractFloatingView.getOpenView(mLauncher,
+                                        AbstractFloatingView.TYPE_OPTIONS_POPUP_DIALOG) == null) {
+                            OptionsDialogView.show(mLauncher, null);
                         }
                     }
                 });
@@ -1150,6 +1255,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         // Get the area offset such that the folder only closes if half the drag icon width
         // is outside the folder area
         mScrollAreaOffset = d.dragView.getDragRegionWidth() / 2 - d.xOffset;
+        // Oppo: folder CellLayout must be in-drag so drop chips can paint.
+        CellLayout page = mContent != null ? mContent.getCurrentCellLayout() : null;
+        if (page != null) {
+            page.onDragEnter();
+        }
     }
 
     OnAlarmListener mReorderAlarmListener = new OnAlarmListener() {
@@ -1169,6 +1279,38 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                 (int) recycle[0] - getPaddingLeft(), (int) recycle[1] - getPaddingTop());
     }
 
+    /** Oppo OplusFolder.onDragOver: soft drop pad under the empty / target cell. */
+    private void visualizeFolderDropLocation(DragObject d) {
+        if (mContent == null || !mContent.rankOnCurrentPage(mEmptyCellRank)) {
+            return;
+        }
+        CellLayout page = mContent.getCurrentCellLayout();
+        if (page == null) {
+            return;
+        }
+        int countX = page.getCountX();
+        if (countX <= 0) {
+            return;
+        }
+        int maxPerPage = mContent.itemsPerPage();
+        int pageRank = mTargetRank % maxPerPage;
+        if (pageRank < 0) {
+            pageRank += maxPerPage;
+        }
+        page.visualizeDropLocation(pageRank % countX, pageRank / countX, 1, 1, d);
+    }
+
+    private void clearFolderDropOutlines() {
+        if (mContent == null) {
+            return;
+        }
+        CellLayout page = mContent.getCurrentCellLayout();
+        if (page != null) {
+            page.clearDragOutlines();
+            page.onDragExit();
+        }
+    }
+
     @Override
     public void onDragOver(DragObject d) {
         if (mScrollPauseAlarm.alarmPending()) {
@@ -1176,6 +1318,9 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         }
         final float[] r = new float[2];
         mTargetRank = getTargetRank(d, r);
+
+        // Oppo: show drop outline while reordering inside the open folder.
+        visualizeFolderDropLocation(d);
 
         if (mTargetRank != mPrevTargetRank) {
             mReorderAlarm.cancelAlarm();
@@ -1268,6 +1413,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             mContent.clearScrollHint();
             mScrollHintDir = SCROLL_NONE;
         }
+        clearFolderDropOutlines();
     }
 
     /**
@@ -1378,8 +1524,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         BaseDragLayer parent = mActivityContext.getDragLayer();
         DragLayer dragLayer = mLauncher.getDragLayer();
 
-        // ColorOS OplusFolder.centerAboutIcon: bottom-align measured content.
-        // Cap y with coloros_folder_top_offset so sparse folders stay top-pinned like Oppo.
+        // ColorOS OplusFolder.centerAboutIcon: bottom-align measured content above nav inset.
+        // Do not clamp to coloros_folder_top_offset — that pinned sparse folders mid-screen.
         if (isFullBleedOpenFolder()) {
             int width = getMeasuredWidth() > 0 ? getMeasuredWidth() : getFolderWidth();
             int height = getMeasuredHeight() > 0 ? getMeasuredHeight() : getFolderHeight();
@@ -1390,10 +1536,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                 height = getFolderHeight();
             }
             int bottomInset = mLauncher.getDeviceProfile().getInsets().bottom;
-            int topOffset = getResources().getDimensionPixelSize(R.dimen.coloros_folder_top_offset);
+            int topInset = mLauncher.getDeviceProfile().getInsets().top;
             int x = (dragLayer.getWidth() - width) / 2;
-            int bottomAlignedY = (dragLayer.getHeight() - bottomInset) - height;
-            int y = Math.max(0, Math.min(bottomAlignedY, topOffset));
+            // Oppo: y = (dragLayerH - bottomInset) - measuredHeight
+            int y = Math.max(topInset, (dragLayer.getHeight() - bottomInset) - height);
             Rect iconRectInDragLayer = sTempRect;
             dragLayer.getDescendantRectRelativeToSelf(mFolderIcon, iconRectInDragLayer);
             Rect iconContentRect = mFolderIcon.getIconRect();
@@ -1997,6 +2143,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         if (action == MotionEvent.ACTION_DOWN) {
             mActionDownPoint.set(ev.getX(), ev.getY());
             mIsTouchMoveEvent = false;
+            mEmptyLongPressOccurred = false;
 
             if (isEditingName()) {
                 // ColorOS OplusFolder: clear button is inside rename chrome — do not end edit.
@@ -2008,7 +2155,25 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                     mFolderName.dispatchBackKey();
                     return true;
                 }
+                mEmptyLongPressEnabled = false;
                 return false;
+            }
+
+            // Oppo: enable folder-chrome empty long-press only outside name + content.
+            boolean overName = mFolderName != null && dl.isEventOverView(mFolderName, ev);
+            boolean overContent = mContent != null && dl.isEventOverView(mContent, ev);
+            mEmptyLongPressEnabled = !overName && !overContent;
+            if (mEmptyLongPressDetector != null) {
+                mEmptyLongPressDetector.onTouchEvent(ev);
+            }
+
+            // Steal the gesture when empty long-press is armed. Otherwise the drawing-hidden
+            // FolderIcon under the dim still receives the same long-press and opens showForFolder.
+            if (mEmptyLongPressEnabled) {
+                if (mFolderIcon != null) {
+                    mFolderIcon.cancelLongPress();
+                }
+                return true;
             }
 
             if (!isFullBleedOpenFolder()
@@ -2018,6 +2183,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
             }
             // ColorOS: outside / empty dismiss is decided on UP (not DOWN).
             return false;
+        }
+
+        if (mEmptyLongPressDetector != null) {
+            mEmptyLongPressDetector.onTouchEvent(ev);
         }
 
         if (action == MotionEvent.ACTION_MOVE) {
@@ -2033,12 +2202,47 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
         if (action == MotionEvent.ACTION_UP && isFullBleedOpenFolder() && !isEditingName()) {
             // ColorOS OplusFolder: tap dimmed wallpaper outside folder chrome closes on UP.
-            if (!dl.isEventOverView(this, ev) && !mIsTouchMoveEvent && mIsOpen) {
+            if (!dl.isEventOverView(this, ev) && !mIsTouchMoveEvent && !mEmptyLongPressOccurred
+                    && mIsOpen) {
                 close(true);
                 return true;
             }
         }
         return false;
+    }
+
+    @Override
+    public boolean onControllerTouchEvent(MotionEvent ev) {
+        if (isHiddenForOverview()) {
+            return false;
+        }
+        BaseDragLayer dl = (BaseDragLayer) getParent();
+        if (dl == null) {
+            return false;
+        }
+        // Active controller after empty-area steal — keep feeding long-press + dismiss.
+        if (mEmptyLongPressDetector != null) {
+            mEmptyLongPressDetector.onTouchEvent(ev);
+        }
+        final int action = ev.getAction();
+        if (action == MotionEvent.ACTION_MOVE && !mIsTouchMoveEvent) {
+            int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+            if (Math.abs(ev.getX() - mActionDownPoint.x) >= slop
+                    || Math.abs(ev.getY() - mActionDownPoint.y) >= slop) {
+                mIsTouchMoveEvent = true;
+            }
+        }
+        if (action == MotionEvent.ACTION_UP && isFullBleedOpenFolder()
+                && !isEditingName() && mIsOpen
+                && !mIsTouchMoveEvent && !mEmptyLongPressOccurred) {
+            if (!dl.isEventOverView(this, ev)) {
+                close(true);
+            } else {
+                // Empty chrome inside folder bounds (name/content already excluded on steal).
+                completeDragExit();
+            }
+        }
+        return true;
     }
 
     @Override
@@ -2059,7 +2263,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
                 && !isEditingName()
                 && event.getAction() == MotionEvent.ACTION_UP
                 && mIsOpen
-                && !mIsTouchMoveEvent) {
+                && !mIsTouchMoveEvent
+                && !mEmptyLongPressOccurred) {
             completeDragExit();
             return true;
         }

@@ -194,8 +194,51 @@ public final class EditSelectionEligibility {
                 || item.itemType == LauncherSettings.Favorites.ITEM_TYPE_DEEP_SHORTCUT;
     }
 
+    /**
+     * Whether the long-press popup may show Remove Widget (any home style).
+     */
+    public static boolean canShowPopupRemoveWidget(@Nullable ItemInfo info) {
+        if (info == null || info.id == ItemInfo.NO_ID) {
+            return false;
+        }
+        return info.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPWIDGET
+                || info.itemType == LauncherSettings.Favorites.ITEM_TYPE_CUSTOM_APPWIDGET;
+    }
+
+    /**
+     * Whether the long-press popup may show Remove (Oppo drawer mode only):
+     * icon must already live on Home / hotseat / in a folder (has a DB id).
+     */
+    public static boolean canShowPopupRemove(Context context, @Nullable ItemInfo info) {
+        if (info == null || !LauncherStyle.isAppDrawer(context)) {
+            return false;
+        }
+        if (info.isPredictedItem()) {
+            return false;
+        }
+        // All Apps entries are not on the workspace — nothing to remove.
+        if (info instanceof com.android.launcher3.model.data.AppInfo
+                && info.id == ItemInfo.NO_ID) {
+            return false;
+        }
+        return info.id != ItemInfo.NO_ID
+                && (info.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPLICATION
+                || info.itemType == LauncherSettings.Favorites.ITEM_TYPE_SHORTCUT
+                || info.itemType == LauncherSettings.Favorites.ITEM_TYPE_DEEP_SHORTCUT);
+    }
+
+    /**
+     * Whether the long-press popup may show Uninstall (both launcher styles).
+     */
+    public static boolean canShowPopupUninstall(Context context, @Nullable ItemInfo info) {
+        if (info == null || info.isPredictedItem()) {
+            return false;
+        }
+        return isUninstallable(context, info);
+    }
+
     /** Mirrors {@link com.android.launcher3.SecondaryDropTarget} uninstall eligibility. */
-    private static boolean isUninstallable(Context context, ItemInfo item) {
+    public static boolean isUninstallable(Context context, ItemInfo item) {
         if (isLauncherUtility(item)) {
             return false;
         }

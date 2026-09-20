@@ -285,9 +285,11 @@ public class LauncherStyleFragment extends COUIPreferenceFragment {
         if (mSelectedStyle == mAppliedStyle) {
             return;
         }
+        // OPPO LauncherModelFragment.showAlertDialog: long copy is the title (centered),
+        // positive button is "Switch" — not setMessage (left-aligned when multi-line) + Apply.
         new COUIAlertDialogBuilder(requireContext())
-                .setMessage(R.string.coloros_switch_home_screen_mode_message)
-                .setPositiveButton(R.string.apply, (dialog, which) -> {
+                .setTitle(R.string.coloros_switch_home_screen_mode_message)
+                .setPositiveButton(R.string.layout_apply_change_positive, (dialog, which) -> {
                     LauncherStyle.set(requireContext(), mSelectedStyle);
                     mAppliedStyle = mSelectedStyle;
                     requireActivity().onBackPressed();

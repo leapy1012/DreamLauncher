@@ -36,4 +36,11 @@
     <!-- Leapy added 2026-09-01: OPPO night card surface for App info buttons. -->
     <color name="coui_color_card_background">#1affffff</color>
     <!-- Leapy end -->
+
+    <!-- Night overrides for Theme.COUI.Main base tokens (surface was flipped earlier
+         without primary_neutral → dark snackbar + black text). -->
+    <color name="coui_color_primary_neutral">#e6ffffff</color>
+    <color name="coui_color_press">#33ffffff</color>
+    <color name="coui_color_press_background">#26ffffff</color>
+    <color name="coui_color_primary_on_popup_blue">#5c9dff</color>
 </resources>

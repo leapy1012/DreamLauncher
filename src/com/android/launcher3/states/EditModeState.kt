@@ -47,8 +47,13 @@ class EditModeState(id: Int) : LauncherState(id, StatsLogManager.LAUNCHER_STATE_
     }
 
     override fun getVisibleElements(launcher: Launcher): Int {
-        // Same as SpringLoadedState: hide page dots under the options bar.
-        return VERTICAL_SWIPE_INDICATOR
+        // The OPPO Transitions state keeps the workspace page indicator as preview context,
+        // but does not expose app-selection chrome or the hotseat.
+        return if (launcher.isTransitionEffectsMode) {
+            WORKSPACE_PAGE_INDICATOR
+        } else {
+            VERTICAL_SWIPE_INDICATOR
+        }
     }
 
     override fun getWorkspaceScaleAndTranslation(launcher: Launcher): ScaleAndTranslation {

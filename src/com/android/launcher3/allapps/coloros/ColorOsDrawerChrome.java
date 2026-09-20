@@ -852,17 +852,22 @@ public final class ColorOsDrawerChrome {
         }
     }
 
-    /** Re-read prefs and push column count into All Apps adapters. */
+    /** Re-read prefs and push column count into All Apps adapters (main, work, search). */
     public void applyDrawerColumns() {
         int cols = ColorOsDrawerColumns.resolve(
                 mContainer.getContext(), mLauncher.getDeviceProfile());
         AllAppsRecyclerView active = mContainer.getActiveRecyclerView();
         applyColumnsToRv(active, cols);
-        // Also update search / work holders if present.
         View appsList = mContainer.findViewById(R.id.apps_list_view);
         if (appsList instanceof AllAppsRecyclerView) {
             applyColumnsToRv((AllAppsRecyclerView) appsList, cols);
         }
+        View workList = mContainer.findViewById(R.id.apps_list_view_work);
+        if (workList instanceof AllAppsRecyclerView) {
+            applyColumnsToRv((AllAppsRecyclerView) workList, cols);
+        }
+        // Search results use a separate AdapterHolder; keep it in sync with drawer columns.
+        applyColumnsToRv(mContainer.getSearchRecyclerView(), cols);
     }
 
     private void applyColumnsToRv(@Nullable AllAppsRecyclerView rv, int cols) {

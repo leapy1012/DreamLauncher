@@ -1619,7 +1619,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 
     @Override
     protected void onNotSnappingToPageInFreeScroll() {
-        int finalPos = mScroller.getFinalX();
+        int finalPos = mScroller.getCOUIFinalX();
         if (finalPos > mMinScroll && finalPos < mMaxScroll) {
             int firstPageScroll = getScrollForPage(!mIsRtl ? 0 : getPageCount() - 1);
             int lastPageScroll = getScrollForPage(!mIsRtl ? getPageCount() - 1 : 0);
@@ -2451,7 +2451,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
      * and unloads the associated task data for tasks that are no longer visible.
      */
     public void loadVisibleTaskData(@TaskView.TaskDataChanges int dataChanges) {
-        boolean hasLeftOverview = !mOverviewStateEnabled && mScroller.isFinished();
+        boolean hasLeftOverview = !mOverviewStateEnabled && mScroller.isCOUIFinished();
         if (hasLeftOverview || mTaskListChangeId == -1) {
             // Skip loading visible task data if we've already left the overview state, or if the
             // task list hasn't been loaded yet (the task views will not reflect the task list)

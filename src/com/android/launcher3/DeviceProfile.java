@@ -988,10 +988,9 @@ public class DeviceProfile {
         iconDrawablePaddingPx = (int) (iconDrawablePaddingOriginalPx * iconScale);
         cellLayoutBorderSpacePx = getCellLayoutBorderSpace(inv, scale);
 
-        float f = mUseOppoWorkspaceMetrics ? 1f
-                : PrefTools.getFloat(IconSizeSettingActivity.ICON_SIZE_PROGRESS,
-                        IconSizeSettingActivity.PROGRESS_DEFAULT_VALUE.floatValue(), context);
-        this.iconSizePx = (int) (((float) this.iconSizePx) * f);
+        // Icon Custom slider (0.75–1.15). Apply with Oppo metrics too — layout cells
+        // below still shrink/grow to fit.
+        this.iconSizePx = Math.max(1, Math.round(this.iconSizePx * getCustomIconSizeScale(context)));
 
         if (isScalableGrid) {
             cellWidthPx = pxFromDp(inv.minCellSize[mTypeIndex].x, mMetrics, scale);
@@ -1273,11 +1272,8 @@ public class DeviceProfile {
                 (int) (folderChildTextSizePx * folderLabelTextScale));
 
         int textHeight = Utilities.calculateTextHeight(folderChildTextSizePx);
-        float f = mUseOppoWorkspaceMetrics ? 1f
-                : PrefTools.getFloat(IconSizeSettingActivity.ICON_SIZE_PROGRESS,
-                        IconSizeSettingActivity.PROGRESS_DEFAULT_VALUE.floatValue(),
-                        LauncherApplication.getContext());
-        folderChildIconSizePx = (int) (((float) folderChildIconSizePx) * f);
+        folderChildIconSizePx = Math.max(1, Math.round(
+                folderChildIconSizePx * getCustomIconSizeScale(LauncherApplication.getContext())));
 
         if (isScalableGrid) {
             if (inv.folderStyle == INVALID_RESOURCE_HANDLE) {
@@ -1355,6 +1351,18 @@ public class DeviceProfile {
         return mUseOppoWorkspaceMetrics;
     }
 
+    /**
+     * Icon Custom seekbar scale from {@link IconSizeSettingActivity} (typically 0.75–1.15).
+     * Default seek (62) maps to ~1.0.
+     */
+    public static float getCustomIconSizeScale(Context context) {
+        if (context == null) {
+            return IconSizeSettingActivity.PROGRESS_DEFAULT_VALUE;
+        }
+        return PrefTools.getFloat(IconSizeSettingActivity.ICON_SIZE_PROGRESS,
+                IconSizeSettingActivity.PROGRESS_DEFAULT_VALUE, context);
+    }
+
     public int getOppoHotseatMarginBottomPx() {
         return mUseOppoWorkspaceMetrics ? mOppoHotseatMarginBottomPx : 0;
     }
@@ -1412,7 +1420,9 @@ public class DeviceProfile {
     }
 
     private int getOppoWorkspaceCellHeightForGrid(int cellWidth, int cols, int rows) {
-        int iconSize = getOppoPreviewIconSizePx(cols);
+        // Prefer the live workspace icon size (includes Icon Custom scale) so cells
+        // grow/shrink with the slider; fall back to grid default for early/preview use.
+        int iconSize = iconSizePx > 0 ? iconSizePx : getOppoPreviewIconSizePx(cols);
         int contentHeight = iconSize + iconDrawablePaddingPx + getOppoIconTextHeightPx();
         int minVerticalPadding = 2 * getOppoCellPaddingTopMin(cols);
         return Math.max(contentHeight + minVerticalPadding,
@@ -1754,12 +1764,11 @@ public class DeviceProfile {
                     sideSpacing,
                     getHotseatBarBottomPadding());
         } else {
-            // We want the edges of the hotseat to line up with the edges of the workspace, but the
-            // icons in the hotseat are a different size, and so don't line up perfectly. To account
-            // for this, we pad the left and right of the hotseat with half of the difference of a
-            // workspace cell vs a hotseat cell.
+            // Align dock edges with workspace. Oppo phone dock max can exceed columns
+            // (e.g. 5 icons on 4-col home); pitch still follows workspace columns.
             float workspaceCellWidth = (float) widthPx / inv.numColumns;
-            float hotseatCellWidth = (float) widthPx / numShownHotseatIcons;
+            int hotseatPitchDivisor = Math.min(numShownHotseatIcons, inv.numColumns);
+            float hotseatCellWidth = (float) widthPx / Math.max(1, hotseatPitchDivisor);
             int hotseatAdjustment = Math.round((workspaceCellWidth - hotseatCellWidth) / 2);
             hotseatBarPadding.set(
                     hotseatAdjustment + workspacePadding.left + cellLayoutPaddingPx.left

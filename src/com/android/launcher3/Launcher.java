@@ -25,6 +25,7 @@ import static com.android.launcher3.AbstractFloatingView.TYPE_ALL;
 import static com.android.launcher3.AbstractFloatingView.TYPE_COLOROS_LAYOUT;
 import static com.android.launcher3.AbstractFloatingView.TYPE_FOLDER;
 import static com.android.launcher3.AbstractFloatingView.TYPE_ICON_SURFACE;
+import static com.android.launcher3.AbstractFloatingView.TYPE_OPTIONS_POPUP_DIALOG;
 import static com.android.launcher3.AbstractFloatingView.TYPE_REBIND_SAFE;
 import static com.android.launcher3.AbstractFloatingView.TYPE_SNACKBAR;
 import static com.android.launcher3.AbstractFloatingView.getTopOpenViewWithType;
@@ -72,6 +73,9 @@ import static com.android.launcher3.model.ItemInstallQueue.FLAG_ACTIVITY_PAUSED;
 import static com.android.launcher3.model.ItemInstallQueue.FLAG_DRAG_AND_DROP;
 import static com.android.launcher3.popup.SystemShortcut.APP_INFO;
 import static com.android.launcher3.popup.SystemShortcut.INSTALL;
+import static com.android.launcher3.popup.SystemShortcut.REMOVE;
+import static com.android.launcher3.popup.SystemShortcut.REMOVE_WIDGET;
+import static com.android.launcher3.popup.SystemShortcut.UNINSTALL;
 import static com.android.launcher3.popup.SystemShortcut.WIDGETS;
 import static com.android.launcher3.states.RotationHelper.REQUEST_LOCK;
 import static com.android.launcher3.states.RotationHelper.REQUEST_NONE;
@@ -266,6 +270,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import com.android.launcher3.togglebar.TransitionEffectsManager;
 import com.android.launcher3.views.OptionsDialogView;
 import com.android.launcher3.editselection.EditSelectionManager;
 import android.app.Activity;
@@ -320,6 +325,10 @@ public class Launcher extends StatefulActivity<LauncherState>
 
     public static final String INTENT_ACTION_ALL_APPS_TOGGLE =
             "launcher.intent_action_all_apps_toggle";
+    public static final String INTENT_ACTION_SHOW_TRANSITION_EFFECTS =
+            "com.android.launcher3.action.SHOW_TRANSITION_EFFECTS";
+    public static final String EXTRA_SHOW_TRANSITION_EFFECTS =
+            "com.android.launcher3.extra.SHOW_TRANSITION_EFFECTS";
 
     public static final String ON_CREATE_EVT = "Launcher.onCreate";
     public static final String ON_START_EVT = "Launcher.onStart";
@@ -327,8 +336,10 @@ public class Launcher extends StatefulActivity<LauncherState>
     public static final String ON_NEW_INTENT_EVT = "Launcher.onNewIntent";
 
     private static boolean sIsNewProcess = true;
+    private static boolean sShowTransitionEffectsOnResume;
 
     private StateManager<LauncherState> mStateManager;
+    private TransitionEffectsManager mTransitionEffectsManager;
 
     private static final int ON_ACTIVITY_RESULT_ANIMATION_DELAY = 500;
 
@@ -1314,7 +1325,10 @@ public class Launcher extends StatefulActivity<LauncherState>
     public void onStateSetEnd(LauncherState state) {
         super.onStateSetEnd(state);
         getAppWidgetHolder().setStateIsNormal(state == LauncherState.NORMAL);
-        getWorkspace().setClipChildren(!state.hasFlag(FLAG_MULTI_PAGE));
+        // Roll/cylinder strip draw needs an unclipped workspace; do not re-enable clipping.
+        if (getWorkspace() != null && !getWorkspace().isRollScrollEffectActive()) {
+            getWorkspace().setClipChildren(!state.hasFlag(FLAG_MULTI_PAGE));
+        }
 
         finishAutoCancelActionMode();
         removeActivityFlags(ACTIVITY_STATE_TRANSITION_ACTIVE);
@@ -1322,6 +1336,30 @@ public class Launcher extends StatefulActivity<LauncherState>
         // dispatch window state changed
         getWindow().getDecorView().sendAccessibilityEvent(TYPE_WINDOW_STATE_CHANGED);
         AccessibilityManagerCompat.sendStateEventToTest(this, state.ordinal);
+
+        if (state == EDIT_MODE) {
+            // OPPO onToggleBarStateEnable: consume pending "effect" and inflate into toggle_bar_root.
+            getTransitionEffectsManager().onEditModeEnabled();
+            // Oppo ToggleBarMainState UI. Workspace empty-long-press already called
+            // showDefaultOptions(); folder empty-long-press only goToState(EDIT_MODE) and
+            // relies on this (ToggleBarUtils.handleToToggleBarForFolder parity).
+            if (!getTransitionEffectsManager().isEffectSession()
+                    && !getEditSelectionManager().isActive()) {
+                View hotseat = getHotseat();
+                if (hotseat != null) {
+                    hotseat.setAlpha(0f);
+                    hotseat.setVisibility(View.INVISIBLE);
+                }
+                // Oppo: open folder in TOGGLE_BAR → Done + selection only; hide bottom ToggleBar.
+                if (Folder.getOpen(this) != null) {
+                    getEditSelectionManager().enter();
+                    OptionsDialogView.hidePreservingEditMode(this);
+                    SystemBarHelper.hideStatusBar(getWindow(), false /* animate */);
+                } else {
+                    showDefaultOptions(-1, -1);
+                }
+            }
+        }
 
         if (state == NORMAL) {
             // Re-enable any Un/InstallShortcutReceiver and now process any queued items
@@ -1331,29 +1369,34 @@ public class Launcher extends StatefulActivity<LauncherState>
             // Clear any rotation locks when going to normal state
             getRotationHelper().setCurrentStateRequest(REQUEST_NONE);
 
-            if (mEditSelectionManager != null) {
-                mEditSelectionManager.exit();
-            }
+            // May re-enter EDIT_MODE if Transitions pending was armed (Settings HOME race).
+            getTransitionEffectsManager().onEnteredNormal();
+            if (!getTransitionEffectsManager().isEffectSession()) {
+                if (mEditSelectionManager != null) {
+                    mEditSelectionManager.exit();
+                }
 
-            // Restore status bar after leaving edit / spring-loaded (Oppo ToggleBar).
-            SystemBarHelper.showStatusBar(getWindow());
+                // Restore status bar after leaving edit / spring-loaded (Oppo ToggleBar).
+                SystemBarHelper.showStatusBar(getWindow());
 
-            mHotseat.setVisibility(View.VISIBLE);
-            long delay = 0;
-            if (AbstractFloatingView.hasOpenView(this, TYPE_WIDGETS_FULL_SHEET)) {
-                AbstractFloatingView.closeOpenContainer(this, TYPE_WIDGETS_FULL_SHEET);
-                delay = 250;
-            }
-            AbstractFloatingView topView = AbstractFloatingView.getTopOpenView(Launcher.this);
-            if (topView != null) {
-                // ColorOS: do not auto-dismiss an open folder retained through Overview.
-                if (mRetainOpenFolderThroughOverview && topView instanceof Folder) {
-                    ((Folder) topView).setSuppressedForOverview(false);
-                    setLauncherBlurBg(true);
-                    // Clear immediately so a subsequent desktop Home closes the folder.
-                    mRetainOpenFolderThroughOverview = false;
-                } else {
-                    topView.postDelayed(() -> topView.close(true), delay);
+                mHotseat.setVisibility(View.VISIBLE);
+                mHotseat.setAlpha(1f);
+                long delay = 0;
+                if (AbstractFloatingView.hasOpenView(this, TYPE_WIDGETS_FULL_SHEET)) {
+                    AbstractFloatingView.closeOpenContainer(this, TYPE_WIDGETS_FULL_SHEET);
+                    delay = 250;
+                }
+                AbstractFloatingView topView = AbstractFloatingView.getTopOpenView(Launcher.this);
+                if (topView != null) {
+                    // ColorOS: do not auto-dismiss an open folder retained through Overview.
+                    if (mRetainOpenFolderThroughOverview && topView instanceof Folder) {
+                        ((Folder) topView).setSuppressedForOverview(false);
+                        setLauncherBlurBg(true);
+                        // Clear immediately so a subsequent desktop Home closes the folder.
+                        mRetainOpenFolderThroughOverview = false;
+                    } else {
+                        topView.postDelayed(() -> topView.close(true), delay);
+                    }
                 }
             }
         }
@@ -1379,6 +1422,7 @@ public class Launcher extends StatefulActivity<LauncherState>
         Object traceToken = TraceHelper.INSTANCE.beginSection(ON_RESUME_EVT,
                 TraceHelper.FLAG_UI_EVENT);
         super.onResume();
+        maybeShowTransitionEffects(getIntent());
 
         if (mDeferOverlayCallbacks) {
             scheduleDeferredCheck();
@@ -1389,6 +1433,10 @@ public class Launcher extends StatefulActivity<LauncherState>
         DragView.removeAllViews(this);
         TraceHelper.INSTANCE.endSection(traceToken);
         mSensorMgr.registerListener(this, mSensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+        if (sShowTransitionEffectsOnResume) {
+            sShowTransitionEffectsOnResume = false;
+            showTransitionEffectsWhenResumed();
+        }
     }
 
     @Override
@@ -1824,25 +1872,31 @@ public class Launcher extends StatefulActivity<LauncherState>
                 && AbstractFloatingView.getTopOpenView(this) == null;
         boolean isActionMain = Intent.ACTION_MAIN.equals(intent.getAction());
         boolean internalStateHandled = ACTIVITY_TRACKER.handleNewIntent(this);
+        // Settings→Transitions: skip HOME→NORMAL reset while opening OR while pending
+        // "effect" is armed (a second HOME from Settings.finish() must not cancel it).
+        boolean openTransitions = shouldOpenTransitionEffects(intent)
+                || getTransitionEffectsManager().hasPendingState();
 
         if (isActionMain) {
             if (!internalStateHandled) {
-                // In all these cases, only animate if we're already on home
-                closeOpenViews(isStarted());
+                if (!openTransitions) {
+                    // In all these cases, only animate if we're already on home
+                    closeOpenViews(isStarted());
 
-                if (!isInState(NORMAL)) {
-                    // Only change state, if not already the same. This prevents cancelling any
-                    // animations running as part of resume
-                    mStateManager.goToState(NORMAL, mStateManager.shouldAnimateStateChange());
-                }
+                    if (!isInState(NORMAL)) {
+                        // Only change state, if not already the same. This prevents cancelling
+                        // any animations running as part of resume
+                        mStateManager.goToState(NORMAL, mStateManager.shouldAnimateStateChange());
+                    }
 
-                // Reset the apps view
-                if (!alreadyOnHome) {
-                    mAppsView.reset(isStarted() /* animate */);
-                }
+                    // Reset the apps view
+                    if (!alreadyOnHome) {
+                        mAppsView.reset(isStarted() /* animate */);
+                    }
 
-                if (shouldMoveToDefaultScreen && !mWorkspace.isHandlingTouch()) {
-                    mWorkspace.post(mWorkspace::moveToDefaultScreen);
+                    if (shouldMoveToDefaultScreen && !mWorkspace.isHandlingTouch()) {
+                        mWorkspace.post(mWorkspace::moveToDefaultScreen);
+                    }
                 }
             }
 
@@ -1859,7 +1913,71 @@ public class Launcher extends StatefulActivity<LauncherState>
             showAllAppsWorkTabFromIntent(alreadyOnHome);
         }
 
+        maybeShowTransitionEffects(intent);
+
         TraceHelper.INSTANCE.endSection(traceToken);
+    }
+
+    private boolean shouldOpenTransitionEffects(Intent intent) {
+        if (sShowTransitionEffectsOnResume) {
+            return true;
+        }
+        if (intent == null) {
+            return false;
+        }
+        return INTENT_ACTION_SHOW_TRANSITION_EFFECTS.equals(intent.getAction())
+                || intent.getBooleanExtra(EXTRA_SHOW_TRANSITION_EFFECTS, false);
+    }
+
+    private void maybeShowTransitionEffects(Intent intent) {
+        if (!shouldOpenTransitionEffects(intent)) {
+            return;
+        }
+        if (intent != null) {
+            intent.removeExtra(EXTRA_SHOW_TRANSITION_EFFECTS);
+            if (INTENT_ACTION_SHOW_TRANSITION_EFFECTS.equals(intent.getAction())) {
+                intent.setAction(Intent.ACTION_MAIN);
+            }
+        }
+        sShowTransitionEffectsOnResume = false;
+        showTransitionEffectsWhenResumed();
+    }
+
+    public void showTransitionEffectsWhenResumed() {
+        if (!hasBeenResumed()) {
+            sShowTransitionEffectsOnResume = true;
+            return;
+        }
+        // OPPO: mPendingState="effect" → goToState(TOGGLE_BAR) → onToggleBarStateEnable creates
+        // Effect UI in toggle_bar_root. We use EDIT_MODE for workspace scale and create the strip
+        // in the permanent root from onStateSetEnd(EDIT_MODE).
+        getTransitionEffectsManager().gotoEffectOnNewIntent();
+    }
+
+    public boolean isTransitionEffectsMode() {
+        return getTransitionEffectsManager().isEffectSession();
+    }
+
+    public void setTransitionEffectsMode(boolean enabled) {
+        TransitionEffectsManager manager = getTransitionEffectsManager();
+        if (!enabled) {
+            if (manager.isEffectSession()) {
+                manager.finish(false);
+            }
+        } else if (!manager.isEffectSession()) {
+            manager.gotoEffectOnNewIntent();
+        }
+    }
+
+    public TransitionEffectsManager getTransitionEffectsManager() {
+        if (mTransitionEffectsManager == null) {
+            mTransitionEffectsManager = new TransitionEffectsManager(this);
+        }
+        return mTransitionEffectsManager;
+    }
+
+    public static void requestShowTransitionEffectsOnResume() {
+        sShowTransitionEffectsOnResume = true;
     }
 
     protected void toggleAllAppsFromIntent(boolean alreadyOnHome) {
@@ -2802,6 +2920,9 @@ public class Launcher extends StatefulActivity<LauncherState>
             viewToFocus.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_FOCUSED);
         }
         workspace.requestLayout();
+        if (mHotseat != null) {
+            mHotseat.reflowIcons();
+        }
     }
 
     /**
@@ -3476,7 +3597,12 @@ public class Launcher extends StatefulActivity<LauncherState>
         // options bar springs — otherwise toolbar addView/requestLayout shifts the
         // BOTTOM-gravity options panel mid-animation.
         getEditSelectionManager().enter();
-        OptionsDialogView.show(this, null);
+        // Oppo open-folder TOGGLE_BAR: Done + checks only — no bottom Widgets ToggleBar.
+        if (Folder.getOpen(this) == null) {
+            OptionsDialogView.show(this, null);
+        } else {
+            OptionsDialogView.hidePreservingEditMode(this);
+        }
         // Match Oppo: hide status bar when opening the workspace edit options.
         SystemBarHelper.hideStatusBar(getWindow(), false /* animate */);
     }
@@ -3561,7 +3687,8 @@ public class Launcher extends StatefulActivity<LauncherState>
     }
 
     public Stream<SystemShortcut.Factory> getSupportedShortcuts() {
-        return Stream.of(APP_INFO, WIDGETS, INSTALL);
+        // Oppo: Remove (drawer only) + Uninstall when eligible; Remove widget for widgets.
+        return Stream.of(APP_INFO, WIDGETS, INSTALL, REMOVE, REMOVE_WIDGET, UNINSTALL);
     }
 
     protected LauncherAccessibilityDelegate createAccessibilityDelegate() {

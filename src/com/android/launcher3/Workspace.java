@@ -108,6 +108,7 @@ import com.android.launcher3.pageindicators.PageIndicator;
 import com.android.launcher3.statemanager.StateManager;
 import com.android.launcher3.statemanager.StateManager.StateHandler;
 import com.android.launcher3.states.StateAnimationConfig;
+import com.android.launcher3.touch.OverScroll;
 import com.android.launcher3.touch.WorkspaceTouchListener;
 import com.android.launcher3.util.EdgeEffectCompat;
 import com.android.launcher3.util.Executors;
@@ -115,6 +116,7 @@ import com.android.launcher3.util.IntArray;
 import com.android.launcher3.util.IntSet;
 import com.android.launcher3.util.IntSparseArrayMap;
 import com.android.launcher3.util.LauncherBindableItemsContainer;
+import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.util.OverlayEdgeEffect;
 import com.android.launcher3.util.PackageUserKey;
 import com.android.launcher3.util.RunnableList;
@@ -325,6 +327,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     private final StatsLogManager mStatsLogManager;
     public ScrollEffect mScrollEffect;
+    /** Oppo-style: finger travel past min/max before damping (not the visual scroll). */
+    private int mUnboundedScroll;
+    private boolean mWasInOverscroll;
 
     /**
      * Used to inflate the Workspace from XML.
@@ -504,10 +509,16 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         }
 
         if (mDragInfo != null && mDragInfo.cell != null) {
-            // Ensure source is gone once the real drag begins (Oppo holdOriginalView /
-            // INVISIBLE). Covers resize-frame race where onDragStart fired before the frame
-            // could hide the icon.
-            mDragInfo.cell.setVisibility(INVISIBLE);
+            // Oppo: apps/folders hide the source; widgets stay visible because the host view
+            // is the DragView content (hiding it blanks the moving widget).
+            if (mDragInfo.cell instanceof LauncherAppWidgetHostView) {
+                mDragInfo.cell.setVisibility(VISIBLE);
+            } else {
+                // Ensure source is gone once the real drag begins (Oppo holdOriginalView /
+                // INVISIBLE). Covers resize-frame race where onDragStart fired before the frame
+                // could hide the icon.
+                mDragInfo.cell.setVisibility(INVISIBLE);
+            }
 
             CellLayout layout = null;
             if (mDragInfo.cell instanceof LauncherAppWidgetHostView) {
@@ -1277,6 +1288,8 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     @Override
     protected void updateIsBeingDraggedOnTouchDown(MotionEvent ev) {
+        mUnboundedScroll = mOrientationHandler.getPrimaryScroll(this);
+        mWasInOverscroll = false;
         super.updateIsBeingDraggedOnTouchDown(ev);
 
         mXDown = ev.getX();
@@ -1383,6 +1396,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     protected void onPageEndTransition() {
         super.onPageEndTransition();
         updateChildrenLayersEnabled();
+        if (mScrollEffect != null) {
+            mScrollEffect.reset();
+        }
 
         if (mDragController.isDragging()) {
             if (workspaceInModalState()) {
@@ -1459,19 +1475,29 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     }
 
     public void showScrollEffectAnimation() {
-        if (!this.mScroller.isFinished()) {
-            Log.e(WorkspaceLayoutManager.TAG, "zr_effect showScrollEffectAnimation isPlaying or Scroller not finished.");
-        } else if (getChildCount() >= 2) {
-            final int i = this.mCurrentPage;
-            int i2 = i == 0 ? i + 1 : i - 1;
-            Log.e(WorkspaceLayoutManager.TAG, "zr_effect showScrollEffectAnimation mCurrentPage=" + this.mCurrentPage + ", destPage=" + i2);
-            snapToPage(i2);
-            postDelayed(new Runnable() {
-                public void run() {
-                    Workspace.this.snapToPage(i);
-                }
-            }, 800);
+        if (getChildCount() < 2) {
+            Log.w(WorkspaceLayoutManager.TAG,
+                    "zr_effect showScrollEffectAnimation skipped: need >= 2 pages, have="
+                            + getChildCount());
+            return;
         }
+        // Always allow a card-tap preview: abort any in-flight page settle first.
+        // Previously a non-finished scroller only logged and never played the effect.
+        if (!mScroller.isCOUIFinished()) {
+            abortScrollerAnimation();
+        }
+        final int current = mCurrentPage;
+        final int dest = current == 0 ? current + 1 : current - 1;
+        Log.i(WorkspaceLayoutManager.TAG,
+                "zr_effect showScrollEffectAnimation mCurrentPage=" + current
+                        + ", destPage=" + dest);
+        // Ensure adjacent pages are drawn while the preview snaps (EDIT_MODE clears this flag).
+        mForceDrawAdjacentPages = true;
+        snapToPage(dest);
+        postDelayed(() -> {
+            snapToPage(current);
+            postDelayed(() -> mForceDrawAdjacentPages = false, 450);
+        }, 800);
     }
 
     @Override
@@ -1536,8 +1562,34 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         }
     }
 
+    public boolean isRollScrollEffectActive() {
+        return mScrollEffect != null
+                && ScrollEffect.SCROLL_EFFECT_OPPO_ROLL.equals(mScrollEffect.getName());
+    }
+
+    /**
+     * Cylinder strip draw uses Camera + per-column clipRect then {@link #drawChild}. If the
+     * workspace clips children, drawChild re-clips to the full page bounds in the already
+     * transformed canvas space and the strips collapse into one cube-like plane (seen on MTK).
+     * Keep unclipped while Roll is active — including against {@code onStateSetEnd} resets.
+     */
+    @Override
+    public void setClipChildren(boolean clipChildren) {
+        super.setClipChildren(isRollScrollEffectActive() ? false : clipChildren);
+    }
+
+    @Override
+    public void setClipToPadding(boolean clipToPadding) {
+        super.setClipToPadding(isRollScrollEffectActive() ? false : clipToPadding);
+    }
+
     public void setScrollEffect(ScrollEffect scrollEffect) {
         this.mScrollEffect = scrollEffect;
+        mUnboundedScroll = mOrientationHandler.getPrimaryScroll(this);
+        // Oppo keeps workspace unclipped for cylinder strips that draw outside page bounds.
+        boolean roll = isRollScrollEffectActive();
+        setClipChildren(!roll);
+        setClipToPadding(!roll);
         for (int i = 0; i < getChildCount(); i++) {
             View pageAt = getPageAt(i);
             if (pageAt != null) {
@@ -1565,8 +1617,81 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         return getScrollProgress(screenCenter, page, pageIndex);
     }
 
+    /**
+     * Oppo cylinder visible range: pages intersecting the unscaled viewport (no scaleX expand).
+     */
+    public int[] getCylinderVisibleChildrenRange() {
+        final float viewportRight = getMeasuredWidth();
+        int first = -1;
+        int last = -1;
+        final int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View page = getPageAt(i);
+            if (page == null) {
+                continue;
+            }
+            float left = page.getLeft() + page.getTranslationX() - getScrollX();
+            if (left < viewportRight && left + page.getMeasuredWidth() > 0f) {
+                if (first == -1) {
+                    first = i;
+                }
+                last = i;
+            }
+        }
+        mTmpIntPair[0] = first;
+        mTmpIntPair[1] = last;
+        return mTmpIntPair;
+    }
+
+    /** Oppo CylinderEffectAgent fragment count = DeviceProfile column count. */
+    public int getCylinderFragmentCount() {
+        return Math.max(1, mLauncher.getDeviceProfile().inv.numColumns);
+    }
+
+    /**
+     * Distance used by {@link #getScrollProgress} between {@code page} and its scroll neighbor.
+     * Cylinder pageBase must use this (not raw width) or icons drift then snap.
+     */
+    public float getPageScrollDistanceForEffect(int page) {
+        int panelCount = getPanelCount();
+        int pageCount = getChildCount();
+        if (page < 0 || page >= pageCount) {
+            return getMeasuredWidth();
+        }
+        int screenCenter = getScrollX() + getMeasuredWidth() / 2;
+        int delta = screenCenter - (getScrollForPage(page) + getMeasuredWidth() / 2);
+        int adjacentPage = page + panelCount;
+        if ((delta < 0 && !mIsRtl) || (delta > 0 && mIsRtl)) {
+            adjacentPage = page - panelCount;
+        }
+        if (adjacentPage >= 0 && adjacentPage < pageCount) {
+            return Math.abs(getScrollForPage(adjacentPage) - getScrollForPage(page));
+        }
+        View v = getPageAt(page);
+        float width = v != null ? v.getMeasuredWidth() : getMeasuredWidth();
+        return width + getPageSpacing();
+    }
+
     public boolean drawChildForEffect(Canvas canvas, View child) {
-        return drawChild(canvas, child, getDrawingTime());
+        // drawChild would re-clip to the page box when clipChildren is on; force off for strips.
+        boolean wasClipChildren = getClipChildren();
+        boolean wasClipToPadding = getClipToPadding();
+        if (wasClipChildren) {
+            super.setClipChildren(false);
+        }
+        if (wasClipToPadding) {
+            super.setClipToPadding(false);
+        }
+        try {
+            return drawChild(canvas, child, getDrawingTime());
+        } finally {
+            if (wasClipChildren) {
+                super.setClipChildren(true);
+            }
+            if (wasClipToPadding) {
+                super.setClipToPadding(true);
+            }
+        }
     }
 
     public boolean isPageInTransitionForEffect() {
@@ -1582,7 +1707,11 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     }
 
     public boolean drawVisiblePagesForEffect(Canvas canvas) {
-        int[] range = getVisibleChildrenRange();
+        // Prefer cylinder range while Roll is active so fallback matches effect pages.
+        int[] range = (mScrollEffect != null
+                && ScrollEffect.SCROLL_EFFECT_OPPO_ROLL.equals(mScrollEffect.getName()))
+                ? getCylinderVisibleChildrenRange()
+                : getVisibleChildrenRange();
         if (range[0] < 0 || range[1] < 0) {
             return false;
         }
@@ -1918,7 +2047,6 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
      */
     public DragView beginDragShared(View child, DraggableView draggableView, DragSource source,
             ItemInfo dragObject, DragPreviewProvider previewProvider, DragOptions dragOptions) {
-        boolean dockedStatus = LauncherPrefs.getPrefs(mLauncher).getBoolean(LauncherPrefs.WORKSPACE_LAYOUT_DOCK, false);
         float iconScale = 1f;
         if (child instanceof BubbleTextView) {
             Drawable icon = ((BubbleTextView) child).getIcon();
@@ -1981,11 +2109,18 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             if (btv.isDisplaySearchResult()) {
                 dragOptions.preDragEndScale = (float) mAllAppsIconSize / btv.getIconSize();
             }
-        } else if (child instanceof FolderIcon && !((FolderIcon) child).isInHotseat() && !dockedStatus) {
+        } else if (child instanceof FolderIcon && !((FolderIcon) child).isInHotseat()) {
             if (!dragOptions.isAccessibleDrag && child instanceof HxyLargeFolderIcon) {
                 dragOptions.preDragCondition = HxyShortcutsProxy.startLongPressActionFolder((HxyLargeFolderIcon) child);
             }
+        } else if (child instanceof LauncherAppWidgetHostView && !dragOptions.isAccessibleDrag) {
+            dragOptions.preDragCondition = HxyShortcutsProxy.startLongPressActionWidget(
+                    (LauncherAppWidgetHostView) child);
         }
+
+        // Oppo: when layout is locked, stay in pre-drag until move threshold, then toast+cancel.
+        dragOptions.preDragCondition = LayoutLockHelper.wrapPreDragCondition(
+                mLauncher, dragOptions.preDragCondition);
 
         if (dragOptions.preDragCondition != null) {
             int xDragOffSet = dragOptions.preDragCondition.getDragOffset().x;
@@ -3596,6 +3731,12 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             cell.setVisibility(VISIBLE);
         }
         mDragInfo = null;
+
+        // Oppo-style dock: pack + center after any successful workspace/hotseat drop.
+        Hotseat hotseat = mLauncher.getHotseat();
+        if (hotseat != null) {
+            hotseat.reflowIcons();
+        }
     }
 
     /**
@@ -3614,6 +3755,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         }
         if (v instanceof DropTarget) {
             mDragController.removeDropTarget((DropTarget) v);
+        }
+        if (parentCell instanceof Hotseat) {
+            ((Hotseat) parentCell).reflowIcons();
         }
     }
 
@@ -3684,28 +3828,23 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         mSavedStates = null;
     }
 
-    public void screenScrolled(int i) {
-        for (int i2 = 0; i2 < getChildCount(); i2++) {
-            View pageAt = getPageAt(i2);
-            if (pageAt != null) {
-                float scrollProgress = getScrollProgress(i, pageAt, i2);
-                if (!Float.isNaN(scrollProgress)) {
-                    boolean z = true;
-                    boolean z2 = Math.abs(scrollProgress) == 1.0f;
-                    int measuredSize = i - (this.mOrientationHandler.getMeasuredSize(this) / 2);
-                    if (i2 != 0 ? i2 != getChildCount() - 1 || measuredSize < this.mMaxScroll : measuredSize > this.mMinScroll) {
-                        z = false;
-                    }
-                    ScrollEffect scrollEffect = this.mScrollEffect;
-                    if (scrollEffect == null || z2 || z) {
-                        pageAt.setAlpha(1.0f);
-                        resetViewPropertyValues(pageAt);
-                    } else {
-                        scrollEffect.screenScrolled(pageAt, i2, scrollProgress);
-                    }
-                } else {
-                    return;
-                }
+    public void screenScrolled(int screenCenter) {
+        for (int pageIndex = 0; pageIndex < getChildCount(); pageIndex++) {
+            View pageAt = getPageAt(pageIndex);
+            if (pageAt == null) {
+                continue;
+            }
+            float scrollProgress = getScrollProgress(screenCenter, pageAt, pageIndex);
+            if (Float.isNaN(scrollProgress)) {
+                return;
+            }
+            // Fully off-screen pages reset; edge overscroll still runs the selected effect.
+            boolean fullyOffscreen = Math.abs(scrollProgress) >= 1.0f;
+            if (mScrollEffect == null || fullyOffscreen) {
+                pageAt.setAlpha(1.0f);
+                resetViewPropertyValues(pageAt);
+            } else {
+                mScrollEffect.screenScrolled(pageAt, pageIndex, scrollProgress);
             }
         }
     }
@@ -3721,6 +3860,32 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         view.setTranslationX(0.0f);
         view.setTranslationY(0.0f);
         view.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    protected boolean shouldPullEdgeGlow() {
+        // ColorOS uses rubber-band page overscroll (not EdgeEffect glow) so transitions keep running.
+        return false;
+    }
+
+    /**
+     * Oppo {@code scrollBy}: accumulate on unbounded finger travel, then {@link #scrollTo} damps.
+     */
+    @Override
+    public void scrollBy(int x, int y) {
+        if (!mAllowOverScroll) {
+            super.scrollBy(x, y);
+            return;
+        }
+        // Stay aligned with visual scroll when not overscrolling (avoids jumps after layout).
+        if (!mWasInOverscroll) {
+            mUnboundedScroll = mOrientationHandler.getPrimaryScroll(this);
+        }
+        if (mOrientationHandler.getPrimaryValue(1, 0) == 1) {
+            scrollTo(mUnboundedScroll + x, getScrollY() + y);
+        } else {
+            scrollTo(getScrollX() + x, mUnboundedScroll + y);
+        }
     }
 
     @Override
@@ -3749,16 +3914,66 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         return result;
     }
 
+    /**
+     * Oppo {@code oplusScrollTo} + {@code dampedOverScroll}: keep full finger travel in
+     * {@link #mUnboundedScroll}, set visual scroll to bound + damped(amount).
+     */
     @Override
-    public void scrollTo(int i, int i2) {
-        super.scrollTo(i, i2);
+    public void scrollTo(int x, int y) {
+        final boolean horizontal = mOrientationHandler.getPrimaryValue(1, 0) == 1;
+        int primary = mOrientationHandler.getPrimaryValue(x, y);
+        int secondary = mOrientationHandler.getSecondaryValue(x, y);
+        mUnboundedScroll = primary;
+
+        final int size = mOrientationHandler.getMeasuredSize(this);
+        final boolean pastMin = primary < mMinScroll;
+        final boolean pastMax = primary > mMaxScroll;
+
+        if (mAllowOverScroll && size > 0 && (pastMin || pastMax)) {
+            mWasInOverscroll = true;
+            if (!isPageInTransition()) {
+                pageBeginTransition();
+            }
+            // While dragging: damp absolute finger travel (Oppo dampedOverScroll).
+            // While settling: scroller already drives visual position — do not re-damp.
+            final int visualPrimary = isHandlingTouch()
+                    ? (pastMin ? mMinScroll : mMaxScroll)
+                        + OverScroll.dampedScroll(
+                                primary - (pastMin ? mMinScroll : mMaxScroll), size)
+                    : primary;
+            if (horizontal) {
+                x = visualPrimary;
+                y = secondary;
+            } else {
+                x = secondary;
+                y = visualPrimary;
+            }
+            mSuppressScrollClamp = true;
+            super.scrollTo(x, y);
+            mSuppressScrollClamp = false;
+        } else {
+            if (mWasInOverscroll) {
+                mWasInOverscroll = false;
+            }
+            primary = Utilities.boundToRange(primary, mMinScroll, mMaxScroll);
+            mUnboundedScroll = primary;
+            if (horizontal) {
+                x = primary;
+                y = secondary;
+            } else {
+                x = secondary;
+                y = primary;
+            }
+            super.scrollTo(x, y);
+        }
+
         if (getChildCount() > 0) {
-            screenScrolled(i + (this.mOrientationHandler.getMeasuredSize(this) / 2));
+            final int scroll = mOrientationHandler.getPrimaryScroll(this);
+            screenScrolled(scroll + mOrientationHandler.getMeasuredSize(this) / 2);
         }
     }
 
     public void scrollTo(int screenId) {
-        boolean result = false;
         if (!this.mIsSwitchingState && workspaceInScrollableState()) {
             super.scrollTo(screenId, 0);
         }

@@ -207,6 +207,16 @@
          <item>com.android.dialer/com.android.contacts.ui.main.ContactMainActivity</item>
     </string-array>
 
+    <!--
+      Package-keyed notification dots also hit sibling activities in the same APK
+      (e.g. Dialer Phone + Contacts). Hide the badge on Contacts only.
+    -->
+    <string-array name="hide_dot_components">
+        <item>com.android.dialer/com.android.contacts.PeopleActivity</item>
+        <item>com.android.contacts/com.android.contacts.PeopleActivityAlias</item>
+        <item>com.android.contacts/com.android.contacts.activities.PeopleActivity</item>
+    </string-array>
+
     <!-- Name of the class used to generate colors from the wallpaper colors. Must be implementing the LauncherAppWidgetHostView.ColorGenerator interface. -->
     <string name="color_generator_class" translatable="false"/>
 

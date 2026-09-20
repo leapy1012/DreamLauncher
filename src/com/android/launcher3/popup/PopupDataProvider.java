@@ -17,12 +17,16 @@
 package com.android.launcher3.popup;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.launcher3.AppFilter;
+import com.android.launcher3.Launcher;
+import com.android.launcher3.LauncherPrefs;
 import com.android.launcher3.dot.DotInfo;
 import com.android.launcher3.model.WidgetItem;
 import com.android.launcher3.model.data.ItemInfo;
@@ -33,8 +37,11 @@ import com.android.launcher3.util.PackageUserKey;
 import com.android.launcher3.util.ShortcutUtil;
 import com.android.launcher3.widget.model.WidgetsListBaseEntry;
 import com.android.launcher3.widget.model.WidgetsListContentEntry;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.PrintWriter;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,13 +51,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import android.content.Context;
-import com.android.launcher3.Launcher;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import java.lang.reflect.Type;
-import com.android.launcher3.LauncherPrefs;
 
 /**
  * Provides data for the popup menu that appears after long-clicking on apps.
@@ -62,6 +62,7 @@ public class PopupDataProvider implements NotificationListener.NotificationsChan
     private static final String KEY_BADGE_SHOW = "key_badge_show";
 
     private final Consumer<Predicate<PackageUserKey>> mNotificationDotsChangeListener;
+    private final Context mContext;
 
     /** Maps launcher activity components to a count of how many shortcuts they have. */
     private HashMap<ComponentKey, Integer> mDeepShortcutMap = new HashMap<>();
@@ -78,6 +79,7 @@ public class PopupDataProvider implements NotificationListener.NotificationsChan
 
     public PopupDataProvider(Consumer<Predicate<PackageUserKey>> notificationDotsChangeListener, Context context) {
         mNotificationDotsChangeListener = notificationDotsChangeListener;
+        mContext = context.getApplicationContext();
         Gson gson = new Gson();
         String json = LauncherPrefs.getPrefs(context).getString(KEY_BADGE_SHOW, "");
         Type type = new TypeToken<Map<String, Boolean>>() {}.getType();
@@ -131,7 +133,8 @@ public class PopupDataProvider implements NotificationListener.NotificationsChan
                 dotInfo = new DotInfo();
                 mPackageUserToDotInfos.put(packageUserKey, dotInfo);
             }
-            dotInfo.addOrUpdateNotificationKey(NotificationKeyData.fromNotification(notification));
+            dotInfo.addOrUpdateNotificationKey(
+                    NotificationKeyData.fromNotification(notification, mContext));
         }
 
         // Add and remove from updatedDots so it contains the PackageUserKeys of updated dots.
@@ -179,6 +182,10 @@ public class PopupDataProvider implements NotificationListener.NotificationsChan
 
     public @Nullable DotInfo getDotInfoForItem(@NonNull ItemInfo info) {
         if (!ShortcutUtil.supportsShortcuts(info)) {
+            return null;
+        }
+        // Same-package sibling icons (Dialer Contacts) must not inherit Phone's badge.
+        if (AppFilter.isHideDot(mContext, info.getTargetComponent())) {
             return null;
         }
         DotInfo dotInfo = mPackageUserToDotInfos.get(PackageUserKey.fromItemInfo(info));

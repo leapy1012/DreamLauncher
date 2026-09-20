@@ -24,4 +24,7 @@
     <color name="drop_bar_normal_color_bright">#66A6A6A6</color>
     <color name="drop_bar_reb_bg_end">#99EB493D</color>
     <color name="drop_bar_reb_bg_start">#00EB493D</color>
+    <!-- Oppo SwitchStateRenderer widget edit-mode plate. -->
+    <color name="launcher_widget_background_color">#28ffffff</color>
+    <color name="launcher_widget_background_color_bright">#28000000</color>
 </resources>

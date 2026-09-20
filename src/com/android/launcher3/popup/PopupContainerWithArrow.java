@@ -73,10 +73,12 @@ import com.android.launcher3.notification.NotificationKeyData;
 import com.android.launcher3.shortcuts.DeepShortcutView;
 import com.android.launcher3.shortcuts.ShortcutDragPreviewProvider;
 import com.android.launcher3.touch.ItemLongClickListener;
+import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.util.PackageUserKey;
 import com.android.launcher3.util.ShortcutUtil;
 import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.views.BaseDragLayer;
+import com.android.launcher3.widget.LauncherAppWidgetHostView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -110,6 +112,8 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     private final float mShortcutHeight;
     private HxyLargeFolderIcon mFolderIcon;
     private BubbleTextView mOriginalIcon;
+    /** Long-pressed workspace widget (Oppo showForIcon widget path). */
+    private LauncherAppWidgetHostView mOriginalWidget;
     private int mNumNotifications;
     private NotificationContainer mNotificationContainer;
     private int mContainerWidth;
@@ -219,6 +223,9 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                 }
                 IconResizeHelper.dismissResizeFrame(mActivityContext);
                 if (mFolderIcon != null && dl.isEventOverView(mFolderIcon, ev)) {
+                    return false;
+                }
+                if (mOriginalWidget != null && dl.isEventOverView(mOriginalWidget, ev)) {
                     return false;
                 }
                 return true;
@@ -712,6 +719,8 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     protected void getTargetObjectLocation(Rect outPos) {
         if (this.mFolderIcon != null) {
             getFolderLocation(outPos);
+        } else if (this.mOriginalWidget != null) {
+            getWidgetLocation(outPos);
         } else {
             getOriginalLocation(outPos);
         }
@@ -723,6 +732,10 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         outPos.left += this.mFolderIcon.getPaddingLeft();
         outPos.right -= this.mFolderIcon.getPaddingRight();
         outPos.bottom = outPos.top + (this.mFolderIcon.getPreviewHeight() > 0 ? this.mFolderIcon.getPreviewHeight() : this.mFolderIcon.getHeight());
+    }
+
+    private void getWidgetLocation(Rect outPos) {
+        getPopupContainer().getDescendantRectRelativeToSelf(mOriginalWidget, outPos);
     }
 
     private void getOriginalLocation(Rect outPos) {
@@ -790,10 +803,27 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
      */
     public DragOptions.PreDragCondition createPreDragCondition(boolean updateIconUi) {
         return new DragOptions.PreDragCondition() {
+            private boolean mLockHandled;
 
             @Override
             public boolean shouldStartDrag(double distanceDragged) {
-                return distanceDragged > mStartDragThreshold;
+                // Oppo OplusPopupContainerWithArrow: toast+block only after move threshold.
+                if (distanceDragged <= mStartDragThreshold) {
+                    return false;
+                }
+                if (mActivityContext instanceof Launcher) {
+                    Launcher launcher = (Launcher) mActivityContext;
+                    if (!mLockHandled && LayoutLockHelper.isLayoutLocked(launcher)) {
+                        mLockHandled = true;
+                        LayoutLockHelper.checkLockedAndShowMessage(launcher);
+                        launcher.getDragController().cancelDrag();
+                        return false;
+                    }
+                    if (LayoutLockHelper.isLayoutLocked(launcher)) {
+                        return false;
+                    }
+                }
+                return true;
             }
 
             @Override
@@ -801,6 +831,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                 if (updateIconUi) {
                     onPreDragStartIcon();
                     onPreDragStartFolder();
+                    onPreDragStartWidget();
                 }
             }
 
@@ -821,11 +852,19 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                 }
             }
 
+            private void onPreDragStartWidget() {
+                if (mOriginalWidget != null) {
+                    // Oppo: keep the widget visible under the Remove-widget popup until drag starts.
+                    mOriginalWidget.setVisibility(View.VISIBLE);
+                }
+            }
+
             @Override
             public void onPreDragEnd(DropTarget.DragObject dragObject, boolean dragStarted) {
                 if (updateIconUi) {
                     onPreDragEndIcon(dragStarted);
                     onPreDragEndFolder(dragStarted);
+                    onPreDragEndWidget(dragStarted);
                 }
             }
 
@@ -849,6 +888,14 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
                         mFolderIcon.setVisibility(View.VISIBLE);
                         mFolderIcon.setTextVisibility(false);
                     }
+                }
+            }
+
+            private void onPreDragEndWidget(boolean dragStarted) {
+                if (mOriginalWidget != null) {
+                    // Oppo: never hide AppWidgetHostView — it is the DragView content while
+                    // moving, and must be visible again after pre-drag cancel reattach.
+                    mOriginalWidget.setVisibility(View.VISIBLE);
                 }
             }
         };
@@ -910,6 +957,8 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         } else if (mFolderIcon != null) {
             mFolderIcon.setTextVisibility(mFolderIcon.shouldTextBeVisible());
             mFolderIcon.setForceHideDot(false);
+        } else if (mOriginalWidget != null) {
+            mOriginalWidget.setVisibility(View.VISIBLE);
         }
     }
 
@@ -971,6 +1020,10 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
 
         @Override
         public boolean onLongClick(View v) {
+            // Oppo: dragging a deep shortcut onto the home screen is a layout edit.
+            if (LayoutLockHelper.checkLockedAndShowMessage(mLauncher)) {
+                return false;
+            }
             if (!ItemLongClickListener.canStartDrag(mLauncher)) return false;
             DeepShortcutView sv = findDeepShortcutView(v);
             // Deep shortcuts only (system rows have no ShortcutInfo detail).
@@ -1043,10 +1096,112 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         }
     }
 
+    /**
+     * Oppo widget long-press: ColorOS "Remove widget" popup + pre-drag like apps.
+     * @return the container if shown, or null.
+     */
+    public static PopupContainerWithArrow<Launcher> showForWidget(LauncherAppWidgetHostView widget) {
+        Launcher launcher = Launcher.getLauncher(widget.getContext());
+        if (getOpen(launcher) != null) {
+            return null;
+        }
+        Object tag = widget.getTag();
+        if (!(tag instanceof ItemInfo)) {
+            return null;
+        }
+        ItemInfo item = (ItemInfo) tag;
+        SystemShortcut removeWidget = SystemShortcut.REMOVE_WIDGET.getShortcut(
+                launcher, item, widget);
+        if (removeWidget == null) {
+            return null;
+        }
+        List<SystemShortcut> systemShortcuts = new ArrayList<>(1);
+        systemShortcuts.add(removeWidget);
+
+        PopupContainerWithArrow<Launcher> container =
+                (PopupContainerWithArrow) launcher.getLayoutInflater().inflate(
+                        R.layout.popup_container_material_u, launcher.getDragLayer(), false);
+        container.configureForLauncher(launcher, item);
+        container.populateAndShowColorOsForWidget(widget, systemShortcuts);
+        container.requestFocus();
+        return container;
+    }
+
+    /**
+     * ColorOS widget popup: single-card system shortcuts (typically only Remove widget).
+     */
+    public void populateAndShowColorOsForWidget(LauncherAppWidgetHostView widget,
+            List<SystemShortcut> systemShortcuts) {
+        mColorOsStylePopup = true;
+        mOriginalWidget = widget;
+        mContainerWidth = getResources().getDimensionPixelSize(R.dimen.coloros_popup_item_width);
+        final int popupSurface = getContext().getColor(R.color.coloros_popup_surface);
+        final int popupText = getContext().getColor(R.color.coloros_text_primary);
+        mArrowColor = popupSurface;
+
+        ViewGroup card = inflateAndAdd(R.layout.coloros_popup_card, this);
+        card.setForceDarkAllowed(false);
+        GradientDrawable cardBg = new GradientDrawable();
+        cardBg.setColor(popupSurface);
+        cardBg.setCornerRadius(getResources().getDimension(R.dimen.coloros_popup_corner_radius));
+        card.setBackground(cardBg);
+        card.setClipToOutline(true);
+
+        mSystemShortcutContainer = inflateAndAdd(R.layout.coloros_popup_shortcut_group, card);
+        mWidgetContainer = mSystemShortcutContainer;
+        for (SystemShortcut shortcut : systemShortcuts) {
+            if (!shortcut.isEnabled()) {
+                continue;
+            }
+            View row = initializeSystemShortcut(
+                    R.layout.coloros_popup_shortcut,
+                    mSystemShortcutContainer,
+                    shortcut,
+                    false);
+            row.getLayoutParams().width = mContainerWidth;
+            row.setForceDarkAllowed(false);
+            ensureColorOsPopupItemPress(row);
+            if (row instanceof DeepShortcutView) {
+                DeepShortcutView dsv = (DeepShortcutView) row;
+                dsv.setColorOsPopupIcons(true);
+                applyColorOsPopupLabel(dsv.getBubbleText(), popupText);
+                applyColorOsSystemPopupIcon(dsv.getIconView(), shortcut.getIconResId(),
+                        popupText);
+            }
+        }
+
+        show();
+        cardBg.setColor(popupSurface);
+        card.setBackground(cardBg);
+        mArrowColor = popupSurface;
+        updateArrowColor();
+        if (mSystemShortcutContainer != null) {
+            for (int i = 0; i < mSystemShortcutContainer.getChildCount(); i++) {
+                View child = mSystemShortcutContainer.getChildAt(i);
+                if (!(child instanceof DeepShortcutView)
+                        || !(child.getTag() instanceof SystemShortcut)) {
+                    continue;
+                }
+                DeepShortcutView dsv = (DeepShortcutView) child;
+                SystemShortcut shortcut = (SystemShortcut) child.getTag();
+                applyColorOsSystemPopupIcon(dsv.getIconView(), shortcut.getIconResId(),
+                        popupText);
+            }
+        }
+        if (ATLEAST_P) {
+            setAccessibilityPaneTitle(getTitleForAccessibility());
+        }
+    }
+
     public static PopupContainerWithArrow showForFolder(HxyLargeFolderIcon icon) {
         Launcher launcher = Launcher.getLauncher(icon.getContext());
         if (getOpen(launcher) != null) {
             icon.clearFocus();
+            return null;
+        }
+        // Folder plate is only drawing-hidden while open — never show Shrink/Open popup.
+        if (icon.getFolder() != null && icon.getFolder().isOpen()) {
+            return null;
         }
         ItemInfo itemInfo = (ItemInfo) icon.getTag();
         PopupContainerWithArrow container = (PopupContainerWithArrow) launcher.getLayoutInflater()

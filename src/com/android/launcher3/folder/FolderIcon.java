@@ -693,8 +693,9 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
             mDotParams.dotColor = mBackground.getDotColor();
             mDotParams.unreadNum = mDotInfo.getNotificationCount();
             if (mDotRenderer.mShowNumber) {
-                DotDrawUtils.draw(canvas, new DotDrawUtils.DotNumParams(mDotRenderer,
-                        this.mActivity.getDeviceProfile().iconSizePx, this.mDotParams), false);
+                DotDrawUtils.draw(canvas, getContext(),
+                        new DotDrawUtils.DotNumParams(mDotRenderer,
+                                this.mActivity.getDeviceProfile().iconSizePx, this.mDotParams));
             } else {
                 mDotRenderer.draw(canvas, this.mDotParams);
             }
@@ -870,6 +871,15 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         if (event.getAction() == MotionEvent.ACTION_DOWN
                 && shouldIgnoreTouchDown(event.getX(), event.getY())) {
             return false;
+        }
+
+        // While this folder is open the plate is only drawing-hidden (setIconVisible).
+        // Dimmed wallpaper around the open folder still hits this view — do not start
+        // CheckLongPressHelper / showForFolder popup (Oppo: icon inactive while open).
+        if (mFolder != null && mFolder.isOpen()) {
+            mLongPressHelper.cancelLongPress();
+            super.onTouchEvent(event);
+            return true;
         }
 
         // Call the superclass onTouchEvent first, because sometimes it changes the state to

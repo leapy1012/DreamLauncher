@@ -29,7 +29,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
-import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
@@ -328,8 +327,9 @@ public class NotificationListener extends NotificationListenerService {
     }
 
     /**
-     * Returns true for notifications that have an intent and are not headers for grouped
-     * notifications and should be shown in the notification popup.
+     * Returns true for notifications that should drive launcher badge dots.
+     * Badgeable, non-summary notifications are accepted even when title/text extras
+     * are empty (e.g. Dialer missed-call custom RemoteViews).
      */
     @WorkerThread
     private boolean notificationIsValidForUI(StatusBarNotification sbn) {
@@ -347,16 +347,14 @@ public class NotificationListener extends NotificationListenerService {
             }
         }
 
-        CharSequence title = notification.extras.getCharSequence(Notification.EXTRA_TITLE);
-        CharSequence text = notification.extras.getCharSequence(Notification.EXTRA_TEXT);
-        boolean missingTitleAndText = TextUtils.isEmpty(title) && TextUtils.isEmpty(text);
+        // Group summaries are headers only — never badge from them.
         boolean isGroupHeader = (notification.flags & Notification.FLAG_GROUP_SUMMARY) != 0;
-        return !isGroupHeader && !missingTitleAndText;
+        return !isGroupHeader;
     }
 
-    private static Pair<PackageUserKey, NotificationKeyData> toKeyPair(StatusBarNotification sbn) {
+    private Pair<PackageUserKey, NotificationKeyData> toKeyPair(StatusBarNotification sbn) {
         return Pair.create(PackageUserKey.fromNotification(sbn),
-                NotificationKeyData.fromNotification(sbn));
+                NotificationKeyData.fromNotification(sbn, this));
     }
 
     public interface NotificationsChangedListener {

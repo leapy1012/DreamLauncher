@@ -1,7 +1,6 @@
 package com.android.launcher3.editselection;
 
 import android.content.Context;
-import android.graphics.drawable.GradientDrawable;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -18,6 +17,7 @@ import com.android.launcher3.dragndrop.DragLayer;
 import com.coui.appcompat.animation.dynamicanimation.COUIDynamicAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
+import com.coui.appcompat.textutil.COUIChangeTextUtil;
 
 /**
  * Oppo {@code ToggleStateToolbar}: Cancel | N selected | Done over the workspace in edit mode.
@@ -54,6 +54,10 @@ public class EditSelectionToolbar extends FrameLayout {
         mCancel.setFocusable(true);
         mDone.setClickable(true);
         mDone.setFocusable(true);
+        COUIChangeTextUtil.adaptFontSize(mCancel, 4);
+        COUIChangeTextUtil.adaptFontSize(mTitle, 4);
+        COUIChangeTextUtil.adaptFontSize(mDone, 4);
+        mTitle.setSelected(true);
         applyPillBackground(mCancel);
         applyPillBackground(mDone);
         setVisibility(GONE);
@@ -70,8 +74,14 @@ public class EditSelectionToolbar extends FrameLayout {
      * (composites to ~#595959). Drawn in code so theme/force-dark cannot strip it.
      */
     private static void applyPillBackground(TextView button) {
-        GradientDrawable bg = new GradientDrawable();
-        bg.setShape(GradientDrawable.RECTANGLE);
+        if (button instanceof OppoPressFeedbackButton pressFeedbackButton) {
+            pressFeedbackButton.updateWallpaperColors();
+            pressFeedbackButton.setIncludeFontPadding(false);
+            return;
+        }
+        android.graphics.drawable.GradientDrawable bg =
+                new android.graphics.drawable.GradientDrawable();
+        bg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
         int color = button.getResources().getColor(R.color.edit_selection_toolbar_btn_bg, null);
         bg.setColor(color);
         float radius = button.getResources().getDimension(R.dimen.edit_selection_toolbar_btn_height)
@@ -132,12 +142,18 @@ public class EditSelectionToolbar extends FrameLayout {
      * Oppo delays ops-button text morph by {@code TOGGLE_BAR_OPS_BTN_DELAY} (187ms).
      */
     public void showLayoutMode(OnClickListener cancel, OnClickListener apply) {
+        showSecondaryMode(R.string.launcher_layout, cancel, apply);
+    }
+
+    /** Oppo second-level ToggleBar chrome: Cancel | title | Apply. */
+    public void showSecondaryMode(@StringRes int title, OnClickListener cancel,
+            OnClickListener apply) {
         applyPillBackground(mCancel);
         applyPillBackground(mDone);
         updateLayoutPosition();
         mCancel.setVisibility(VISIBLE);
         mTitle.setVisibility(VISIBLE);
-        mTitle.setText(R.string.launcher_layout);
+        mTitle.setText(title);
         mDone.setVisibility(VISIBLE);
         setCancelClickListener(cancel);
         setDoneClickListener(apply);

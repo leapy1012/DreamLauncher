@@ -254,6 +254,12 @@ public class ModelWriter {
     /**
      * Add an item to the database in a specified container. Sets the container, screen, cellX and
      * cellY fields of the item. Also assigns an ID to the item.
+     * <p>
+     * The in-memory model is updated immediately so bulk placers (notably
+     * {@link AddWorkspaceItemsTask} used when switching to Regular/Standard mode) see occupied
+     * cells on the next {@code findSpaceForItem} call. Deferring {@link BgDataModel#addItem}
+     * onto {@link MODEL_EXECUTOR} while already running there stacked every icon on the same
+     * cell; bind then deleted the collisions and left page 2 empty.
      */
     public void addItemToDatabase(final ItemInfo item,
             int container, int screenId, int cellX, int cellY) {
@@ -263,11 +269,14 @@ public class ModelWriter {
         item.id = Settings.call(cr, Settings.METHOD_NEW_ITEM_ID).getInt(Settings.EXTRA_VALUE);
         notifyOtherCallbacks(c -> c.bindItems(Collections.singletonList(item), false));
 
+        synchronized (mBgDataModel) {
+            mBgDataModel.addItem(mContext, item, true);
+        }
+
         ModelVerifier verifier = new ModelVerifier();
         final StackTraceElement[] stackTrace = new Throwable().getStackTrace();
         MODEL_EXECUTOR.execute(() -> {
-            // Write the item on background thread, as some properties might have been updated in
-            // the background.
+            // Persist on the model thread; in-memory registration already happened above.
             final ContentWriter writer = new ContentWriter(mContext);
             item.onAddToDatabase(writer);
             writer.put(Favorites._ID, item.id);
@@ -282,7 +291,6 @@ public class ModelWriter {
             mModel.getModelDbController().insert(Favorites.TABLE_NAME, writer.getValues(mContext));
             synchronized (mBgDataModel) {
                 checkItemInfoLocked(item.id, item, stackTrace);
-                mBgDataModel.addItem(mContext, item, true);
                 verifier.verifyModel();
             }
         });

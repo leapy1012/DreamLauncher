@@ -83,6 +83,9 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <!-- OPPO ToggleBar root: Transitions strip inflates here (not a floating dialog). -->
+        <include layout="@layout/toggle_bar_root" />
+
     </com.android.launcher3.dragndrop.DragLayer>
 
 </com.android.launcher3.LauncherRootView>

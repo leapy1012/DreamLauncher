@@ -12,11 +12,10 @@
         android:paddingTop="@dimen/edit_selection_toolbar_padding_top"
         android:paddingEnd="@dimen/edit_selection_toolbar_edge_padding">
 
-        <TextView
+        <com.android.launcher3.editselection.OppoPressFeedbackButton
             android:id="@+id/edit_selection_cancel"
-            android:layout_width="wrap_content"
+            android:layout_width="@dimen/edit_selection_toolbar_btn_width"
             android:layout_height="@dimen/edit_selection_toolbar_btn_height"
-            android:background="@drawable/edit_selection_toolbar_btn_bg"
             android:ellipsize="end"
             android:gravity="center"
             android:maxLines="1"
@@ -35,9 +34,11 @@
             android:id="@+id/edit_selection_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
+            android:ellipsize="marquee"
             android:gravity="center"
+            android:marqueeRepeatLimit="marquee_forever"
             android:maxLines="1"
+            android:scrollHorizontally="true"
             android:layout_marginStart="@dimen/edit_selection_toolbar_title_margin_h"
             android:layout_marginEnd="@dimen/edit_selection_toolbar_title_margin_h"
             android:textColor="@color/edit_selection_toolbar_title_text"
@@ -49,11 +50,10 @@
             app:layout_constraintStart_toEndOf="@+id/edit_selection_cancel"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
+        <com.android.launcher3.editselection.OppoPressFeedbackButton
             android:id="@+id/edit_selection_done"
-            android:layout_width="wrap_content"
+            android:layout_width="@dimen/edit_selection_toolbar_btn_width"
             android:layout_height="@dimen/edit_selection_toolbar_btn_height"
-            android:background="@drawable/edit_selection_toolbar_btn_bg"
             android:ellipsize="end"
             android:gravity="center"
             android:maxLines="1"

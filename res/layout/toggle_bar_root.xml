@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Permanent ToggleBar slot (OPPO toggle_bar_root). Effect / second-level panels
+     inflate into this container — they are NOT AbstractFloatingView popups. -->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/toggle_bar_root"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/transition_effect_panel_height"
+    android:layout_gravity="bottom|center_horizontal"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:visibility="gone" />

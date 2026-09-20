@@ -12,8 +12,6 @@ import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Property;
-import android.util.TypedValue;
-import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -416,10 +414,7 @@ public class COUINotificationSnackBar extends COUISnackBar {
         if (viewGroupFindSuitableParent != null) {
             if (!TextUtils.isEmpty(str) && !TextUtils.isEmpty(text_2)) {
                 int iMin = Math.min(Math.max(index, MIN_DURATION), MAX_DURATION);
-                TypedValue typedValue = new TypedValue();
-                if (!context.getTheme().resolveAttribute(R.attr.couiColorSurfaceTop, typedValue, true) || !context.getTheme().resolveAttribute(R.attr.couiColorPrimaryNeutral, typedValue, true)) {
-                    context = new ContextThemeWrapper(context, R.style.Theme_COUI_Main);
-                }
+                context = COUISnackBar.snackBarThemedContext(context);
                 COUINotificationSnackBar cOUINotificationSnackBar = (COUINotificationSnackBar) LayoutInflater.from(context).inflate(R.layout.coui_notification_snack_bar_show_layout, viewGroupFindSuitableParent, false);
                 cOUINotificationSnackBar.setContentText(str);
                 cOUINotificationSnackBar.setDuration(iMin);

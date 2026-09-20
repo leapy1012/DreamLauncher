@@ -47,6 +47,7 @@ import com.android.launcher3.R;
 import com.android.launcher3.allapps.ActivityAllAppsContainerView;
 import com.android.launcher3.allapps.AllAppsRecyclerView;
 import com.android.launcher3.dragndrop.DragLayer;
+import com.android.launcher3.editselection.EditSelectionBadgeLayout;
 import com.android.launcher3.model.data.AppInfo;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.ItemInfoWithIcon;
@@ -699,10 +700,9 @@ public final class ColorOsDrawerSelectController {
                 R.dimen.edit_selection_check_top_offset);
         int rightOffset = icon.getResources().getDimensionPixelSize(
                 R.dimen.edit_selection_check_right_offset);
-        boolean rtl = icon.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
-        int left = rtl ? iconBounds.left - rightOffset
-                : iconBounds.right - size + rightOffset;
-        int top = iconBounds.top - topOffset;
+        android.graphics.Rect checkBounds = new android.graphics.Rect();
+        EditSelectionBadgeLayout.getAppCheckBounds(iconBounds, size, rightOffset, topOffset,
+                EditSelectionBadgeLayout.isRtl(icon), checkBounds);
         android.graphics.drawable.Drawable check = icon.getContext().getDrawable(
                 select.isSelected(app)
                         ? R.drawable.launcher_ic_app_selected
@@ -712,10 +712,10 @@ public final class ColorOsDrawerSelectController {
         }
         float progress = select.getCheckProgress();
         check = check.mutate();
-        check.setBounds(left, top, left + size, top + size);
+        check.setBounds(checkBounds);
         check.setAlpha((int) (255 * progress));
         int save = canvas.save();
-        canvas.scale(progress, progress, left + size / 2f, top + size / 2f);
+        canvas.scale(progress, progress, checkBounds.exactCenterX(), checkBounds.exactCenterY());
         check.draw(canvas);
         canvas.restoreToCount(save);
         return true;

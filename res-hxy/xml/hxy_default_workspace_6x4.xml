@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Factory default 4×6 workspace (app-drawer style). Matches mtk.png:
-     last row File Manager / Photos / Clock / Settings;
+<!-- Factory default 4×6 workspace (app-drawer style):
+     last row File Manager / Settings / Switch Wallpaper / Cleanup;
      dock Phone / Contacts / Messages / Camera. -->
 <favorites>
     <!-- Hotseat: Phone, Contacts, Messages, Camera -->
@@ -23,7 +23,7 @@
         <favorite uri="#Intent;action=android.media.action.STILL_IMAGE_CAMERA;end"/>
     </resolve>
 
-    <!-- Workspace last row: File Manager, Photos, Clock, Settings -->
+    <!-- Workspace last row: File Manager, Settings, Switch Wallpaper, Cleanup -->
     <resolve screen="0" x="0" y="-1">
         <favorite packageName="com.android.filebrowser" className="com.android.filebrowser.activity.ZSFileSortActivity"/>
         <favorite packageName="com.android.filebrowser" className="com.android.filebrowser.FileBrowserActivity"/>
@@ -31,16 +31,12 @@
         <favorite uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_FILES;end"/>
     </resolve>
     <resolve screen="0" x="1" y="-1">
-        <favorite packageName="com.android.gallery3d" className="com.android.gallery3d.app.GalleryActivity"/>
-        <favorite packageName="com.android.gallery3d" className="com.android.gallery3d.app.Gallery"/>
-        <favorite packageName="com.google.android.apps.photos" className="com.google.android.apps.photos.home.HomeActivity"/>
-        <favorite uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_GALLERY;end"/>
+        <favorite packageName="com.android.settings" className="com.android.settings.Settings"/>
     </resolve>
     <resolve screen="0" x="2" y="-1">
-        <favorite packageName="com.android.deskclock" className="com.android.deskclock.DeskClock"/>
-        <favorite packageName="com.google.android.deskclock" className="com.android.deskclock.DeskClock"/>
+        <favorite packageName="com.android.launcher3" className="com.android.launcher3.settings.WallpaperChangeActivity"/>
     </resolve>
     <resolve screen="0" x="3" y="-1">
-        <favorite packageName="com.android.settings" className="com.android.settings.Settings"/>
+        <favorite packageName="com.android.launcher3" className="com.android.launcher3.big.memoryclean.MemoryCleanActivity"/>
     </resolve>
 </favorites>

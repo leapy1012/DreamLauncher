@@ -31,13 +31,11 @@ import android.view.ViewDebug;
 import android.view.ViewPropertyAnimator;
 import android.widget.FrameLayout;
 
-import com.android.launcher3.allapps.ActivityAllAppsContainerView;
 import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.dragndrop.DragController;
 import com.android.launcher3.dragndrop.DragController.DragListener;
 import com.android.launcher3.dragndrop.DragOptions;
 import com.android.launcher3.editselection.EditSelectionManager;
-import com.android.launcher3.folder.Folder;
 
 /*
  * The top bar containing various drop targets: Delete/App Info/Uninstall.
@@ -338,38 +336,23 @@ public class DropTargetBar extends FrameLayout
      */
     @Override
     public void onDragStart(DropTarget.DragObject dragObject, DragOptions options) {
-        // Oppo OplusDropTargetBar: cancel strip is for All Apps / batch, not every
-        // workspace rearrange (ColorOS leaves the top clear while reordering icons).
+        // Oppo: cancel strip only for All Apps / batch — not popup shortcut → Home.
         if (shouldShowCancelStrip(dragObject)) {
             animateToVisibility(true);
         }
     }
 
     /**
-     * Mirrors Oppo {@code OplusDropTargetBar.animateToVisibility(true)} gates:
-     * All Apps / batch(edit-selection) / external add — not normal desktop or folder reorder.
+     * Mirrors Oppo {@code OplusDropTargetBar.animateToVisibility(true)}:
+     * show only for All Apps or batch/edit-selection drag — not workspace reorder,
+     * folder reorder, or long-press popup shortcut drops onto Home.
      */
     private boolean shouldShowCancelStrip(DropTarget.DragObject dragObject) {
         if (mLauncher.isInState(ALL_APPS)) {
             return true;
         }
         EditSelectionManager selection = mLauncher.getEditSelectionManager();
-        if (selection != null && selection.isActive()) {
-            return true;
-        }
-        if (dragObject == null) {
-            return false;
-        }
-        DragSource source = dragObject.dragSource;
-        // Workspace / folder rearrange: Oppo keeps the cancel strip hidden.
-        if (source instanceof Workspace || source instanceof Folder) {
-            return false;
-        }
-        if (source instanceof ActivityAllAppsContainerView) {
-            return true;
-        }
-        // Widget tray / other external sources need a cancel target.
-        return source != null;
+        return selection != null && selection.isActive();
     }
 
     /**

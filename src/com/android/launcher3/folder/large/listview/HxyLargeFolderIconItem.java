@@ -141,14 +141,14 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         }
         mPreviewDotParams.unreadNum = unreadNum;
         getIconBounds(mPreviewDotParams.iconBounds);
-        Utilities.scaleRectAboutCenter(mPreviewDotParams.iconBounds,
-                IconShape.getNormalizationScale());
         int iconSize = mIconSize > 0 ? mIconSize : Math.max(getWidth(), 1);
         if (renderer.mShowNumber) {
-            DotDrawUtils.draw(canvas,
-                    new DotDrawUtils.DotNumParams(renderer, iconSize, mPreviewDotParams),
-                    /* isLargeFolder= */ false);
+            // Match workspace/folder plate badges — corner anchor, no glyph shrink.
+            DotDrawUtils.draw(canvas, getContext(),
+                    new DotDrawUtils.DotNumParams(renderer, iconSize, mPreviewDotParams));
         } else {
+            Utilities.scaleRectAboutCenter(mPreviewDotParams.iconBounds,
+                    IconShape.getNormalizationScale());
             renderer.draw(canvas, mPreviewDotParams);
         }
     }
@@ -316,6 +316,36 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         // Large-folder preview cells paint via {@link #onDraw}; skip TextView compounds.
     }
 
+    /** Max mini-icons drawn in the overflow 2×2 cell (ColorOS StackedDrawable). */
+    public static int getMaxOutCount() {
+        return MAX_OUT_COUNT;
+    }
+
+    /**
+     * Local bounds of mini-icon {@code stackIndex} (0–3) inside a square overflow cell,
+     * matching {@link #addOutDrawables} layout. Returns false if inputs are invalid.
+     */
+    public static boolean computeStackedSubBounds(Context context, int cellSize,
+            int stackIndex, Rect out) {
+        if (context == null || out == null || cellSize <= 0
+                || stackIndex < 0 || stackIndex >= MAX_OUT_COUNT) {
+            return false;
+        }
+        int gap = Math.max(1, HxyLargeFolderProxy.getFolderIconOutSpace(context));
+        int subIconSize = Math.max(1, (cellSize - gap) / 2);
+        while (subIconSize * 2 + gap > cellSize && subIconSize > 1) {
+            subIconSize--;
+        }
+        int used = subIconSize * 2 + gap;
+        int origin = Math.max(0, (cellSize - used) / 2);
+        int col = stackIndex % SPAN_COUNT;
+        int row = stackIndex / SPAN_COUNT;
+        int left = origin + col * (subIconSize + gap);
+        int top = origin + row * (subIconSize + gap);
+        out.set(left, top, left + subIconSize, top + subIconSize);
+        return true;
+    }
+
     /**
      * Oppo overflow cell: up to 4 mini-icons in a 2×2 that fills the preview cell.
      * Unused slots get {@code hxy_bf_holder_drawable} (ColorOS empty-slot).
@@ -324,46 +354,30 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         if (list == null || list.size() <= position || cellSize <= 0) {
             return;
         }
-        int gap = Math.max(1, HxyLargeFolderProxy.getFolderIconOutSpace(getContext()));
-        int subIconSize = Math.max(1, (cellSize - gap) / 2);
-        while (subIconSize * 2 + gap > cellSize && subIconSize > 1) {
-            subIconSize--;
-        }
-        int used = subIconSize * 2 + gap;
-        int origin = Math.max(0, (cellSize - used) / 2);
+        Rect sub = new Rect();
         int maxApps = Math.min(position + MAX_OUT_COUNT, list.size());
         int index = 0;
         for (int i = position; i < maxApps; i++, index++) {
-            Drawable item = getDrawable(getContext(), list.get(i), subIconSize);
-            placeOutDrawable(item, index, origin, subIconSize, gap);
+            if (!computeStackedSubBounds(getContext(), cellSize, index, sub)) {
+                break;
+            }
+            Drawable item = getDrawable(getContext(), list.get(i), sub.width());
+            item.setBounds(sub);
             this.mDrawableList.add(item);
         }
         // Pad to a full 2×2 with empty holders (Oppo StackedDrawable + bf_holder).
         Drawable holder = getContext().getDrawable(R.drawable.hxy_bf_holder_drawable);
         while (index < MAX_OUT_COUNT && holder != null) {
+            if (!computeStackedSubBounds(getContext(), cellSize, index, sub)) {
+                break;
+            }
             Drawable slot = holder.getConstantState() != null
                     ? holder.getConstantState().newDrawable().mutate()
                     : holder.mutate();
-            placeOutDrawable(slot, index, origin, subIconSize, gap);
+            slot.setBounds(sub);
             this.mDrawableList.add(slot);
             index++;
         }
-    }
-
-    private void placeOutDrawable(Drawable item, int index, int origin, int subIconSize, int gap) {
-        int col = getColumnIndex(index);
-        int row = getRowIndex(index);
-        int left = origin + col * (subIconSize + gap);
-        int top = origin + row * (subIconSize + gap);
-        item.setBounds(left, top, left + subIconSize, top + subIconSize);
-    }
-
-    private int getRowIndex(int index) {
-        return index / SPAN_COUNT;
-    }
-
-    private int getColumnIndex(int index) {
-        return index % SPAN_COUNT;
     }
 
     private Drawable getDrawable(Context context, WorkspaceItemInfo item, int iconSize) {

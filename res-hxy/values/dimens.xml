@@ -20,6 +20,11 @@
     <dimen name="secondary_app_icon_size">32dp</dimen>
     <!-- hxy-feature: add launcher style function  202312 -->
     <dimen name="unread_text_number_size">10dp</dimen>
+    <!-- Oppo OplusDotRenderer number badge (folder + app icons share these). -->
+    <dimen name="badge_num_background_diameter">20dp</dimen>
+    <dimen name="badge_num_background_corner">10.33dp</dimen>
+    <dimen name="badge_num_background_offset_design">3dp</dimen>
+    <dimen name="badge_num_font_size">13dp</dimen>
     <dimen name="over_view_panel_edit_grid_icon_size">44dp</dimen>
     <dimen name="icon_textview_default_icon_size">44dp</dimen>
     <dimen name="overview_panel_main_menu_padding_top">9dp</dimen>
@@ -29,17 +34,28 @@
     <!-- Oppo toggle_bar_item_translationY_for_in_out_animation -->
     <dimen name="toggle_bar_item_translationY_for_in_out_animation">44dp</dimen>
     <dimen name="edit_selection_toolbar_padding_top">4dp</dimen>
-    <dimen name="edit_selection_toolbar_edge_padding">28dp</dimen>
+    <dimen name="edit_selection_toolbar_edge_padding">24dp</dimen>
     <dimen name="edit_selection_toolbar_btn_min_width">72dp</dimen>
     <dimen name="edit_selection_toolbar_btn_width">72dp</dimen>
     <dimen name="edit_selection_toolbar_btn_height">30dp</dimen>
-    <dimen name="edit_selection_toolbar_btn_padding_h">18dp</dimen>
+    <dimen name="edit_selection_toolbar_btn_padding_h">6dp</dimen>
     <dimen name="edit_selection_toolbar_title_margin_h">8dp</dimen>
+    <dimen name="transition_effect_item_width">60dp</dimen>
+    <dimen name="transition_effect_item_height">60dp</dimen>
+    <dimen name="transition_effect_panel_height">117dp</dimen>
+    <dimen name="transition_effect_item_divider">6dp</dimen>
+    <dimen name="transition_effect_item_radius">12dp</dimen>
+    <dimen name="transition_effect_selected_stroke_width">1.2dp</dimen>
+    <dimen name="transition_effect_list_side_peek">16dp</dimen>
+    <!-- Oppo select_icon_* / selected_icon_weight — badge center offset from icon corner. -->
     <dimen name="edit_selection_check_size">20dp</dimen>
     <dimen name="edit_selection_check_top_offset">3dp</dimen>
     <dimen name="edit_selection_check_right_offset">3dp</dimen>
     <!-- Oppo delete_icon_weight / launcher_ic_widget_remove -->
     <dimen name="edit_selection_widget_remove_size">20dp</dimen>
+    <!-- Oppo launcher_widget_background inset + corner radius (SwitchStateRenderer). -->
+    <dimen name="launcher_widget_background_inset">4dp</dimen>
+    <dimen name="launcher_widget_background_radius">18dp</dimen>
     <!-- Oppo page_preview_item_width/height/gap -->
     <dimen name="edit_selection_page_preview_width">48dp</dimen>
     <dimen name="edit_selection_page_preview_height">68dp</dimen>

@@ -8,6 +8,11 @@ import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
 import android.widget.OverScroller;
 
+import androidx.dynamicanimation.animation.DynamicAnimation;
+import androidx.dynamicanimation.animation.FloatValueHolder;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
+
 import com.coui.appcompat.animation.COUISpringInterpolator;
 import com.coui.appcompat.log.COUILog;
 import com.coui.appcompat.uiutil.UIUtil;
@@ -20,6 +25,8 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
     public static final int COUI_FLING_MODE_FAST = 0;
     public static final int COUI_FLING_MODE_NORMAL = 1;
     private static boolean DEBUG = false;
+    private static final float DEFAULT_PAGE_SPRING_DAMPING = 0.8f;
+    private static final float DEFAULT_PAGE_SPRING_STIFFNESS = 250.0f;
     private static final float ERROR_THRESHOLD = 0.025f;
     private static final int FLING_MODE = 1;
     private static final int FLING_SPEED_INCREASE_COUNT_THRESHOLD = 4;
@@ -55,6 +62,10 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
     private float mLastFlingSpeedIncreaseRate;
     private long mLastFlingTime;
     private int mMode;
+    private float mPageSpringDamping = DEFAULT_PAGE_SPRING_DAMPING;
+    private SpringAnimation mPageSpringX;
+    private boolean mPageSpringActive;
+    private float mPageSpringStiffness = DEFAULT_PAGE_SPRING_STIFFNESS;
     protected ReboundOverScroller mScrollerX;
     protected ReboundOverScroller mScrollerY;
 
@@ -693,8 +704,14 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             int scrollFinal = scrollStart + index;
             this.mScrollFinal = scrollFinal;
             this.mEndValue = scrollFinal;
+            this.mStartValue = scrollStart;
             this.mDuration = duration;
             this.mScrollStartTime = timestamp;
+            this.mFinished = false;
+            this.mCancelCallback = false;
+            this.mIsSpringBack = false;
+            this.mCurrentState.mPosition = scrollStart;
+            this.mCurrentState.mVelocity = 0.0d;
             setConfig(this.mFlingConfig);
             long jElapsedRealtime = SystemClock.elapsedRealtime();
             this.mLastComputeTime = jElapsedRealtime;
@@ -907,7 +924,8 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
         if (DEBUG) {
             Log.d(TAG, "abortAnimation", new Throwable());
         }
-        this.mMode = 2;
+        cancelPageSpring(false);
+        this.mMode = REST_MODE;
         this.mScrollerX.setAtRest();
         this.mScrollerY.setAtRest();
         this.mCancelCallback = true;
@@ -918,8 +936,43 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
         this.mCancelCallback = true;
     }
 
+    private void cancelPageSpring(boolean jumpToEnd) {
+        SpringAnimation springAnimation = this.mPageSpringX;
+        if (springAnimation != null) {
+            if (jumpToEnd && springAnimation.canSkipToEnd()) {
+                springAnimation.skipToEnd();
+            }
+            springAnimation.cancel();
+            this.mPageSpringX = null;
+        }
+        this.mPageSpringActive = false;
+    }
+
+    /** True while an Oppo-style page snap spring is driving scroll. */
+    public boolean isPageSpringing() {
+        return this.mPageSpringActive
+                && this.mPageSpringX != null
+                && this.mPageSpringX.isRunning();
+    }
+
     @Override
     public boolean computeScrollOffset() {
+        if (this.mPageSpringActive) {
+            SpringAnimation springAnimation = this.mPageSpringX;
+            if (springAnimation != null && springAnimation.isRunning()) {
+                return true;
+            }
+            // Spring just finished: pin to final so PagedView applies the last scroll this frame.
+            this.mScrollerX.mCurrentState.mPosition = this.mScrollerX.mEndValue;
+            this.mScrollerX.mCurrentState.mVelocity = 0.0d;
+            this.mPageSpringActive = false;
+            this.mPageSpringX = null;
+            this.mMode = REST_MODE;
+            this.mScrollerX.setAtRest();
+            this.mScrollerY.setAtRest();
+            this.mFrameRateHelper.setFrameRate(false);
+            return true;
+        }
         if (isCOUIFinished()) {
             this.mCancelCallback = this.mScrollerX.mCancelCallback && this.mScrollerY.mCancelCallback;
             return false;
@@ -929,7 +982,7 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
             long jCurrentAnimationTimeMillis = AnimationUtils.currentAnimationTimeMillis() - this.mScrollerX.mScrollStartTime;
             int count = this.mScrollerX.mDuration;
             if (jCurrentAnimationTimeMillis < count) {
-                float interpolation = this.mInterpolator.getInterpolation(jCurrentAnimationTimeMillis / count);
+                float interpolation = this.mInterpolator.getInterpolation(jCurrentAnimationTimeMillis / (float) count);
                 this.mScrollerX.updateScroll(interpolation);
                 this.mScrollerY.updateScroll(interpolation);
             } else {
@@ -991,6 +1044,10 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
 
     @Override
     public final boolean isCOUIFinished() {
+        // Stay unfinished until computeScrollOffset consumes the spring completion frame.
+        if (this.mPageSpringActive) {
+            return false;
+        }
         boolean zIsAtRest = this.mScrollerX.isAtRest();
         boolean zIsAtRest2 = this.mScrollerY.isAtRest();
         if (DEBUG) {
@@ -1005,7 +1062,7 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
 
     @Override
     public boolean isScrollingInDirection(float fraction, float ratio) {
-        return !isFinished() && Math.signum(fraction) == Math.signum((float) ((int) (this.mScrollerX.mEndValue - this.mScrollerX.mStartValue))) && Math.signum(ratio) == Math.signum((float) ((int) (this.mScrollerY.mEndValue - this.mScrollerY.mStartValue)));
+        return !isCOUIFinished() && Math.signum(fraction) == Math.signum((float) ((int) (this.mScrollerX.mEndValue - this.mScrollerX.mStartValue))) && Math.signum(ratio) == Math.signum((float) ((int) (this.mScrollerY.mEndValue - this.mScrollerY.mStartValue)));
     }
 
     @Override
@@ -1119,6 +1176,7 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
         if (DEBUG) {
             Log.d(TAG, "springBack startX = " + startX + " startY = " + startY + " minX = " + minX + " minY = " + minY + " maxY = " + maxY, new Throwable());
         }
+        cancelPageSpring(false);
         boolean zSpringBack = this.mScrollerX.springBack(startX, minX, maxX, false);
         boolean zSpringBack2 = this.mScrollerY.springBack(startY, minY, maxY, false);
         if (zSpringBack || zSpringBack2) {
@@ -1150,6 +1208,7 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
         if (DEBUG) {
             Log.d(TAG, "startScroll startX = " + startX + " startY = " + startY + " dx = " + dx + " dy = " + dy + " duration = " + duration, new Throwable());
         }
+        cancelPageSpring(false);
         this.mMode = 0;
         long jCurrentAnimationTimeMillis = AnimationUtils.currentAnimationTimeMillis();
         this.mScrollerX.startScroll(startX, dx, duration, jCurrentAnimationTimeMillis);
@@ -1157,11 +1216,73 @@ public class SpringOverScroller extends OverScroller implements COUIIOverScrolle
         this.mFrameRateHelper.setFrameRate(true);
     }
 
+    /**
+     * Oppo-style page snap: spring from current scroll to target with initial velocity.
+     * Matches ColorOS {@code startScrollSpring} (stiffness/damping from horizontal_spring_*).
+     *
+     * @param startX current scroll X
+     * @param dx distance to travel
+     * @param duration unused (spring settles itself); kept for API parity
+     * @param velocity initial velocity in px/s (Oppo passes -fingerVelocity)
+     * @param startValue optional first-frame start override, or {@link Integer#MAX_VALUE}
+     */
+    public void startScrollSpring(int startX, int dx, int duration, float velocity, int startValue) {
+        cancelPageSpring(false);
+        final int endX = startX + dx;
+        final float actualStart = startValue != Integer.MAX_VALUE ? startValue : startX;
+
+        this.mScrollerX.setCurrentValue(actualStart, false);
+        this.mScrollerX.mEndValue = endX;
+        this.mScrollerX.mStartValue = actualStart;
+        this.mScrollerX.mScrollStart = (int) actualStart;
+        this.mScrollerX.mScrollFinal = endX;
+        this.mScrollerX.mFinished = false;
+        this.mScrollerX.mCancelCallback = false;
+        this.mScrollerX.mIsSpringBack = false;
+        this.mScrollerX.setVelocity(velocity);
+
+        this.mScrollerY.setCurrentValue(0, true);
+
+        this.mMode = FLING_MODE;
+        this.mPageSpringActive = true;
+        this.mCancelCallback = false;
+
+        FloatValueHolder holder = new FloatValueHolder(actualStart);
+        SpringAnimation springAnimation = new SpringAnimation(holder);
+        springAnimation.setSpring(new SpringForce(endX)
+                .setStiffness(this.mPageSpringStiffness)
+                .setDampingRatio(this.mPageSpringDamping));
+        springAnimation.setStartVelocity(velocity);
+        springAnimation.setMinimumVisibleChange(1f);
+        springAnimation.addUpdateListener(new DynamicAnimation.OnAnimationUpdateListener() {
+            @Override
+            public void onAnimationUpdate(DynamicAnimation animation, float value, float velocity) {
+                ReboundOverScroller scrollerX = SpringOverScroller.this.mScrollerX;
+                scrollerX.mCurrentState.mPosition = value;
+                scrollerX.mCurrentState.mVelocity = velocity;
+                scrollerX.mFinished = false;
+            }
+        });
+        this.mPageSpringX = springAnimation;
+        this.mFrameRateHelper.setFrameRate(true);
+        springAnimation.start();
+    }
+
+    public void setPageSpringParams(float stiffness, float dampingRatio) {
+        if (stiffness > 0f) {
+            this.mPageSpringStiffness = stiffness;
+        }
+        if (dampingRatio > 0f) {
+            this.mPageSpringDamping = dampingRatio;
+        }
+    }
+
     @Override
     public void fling(int startX, int startY, int velocityX, int velocityY) {
         if (DEBUG) {
             Log.d(TAG, "fling startX = " + startX + " startY = " + startY + " velocityX = " + velocityX + " velocityY = " + velocityY, new Throwable());
         }
+        cancelPageSpring(false);
         this.mMode = 1;
         this.mScrollerX.fling(startX, Integer.MIN_VALUE, Integer.MAX_VALUE, increaseVelocityIfNeed(velocityX), 0);
         this.mScrollerY.fling(startY, Integer.MIN_VALUE, Integer.MAX_VALUE, increaseVelocityIfNeed(velocityY), 0);

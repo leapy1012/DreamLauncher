@@ -18,15 +18,25 @@ package com.android.launcher3.notification;
 
 import android.app.Notification;
 import android.app.Person;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.service.notification.StatusBarNotification;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.RemoteViews;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.launcher3.Utilities;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The key data associated with the notification, used to determine what to include
@@ -35,6 +45,10 @@ import java.util.List;
  * @see NotificationInfo for the full data used when populating the stub views.
  */
 public class NotificationKeyData {
+    private static final Pattern NUMBER_ONLY = Pattern.compile("^\\s*(\\d{1,3})\\s*$");
+    private static final Pattern MISSED_COUNT =
+            Pattern.compile("(?i)(\\d{1,3})\\s*miss");
+
     public final String notificationKey;
     public final String shortcutId;
     @NonNull
@@ -50,10 +64,168 @@ public class NotificationKeyData {
     }
 
     public static NotificationKeyData fromNotification(StatusBarNotification sbn) {
+        return fromNotification(sbn, null);
+    }
+
+    public static NotificationKeyData fromNotification(StatusBarNotification sbn,
+            @Nullable Context context) {
         Notification notif = sbn.getNotification();
-        return new NotificationKeyData(sbn.getKey(), notif.getShortcutId(), notif.number,
+        int count = notif.number;
+        if (count <= 0) {
+            count = resolveBadgeCount(notif, sbn, context);
+        }
+        return new NotificationKeyData(sbn.getKey(), notif.getShortcutId(), count,
                 extractPersonKeyOnly(notif.extras.getParcelableArrayList(
                         Notification.EXTRA_PEOPLE_LIST)));
+    }
+
+    /**
+     * Dialer missed-call posts often leave {@link Notification#number} at 0 and put the
+     * real count only inside custom {@link RemoteViews} text (no EXTRA_TITLE/TEXT).
+     */
+    private static int resolveBadgeCount(Notification notif, StatusBarNotification sbn,
+            @Nullable Context context) {
+        int fromExtras = extractNumber(notif.extras.getCharSequence(Notification.EXTRA_TITLE));
+        if (fromExtras <= 0) {
+            fromExtras = extractNumber(notif.extras.getCharSequence(Notification.EXTRA_TEXT));
+        }
+        if (fromExtras <= 0) {
+            fromExtras = extractNumber(notif.extras.getCharSequence(Notification.EXTRA_INFO_TEXT));
+        }
+        if (fromExtras > 0) {
+            return fromExtras;
+        }
+        int fromViews = extractCountFromRemoteViews(notif.contentView);
+        if (fromViews <= 0) {
+            fromViews = extractCountFromRemoteViews(notif.bigContentView);
+        }
+        if (fromViews <= 0 && context != null) {
+            fromViews = extractCountByApplyingRemoteViews(context, sbn);
+        }
+        return fromViews;
+    }
+
+    private static int extractNumber(@Nullable CharSequence text) {
+        if (text == null) {
+            return 0;
+        }
+        String s = text.toString().trim();
+        Matcher missed = MISSED_COUNT.matcher(s);
+        if (missed.find()) {
+            return Integer.parseInt(missed.group(1));
+        }
+        // Standalone badge digit only — avoid phone numbers / multi-token strings.
+        Matcher only = NUMBER_ONLY.matcher(s);
+        if (only.matches()) {
+            return Integer.parseInt(only.group(1));
+        }
+        return 0;
+    }
+
+    private static int extractCountFromRemoteViews(@Nullable RemoteViews remoteViews) {
+        if (remoteViews == null) {
+            return 0;
+        }
+        try {
+            Field actionsField = RemoteViews.class.getDeclaredField("mActions");
+            actionsField.setAccessible(true);
+            Object actionsObj = actionsField.get(remoteViews);
+            if (!(actionsObj instanceof ArrayList)) {
+                return 0;
+            }
+            int missedStyle = 0;
+            int standalone = 0;
+            for (Object action : (ArrayList<?>) actionsObj) {
+                if (action == null) {
+                    continue;
+                }
+                CharSequence text = readCharSequenceField(action, "value");
+                if (text == null) {
+                    text = readCharSequenceField(action, "mText");
+                }
+                if (text == null) {
+                    text = readCharSequenceField(action, "charSequenceValue");
+                }
+                if (text == null) {
+                    continue;
+                }
+                String s = text.toString().trim();
+                Matcher missed = MISSED_COUNT.matcher(s);
+                if (missed.find()) {
+                    missedStyle = Math.max(missedStyle, Integer.parseInt(missed.group(1)));
+                    continue;
+                }
+                Matcher only = NUMBER_ONLY.matcher(s);
+                if (only.matches()) {
+                    standalone = Math.max(standalone, Integer.parseInt(only.group(1)));
+                }
+            }
+            return missedStyle > 0 ? missedStyle : standalone;
+        } catch (Throwable ignored) {
+            return 0;
+        }
+    }
+
+    /**
+     * Inflate custom RemoteViews and read TextView content (MTK Dialer missedCall).
+     */
+    private static int extractCountByApplyingRemoteViews(Context context,
+            StatusBarNotification sbn) {
+        Notification notif = sbn.getNotification();
+        RemoteViews rv = notif.contentView != null ? notif.contentView : notif.bigContentView;
+        if (rv == null) {
+            return 0;
+        }
+        try {
+            Context pkgContext = context.createPackageContextAsUser(
+                    sbn.getPackageName(), Context.CONTEXT_RESTRICTED, sbn.getUser());
+            FrameLayout host = new FrameLayout(pkgContext);
+            View applied = rv.apply(pkgContext, host);
+            int[] result = new int[2]; // [missedStyle, standalone]
+            collectCountsFromView(applied, result);
+            return result[0] > 0 ? result[0] : result[1];
+        } catch (PackageManager.NameNotFoundException | RuntimeException ignored) {
+            return 0;
+        }
+    }
+
+    private static void collectCountsFromView(@Nullable View view, int[] result) {
+        if (view == null) {
+            return;
+        }
+        if (view instanceof TextView) {
+            CharSequence text = ((TextView) view).getText();
+            if (text != null) {
+                String s = text.toString().trim();
+                Matcher missed = MISSED_COUNT.matcher(s);
+                if (missed.find()) {
+                    result[0] = Math.max(result[0], Integer.parseInt(missed.group(1)));
+                } else {
+                    Matcher only = NUMBER_ONLY.matcher(s);
+                    if (only.matches()) {
+                        result[1] = Math.max(result[1], Integer.parseInt(only.group(1)));
+                    }
+                }
+            }
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                collectCountsFromView(group.getChildAt(i), result);
+            }
+        }
+    }
+
+    @Nullable
+    private static CharSequence readCharSequenceField(Object target, String fieldName) {
+        try {
+            Field field = target.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            Object value = field.get(target);
+            return value instanceof CharSequence ? (CharSequence) value : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     public static List<String> extractKeysOnly(

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Oppo launcher_widget_background: edit-mode plate for dark wallpapers. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:inset="@dimen/launcher_widget_background_inset">
+    <shape android:shape="rectangle">
+        <corners android:radius="@dimen/launcher_widget_background_radius" />
+        <solid android:color="@color/launcher_widget_background_color" />
+    </shape>
+</inset>

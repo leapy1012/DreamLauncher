@@ -327,6 +327,8 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
         page.getShortcutsAndWidgets().setMotionEventSplittingEnabled(false);
         page.setInvertIfRtl(true);
         page.setGridSize(mGridCountX, mGridCountY);
+        // Oppo OplusFolderPagedView: empty-cell long-press → ToggleBar / EDIT_MODE.
+        page.setOnLongClickListener(v -> mFolder.handleEmptyLongPressToEditMode());
 
         addView(page, -1, generateDefaultLayoutParams());
         return page;

@@ -1206,32 +1206,30 @@ public class LoaderTask implements Runnable {
         for (UserHandle user : profiles) {
             final List<LauncherActivityInfo> apps = mLauncherApps.getActivityList(null, user);
             android.util.Log.i("Launcher3", "apps.size "+apps.size());
-            ArrayList<ItemInstallQueue.PendingInstallShortcutInfo> added = new ArrayList<ItemInstallQueue.PendingInstallShortcutInfo>();
-            synchronized (this) {
-                for (LauncherActivityInfo app : apps) {
-                    ItemInstallQueue.PendingInstallShortcutInfo pendingInstallShortcutInfo
-                     = new ItemInstallQueue.PendingInstallShortcutInfo(app.getComponentName().getPackageName(), app.getUser());
-                    if(!"com.teksun.factorytest".equals(pendingInstallShortcutInfo.getItemInfo(context).first.getTargetComponent().getPackageName())&& !"com.google.android.documentsui".equals(pendingInstallShortcutInfo.getItemInfo(context).first.getTargetComponent().getPackageName())){
-                        added.add(pendingInstallShortcutInfo);
-                        //hxy-bug clone app bug 20240416 by yangj
-                         boolean isClone = isUserTypeProfile(mApp.getContext(), user,
-                                 UserManager.USER_TYPE_PROFILE_CLONE);
-                        if (isClone) {
-                            if(mSupportAppsList.contains(app.getComponentName().getPackageName())) {
-                               installQueue.add(pendingInstallShortcutInfo.getItemInfo(context));
-                            }
-                        }else{
-                            installQueue.add(pendingInstallShortcutInfo.getItemInfo(context));
+            for (LauncherActivityInfo app : apps) {
+                ItemInstallQueue.PendingInstallShortcutInfo pendingInstallShortcutInfo
+                 = new ItemInstallQueue.PendingInstallShortcutInfo(app.getComponentName().getPackageName(), app.getUser());
+                if(!"com.teksun.factorytest".equals(pendingInstallShortcutInfo.getItemInfo(context).first.getTargetComponent().getPackageName())&& !"com.google.android.documentsui".equals(pendingInstallShortcutInfo.getItemInfo(context).first.getTargetComponent().getPackageName())){
+                    //hxy-bug clone app bug 20240416 by yangj
+                     boolean isClone = isUserTypeProfile(mApp.getContext(), user,
+                             UserManager.USER_TYPE_PROFILE_CLONE);
+                    if (isClone) {
+                        if(mSupportAppsList.contains(app.getComponentName().getPackageName())) {
+                           installQueue.add(pendingInstallShortcutInfo.getItemInfo(context));
                         }
-                        //hxy-bug clone app bug 20240416 by yangj
-                        android.util.Log.d("Launcher3", "app pkg "+app.getComponentName().getPackageName()+"--isClone:"+isClone+"--user:"+user);
+                    }else{
+                        installQueue.add(pendingInstallShortcutInfo.getItemInfo(context));
                     }
+                    //hxy-bug clone app bug 20240416 by yangj
+                    android.util.Log.d("Launcher3", "app pkg "+app.getComponentName().getPackageName()+"--isClone:"+isClone+"--user:"+user);
                 }
             }
-            if (!added.isEmpty()) {
-                android.util.Log.i("Launcher3", "installQueue.size "+installQueue.size());
-                mApp.getModel().addAndBindAddedWorkspaceItems(installQueue);
-            }
+        }
+        if (!installQueue.isEmpty()) {
+            android.util.Log.i("Launcher3", "installQueue.size "+installQueue.size());
+            // Single enqueue so AddWorkspaceItemsTask places the full set with correct
+            // cell occupancy (see ModelWriter.addItemToDatabase sync BgDataModel update).
+            mApp.getModel().addAndBindAddedWorkspaceItems(installQueue);
         }
     }
 	//hxy-feature: add launcher style function  202312

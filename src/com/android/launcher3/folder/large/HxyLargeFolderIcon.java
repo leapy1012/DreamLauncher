@@ -1,10 +1,13 @@
 package com.android.launcher3.folder.large;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
@@ -13,6 +16,7 @@ import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.PathInterpolator;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
@@ -20,6 +24,7 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.dragndrop.DragView;
 import com.android.launcher3.dot.FolderDotInfo;
+import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.PreviewItemManager;
 import com.android.launcher3.folder.large.listview.BasePageLinearAdapter;
@@ -36,6 +41,7 @@ import com.android.launcher3.touch.ItemLongClickListener;
 import com.android.launcher3.R;
 import com.coui.appcompat.indicator.COUIPageIndicator2;
 
+import java.util.ArrayList;
 import java.util.function.Predicate;
 
 public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnimation {
@@ -77,7 +83,10 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     private boolean mPreviewMorphing;
     private com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation mPreviewMorphSpring;
     private View[] mMorphChildren;
+    /** Temporary overlays for cells removed when shrinking preview capacity (nine→highlight). */
+    private final ArrayList<ImageView> mMorphGhosts = new ArrayList<>();
     private Rect[] mPendingMorphFromBounds;
+    private android.graphics.Bitmap[] mPendingMorphFromBitmaps;
     private ViewTreeObserver.OnPreDrawListener mMorphPreDrawListener;
     /** Neighbor page currently bound on {@link #mAdjacentListView}. */
     private int mAdjacentBoundPage = -1;
@@ -459,6 +468,11 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
      * <p>
      * Apply origin transforms in {@link ViewTreeObserver.OnPreDrawListener} so the first
      * painted frame never flashes destination size then snaps back.
+     * <p>
+     * ColorOS {@code ResizeSpringAnimationHelper.getListPair}: when capacity grows
+     * (highlight 6 → nine 9), new indices pad from the last old param and spring in
+     * from {@code scale=0} at that position; when capacity shrinks, removed indices
+     * spring out to the last remaining slot at {@code scale=0}.
      */
     public void applyPreviewModeAnimated() {
         if (mAdapter == null || mListView == null) {
@@ -469,29 +483,35 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
         int fromCount = mListView.getChildCount();
         final Rect[] fromBounds = new Rect[fromCount];
+        final Bitmap[] fromBitmaps = new Bitmap[fromCount];
         for (int i = 0; i < fromCount; i++) {
             View child = mListView.getChildAt(i);
             if (child != null && child.getVisibility() != GONE
                     && child.getWidth() > 0 && child.getHeight() > 0) {
                 fromBounds[i] = new Rect(
                         child.getLeft(), child.getTop(), child.getRight(), child.getBottom());
+                fromBitmaps[i] = snapshotPreviewCell(child);
             }
         }
 
         mPreviewMorphing = true;
         mPendingMorphFromBounds = fromBounds;
+        mPendingMorphFromBitmaps = fromBitmaps;
         mMorphPreDrawListener = () -> {
             if (mMorphPreDrawListener != null) {
                 getViewTreeObserver().removeOnPreDrawListener(mMorphPreDrawListener);
                 mMorphPreDrawListener = null;
             }
             if (!mPreviewMorphing || mListView == null) {
+                recyclePendingMorphBitmaps();
                 return true;
             }
             prepareForDragPreviewCapture();
             Rect[] pending = mPendingMorphFromBounds;
+            Bitmap[] pendingBmps = mPendingMorphFromBitmaps;
             mPendingMorphFromBounds = null;
-            startPreviewModeMorph(pending);
+            mPendingMorphFromBitmaps = null;
+            startPreviewModeMorph(pending, pendingBmps);
             // Draw this frame with origin-looking transforms already applied.
             return true;
         };
@@ -506,12 +526,56 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         invalidate();
     }
 
-    private void startPreviewModeMorph(Rect[] fromBounds) {
+    private static Bitmap snapshotPreviewCell(View child) {
+        try {
+            Bitmap bmp = Bitmap.createBitmap(
+                    child.getWidth(), child.getHeight(), Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bmp);
+            child.draw(canvas);
+            return bmp;
+        } catch (OutOfMemoryError | IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private void recyclePendingMorphBitmaps() {
+        if (mPendingMorphFromBitmaps == null) {
+            return;
+        }
+        for (Bitmap bmp : mPendingMorphFromBitmaps) {
+            if (bmp != null && !bmp.isRecycled()) {
+                bmp.recycle();
+            }
+        }
+        mPendingMorphFromBitmaps = null;
+    }
+
+    private void startPreviewModeMorph(Rect[] fromBounds, Bitmap[] fromBitmaps) {
         if (mListView == null) {
+            recycleBitmapArray(fromBitmaps);
             finishPreviewModeMorph();
             return;
         }
+        // Oppo generatePairs: pad missing FROM slots with the last valid old cell.
+        Rect lastFrom = null;
+        if (fromBounds != null) {
+            for (int i = fromBounds.length - 1; i >= 0; i--) {
+                if (fromBounds[i] != null) {
+                    lastFrom = fromBounds[i];
+                    break;
+                }
+            }
+        }
         int count = mListView.getChildCount();
+        Rect lastTo = null;
+        if (count > 0) {
+            View lastChild = mListView.getChildAt(count - 1);
+            if (lastChild != null && lastChild.getWidth() > 0 && lastChild.getHeight() > 0) {
+                lastTo = new Rect(lastChild.getLeft(), lastChild.getTop(),
+                        lastChild.getRight(), lastChild.getBottom());
+            }
+        }
+
         final View[] children = new View[count];
         final float[] startTx = new float[count];
         final float[] startTy = new float[count];
@@ -522,8 +586,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         for (int i = 0; i < count; i++) {
             View child = mListView.getChildAt(i);
             children[i] = child;
-            if (child == null || child.getVisibility() == GONE
-                    || fromBounds == null || i >= fromBounds.length || fromBounds[i] == null) {
+            if (child == null || child.getVisibility() == GONE) {
                 continue;
             }
             float newW = child.getWidth();
@@ -531,9 +594,25 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             if (newW <= 0f || newH <= 0f) {
                 continue;
             }
-            Rect from = fromBounds[i];
-            float sx = from.width() / newW;
-            float sy = from.height() / newH;
+            Rect from = (fromBounds != null && i < fromBounds.length) ? fromBounds[i] : null;
+            boolean isNewCell = from == null;
+            if (isNewCell) {
+                // ColorOS getListPair (from.index < to.index): start at last old
+                // param position with scale 0, spring to the new slot.
+                from = lastFrom;
+            }
+            if (from == null) {
+                continue;
+            }
+            float sx;
+            float sy;
+            if (isNewCell) {
+                sx = 0f;
+                sy = 0f;
+            } else {
+                sx = from.width() / newW;
+                sy = from.height() / newH;
+            }
             // Pivot top-left so translation maps old top-left → new top-left while scaling.
             child.setPivotX(0f);
             child.setPivotY(0f);
@@ -551,7 +630,76 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             any = true;
         }
         mMorphChildren = children;
+
+        // ColorOS getListPair (from.index > to.index): removed cells spring out to the
+        // last remaining slot at scale 0 (nine → highlight third-row).
+        final ArrayList<ImageView> ghosts = mMorphGhosts;
+        clearMorphGhosts();
+        final float[] ghostStartTx;
+        final float[] ghostStartTy;
+        final float[] ghostEndTx;
+        final float[] ghostEndTy;
+        final float[] ghostStartSx;
+        final float[] ghostStartSy;
+        if (fromBounds != null && fromBitmaps != null && lastTo != null
+                && fromBounds.length > count) {
+            int listLeft = mListView.getLeft();
+            int listTop = mListView.getTop();
+            int ghostCount = 0;
+            for (int i = count; i < fromBounds.length; i++) {
+                if (fromBounds[i] != null && fromBitmaps[i] != null
+                        && !fromBitmaps[i].isRecycled()) {
+                    ghostCount++;
+                }
+            }
+            ghostStartTx = new float[ghostCount];
+            ghostStartTy = new float[ghostCount];
+            ghostEndTx = new float[ghostCount];
+            ghostEndTy = new float[ghostCount];
+            ghostStartSx = new float[ghostCount];
+            ghostStartSy = new float[ghostCount];
+            int g = 0;
+            for (int i = count; i < fromBounds.length; i++) {
+                if (fromBounds[i] == null || fromBitmaps[i] == null
+                        || fromBitmaps[i].isRecycled()) {
+                    continue;
+                }
+                Rect from = fromBounds[i];
+                ImageView ghost = new ImageView(getContext());
+                ghost.setImageBitmap(fromBitmaps[i]);
+                // Transfer ownership so we don't double-recycle.
+                fromBitmaps[i] = null;
+                ghost.setScaleType(ImageView.ScaleType.FIT_XY);
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                        from.width(), from.height());
+                addView(ghost, lp);
+                ghost.setPivotX(0f);
+                ghost.setPivotY(0f);
+                float startX = listLeft + from.left;
+                float startY = listTop + from.top;
+                float endX = listLeft + lastTo.left;
+                float endY = listTop + lastTo.top;
+                ghost.setTranslationX(startX);
+                ghost.setTranslationY(startY);
+                ghostStartTx[g] = startX;
+                ghostStartTy[g] = startY;
+                ghostEndTx[g] = endX;
+                ghostEndTy[g] = endY;
+                ghostStartSx[g] = 1f;
+                ghostStartSy[g] = 1f;
+                ghosts.add(ghost);
+                g++;
+                any = true;
+            }
+        } else {
+            ghostStartTx = ghostStartTy = ghostEndTx = ghostEndTy =
+                    ghostStartSx = ghostStartSy = new float[0];
+        }
+        // Recycle bitmaps not transferred to ghosts (kept cells / unused slots).
+        recycleBitmapArray(fromBitmaps);
+
         if (!any) {
+            recycleBitmapArray(fromBitmaps);
             finishPreviewModeMorph();
             return;
         }
@@ -581,6 +729,18 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
                 child.setScaleX(startSx[i] + (1f - startSx[i]) * t);
                 child.setScaleY(startSy[i] + (1f - startSy[i]) * t);
             }
+            for (int i = 0; i < ghosts.size(); i++) {
+                ImageView ghost = ghosts.get(i);
+                if (ghost == null) {
+                    continue;
+                }
+                ghost.setTranslationX(ghostStartTx[i]
+                        + (ghostEndTx[i] - ghostStartTx[i]) * t);
+                ghost.setTranslationY(ghostStartTy[i]
+                        + (ghostEndTy[i] - ghostStartTy[i]) * t);
+                ghost.setScaleX(ghostStartSx[i] * (1f - t));
+                ghost.setScaleY(ghostStartSy[i] * (1f - t));
+            }
         });
         spring.addEndListener((animation, canceled, value, velocity) -> {
             mPreviewMorphSpring = null;
@@ -588,6 +748,37 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         });
         mPreviewMorphSpring = spring;
         spring.animateToFinalPosition(1f);
+    }
+
+    private static void recycleBitmapArray(Bitmap[] bitmaps) {
+        if (bitmaps == null) {
+            return;
+        }
+        for (Bitmap bmp : bitmaps) {
+            if (bmp != null && !bmp.isRecycled()) {
+                bmp.recycle();
+            }
+        }
+    }
+
+    private void clearMorphGhosts() {
+        for (ImageView ghost : mMorphGhosts) {
+            if (ghost == null) {
+                continue;
+            }
+            Drawable d = ghost.getDrawable();
+            ghost.setImageDrawable(null);
+            if (d instanceof BitmapDrawable) {
+                Bitmap bmp = ((BitmapDrawable) d).getBitmap();
+                if (bmp != null && !bmp.isRecycled()) {
+                    bmp.recycle();
+                }
+            }
+            if (ghost.getParent() == this) {
+                removeView(ghost);
+            }
+        }
+        mMorphGhosts.clear();
     }
 
     private void cancelPreviewModeMorph() {
@@ -599,6 +790,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             mMorphPreDrawListener = null;
         }
         mPendingMorphFromBounds = null;
+        recyclePendingMorphBitmaps();
         if (mPreviewMorphSpring != null) {
             if (mPreviewMorphSpring.isRunning()) {
                 mPreviewMorphSpring.cancel();
@@ -606,12 +798,14 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             mPreviewMorphSpring = null;
         }
         clearMorphChildTransforms();
+        clearMorphGhosts();
         mPreviewMorphing = false;
     }
 
     private void finishPreviewModeMorph() {
         mPreviewMorphing = false;
         clearMorphChildTransforms();
+        clearMorphGhosts();
         applyIdlePageLayout();
         invalidate();
     }
@@ -815,6 +1009,10 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private void onFolderLongClick() {
+        Folder folder = getFolder();
+        if (folder != null && folder.isOpen()) {
+            return;
+        }
         ItemLongClickListener.onWorkspaceItemLongClick(this);
     }
 
@@ -964,6 +1162,17 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         final int action = ev.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN) {
             mPagingTookOver = false;
+        }
+        // Open folder: plate is drawing-hidden but children remain touchable. Do not let
+        // preview-cell long-press fire showForFolder under the dim.
+        Folder openFolder = getFolder();
+        if (openFolder != null && openFolder.isOpen()) {
+            cancelLongPress();
+            if (mPagingController != null) {
+                mPagingController.abort();
+            }
+            mPagingTookOver = false;
+            return true;
         }
         // Pre-drag / drag already owns this icon (popup long-press). Abort plate paging
         // so a stuck requestDisallowIntercept cannot block DragLayer from promoting
@@ -1412,6 +1621,79 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (getParent() instanceof View) {
             ((View) getParent()).invalidate();
         }
+    }
+
+    /**
+     * True when the closed preview's last cell is the ColorOS 2×2 overflow stack.
+     */
+    public boolean hasStackOverflowPreview() {
+        if (!isLargeFolder() || mAdapter == null || mListView == null) {
+            return false;
+        }
+        int withoutStacked = Math.max(0, mAdapter.getMaxSize() - 1);
+        return mAdapter.isCountOut(withoutStacked);
+    }
+
+    /** Full icons before the overflow stack cell (nine → 8, four → 3). */
+    public int getLargePreviewWithoutStacked() {
+        if (!isLargeFolder() || mAdapter == null) {
+            return 0;
+        }
+        return Math.max(0, mAdapter.getMaxSize() - 1);
+    }
+
+    /**
+     * DragLayer bounds of mini-icon {@code stackIndex} (0–3) inside the overflow cell.
+     * Matches {@link HxyLargeFolderIconItem} 2×2 layout used when {@link #hasStackOverflowPreview()}.
+     */
+    public boolean getStackedPreviewItemBoundsInDragLayer(int stackIndex, Rect out) {
+        if (!isLargeFolder() || mListView == null || mActivity == null || out == null) {
+            return false;
+        }
+        if (stackIndex < 0 || stackIndex >= HxyLargeFolderIconItem.getMaxOutCount()) {
+            return false;
+        }
+        int withoutStacked = getLargePreviewWithoutStacked();
+        View cell = mListView.getChildCount() > withoutStacked
+                ? mListView.getChildAt(withoutStacked) : null;
+        if (cell != null && cell.getWidth() > 0 && cell.getHeight() > 0) {
+            int cellSize = Math.min(cell.getWidth(), cell.getHeight());
+            Rect local = new Rect();
+            if (!HxyLargeFolderIconItem.computeStackedSubBounds(
+                    getContext(), cellSize, stackIndex, local)) {
+                return false;
+            }
+            // Center the square stack grid inside a non-square cell.
+            float ox = (cell.getWidth() - cellSize) / 2f;
+            float oy = (cell.getHeight() - cellSize) / 2f;
+            float[] tl = new float[]{local.left + ox, local.top + oy};
+            float[] br = new float[]{local.right + ox, local.bottom + oy};
+            mActivity.getDragLayer().getDescendantCoordRelativeToSelf(cell, tl);
+            mActivity.getDragLayer().getDescendantCoordRelativeToSelf(cell, br);
+            out.set(Math.round(tl[0]), Math.round(tl[1]),
+                    Math.round(br[0]), Math.round(br[1]));
+            if (out.width() >= 1 && out.height() >= 1) {
+                return true;
+            }
+        }
+        // Fallback from full-cell drag-layer bounds when list children aren't measured.
+        Rect cellBounds = new Rect();
+        if (!getPreviewItemBoundsInDragLayer(withoutStacked, cellBounds)) {
+            return false;
+        }
+        int cellSize = Math.min(cellBounds.width(), cellBounds.height());
+        Rect local = new Rect();
+        if (!HxyLargeFolderIconItem.computeStackedSubBounds(
+                getContext(), cellSize, stackIndex, local)) {
+            return false;
+        }
+        int ox = (cellBounds.width() - cellSize) / 2;
+        int oy = (cellBounds.height() - cellSize) / 2;
+        out.set(cellBounds.left + ox + local.left,
+                cellBounds.top + oy + local.top,
+                cellBounds.left + ox + local.right,
+                cellBounds.top + oy + local.bottom);
+        return true;
     }
 
     /**

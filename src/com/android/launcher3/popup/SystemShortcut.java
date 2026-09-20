@@ -4,9 +4,13 @@ import static com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCH
 import static com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_SYSTEM_SHORTCUT_WIDGETS_TAP;
 
 import android.app.ActivityOptions;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.UserManager;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.ImageView;
@@ -19,6 +23,8 @@ import com.android.launcher3.BaseDraggingActivity;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
+import com.android.launcher3.editselection.EditSelectionActions;
+import com.android.launcher3.editselection.EditSelectionEligibility;
 import com.android.launcher3.model.WidgetItem;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
@@ -252,6 +258,114 @@ public abstract class SystemShortcut<T extends Context & ActivityContext> extend
             mTarget.startActivitySafely(view, intent, mItemInfo);
             AbstractFloatingView.closeAllOpenViews(mTarget);
         }
+    }
+
+    /**
+     * Oppo long-press Remove: drawer mode only — drop icon from Home (app stays in All Apps).
+     */
+    public static final Factory<Launcher> REMOVE = (launcher, itemInfo, originalView) -> {
+        if (!EditSelectionEligibility.canShowPopupRemove(launcher, itemInfo)) {
+            return null;
+        }
+        return new Remove(launcher, itemInfo, originalView);
+    };
+
+    /**
+     * Oppo long-press "Remove widget" for workspace AppWidgets.
+     */
+    public static final Factory<Launcher> REMOVE_WIDGET = (launcher, itemInfo, originalView) -> {
+        if (!EditSelectionEligibility.canShowPopupRemoveWidget(itemInfo)) {
+            return null;
+        }
+        return new RemoveWidget(launcher, itemInfo, originalView);
+    };
+
+    public static class Remove extends SystemShortcut<Launcher> {
+        public Remove(Launcher target, ItemInfo itemInfo, View originalView) {
+            // Oppo IconDelete: circled delete glyph (ic_system_shortcut_delete).
+            super(R.drawable.launcher_system_shortcut_ic_delete, R.string.remove_drop_target_label,
+                    target, itemInfo, originalView);
+        }
+
+        @Override
+        public void onClick(View view) {
+            dismissTaskMenuView(mTarget);
+            if (mTarget.removeItem(mOriginalView, mItemInfo, true /* deleteFromDb */)) {
+                EditSelectionActions.stripEmptyWorkspaceScreens(mTarget);
+            }
+        }
+    }
+
+    public static class RemoveWidget extends SystemShortcut<Launcher> {
+        public RemoveWidget(Launcher target, ItemInfo itemInfo, View originalView) {
+            super(R.drawable.launcher_system_shortcut_ic_delete,
+                    R.string.remove_widget_panel_title, target, itemInfo, originalView);
+        }
+
+        @Override
+        public void onClick(View view) {
+            dismissTaskMenuView(mTarget);
+            if (mTarget.removeItem(mOriginalView, mItemInfo, true /* deleteFromDb */)) {
+                EditSelectionActions.stripEmptyWorkspaceScreens(mTarget);
+            }
+        }
+    }
+
+    /**
+     * Oppo long-press Uninstall: both modes when the package is uninstallable.
+     */
+    public static final Factory<Launcher> UNINSTALL = (launcher, itemInfo, originalView) -> {
+        if (!EditSelectionEligibility.canShowPopupUninstall(launcher, itemInfo)) {
+            return null;
+        }
+        if (isUninstallRestricted(launcher, itemInfo)) {
+            return null;
+        }
+        return new Uninstall(launcher, itemInfo, originalView);
+    };
+
+    public static class Uninstall extends SystemShortcut<Launcher> {
+        public Uninstall(Launcher target, ItemInfo itemInfo, View originalView) {
+            // Oppo AppUninstall: ic_system_shortcut_uninstall.
+            super(R.drawable.launcher_system_shortcut_ic_uninstall,
+                    R.string.uninstall_drop_target_label, target, itemInfo, originalView);
+        }
+
+        @Override
+        public void onClick(View view) {
+            dismissTaskMenuView(mTarget);
+            ComponentName cn = mItemInfo.getTargetComponent();
+            if (cn == null) {
+                Intent intent = mItemInfo.getIntent();
+                if (intent != null) {
+                    cn = intent.getComponent();
+                }
+            }
+            if (cn == null) {
+                return;
+            }
+            try {
+                Intent uninstall = Intent.parseUri(
+                                mTarget.getString(R.string.delete_package_intent), 0)
+                        .setData(Uri.fromParts("package", cn.getPackageName(), cn.getClassName()))
+                        .putExtra(Intent.EXTRA_USER, mItemInfo.user);
+                mTarget.startActivity(uninstall);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    private static boolean isUninstallRestricted(Context context, ItemInfo itemInfo) {
+        if (itemInfo.user == null) {
+            return true;
+        }
+        UserManager userManager = context.getSystemService(UserManager.class);
+        if (userManager == null) {
+            return false;
+        }
+        Bundle restrictions = userManager.getUserRestrictions(itemInfo.user);
+        return restrictions.getBoolean(UserManager.DISALLOW_APPS_CONTROL, false)
+                || restrictions.getBoolean(UserManager.DISALLOW_UNINSTALL_APPS, false);
     }
 
     public static <T extends Context & ActivityContext> void dismissTaskMenuView(T activity) {

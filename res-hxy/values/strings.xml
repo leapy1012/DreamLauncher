@@ -13,6 +13,7 @@
     <string name="coloros_drawer_show_app_names">Show app names</string>
     <string name="coloros_home_screen_in_use">In use</string>
     <string name="coloros_switch_home_screen_mode_message">Switching Home screen modes may affect the arrangement of icons on the Home screen. Switch?</string>
+    <string name="layout_apply_change_positive">Switch</string>
     <string name="item_unremoved">Item can not be removed when is Home Screen</string>
     <!-- hxy-feature: add launcher style function  202312 -->
      <!-- hxy-feature: desktop theme 202312 -->
@@ -26,6 +27,8 @@
     <string name="google_folder_title">Google</string>
     <string name="shake_device_tips">SHAKE LEAPY to fill empty cells with icons</string>
     <string name="effect_button_text">Effect</string>
+    <string name="launcher_settings_effects">Effects</string>
+    <string name="transition_animations">Transition animations</string>
     <string name="transition_effect_accordion">Accordion</string>
     <string name="transition_effect_carousel_left">Carousel(left)</string>
     <string name="transition_effect_carousel_right">Carousel(right)</string>
@@ -39,6 +42,7 @@
     <string name="transition_effect_oppo_flip">Flip</string>
     <string name="transition_effect_oppo_roll">Roll</string>
     <string name="transition_effect_oppo_tilt">Tilt</string>
+    <string name="transition_effects_toolbar_title">Transitions</string>
     <string name="transition_effect_overview">Overview</string>
     <string name="transition_effect_stack">Card pile</string>
     <string name="transition_effect_wheel">Wheel</string>
@@ -154,4 +158,6 @@
     <string name="oplus_privacy_not_show_preview">Hide content</string>
     <string name="oplus_privacy_show_preview">Show content</string>
     <string name="oplus_privacy_app_preview_closed">App content hidden</string>
+    <!-- Oppo remove_widget_panel_title -->
+    <string name="remove_widget_panel_title">Remove widget</string>
 </resources>

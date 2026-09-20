@@ -21,7 +21,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 
-import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.util.TouchUtil;
 
 /**
@@ -141,9 +140,6 @@ public class CheckLongPressHelper {
     }
 
     private void triggerLongPress() {
-        if (LayoutLockHelper.checkLockedAndShowMessage(mView.getContext())) {
-            return;
-        }
         if ((mView.getParent() != null)
                 && mView.hasWindowFocus()
                 && (!mView.isPressed() || mListener != null)

@@ -387,8 +387,13 @@ public class InvariantDeviceProfile {
         horizontalMargin = displayOption.horizontalMargin;
 
         numShownHotseatIcons = closestProfile.numHotseatIcons;
+        // Oppo phone docker: max 5 dock icons, independent of workspace columns (4×6 still 5).
+        if (deviceType == TYPE_PHONE && numShownHotseatIcons < 5) {
+            numShownHotseatIcons = 5;
+        }
         numDatabaseHotseatIcons = deviceType == TYPE_MULTI_DISPLAY
-                ? closestProfile.numDatabaseHotseatIcons : closestProfile.numHotseatIcons;
+                ? closestProfile.numDatabaseHotseatIcons
+                : Math.max(closestProfile.numHotseatIcons, numShownHotseatIcons);
         showHotseatText = LauncherPrefs.getPrefs(context).getBoolean(LauncherPrefs.WORKSPACE_DOCKED_APP, false);
         showDoubleLines = LauncherPrefs.getPrefs(context).getBoolean(LauncherPrefs.WORKSPACE_APP_NAME, true);
         hotseatColumnSpan = closestProfile.hotseatColumnSpan;

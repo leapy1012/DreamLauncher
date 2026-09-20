@@ -27,8 +27,26 @@ import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import com.android.launcher3.celllayout.CellLayoutLayoutParams;
+import com.android.launcher3.model.data.ItemInfo;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_HOTSEAT;
+
 /**
  * View class that represents the bottom row of the home screen.
+ *
+ * Phone dock follows Oppo ColorOS policy:
+ * <ul>
+ *   <li>Max capacity is {@link DeviceProfile#numShownHotseatIcons} (phone: 5),
+ *       independent of workspace columns.</li>
+ *   <li>Icons are packed contiguously and centered.</li>
+ *   <li>Cell width uses workspace column pitch when {@code n <= numColumns},
+ *       otherwise divides by {@code n} (see {@link #getAdaptiveCellDivisor}).</li>
+ * </ul>
  */
 public class Hotseat extends CellLayout implements Insettable {
 
@@ -41,6 +59,9 @@ public class Hotseat extends CellLayout implements Insettable {
     private boolean mSendTouchToWorkspace;
 
     private final View mQsb;
+
+    /** Extra side inset applied so a contiguous icon row sits centered. */
+    private int mAdaptiveSidePad;
 
     public Hotseat(Context context) {
         this(context, null);
@@ -74,6 +95,7 @@ public class Hotseat extends CellLayout implements Insettable {
     public void resetLayout(boolean hasVerticalHotseat) {
         removeAllViewsInLayout();
         mHasVerticalHotseat = hasVerticalHotseat;
+        mAdaptiveSidePad = 0;
         DeviceProfile dp = mActivity.getDeviceProfile();
         resetCellSize(dp);
         if (hasVerticalHotseat) {
@@ -81,6 +103,171 @@ public class Hotseat extends CellLayout implements Insettable {
         } else {
             setGridSize(dp.numShownHotseatIcons, 1);
         }
+    }
+
+    /**
+     * Oppo-style: reflow dock icons into a contiguous centered row and apply adaptive
+     * cell width. Safe to call after bind, drop, or remove.
+     */
+    public void reflowIcons() {
+        if (mHasVerticalHotseat) {
+            return;
+        }
+        DeviceProfile dp = mActivity.getDeviceProfile();
+        if (dp.isVerticalBarLayout() || dp.isTablet) {
+            return;
+        }
+
+        ShortcutAndWidgetContainer container = getShortcutsAndWidgets();
+        List<View> icons = collectDockIcons(container);
+        int n = icons.size();
+        int max = Math.max(1, dp.numShownHotseatIcons);
+
+        // Idle: grid matches icon count so adaptive width + side pad can center the row.
+        // Empty dock keeps full max for drop targets. Drag-enter expands to max.
+        int gridX = n > 0 ? Math.min(n, max) : max;
+        if (getCountX() != gridX || getCountY() != 1) {
+            setGridSize(gridX, 1);
+        }
+
+        // Pack left-to-right by current visual order (cellX / rank).
+        icons.sort(Comparator.comparingInt(v -> {
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
+            return lp != null ? lp.getCellX() : 0;
+        }));
+
+        mOccupied.clear();
+        Launcher launcher = mActivity instanceof Launcher ? (Launcher) mActivity : null;
+        for (int i = 0; i < n; i++) {
+            View v = icons.get(i);
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
+            if (lp == null) {
+                continue;
+            }
+            lp.setCellX(i);
+            lp.setCellY(0);
+            lp.cellHSpan = 1;
+            lp.cellVSpan = 1;
+            Object tag = v.getTag();
+            if (tag instanceof ItemInfo info) {
+                boolean changed = info.cellX != i || info.screenId != i;
+                info.cellX = i;
+                info.cellY = 0;
+                info.screenId = i;
+                if (changed && launcher != null) {
+                    launcher.getModelWriter().moveItemInDatabase(
+                            info,
+                            CONTAINER_HOTSEAT,
+                            i,
+                            i,
+                            0);
+                }
+            }
+            markCellsAsOccupiedForView(v);
+        }
+
+        applyAdaptiveCellMetrics(n);
+        requestLayout();
+    }
+
+    /**
+     * While dragging over the dock, expand to max slots with equal cell width so
+     * empty ranks are valid drop targets (Oppo expands during pre-drop).
+     */
+    @Override
+    public void onDragEnter() {
+        super.onDragEnter();
+        if (mHasVerticalHotseat) {
+            return;
+        }
+        DeviceProfile dp = mActivity.getDeviceProfile();
+        if (dp.isTablet || dp.isVerticalBarLayout()) {
+            return;
+        }
+        int max = Math.max(1, dp.numShownHotseatIcons);
+        if (getCountX() != max) {
+            setGridSize(max, 1);
+        }
+        mAdaptiveSidePad = 0;
+        Rect basePad = dp.getHotseatLayoutPadding(getContext());
+        setPadding(basePad.left, basePad.top, basePad.right, basePad.bottom);
+        int avail = getMeasuredWidth() - basePad.left - basePad.right;
+        if (avail <= 0) {
+            avail = dp.availableWidthPx - basePad.left - basePad.right;
+        }
+        if (avail > 0) {
+            int cellH = getCellHeight() > 0 ? getCellHeight() : dp.hotseatCellHeightPx;
+            setCellDimensions(avail / max, cellH);
+        }
+        mOccupied.clear();
+        for (View v : collectDockIcons(getShortcutsAndWidgets())) {
+            markCellsAsOccupiedForView(v);
+        }
+        requestLayout();
+    }
+
+    @Override
+    public void onDragExit() {
+        super.onDragExit();
+        // Restore centered adaptive layout if the drag did not land here.
+        post(this::reflowIcons);
+    }
+
+    /**
+     * Oppo {@code HotseatParam.getAdaptiveHotseatCellWidth}: divisor is workspace
+     * columns when icon count does not exceed columns; otherwise the icon count.
+     */
+    public static int getAdaptiveCellDivisor(int iconCount, int numColumns, int maxIcons) {
+        int n = Math.max(0, Math.min(iconCount, maxIcons));
+        if (n <= 0) {
+            return Math.max(1, numColumns);
+        }
+        if (n <= numColumns) {
+            return Math.max(1, numColumns);
+        }
+        return n;
+    }
+
+    private void applyAdaptiveCellMetrics(int iconCount) {
+        DeviceProfile dp = mActivity.getDeviceProfile();
+        Rect basePad = dp.getHotseatLayoutPadding(getContext());
+        int avail = getMeasuredWidth() - basePad.left - basePad.right;
+        if (avail <= 0) {
+            // Not measured yet — use profile width estimate.
+            avail = dp.availableWidthPx - basePad.left - basePad.right;
+        }
+        if (avail <= 0) {
+            return;
+        }
+
+        int divisor = getAdaptiveCellDivisor(iconCount, dp.inv.numColumns, dp.numShownHotseatIcons);
+        int cellW = avail / divisor;
+        int cellH = getCellHeight() > 0 ? getCellHeight() : dp.hotseatCellHeightPx;
+        setCellDimensions(cellW, cellH);
+
+        int used = iconCount > 0 ? iconCount * cellW : 0;
+        mAdaptiveSidePad = iconCount > 0 ? Math.max(0, (avail - used) / 2) : 0;
+        setPadding(
+                basePad.left + mAdaptiveSidePad,
+                basePad.top,
+                basePad.right + mAdaptiveSidePad,
+                basePad.bottom);
+    }
+
+    private static List<View> collectDockIcons(ShortcutAndWidgetContainer container) {
+        List<View> icons = new ArrayList<>();
+        if (container == null) {
+            return icons;
+        }
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            if (child == null || child.getVisibility() == View.GONE) {
+                continue;
+            }
+            // QSB is a Hotseat direct child, not under ShortcutAndWidgetContainer.
+            icons.add(child);
+        }
+        return icons;
     }
 
     @Override
@@ -107,7 +294,8 @@ public class Hotseat extends CellLayout implements Insettable {
         }
 
         Rect padding = grid.getHotseatLayoutPadding(getContext());
-        setPadding(padding.left, padding.top, padding.right, padding.bottom);
+        setPadding(padding.left + mAdaptiveSidePad, padding.top,
+                padding.right + mAdaptiveSidePad, padding.bottom);
         setLayoutParams(lp);
         InsettableFrameLayout.dispatchInsets(this, insets);
     }
@@ -147,6 +335,31 @@ public class Hotseat extends CellLayout implements Insettable {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        // Recompute adaptive cell width from current icon count before children measure.
+        if (!mHasVerticalHotseat) {
+            DeviceProfile dp = mActivity.getDeviceProfile();
+            if (!dp.isVerticalBarLayout() && !dp.isTablet) {
+                int n = collectDockIcons(getShortcutsAndWidgets()).size();
+                // Temporarily clear side pad so avail width is correct, then re-apply.
+                Rect basePad = dp.getHotseatLayoutPadding(getContext());
+                setPadding(basePad.left, basePad.top, basePad.right, basePad.bottom);
+                mAdaptiveSidePad = 0;
+                int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+                int avail = widthSize - basePad.left - basePad.right;
+                if (avail > 0) {
+                    int divisor = getAdaptiveCellDivisor(n, dp.inv.numColumns,
+                            dp.numShownHotseatIcons);
+                    int cellW = avail / divisor;
+                    int cellH = getCellHeight() > 0 ? getCellHeight() : dp.hotseatCellHeightPx;
+                    setCellDimensions(cellW, cellH);
+                    int used = n > 0 ? n * cellW : 0;
+                    mAdaptiveSidePad = n > 0 ? Math.max(0, (avail - used) / 2) : 0;
+                    setPadding(basePad.left + mAdaptiveSidePad, basePad.top,
+                            basePad.right + mAdaptiveSidePad, basePad.bottom);
+                }
+            }
+        }
+
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
         DeviceProfile dp = mActivity.getDeviceProfile();

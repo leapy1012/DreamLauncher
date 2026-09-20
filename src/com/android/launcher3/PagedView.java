@@ -16,7 +16,6 @@
 
 package com.android.launcher3;
 
-import static com.android.launcher3.anim.Interpolators.SCROLL;
 import static com.android.launcher3.compat.AccessibilityManagerCompat.isAccessibilityEnabled;
 import static com.android.launcher3.compat.AccessibilityManagerCompat.isObservedEventType;
 import static com.android.launcher3.touch.OverScroll.OVERSCROLL_DAMP_FACTOR;
@@ -35,6 +34,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -46,7 +46,6 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.widget.OverScroller;
 import android.widget.ScrollView;
 
 import androidx.annotation.Nullable;
@@ -60,6 +59,7 @@ import com.android.launcher3.util.EdgeEffectCompat;
 import com.android.launcher3.util.IntSet;
 import com.android.launcher3.util.Thunk;
 import com.android.launcher3.views.ActivityContext;
+import com.coui.appcompat.scroll.SpringOverScroller;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;
@@ -82,6 +82,8 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     private static final float SIGNIFICANT_MOVE_THRESHOLD = 0.4f;
 
     private static final float MAX_SCROLL_PROGRESS = 1.0f;
+    /** Matches ColorOS OplusPagedViewImpl.MAX_SPRING_SCROLL_TO_PAGE_VELOCITY */
+    private static final float MAX_SPRING_SCROLL_TO_PAGE_VELOCITY = 8000f;
 
     private boolean mFreeScroll = false;
 
@@ -106,7 +108,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     protected int mNextPage = INVALID_PAGE;
     protected int mMaxScroll;
     protected int mMinScroll;
-    protected OverScroller mScroller;
+    protected SpringOverScroller mScroller;
     private VelocityTracker mVelocityTracker;
     protected int mPageSpacing = 0;
 
@@ -131,6 +133,8 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     protected int mPageSlop;
     private int mMaximumVelocity;
     protected boolean mAllowOverScroll = true;
+    /** When true, {@link #scrollTo} skips min/max clamp (Oppo-style rubber-band overscroll). */
+    protected boolean mSuppressScrollClamp;
 
     protected static final int INVALID_POINTER = -1;
 
@@ -149,7 +153,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     // Similar to the platform implementation of isLayoutValid();
     protected boolean mIsLayoutValid;
 
-    private int[] mTmpIntPair = new int[2];
+    protected final int[] mTmpIntPair = new int[2];
 
     protected EdgeEffectCompat mEdgeGlowLeft;
     protected EdgeEffectCompat mEdgeGlowRight;
@@ -173,7 +177,16 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
         setHapticFeedbackEnabled(false);
         mIsRtl = Utilities.isRtl(getResources());
 
-        mScroller = new OverScroller(context, SCROLL);
+        SpringOverScroller springScroller = new SpringOverScroller(context);
+        springScroller.setIsScrollView(false);
+        springScroller.setEnableFlingSpeedIncrease(false);
+        TypedValue stiffness = new TypedValue();
+        TypedValue damping = new TypedValue();
+        Resources res = getResources();
+        res.getValue(R.dimen.horizontal_spring_stiffness, stiffness, true);
+        res.getValue(R.dimen.horizontal_spring_damping_ratio, damping, true);
+        springScroller.setPageSpringParams(stiffness.getFloat(), damping.getFloat());
+        mScroller = springScroller;
         mCurrentPage = 0;
         mCurrentScrollOverPage = 0;
 
@@ -242,7 +255,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
             newPosition = getScrollForPage(mCurrentPage) + mCurrentPageScrollDiff;
         }
         mOrientationHandler.setPrimary(this, VIEW_SCROLL_TO, newPosition);
-        mScroller.startScroll(mScroller.getCurrX(), 0, newPosition - mScroller.getCurrX(), 0);
+        mScroller.startScroll(mScroller.getCOUICurrX(), 0, newPosition - mScroller.getCOUICurrX(), 0);
         forceFinishScroller();
     }
 
@@ -275,7 +288,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
      * mNextPage = INVALID_PAGE and calls pageEndTransition().
      */
     public void forceFinishScroller() {
-        mScroller.forceFinished(true);
+        mScroller.abortAnimation();
         // We need to clean up the next page here to avoid computeScrollHelper from
         // updating current page on the pass.
         mNextPage = INVALID_PAGE;
@@ -425,7 +438,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
      * Sets the current page.
      */
     public void setCurrentPage(int currentPage, int overridePrevPage) {
-        if (!mScroller.isFinished()) {
+        if (!mScroller.isCOUIFinished()) {
             abortScrollerAnimation(true);
         }
         // don't introduce any checks like mCurrentPage == currentPage here-- if we change the
@@ -462,7 +475,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     }
 
     protected void pageEndTransition() {
-        if (mIsPageInTransition && !mIsBeingDragged && mScroller.isFinished()
+        if (mIsPageInTransition && !mIsBeingDragged && mScroller.isCOUIFinished()
                 && (!isShown() || (mEdgeGlowLeft.isFinished() && mEdgeGlowRight.isFinished()))) {
             mIsPageInTransition = false;
             onPageEndTransition();
@@ -515,11 +528,21 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
 
     @Override
     public void scrollTo(int x, int y) {
-        x = Utilities.boundToRange(x,
-                mOrientationHandler.getPrimaryValue(mMinScroll, 0), mMaxScroll);
-        y = Utilities.boundToRange(y,
-                mOrientationHandler.getPrimaryValue(0, mMinScroll), mMaxScroll);
+        if (!mSuppressScrollClamp) {
+            x = Utilities.boundToRange(x,
+                    mOrientationHandler.getPrimaryValue(mMinScroll, 0), mMaxScroll);
+            y = Utilities.boundToRange(y,
+                    mOrientationHandler.getPrimaryValue(0, mMinScroll), mMaxScroll);
+        }
         super.scrollTo(x, y);
+    }
+
+    /**
+     * When false, edge glow is not pulled/drawn — used when Workspace applies a scroll-effect
+     * rubber-band overscroll instead (ColorOS behavior).
+     */
+    protected boolean shouldPullEdgeGlow() {
+        return true;
     }
 
     private void sendScrollAccessibilityEvent() {
@@ -547,12 +570,12 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
         if (mScroller.computeScrollOffset()) {
             // Don't bother scrolling if the page does not need to be moved
             int oldPos = mOrientationHandler.getPrimaryScroll(this);
-            int newPos = mScroller.getCurrX();
+            int newPos = mScroller.getCOUICurrX();
             if (oldPos != newPos) {
-                mOrientationHandler.setPrimary(this, VIEW_SCROLL_TO, mScroller.getCurrX());
+                mOrientationHandler.setPrimary(this, VIEW_SCROLL_TO, mScroller.getCOUICurrX());
             }
 
-            if (mAllowOverScroll) {
+            if (mAllowOverScroll && shouldPullEdgeGlow()) {
                 if (newPos < mMinScroll && oldPos >= mMinScroll) {
                     mEdgeGlowLeft.onAbsorb((int) mScroller.getCurrVelocity());
                     abortScrollerAnimation(false);
@@ -565,10 +588,12 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
             }
 
             // If the scroller has scrolled to the final position and there is no edge effect, then
-            // finish the scroller to skip waiting for additional settling
-            int finalPos = mOrientationHandler.getPrimaryValue(mScroller.getFinalX(),
-                    mScroller.getFinalY());
-            if (newPos == finalPos && mEdgeGlowLeft.isFinished() && mEdgeGlowRight.isFinished()) {
+            // finish the scroller to skip waiting for additional settling. Skip while page-spring
+            // is active so ColorOS-style settle / overshoot is not cut short.
+            int finalPos = mOrientationHandler.getPrimaryValue(mScroller.getCOUIFinalX(),
+                    mScroller.getCOUIFinalY());
+            if (newPos == finalPos && mEdgeGlowLeft.isFinished() && mEdgeGlowRight.isFinished()
+                    && !mScroller.isPageSpringing()) {
                 abortScrollerAnimation(false);
             }
 
@@ -766,11 +791,11 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
             mFirstLayout = false;
         }
 
-        if (mScroller.isFinished() && pageScrollChanged) {
+        if (mScroller.isCOUIFinished() && pageScrollChanged) {
             // TODO(b/246283207): Remove logging once root cause of flake detected.
             if (Utilities.isRunningInTestHarness() && !(this instanceof Workspace)) {
                 Log.d("b/246283207", this.getClass().getSimpleName() + "#onLayout() -> "
-                        + "if(mScroller.isFinished() && pageScrollChanged) -> getNextPage(): "
+                        + "if(mScroller.isCOUIFinished() && pageScrollChanged) -> getNextPage(): "
                         + getNextPage() + ", getScrollForPage(getNextPage()): "
                         + getScrollForPage(getNextPage()));
             }
@@ -909,7 +934,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     @Override
     public boolean requestChildRectangleOnScreen(View child, Rect rectangle, boolean immediate) {
         int page = indexOfChild(child);
-        if (!isVisible(page) || !mScroller.isFinished()) {
+        if (!isVisible(page) || !mScroller.isCOUIFinished()) {
             if (immediate) {
                 setCurrentPage(page);
             } else {
@@ -1103,12 +1128,12 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
      */
     protected void updateIsBeingDraggedOnTouchDown(MotionEvent ev) {
         // mScroller.isFinished should be false when being flinged.
-        final int xDist = Math.abs(mScroller.getFinalX() - mScroller.getCurrX());
-        final boolean finishedScrolling = (mScroller.isFinished() || xDist < mPageSlop / 3);
+        final int xDist = Math.abs(mScroller.getCOUIFinalX() - mScroller.getCOUICurrX());
+        final boolean finishedScrolling = (mScroller.isCOUIFinished() || xDist < mPageSlop / 3);
 
         if (finishedScrolling) {
             mIsBeingDragged = false;
-            if (!mScroller.isFinished() && !mFreeScroll) {
+            if (!mScroller.isCOUIFinished() && !mFreeScroll) {
                 setCurrentPage(getNextPage());
                 pageEndTransition();
             }
@@ -1256,7 +1281,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
              * If being flinged and user touches, stop the fling. isFinished
              * will be false if being flinged.
              */
-            if (!mScroller.isFinished()) {
+            if (!mScroller.isCOUIFinished()) {
                 abortScrollerAnimation(false);
             }
 
@@ -1300,7 +1325,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
                                 / mOrientationHandler.getSecondaryValue(width, height);
                 mTotalMotion += Math.abs(delta);
 
-                if (mAllowOverScroll) {
+                if (mAllowOverScroll && shouldPullEdgeGlow()) {
                     int consumed = 0;
                     if (delta < 0 && mEdgeGlowRight.getDistance() != 0f) {
                         consumed = Math.round(size *
@@ -1321,7 +1346,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
                 if (delta != 0) {
                     mOrientationHandler.setPrimary(this, VIEW_SCROLL_BY, delta);
 
-                    if (mAllowOverScroll) {
+                    if (mAllowOverScroll && shouldPullEdgeGlow()) {
                         final float pulledToX = oldScroll + delta;
 
                         if (pulledToX < mMinScroll) {
@@ -1416,7 +1441,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
                         runOnPageScrollsInitialized(this::snapToDestination);
                     }
                 } else {
-                    if (!mScroller.isFinished()) {
+                    if (!mScroller.isCOUIFinished()) {
                         abortScrollerAnimation(true);
                     }
 
@@ -1434,7 +1459,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
                         mScroller.fling(initialScroll, 0, velocity1, 0, minScroll, maxScroll, 0, 0,
                                 Math.round(getWidth() * 0.5f * OVERSCROLL_DAMP_FACTOR), 0);
 
-                        int finalPos = mScroller.getFinalX();
+                        int finalPos = mScroller.getCOUIFinalX();
                         mNextPage = getDestinationPage(finalPos);
                         runOnPageScrollsInitialized(this::onNotSnappingToPageInFreeScroll);
                     }
@@ -1659,7 +1684,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
         if (Math.abs(velocity) < mMinFlingVelocity) {
             // If the velocity is low enough, then treat this more as an automatic page advance
             // as opposed to an apparent physical response to flinging
-            return snapToPage(whichPage, mPageSnapAnimationDuration);
+            return snapToPage(whichPage, delta, mPageSnapAnimationDuration, false, 0);
         }
 
         // Here we compute a "distance" that will be used in the computation of the overall
@@ -1670,15 +1695,15 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
         float distance = halfScreenSize + halfScreenSize *
                 distanceInfluenceForSnapDuration(distanceRatio);
 
-        velocity = Math.abs(velocity);
-        velocity = Math.max(mMinSnapVelocity, velocity);
+        int absVelocity = Math.max(mMinSnapVelocity, Math.abs(velocity));
 
         // we want the page's snap velocity to approximately match the velocity at which the
         // user flings, so we scale the duration by a value near to the derivative of the scroll
         // interpolator at zero, ie. 5. We use 4 to make it a little slower.
-        duration = 4 * Math.round(1000 * Math.abs(distance / velocity));
+        duration = 4 * Math.round(1000 * Math.abs(distance / absVelocity));
 
-        return snapToPage(whichPage, delta, duration);
+        // Pass signed finger velocity; startScrollSpring uses -velocity (Oppo).
+        return snapToPage(whichPage, delta, duration, false, velocity);
     }
 
     public boolean snapToPage(int whichPage) {
@@ -1698,14 +1723,19 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
 
         int newLoc = getScrollForPage(whichPage);
         final int delta = newLoc - mOrientationHandler.getPrimaryScroll(this);
-        return snapToPage(whichPage, delta, duration, immediate);
+        return snapToPage(whichPage, delta, duration, immediate, 0);
     }
 
     protected boolean snapToPage(int whichPage, int delta, int duration) {
-        return snapToPage(whichPage, delta, duration, false);
+        return snapToPage(whichPage, delta, duration, false, 0);
     }
 
     protected boolean snapToPage(int whichPage, int delta, int duration, boolean immediate) {
+        return snapToPage(whichPage, delta, duration, immediate, 0);
+    }
+
+    protected boolean snapToPage(int whichPage, int delta, int duration, boolean immediate,
+            int primaryVelocity) {
         if (mFirstLayout) {
             setCurrentPage(whichPage);
             return false;
@@ -1731,11 +1761,22 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
             pageBeginTransition();
         }
 
-        if (!mScroller.isFinished()) {
+        if (!mScroller.isCOUIFinished()) {
             abortScrollerAnimation(false);
         }
 
-        mScroller.startScroll(mOrientationHandler.getPrimaryScroll(this), 0, delta, 0, duration);
+        if (immediate || duration == 0) {
+            mScroller.startScroll(mOrientationHandler.getPrimaryScroll(this), 0, delta, 0, 0);
+        } else {
+            float springVelocity = primaryVelocity;
+            if (Math.abs(springVelocity) >= MAX_SPRING_SCROLL_TO_PAGE_VELOCITY) {
+                springVelocity = Math.copySign(MAX_SPRING_SCROLL_TO_PAGE_VELOCITY, springVelocity);
+            }
+            // Oppo passes -fingerVelocity into startScrollSpring.
+            mScroller.startScrollSpring(
+                    mOrientationHandler.getPrimaryScroll(this), delta, duration, -springVelocity,
+                    Integer.MAX_VALUE);
+        }
         updatePageIndicator();
 
         // Trigger a compute() to finish switching pages if necessary
@@ -1766,7 +1807,7 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
 
     @Override
     protected void onScrollChanged(int l, int t, int oldl, int oldt) {
-        if (mScroller.isFinished()) {
+        if (mScroller.isCOUIFinished()) {
             // This was not caused by the scroller, skip it.
             return;
         }
@@ -1930,7 +1971,8 @@ public abstract class PagedView<T extends View & PageIndicator> extends ViewGrou
     }
 
     protected void drawEdgeEffect(Canvas canvas) {
-        if (mAllowOverScroll && (!mEdgeGlowRight.isFinished() || !mEdgeGlowLeft.isFinished())) {
+        if (mAllowOverScroll && shouldPullEdgeGlow()
+                && (!mEdgeGlowRight.isFinished() || !mEdgeGlowLeft.isFinished())) {
             final int width = getWidth();
             final int height = getHeight();
             if (!mEdgeGlowLeft.isFinished()) {

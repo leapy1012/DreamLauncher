@@ -1,30 +1,32 @@
 package com.android.launcher3.dot;
 
 import android.content.Context;
-import android.graphics.Bitmap;
+import android.content.res.Resources;
 import android.graphics.Canvas;
-import android.graphics.Matrix;
+import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
 import android.util.Log;
-import android.graphics.Color;
+
+import com.android.launcher3.R;
 import com.android.launcher3.icons.DotRenderer;
 
+/**
+ * Draws ColorOS-style numeric badges on workspace icons and folders.
+ * Anchors to the icon's top-right (or top-left) corner with a fixed diameter —
+ * matching Oppo {@code OplusDotRenderer#drawNumber} / folder plate badges —
+ * instead of AOSP path-percentage dots that sit inset on the glyph.
+ */
 public class DotDrawUtils {
 
     public static final int MAX_COUNT = 99;
-    
+
     public static final String TAG = "Unread DotRendererExt";
 
-    public static final String hintText = "  ";
-
-    public static final Paint mPaintX = new Paint(Paint.CURSOR_AT_OR_BEFORE);
-
-    public static final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static final Paint sBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static final Paint sTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public static class DotNumParams {
 
@@ -38,83 +40,122 @@ public class DotDrawUtils {
 
         public DotNumParams(DotRenderer dotRenderer, int i, NumberDotRenderer.DrawParams drawParams) {
             this.mScale = i;
-            this.mRect = drawParams.leftAlign ? dotRenderer.getLeftDotPosition() : dotRenderer.getRightDotPosition();
+            this.mRect = drawParams.leftAlign
+                    ? dotRenderer.getLeftDotPosition()
+                    : dotRenderer.getRightDotPosition();
             this.mDrawParams = drawParams;
             this.mUnreadNum = drawParams.unreadNum;
         }
     }
 
     public static String getUnreadNumText(int count) {
-        return (count <= 0 || count > 99) ? count > 99 ? "99+" : "" : String.valueOf(count);
-    }
-
-    public static Rect adjustRect(Rect rect) {
-        Rect rect2 = new Rect();
-        rect2.left = 0;
-        rect2.top = 0;
-        rect2.right = rect.right + 20;
-        rect2.bottom = rect.bottom + 20;
-        return rect2;
-    }
-
-    public static Rect getRect(String str) {
-        Paint paint = mPaint;
-        Paint.FontMetrics fontMetrics = paint.getFontMetrics();
-        Rect rect = new Rect();
-        rect.left = 0;
-        rect.top = 0;
-        rect.right = Math.round(paint.measureText(str));
-        rect.bottom = Math.round(fontMetrics.descent - fontMetrics.ascent);
-        if (rect.width() <= rect.height()) {
-            rect.right = rect.bottom;
-        } else {
-            rect.right += Math.round(paint.measureText(hintText));
+        if (count <= 0) {
+            return "";
         }
-        return rect;
+        return count > MAX_COUNT ? "99+" : String.valueOf(count);
     }
 
-    public static Point getPoint(Rect rect) {
-        Point point = new Point();
-        Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
-        int height = (rect.height() - Math.round(fontMetrics.descent - fontMetrics.ascent)) >> 1;
-        point.x = rect.centerX();
-        point.y = rect.top + height + Math.abs(Math.round(fontMetrics.ascent));
-        return point;
+    /**
+     * @param isLargeFolder unused; kept for call-site compatibility.
+     */
+    public static void draw(Canvas canvas, DotNumParams dotNumParams, boolean isLargeFolder) {
+        draw(canvas, null, dotNumParams);
     }
 
-    public static void draw(Canvas canvas, DotNumParams dotNumParams, boolean  isLargeFolder) {
-        if (dotNumParams == null || dotNumParams.mUnreadNum <= 0) {
+    public static void draw(Canvas canvas, Context context, DotNumParams dotNumParams) {
+        if (dotNumParams == null || dotNumParams.mUnreadNum <= 0 || dotNumParams.mDrawParams == null) {
             Log.e(TAG, "Invalid null argument(s) passed in call to draw.");
             return;
         }
-        initPaint(dotNumParams.mScale);
+        if (context == null) {
+            return;
+        }
+
+        Resources res = context.getResources();
+        int bgDiameter = res.getDimensionPixelSize(R.dimen.badge_num_background_diameter);
+        int fontSize = res.getDimensionPixelSize(R.dimen.badge_num_font_size);
+        int corner = res.getDimensionPixelSize(R.dimen.badge_num_background_corner);
+        int offsetDesign = res.getDimensionPixelSize(R.dimen.badge_num_background_offset_design);
+
         String text = getUnreadNumText(dotNumParams.mUnreadNum);
-        Rect adjustRect = adjustRect(getRect(text));
-        Point point = getPoint(adjustRect);
+        sTextPaint.setTextSize(fontSize);
+        sTextPaint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        sTextPaint.setTextAlign(Paint.Align.CENTER);
+        sTextPaint.setColor(Color.WHITE);
+        sTextPaint.setAntiAlias(true);
+
+        float textWidth = sTextPaint.measureText(text);
+        int padding = Math.max(0, (bgDiameter - Math.round(sTextPaint.measureText("0"))) / 2);
+        int bgWidth = bgDiameter;
+        if (textWidth > bgDiameter - padding * 2f) {
+            bgWidth = Math.round(textWidth + padding * 2f);
+        }
+        int bgHeight = bgDiameter;
+
+        Rect iconBounds = dotNumParams.mDrawParams.iconBounds;
+        boolean leftAlign = dotNumParams.mDrawParams.leftAlign;
+        Rect clip = canvas.getClipBounds();
+
+        int[] centerOffset = calculateBadgeCenterOffset(
+                iconBounds, clip, leftAlign, dotNumParams.mUnreadNum,
+                bgWidth, bgDiameter, offsetDesign);
+
+        float centerX = (leftAlign ? iconBounds.left : iconBounds.right) + centerOffset[0];
+        float centerY = iconBounds.top + centerOffset[1];
+
         canvas.save();
-        Rect rect = dotNumParams.mDrawParams.iconBounds;
-        float width = ((float) rect.left) + (((float) rect.width()) * dotNumParams.mRect[0]);
-        float height = ((float) rect.top) + (((float) rect.height()) * dotNumParams.mRect[1]);
-        Rect clipBounds = canvas.getClipBounds();
-        canvas.translate(((width + ((float) (dotNumParams.mDrawParams.leftAlign ? Math.max(0, clipBounds.left - Math.round(width - ((float) adjustRect.centerX()))) :
-                        Math.min(0, clipBounds.right - Math.round(((float) adjustRect.centerX()) + width))))) - ((float) adjustRect.centerX())) + (isLargeFolder ? -6.0f : 0.0f),
-                ((height + Math.max(0.0f, ((float) clipBounds.top) - (height - ((float) adjustRect.centerY())))) - ((float) adjustRect.centerY())) + (isLargeFolder ? 45.0f : 0.0f));
-        float f = dotNumParams.mDrawParams.scale;
-        canvas.scale(f, f);
-        Paint paint = mPaintX;
-        paint.setShadowLayer(0.0f, 0.0f, 0.0f, Color.DKGRAY);
-        paint.setColor(dotNumParams.mDrawParams.dotColor);
-        canvas.drawRoundRect(new RectF(adjustRect), (float) adjustRect.centerY(), (float) adjustRect.centerY(), paint);
-        canvas.drawText(text, (float) point.x, (float) point.y, mPaint);
+        canvas.translate(centerX, centerY);
+        float scale = dotNumParams.mDrawParams.scale;
+        if (scale != 1f) {
+            canvas.scale(scale, scale);
+        }
+
+        RectF bg = new RectF(-bgWidth / 2f, -bgHeight / 2f, bgWidth / 2f, bgHeight / 2f);
+        sBgPaint.setColor(dotNumParams.mDrawParams.dotColor);
+        sBgPaint.setStyle(Paint.Style.FILL);
+        canvas.drawRoundRect(bg, corner, corner, sBgPaint);
+
+        Paint.FontMetrics fm = sTextPaint.getFontMetrics();
+        float textY = -(fm.ascent + fm.descent) / 2f;
+        canvas.drawText(text, 0, textY, sTextPaint);
         canvas.restore();
     }
 
-    public static void initPaint(int i) {
-        Paint paint = mPaint;
-        paint.setTextSize((((float) i) * 0.16f) - 1.0f);
-        paint.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        paint.setTextAlign(Paint.Align.CENTER);
-        paint.setAntiAlias(true);
-        paint.setColor(Color.WHITE);
+    /**
+     * Oppo {@code IconUtils.calculateBadgeCenterOffset}: place badge center near the
+     * icon corner with {@code offsetDesign}, allowing overhang when clip space allows.
+     */
+    private static int[] calculateBadgeCenterOffset(Rect iconBounds, Rect clipBounds,
+            boolean leftAlign, int count, int bgWidth, int bgDiameter, int offsetDesign) {
+        int half = bgDiameter / 2;
+        int cornerX = leftAlign ? iconBounds.left : iconBounds.right;
+        int cornerY = iconBounds.top;
+
+        int spaceX = leftAlign
+                ? cornerX - clipBounds.left
+                : clipBounds.right - cornerX;
+        int spaceY = cornerY - clipBounds.top;
+
+        int centerX;
+        int centerY;
+        if (spaceX < half || spaceY < half) {
+            // Not enough room outside — push inward just enough to keep the pill visible.
+            int delta = Math.max(Math.max(half - spaceX, half - spaceY), offsetDesign);
+            int wideAdjust = (bgWidth / 2) - half;
+            centerX = leftAlign
+                    ? cornerX + delta + wideAdjust
+                    : cornerX - delta - wideAdjust;
+            centerY = cornerY + delta;
+        } else {
+            if (count > 9) {
+                int wideAdjust = (bgWidth - bgDiameter) / 2;
+                cornerX = leftAlign ? cornerX + wideAdjust : cornerX - wideAdjust;
+            }
+            // Sit like folder plate badge: slightly inset from the corner so ~half hangs off.
+            centerX = leftAlign ? cornerX + offsetDesign : cornerX - offsetDesign;
+            centerY = cornerY + offsetDesign;
+        }
+        return new int[]{centerX - (leftAlign ? iconBounds.left : iconBounds.right),
+                centerY - iconBounds.top};
     }
 }

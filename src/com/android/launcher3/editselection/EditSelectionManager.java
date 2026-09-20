@@ -9,6 +9,7 @@ import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherSettings;
+import com.android.launcher3.R;
 import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.folder.Folder;
@@ -352,10 +353,20 @@ public final class EditSelectionManager {
      * Apply pill matches the edit-mode Done position.
      */
     public void showLayoutChrome(View.OnClickListener cancel, View.OnClickListener apply) {
+        showSecondaryChrome(R.string.launcher_layout, cancel, apply);
+    }
+
+    /** Hide selection marks and show OPPO's Cancel | Transitions | Apply toolbar. */
+    public void showEffectsChrome(View.OnClickListener cancel, View.OnClickListener apply) {
+        showSecondaryChrome(R.string.transition_effects_toolbar_title, cancel, apply);
+    }
+
+    private void showSecondaryChrome(int title, View.OnClickListener cancel,
+            View.OnClickListener apply) {
         ensureChrome();
         mLayoutPreviewActive = true;
         if (mToolbar != null) {
-            mToolbar.showLayoutMode(cancel, apply);
+            mToolbar.showSecondaryMode(title, cancel, apply);
         }
         if (mBottomBar != null) {
             mBottomBar.hide();
@@ -453,9 +464,10 @@ public final class EditSelectionManager {
         }
         // Also refresh icons inside an open folder (Oppo: select apps in folder).
         if (openFolder != null) {
-            for (View icon : openFolder.getIconsInReadingOrder()) {
-                applySelectionDotVisibility(icon, null);
-            }
+            openFolder.iterateOverItems((info, view) -> {
+                applySelectionDotVisibility(view, null);
+                return false;
+            });
         }
         // Hotseat may still be visible depending on edit chrome; hide badges there too.
         applyContainerDotVisibility(mLauncher.getHotseat(), openFolderIcon);

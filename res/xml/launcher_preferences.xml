@@ -55,12 +55,6 @@
         android:key="hxyos_desktop_display"
         android:title="@string/launcher_settings_display"
         android:order="15">
-        <com.coui.appcompat.preference.COUIJumpPreference
-            android:key="pref_text_size"
-            android:title="@string/accessibility_text_reading_options_title"
-            android:persistent="true">
-            <intent android:action="android.settings.TEXT_READING_SETTINGS"/>
-        </com.coui.appcompat.preference.COUIJumpPreference>
         <com.coui.appcompat.preference.COUISwitchPreference
             android:key="pref_docked_app"
             android:title="@string/home_screen_docked_app"
@@ -73,6 +67,16 @@
             android:summary="@string/home_screen_app_name_length_tips"
             android:defaultValue="true"
             android:persistent="true"/>
+    </com.coui.appcompat.preference.COUIPreferenceCategory>
+
+    <com.coui.appcompat.preference.COUIPreferenceCategory
+        android:key="hxyos_desktop_effects"
+        android:title="@string/launcher_settings_effects"
+        android:order="17">
+        <com.coui.appcompat.preference.COUIJumpPreference
+            android:key="pref_transition_animations"
+            android:title="@string/transition_animations"
+            android:persistent="false"/>
     </com.coui.appcompat.preference.COUIPreferenceCategory>
 
     <com.coui.appcompat.preference.COUIPreferenceCategory

@@ -21,8 +21,6 @@ import android.view.DragEvent;
 import android.view.MotionEvent;
 
 import java.util.function.Consumer;
-import com.android.launcher3.Launcher;
-import com.android.launcher3.LauncherPrefs;
 
 /**
  * Base class for driving a drag/drop operation.
@@ -168,13 +166,10 @@ public abstract class DragDriver {
      */
     static class InternalDragDriver extends DragDriver {
         private final DragController mDragController;
-        float mLastX = 0, mLastY = 0;
-        boolean dockedStatus;
 
         InternalDragDriver(DragController dragController, Consumer<MotionEvent> sec) {
             super(dragController, sec);
             mDragController = dragController;
-            dockedStatus = LauncherPrefs.getPrefs((Launcher)dragController.mActivity).getBoolean(LauncherPrefs.WORKSPACE_LAYOUT_DOCK, false);
         }
 
         @Override
@@ -184,26 +179,14 @@ public abstract class DragDriver {
 
             switch (action) {
                 case MotionEvent.ACTION_MOVE:
-                    if (dockedStatus) {
-                        if (mLastX == 0 && mLastY == 0) {
-                            mLastX = mDragController.getX(ev);
-                            mLastY = mDragController.getY(ev);
-                        }
-                    } else {
-                        mEventListener.onDriverDragMove(mDragController.getX(ev),
+                    mEventListener.onDriverDragMove(mDragController.getX(ev),
                             mDragController.getY(ev));
-                    }
                     break;
                 case MotionEvent.ACTION_UP:
-                    if (dockedStatus) {
-                        mEventListener.onDriverDragMove(mLastX, mLastY);
-                        mEventListener.onDriverDragEnd(mLastX, mLastY);
-                    } else {
-                        mEventListener.onDriverDragMove(mDragController.getX(ev),
+                    mEventListener.onDriverDragMove(mDragController.getX(ev),
                             mDragController.getY(ev));
-                        mEventListener.onDriverDragEnd(mDragController.getX(ev),
+                    mEventListener.onDriverDragEnd(mDragController.getX(ev),
                             mDragController.getY(ev));
-                    }
                     break;
                 case MotionEvent.ACTION_CANCEL:
                     mEventListener.onDriverDragCancel();

@@ -33,6 +33,7 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.dragndrop.DragController;
 import com.android.launcher3.dragndrop.DragOptions;
 import com.android.launcher3.folder.Folder;
+import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.logging.StatsLogManager.StatsLogger;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.testing.TestLogging;
@@ -65,6 +66,11 @@ public class ItemLongClickListener {
             return false;
         }
         if (!(v.getTag() instanceof ItemInfo)) return false;
+        // Open folder's plate stays touchable under the dim — never start folder popup/drag.
+        if (v instanceof FolderIcon && ((FolderIcon) v).getFolder() != null
+                && ((FolderIcon) v).getFolder().isOpen()) {
+            return false;
+        }
 
         launcher.setWaitingForResult(null);
         beginDrag(v, launcher, (ItemInfo) v.getTag(), launcher.getDefaultWorkspaceDragOptions());

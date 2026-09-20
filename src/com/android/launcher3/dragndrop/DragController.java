@@ -309,6 +309,13 @@ public abstract class DragController<T extends ActivityContext>
             boolean isDeferred = false;
             if (mDragObject.dragView != null) {
                 isDeferred = mDragObject.deferDragViewCleanupPostAnimation;
+                // Oppo: pre-drag cancel skips dispatchDropComplete, so reattach widget content
+                // here before discarding the DragView (otherwise the host is orphaned).
+                if (mIsInPreDrag
+                        && mDragObject.dragView.getContentView()
+                        instanceof com.android.launcher3.widget.LauncherAppWidgetHostView) {
+                    mDragObject.dragView.detachContentView(/* reattachToPreviousParent= */ true);
+                }
                 if (!isDeferred) {
                     mDragObject.dragView.remove();
                 } else if (mIsInPreDrag) {

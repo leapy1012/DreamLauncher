@@ -28,6 +28,7 @@ import com.android.launcher3.folder.ClippedFolderIconLayoutRule;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.FolderPagedView;
+import com.android.launcher3.folder.large.listview.HxyLargeFolderIconItem;
 import com.android.launcher3.folder.PreviewBackground;
 import com.android.launcher3.folder.PreviewItemDrawingParams;
 import androidx.dynamicanimation.animation.FloatValueHolder;
@@ -199,7 +200,11 @@ public class HxyFolderAnimationManager {
                 mFolder.setAlpha(1f);
                 if (!mIsOpening) {
                     // Re-apply SPRING_LOADED shrink after close companions (Oppo endTransition).
+                    // Always restore Workspace View.ALPHA — open fade is on Workspace itself;
+                    // reapplyState only sets per-page ShortcutAndWidgetContainer alphas.
+                    restoreWorkspaceCompanionAlpha();
                     reapplyWorkspaceStateIfEditing();
+                    restoreWorkspaceCompanionAlpha();
                 }
                 if (mLauncher.isInState(LauncherState.OVERVIEW)) {
                     View pi = mLauncher.getDragLayer().findViewById(R.id.page_indicator);
@@ -215,6 +220,10 @@ public class HxyFolderAnimationManager {
                 finishSpringsAtFinalPosition();
                 if (mIsOpening) {
                     resetChildrenTransforms();
+                } else {
+                    restoreWorkspaceCompanionAlpha();
+                    reapplyWorkspaceStateIfEditing();
+                    restoreWorkspaceCompanionAlpha();
                 }
             }
         });
@@ -391,11 +400,23 @@ public class HxyFolderAnimationManager {
         // Oppo requireScaleChild: indices beyond the closed-folder preview param count.
         int previewParamCount = Math.min(previewCount,
                 ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW);
+        // ColorOS expands the overflow cell into 4 stacked mini params (mCurrentAllParams).
+        boolean largeStackOverflow = false;
+        int largeWithoutStacked = 0;
+        int largeStackSlots = 0;
         if (HxyLargeFolderProxy.isLargeFolder(mFolderIcon)
                 && mFolderIcon instanceof HxyLargeFolderIcon) {
-            int largeCount = ((HxyLargeFolderIcon) mFolderIcon).getLargePreviewParamCount();
+            HxyLargeFolderIcon largeIcon = (HxyLargeFolderIcon) mFolderIcon;
+            int largeCount = largeIcon.getLargePreviewParamCount();
             if (largeCount > 0) {
                 previewParamCount = largeCount;
+            }
+            if (largeIcon.hasStackOverflowPreview()) {
+                largeStackOverflow = true;
+                largeWithoutStacked = largeIcon.getLargePreviewWithoutStacked();
+                largeStackSlots = HxyLargeFolderIconItem.getMaxOutCount();
+                // Oppo: 8 full + 4 stacked minis (then requireScaleChild beyond).
+                previewParamCount = largeWithoutStacked + largeStackSlots;
             }
         }
 
@@ -432,10 +453,19 @@ public class HxyFolderAnimationManager {
                     && previewIndex < ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
             // Oppo requireScaleChild: indices past closed-preview param count.
             boolean overflow = i >= previewParamCount;
+            // Last-cell 2×2: children [withoutStacked, withoutStacked+4) land on mini slots.
+            int stackIndex = -1;
+            if (largeStackOverflow && i >= largeWithoutStacked
+                    && i < largeWithoutStacked + largeStackSlots) {
+                stackIndex = i - largeWithoutStacked;
+                inPreview = false;
+            }
             // Preview → matching 3×3 slot. Overflow open: stack under last preview
             // icon (Oppo stacked params). Overflow close: plate-center (≥ MAX).
             int paramIndex;
-            if (inPreview) {
+            if (stackIndex >= 0) {
+                paramIndex = largeWithoutStacked;
+            } else if (inPreview) {
                 paramIndex = previewIndex;
             } else if (mIsOpening) {
                 paramIndex = ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW - 1;
@@ -471,7 +501,7 @@ public class HxyFolderAnimationManager {
                     lastCellY, lastCellX);
 
             float[] previewToBtv = resolvePreviewLanding(btv, previewIndex, overflow,
-                    previewParamCount, previewTransX, previewTransY,
+                    previewParamCount, stackIndex, previewTransX, previewTransY,
                     previewIconSize * f30 * hotseatScale, folderIconLoc, scaleRel);
 
             if (mIsOpening) {
@@ -597,9 +627,11 @@ public class HxyFolderAnimationManager {
     /**
      * Resolve open-start / close-end pose. Large folders land on
      * {@link HxyLargeFolderListView} cells; small folders use ClippedFolder rule offsets.
+     * When the last cell is a 2×2 overflow stack, {@code stackIndex} (0–3) lands on that
+     * mini-icon (ColorOS {@code getCurrentStackedParams} / {@code initStackedParams}).
      */
     private float[] resolvePreviewLanding(BubbleTextView btv, int previewIndex,
-            boolean overflow, int previewParamCount,
+            boolean overflow, int previewParamCount, int stackIndex,
             float previewTransX, float previewTransY, float previewIconSize,
             float[] folderIconLoc, float folderIconScaleRel) {
         if (HxyLargeFolderProxy.isLargeFolder(mFolderIcon)
@@ -607,8 +639,21 @@ public class HxyFolderAnimationManager {
             HxyLargeFolderIcon largeIcon = (HxyLargeFolderIcon) mFolderIcon;
             int largeCount = largeIcon.getLargePreviewParamCount();
             if (largeCount > 0) {
+                // Overflow 2×2 mini-slot landing (Oppo stacked preview params).
+                if (stackIndex >= 0) {
+                    Rect subBounds = new Rect();
+                    if (largeIcon.getStackedPreviewItemBoundsInDragLayer(
+                            stackIndex, subBounds)) {
+                        float size = Math.min(subBounds.width(), subBounds.height());
+                        return computePreviewLandingTranslation(
+                                btv, subBounds.left, subBounds.top, size,
+                                true /* allowScaleUp */);
+                    }
+                }
                 int slot;
-                if (previewIndex >= 0 && previewIndex < largeCount) {
+                if (previewIndex >= 0 && previewIndex < largeCount
+                        && !(largeIcon.hasStackOverflowPreview()
+                        && previewIndex >= largeIcon.getLargePreviewWithoutStacked())) {
                     slot = previewIndex;
                 } else if (overflow || previewIndex < 0) {
                     slot = largeCount - 1;
@@ -620,8 +665,23 @@ public class HxyFolderAnimationManager {
                     float size = Math.min(slotBounds.width(), slotBounds.height());
                     float left = slotBounds.left;
                     float top = slotBounds.top;
-                    // Oppo requireScaleChild: shrink overflow toward the last cell center.
+                    // Oppo requireScaleChild: beyond stacked params → last mini ×0.2.
                     if (overflow) {
+                        if (largeIcon.hasStackOverflowPreview()) {
+                            Rect subBounds = new Rect();
+                            int lastMini = HxyLargeFolderIconItem.getMaxOutCount() - 1;
+                            if (largeIcon.getStackedPreviewItemBoundsInDragLayer(
+                                    lastMini, subBounds)) {
+                                size = Math.min(subBounds.width(), subBounds.height())
+                                        * OPEN_ANIM_SCALE_RATIO;
+                                left = subBounds.left
+                                        + (subBounds.width() - size) / 2f;
+                                top = subBounds.top
+                                        + (subBounds.height() - size) / 2f;
+                                return computePreviewLandingTranslation(
+                                        btv, left, top, size, true /* allowScaleUp */);
+                            }
+                        }
                         float shrunk = size * OPEN_ANIM_SCALE_RATIO;
                         left += (size - shrunk) / 2f;
                         top += (size - shrunk) / 2f;
@@ -1010,5 +1070,10 @@ public class HxyFolderAnimationManager {
                 || mLauncher.isInState(LauncherState.EDIT_MODE)) {
             mLauncher.getStateManager().reapplyState(false);
         }
+    }
+
+    /** Undo open-folder companion fade on Workspace/Hotseat (not covered by reapplyState). */
+    private void restoreWorkspaceCompanionAlpha() {
+        mFolder.restoreWorkspaceCompanionAlpha();
     }
 }

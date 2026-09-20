@@ -22,6 +22,16 @@ public class HxyShortcutsProxy {
         return null;
     }
 
+    /** Oppo widget long-press: Remove-widget popup + same pre-drag path as apps. */
+    public static DragOptions.PreDragCondition startLongPressActionWidget(
+            LauncherAppWidgetHostView view) {
+        PopupContainerWithArrow popup = PopupContainerWithArrow.showForWidget(view);
+        if (popup != null) {
+            return popup.createPreDragCondition(true);
+        }
+        return null;
+    }
+
     public static int getWidgetContentHeight(LauncherAppWidgetHostView view) {
         int contentHeight = 0;
         int count = view.getChildCount();

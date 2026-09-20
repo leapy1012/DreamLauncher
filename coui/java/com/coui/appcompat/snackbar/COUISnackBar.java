@@ -1,6 +1,7 @@
 package com.coui.appcompat.snackbar;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Outline;
@@ -9,7 +10,6 @@ import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -676,12 +676,10 @@ public class COUISnackBar extends RelativeLayout {
     public static COUISnackBar make(Context context, View view, String str, int index, int index_2) {
         ViewGroup viewGroupFindSuitableParent = findSuitableParent(view);
         if (viewGroupFindSuitableParent != null) {
-            TypedValue typedValue = new TypedValue();
-            if (!context.getTheme().resolveAttribute(R.attr.couiColorSurfaceTop, typedValue, true) || !context.getTheme().resolveAttribute(R.attr.couiColorPrimaryNeutral, typedValue, true)) {
-                ContextThemeWrapper contextThemeWrapper = new ContextThemeWrapper(context, R.style.Theme_COUI_Main);
-                Log.e(TAG, "Expected theme to define couiColorSurfaceTop and couiColorPrimaryNeutral.");
-                context = contextThemeWrapper;
-            }
+            // Launcher/home often lacks COUI attrs; Theme.COUI.Main alone is light-token Blue
+            // while values-night only flips surface_top → dark bar + black text. Always wrap
+            // with Main / Main.Dark for the current night mode.
+            context = snackBarThemedContext(context);
             COUISnackBar cOUISnackBar = (COUISnackBar) LayoutInflater.from(context).inflate(R.layout.coui_snack_bar_show_layout, viewGroupFindSuitableParent, false);
             cOUISnackBar.setContentText(str);
             cOUISnackBar.setDuration(index);
@@ -702,6 +700,14 @@ public class COUISnackBar extends RelativeLayout {
             return cOUISnackBar;
         }
         throw new IllegalArgumentException("No suitable parent found from the given view. Please provide a valid view.");
+    }
+
+    /** Day/night-correct COUI theme for snackbar inflation (content + action ripple). */
+    static Context snackBarThemedContext(Context context) {
+        boolean night = (context.getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        return new ContextThemeWrapper(context,
+                night ? R.style.Theme_COUI_Main_Dark : R.style.Theme_COUI_Main);
     }
 
     public void dismiss(boolean flag) {

@@ -21,6 +21,7 @@ import static androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTIO
 import static com.android.launcher3.config.FeatureFlags.IS_STUDIO_BUILD;
 import static com.android.launcher3.states.RotationHelper.ALLOW_ROTATION_PREFERENCE_KEY;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -55,6 +56,7 @@ import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.InvariantDeviceProfile.GridOption;
 import com.android.launcher3.LauncherFiles;
 import com.android.launcher3.LauncherPrefs;
+import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.R;
 import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
@@ -86,7 +88,6 @@ import static com.android.launcher3.LauncherPrefs.WORKSPACE_ICON_SIZE;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_FILL_CELL;
 // layout lock / home layout picker (fresh)
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_DOUBLE_TAP;
-import static com.android.launcher3.LauncherPrefs.WORKSPACE_TEXT_SIZE;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_INSTALL_BEHAVIOR;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_MEMORY_CLEAN;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_WALLPAPER_SET;
@@ -100,6 +101,7 @@ import androidx.preference.PreferenceCategory;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherApplication;
 import com.android.launcher3.model.data.ItemInfo;
+import com.android.launcher3.effect.ScrollEffect;
 import com.coui.appcompat.preference.COUIPreference;
 import com.coui.appcompat.preference.COUIPreferenceFragment;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
@@ -216,6 +218,11 @@ public class SettingsActivity extends AppCompatActivity
             Settings.Global.putInt(getContentResolver(), "persist.sys.double_tap_to_off", sharedPreferences.getBoolean("pref_double_tap", false) ? 1 : 0);
         } else if (LauncherPrefs.WORKSPACE_LAYOUT_DOCK.equals(key)) {
             Settings.Global.putInt(getContentResolver(), "persist.sys.desktop_layout_docked", sharedPreferences.getBoolean("pref_layout_dock", false) ? 1 : 0);
+        } else if (LauncherPrefs.WORKSPACE_SCROLL_EFFECT.getSharedPrefKey().equals(key)) {
+            if (LauncherApplication.getLauncher() != null) {
+                LauncherApplication.getLauncher().getWorkspace().setScrollEffectFromString(
+                        sharedPreferences.getString(key, ScrollEffect.SCROLL_EFFECT_NONE));
+            }
         } else {
             if (LauncherPrefs.WORKSPACE_MEMORY_CLEAN.equals(key) && !sharedPreferences.getBoolean(key, false) && LauncherApplication.getLauncher() != null) {
                 ComponentName componentName = new ComponentName(BuildConfig.APPLICATION_ID, "com.android.launcher3.big.memoryclean.MemoryCleanActivity");
@@ -314,11 +321,52 @@ public class SettingsActivity extends AppCompatActivity
 		//hxy-feature: add launcher style function  202312
         //hxy-feature: desktop theme 202312
         private static final String LAUNCHER_THEME_PREFERENCE_KEY = "pref_theme_style";
+        private static final String TRANSITION_ANIMATIONS_PREFERENCE_KEY =
+                "pref_transition_animations";
+        private static final String[] TRANSITION_EFFECT_VALUES = {
+                ScrollEffect.SCROLL_EFFECT_NONE,
+                ScrollEffect.SCROLL_EFFECT_OPPO_ROLL,
+                ScrollEffect.SCROLL_EFFECT_OPPO_CUBE,
+                ScrollEffect.SCROLL_EFFECT_OPPO_FLIP,
+                ScrollEffect.SCROLL_EFFECT_OPPO_CARD,
+                ScrollEffect.SCROLL_EFFECT_OPPO_TILT,
+                ScrollEffect.SCROLL_EFFECT_STACK,
+                ScrollEffect.SCROLL_EFFECT_ACCORDION,
+                ScrollEffect.SCROLL_EFFECT_CUBE_IN,
+                ScrollEffect.SCROLL_EFFECT_CUBE_OUT,
+                ScrollEffect.SCROLL_EFFECT_OVERVIEW,
+                ScrollEffect.SCROLL_EFFECT_CROSS,
+                ScrollEffect.SCROLL_EFFECT_FLIP,
+                ScrollEffect.SCROLL_EFFECT_WINDMILL,
+                ScrollEffect.SCROLL_EFFECT_WHEEL,
+                ScrollEffect.SCROLL_EFFECT_CAROUSEL_LEFT,
+                ScrollEffect.SCROLL_EFFECT_CAROUSEL_RIGHT
+        };
+        private static final int[] TRANSITION_EFFECT_LABELS = {
+                R.string.transition_effect_none,
+                R.string.transition_effect_oppo_roll,
+                R.string.transition_effect_oppo_cube,
+                R.string.transition_effect_oppo_flip,
+                R.string.transition_effect_oppo_card,
+                R.string.transition_effect_oppo_tilt,
+                R.string.transition_effect_stack,
+                R.string.transition_effect_accordion,
+                R.string.transition_effect_cubein,
+                R.string.transition_effect_cubeout,
+                R.string.transition_effect_overview,
+                R.string.transition_effect_cross,
+                R.string.transition_effect_flip,
+                R.string.transition_effect_windmill,
+                R.string.transition_effect_wheel,
+                R.string.transition_effect_carousel_left,
+                R.string.transition_effect_carousel_right
+        };
         private Preference mLauncherThemePref;
         //hxy-feature: desktop theme 202312
         private SwitchPreference mIconAutofillPref;
         private Preference mHomeLayoutPref;
         private Preference mIconSizePref;
+        private Preference mTransitionAnimationsPref;
         private SwitchPreference mLayoutLockPref;
 
         @Override
@@ -354,6 +402,12 @@ public class SettingsActivity extends AppCompatActivity
                 updateHomeLayoutSummary();
             }
             mIconSizePref = findPreference(WORKSPACE_ICON_SIZE);
+            mTransitionAnimationsPref =
+                    findPreference(TRANSITION_ANIMATIONS_PREFERENCE_KEY);
+            if (mTransitionAnimationsPref != null) {
+                mTransitionAnimationsPref.setOnPreferenceClickListener(this);
+                updateTransitionAnimationAssignment();
+            }
             Preference pref = findPreference(WORKSPACE_LAYOUT_DOCK);
             if (pref instanceof SwitchPreference) {
                 mLayoutLockPref = (SwitchPreference) pref;
@@ -448,8 +502,31 @@ public class SettingsActivity extends AppCompatActivity
             } else if ("pref_workspace_layout".equals(preference.getKey())) {
                 showHomeLayoutDialog();
                 return true;
+            } else if (TRANSITION_ANIMATIONS_PREFERENCE_KEY.equals(preference.getKey())) {
+                openTransitionAnimationsScreen();
+                return true;
             }
             return false;
+        }
+
+        private void openTransitionAnimationsScreen() {
+            if (getContext() == null) {
+                return;
+            }
+            Intent homeIntent = new Intent(Intent.ACTION_MAIN)
+                    .addCategory(Intent.CATEGORY_HOME)
+                    .setPackage(requireContext().getPackageName());
+            ComponentName launcherComponent =
+                    homeIntent.resolveActivity(requireContext().getPackageManager());
+            if (launcherComponent == null) {
+                return;
+            }
+            Launcher.requestShowTransitionEffectsOnResume();
+            Intent intent = homeIntent.setComponent(launcherComponent)
+                    .putExtra(Launcher.EXTRA_SHOW_TRANSITION_EFFECTS, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            requireActivity().finish();
         }
 
         private void showHomeLayoutDialog() {
@@ -502,6 +579,30 @@ public class SettingsActivity extends AppCompatActivity
             // Oppo: summary stays "Set Home screen app layouts."; value is trailing.
             mHomeLayoutPref.setSummary(R.string.tog_title_layout_summary);
             setPreferenceAssignment(mHomeLayoutPref, columns + " \u00d7 " + rows);
+        }
+
+        private void updateTransitionAnimationAssignment() {
+            if (getContext() == null) {
+                return;
+            }
+            String effect = LauncherPrefs.get(getContext())
+                    .get(LauncherPrefs.WORKSPACE_SCROLL_EFFECT);
+            updateTransitionAnimationAssignment(TextUtils.isEmpty(effect)
+                    ? ScrollEffect.SCROLL_EFFECT_NONE : effect);
+        }
+
+        private void updateTransitionAnimationAssignment(String effect) {
+            if (mTransitionAnimationsPref == null) {
+                return;
+            }
+            int label = TRANSITION_EFFECT_LABELS[0];
+            for (int i = 0; i < TRANSITION_EFFECT_VALUES.length; i++) {
+                if (TRANSITION_EFFECT_VALUES[i].equals(effect)) {
+                    label = TRANSITION_EFFECT_LABELS[i];
+                    break;
+                }
+            }
+            setPreferenceAssignment(mTransitionAnimationsPref, getString(label));
         }
 
         private void updateLauncherStyleAssignment() {
@@ -688,6 +789,7 @@ public class SettingsActivity extends AppCompatActivity
 			//hxy-feature: add launcher style function  202312
             updateLauncherStyleAssignment();
             updateHomeLayoutSummary();
+            updateTransitionAnimationAssignment();
 			//hxy-feature: add launcher style function  202312
             updateThemePref();  //hxy-feature: desktop theme 202312
         }

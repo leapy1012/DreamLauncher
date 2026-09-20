@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Oppo ColorOS: Uninstall glyph for long-press popup. -->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@drawable/ic_system_shortcut_uninstall"
+    android:tint="?android:attr/textColorPrimary" />
