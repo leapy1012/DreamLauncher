@@ -60,6 +60,7 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherStyle;
 import com.android.launcher3.R;
 import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
+import com.coui.appcompat.dialog.adapter.ChoiceListAdapter;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.model.WidgetsModel;
@@ -100,8 +101,12 @@ import com.android.launcher3.BuildConfig;
 import androidx.preference.PreferenceCategory;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherApplication;
+import com.android.launcher3.model.ItemInstallQueue;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.effect.ScrollEffect;
+import android.util.Pair;
+
+import java.util.ArrayList;
 import com.coui.appcompat.preference.COUIPreference;
 import com.coui.appcompat.preference.COUIPreferenceFragment;
 import com.coui.appcompat.darkmode.COUIDarkModeUtil;
@@ -216,6 +221,9 @@ public class SettingsActivity extends AppCompatActivity
             LauncherAppState.getInstance(LauncherApplication.getContext()).getInvariantDeviceProfile().onConfigChanged(LauncherApplication.getContext());
         } else if (LauncherPrefs.WORKSPACE_DOUBLE_TAP.equals(key)) {
             Settings.Global.putInt(getContentResolver(), "persist.sys.double_tap_to_off", sharedPreferences.getBoolean("pref_double_tap", false) ? 1 : 0);
+        } else if (HomeScreenGestures.PREF_SWIPE_RIGHT.equals(key)) {
+            HomeScreenGestures.applySwipeRightPreference(this,
+                    sharedPreferences.getString(key, HomeScreenGestures.SWIPE_RIGHT_NONE));
         } else if (LauncherPrefs.WORKSPACE_LAYOUT_DOCK.equals(key)) {
             Settings.Global.putInt(getContentResolver(), "persist.sys.desktop_layout_docked", sharedPreferences.getBoolean("pref_layout_dock", false) ? 1 : 0);
         } else if (LauncherPrefs.WORKSPACE_SCROLL_EFFECT.getSharedPrefKey().equals(key)) {
@@ -223,25 +231,60 @@ public class SettingsActivity extends AppCompatActivity
                 LauncherApplication.getLauncher().getWorkspace().setScrollEffectFromString(
                         sharedPreferences.getString(key, ScrollEffect.SCROLL_EFFECT_NONE));
             }
+        } else if (LauncherPrefs.WORKSPACE_MEMORY_CLEAN.equals(key)
+                || LauncherPrefs.WORKSPACE_WALLPAPER_SET.equals(key)) {
+            applyLauncherUtilityPreference(this, key, sharedPreferences.getBoolean(key, false));
         } else {
-            if (LauncherPrefs.WORKSPACE_MEMORY_CLEAN.equals(key) && !sharedPreferences.getBoolean(key, false) && LauncherApplication.getLauncher() != null) {
-                ComponentName componentName = new ComponentName(BuildConfig.APPLICATION_ID, "com.android.launcher3.big.memoryclean.MemoryCleanActivity");
-                Optional<ItemInfo> foundItem = LauncherApplication.getLauncher().getModel().mBgDataModel.workspaceItems.stream()
-                    .filter(itemInfo -> itemInfo.user.equals(Process.myUserHandle())
-                            && itemInfo.getTargetComponent() != null
-                            && itemInfo.getTargetComponent().equals(componentName))
-                    .findAny();
-                foundItem.ifPresent(itemInfo -> LauncherApplication.getLauncher().getModelWriter().deleteItemFromDatabase(itemInfo, ""));
-            } else if (LauncherPrefs.WORKSPACE_WALLPAPER_SET.equals(key) && !sharedPreferences.getBoolean(key, false) && LauncherApplication.getLauncher() != null) {
-                ComponentName componentName = new ComponentName(BuildConfig.APPLICATION_ID, "com.android.launcher3.settings.WallpaperChangeActivity");
-                Optional<ItemInfo> foundItem = LauncherApplication.getLauncher().getModel().mBgDataModel.workspaceItems.stream()
-                    .filter(itemInfo -> itemInfo.user.equals(Process.myUserHandle())
-                            && itemInfo.getTargetComponent() != null
-                            && itemInfo.getTargetComponent().equals(componentName))
-                    .findAny();
-                foundItem.ifPresent(itemInfo -> LauncherApplication.getLauncher().getModelWriter().deleteItemFromDatabase(itemInfo, ""));
-            }
             LauncherAppState.getInstance(this).getModel().forceReload();
+        }
+    }
+
+    /**
+     * Show/hide Cleanup or Switch wallpaper on the workspace immediately when the
+     * Display toggle changes. Enable places the icon via add-and-bind; disable removes it.
+     */
+    private static void applyLauncherUtilityPreference(Context context, String key,
+            boolean enabled) {
+        final boolean memoryClean = LauncherPrefs.WORKSPACE_MEMORY_CLEAN.equals(key);
+        ComponentName component = memoryClean
+                ? new ComponentName(BuildConfig.APPLICATION_ID,
+                        "com.android.launcher3.big.memoryclean.MemoryCleanActivity")
+                : new ComponentName(BuildConfig.APPLICATION_ID,
+                        "com.android.launcher3.settings.WallpaperChangeActivity");
+        LauncherAppState app = LauncherAppState.getInstance(context);
+        Launcher launcher = LauncherApplication.getLauncher();
+
+        if (enabled) {
+            ItemInstallQueue.PendingInstallShortcutInfo pending =
+                    new ItemInstallQueue.PendingInstallShortcutInfo(
+                            BuildConfig.APPLICATION_ID, Process.myUserHandle());
+            ArrayList<Pair<ItemInfo, Object>> installQueue = new ArrayList<>(1);
+            installQueue.add(memoryClean
+                    ? pending.getMemoryInfo(context)
+                    : pending.getWallpaperInfo(context));
+            // allowSystemApps: these are launcher-owned activities.
+            app.getModel().addAndBindAddedWorkspaceItems(installQueue, true /* allowSystemApps */);
+            return;
+        }
+
+        if (launcher != null) {
+            Optional<ItemInfo> foundItem = launcher.getModel().mBgDataModel.workspaceItems.stream()
+                    .filter(itemInfo -> itemInfo.user.equals(Process.myUserHandle())
+                            && itemInfo.getTargetComponent() != null
+                            && itemInfo.getTargetComponent().equals(component))
+                    .findAny();
+            foundItem.ifPresent(itemInfo -> {
+                View icon = launcher.getWorkspace().getHomescreenIconByItemId(itemInfo.id);
+                if (icon != null) {
+                    launcher.removeItem(icon, itemInfo, true /* deleteFromDb */);
+                } else {
+                    launcher.getModelWriter().deleteItemFromDatabase(itemInfo,
+                            "utility pref off");
+                }
+            });
+        } else {
+            // No live Launcher — drop from DB on next load (pref is already false).
+            app.getModel().forceReload();
         }
     }
 
@@ -325,7 +368,6 @@ public class SettingsActivity extends AppCompatActivity
                 "pref_transition_animations";
         private static final String[] TRANSITION_EFFECT_VALUES = {
                 ScrollEffect.SCROLL_EFFECT_NONE,
-                ScrollEffect.SCROLL_EFFECT_OPPO_ROLL,
                 ScrollEffect.SCROLL_EFFECT_OPPO_CUBE,
                 ScrollEffect.SCROLL_EFFECT_OPPO_FLIP,
                 ScrollEffect.SCROLL_EFFECT_OPPO_CARD,
@@ -344,7 +386,6 @@ public class SettingsActivity extends AppCompatActivity
         };
         private static final int[] TRANSITION_EFFECT_LABELS = {
                 R.string.transition_effect_none,
-                R.string.transition_effect_oppo_roll,
                 R.string.transition_effect_oppo_cube,
                 R.string.transition_effect_oppo_flip,
                 R.string.transition_effect_oppo_card,
@@ -368,6 +409,8 @@ public class SettingsActivity extends AppCompatActivity
         private Preference mIconSizePref;
         private Preference mTransitionAnimationsPref;
         private SwitchPreference mLayoutLockPref;
+        private com.coui.appcompat.preference.COUIMenuPreference mSwipeDownPref;
+        private com.coui.appcompat.preference.COUIMenuPreference mSwipeRightPref;
 
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -407,6 +450,30 @@ public class SettingsActivity extends AppCompatActivity
             if (mTransitionAnimationsPref != null) {
                 mTransitionAnimationsPref.setOnPreferenceClickListener(this);
                 updateTransitionAnimationAssignment();
+            }
+            mSwipeDownPref = findPreference(HomeScreenGestures.PREF_SWIPE_DOWN);
+            if (mSwipeDownPref != null) {
+                updateSwipeDownAssignment();
+                mSwipeDownPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    if (newValue instanceof String value) {
+                        updateSwipeDownAssignment(value);
+                    }
+                    return true;
+                });
+            }
+            mSwipeRightPref = findPreference(HomeScreenGestures.PREF_SWIPE_RIGHT);
+            if (mSwipeRightPref != null) {
+                HomeScreenGestures.syncSwipeRightFromOverlay(requireContext());
+                String swipeRight = HomeScreenGestures.getSwipeRightAction(requireContext());
+                mSwipeRightPref.setValue(swipeRight);
+                updateSwipeRightAssignment(swipeRight);
+                mSwipeRightPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    if (newValue instanceof String value) {
+                        HomeScreenGestures.applySwipeRightPreference(requireContext(), value);
+                        updateSwipeRightAssignment(value);
+                    }
+                    return true;
+                });
             }
             Preference pref = findPreference(WORKSPACE_LAYOUT_DOCK);
             if (pref instanceof SwitchPreference) {
@@ -549,9 +616,32 @@ public class SettingsActivity extends AppCompatActivity
                 }
             }
 
-            new COUIAlertDialogBuilder(getContext())
+            boolean[] checkedItems = null;
+            if (checkedItem >= 0 && checkedItem < labels.length) {
+                checkedItems = new boolean[labels.length];
+                checkedItems[checkedItem] = true;
+            }
+            ChoiceListAdapter adapter = new ChoiceListAdapter(getContext(),
+                    com.coui.appcompat.R.layout.coui_select_dialog_singlechoice,
+                    labels, null, checkedItems, false) {
+                @Override
+                public View getView(int position, View convertView, ViewGroup parent) {
+                    View view = super.getView(position, convertView, parent);
+                    View divider = view.findViewById(com.coui.appcompat.R.id.item_divider);
+                    int count = getCount();
+                    if (divider != null) {
+                        divider.setVisibility(
+                                count == 1 || position == count - 1 ? View.GONE : View.VISIBLE);
+                    }
+                    return view;
+                }
+            };
+
+            new COUIAlertDialogBuilder(getContext(),
+                    com.coui.appcompat.R.style.COUIAlertDialog_List_Bottom)
                     .setTitle(R.string.tog_title_layout)
-                    .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
+                    .setNegativeButton(com.coui.appcompat.R.string.dialog_cancel, null)
+                    .setAdapter(adapter, (dialog, which) -> {
                         GridOption selected = options.get(which);
                         idp.setCurrentGrid(getContext(), selected.name);
                         updateHomeLayoutSummary(selected);
@@ -603,6 +693,29 @@ public class SettingsActivity extends AppCompatActivity
                 }
             }
             setPreferenceAssignment(mTransitionAnimationsPref, getString(label));
+        }
+
+        private void updateSwipeDownAssignment() {
+            if (getContext() == null || mSwipeDownPref == null) {
+                return;
+            }
+            updateSwipeDownAssignment(HomeScreenGestures.getSwipeDownAction(getContext()));
+        }
+
+        private void updateSwipeDownAssignment(String value) {
+            if (mSwipeDownPref == null || getContext() == null) {
+                return;
+            }
+            setPreferenceAssignment(mSwipeDownPref,
+                    HomeScreenGestures.labelForSwipeDown(getContext(), value));
+        }
+
+        private void updateSwipeRightAssignment(String value) {
+            if (mSwipeRightPref == null || getContext() == null) {
+                return;
+            }
+            setPreferenceAssignment(mSwipeRightPref,
+                    HomeScreenGestures.labelForSwipeRight(getContext(), value));
         }
 
         private void updateLauncherStyleAssignment() {
@@ -743,10 +856,6 @@ public class SettingsActivity extends AppCompatActivity
                     return false;
                 //hxy-feature: desktop theme 202312
 				/// &&}}
-                case WORKSPACE_WALLPAPER_SET:
-                    return false;
-                case WORKSPACE_MEMORY_CLEAN:
-                    return false;
             }
 
             return true;

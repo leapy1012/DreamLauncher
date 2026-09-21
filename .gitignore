@@ -23,6 +23,10 @@ apktool_oplus_tmp
 /*.jpg
 /*.jpeg
 /*.webp
+/*.rgba
+/*.mp4
+/*.apk
+/build_out.txt
 
 # UIAutomator / hierarchy / scratch dumps at repo root (keep manifests + lint baselines)
 /*.xml
@@ -41,6 +45,9 @@ coui/dist/
 /_img/
 /device_audit/
 /temp/
+/tmp_*/
+/tmp_*.py
+/fc_burst/
 
 # Local reference APK dumps (keep tools/*.py and checkstyle)
 /tools/*.apk

@@ -29,4 +29,22 @@
         <item>4</item>
         <item>5</item>
     </string-array>
+
+    <!-- Home screen Gestures (ColorOS) -->
+    <string-array name="home_swipe_down_entries">
+        <item>@string/home_swipe_down_global_search</item>
+        <item>@string/home_swipe_down_notification</item>
+    </string-array>
+    <string-array name="home_swipe_down_values">
+        <item>global_search</item>
+        <item>notification</item>
+    </string-array>
+    <string-array name="home_swipe_right_entries">
+        <item>@string/home_swipe_right_none</item>
+        <item>@string/home_swipe_right_quick_glance</item>
+    </string-array>
+    <string-array name="home_swipe_right_values">
+        <item>none</item>
+        <item>quick_glance</item>
+    </string-array>
 </resources>

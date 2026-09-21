@@ -2,6 +2,8 @@ package com.android.customize.overlay
 
 import com.android.customize.common.logger.MyLogger
 import com.android.customize.overlay.preference.OverlayPreference
+import com.android.customize.overlay.quickglance.QuickGlanceLauncherClient
+import com.android.customize.overlay.quickglance.QuickGlanceRemoteOverlay
 import com.android.customize.overlay.ui.minus.MinuscreenView
 import com.android.customize.overlay.ui.plus.PluscreenView
 import com.android.launcher3.CustomizeLauncher
@@ -9,18 +11,30 @@ import com.android.systemui.plugins.shared.LauncherOverlayManager.LauncherOverla
 
 class OverlayCombine() : OverlayBase() {
 
-    var overlayMinus: OverlayDragSource? = null
+    var overlayMinus: OverlayBase? = null
     var overlayPlus: OverlayDragSource? = null
+
+    val quickGlanceOverlay: QuickGlanceRemoteOverlay?
+        get() = overlayMinus as? QuickGlanceRemoteOverlay
 
     override fun addView(launcher: CustomizeLauncher) {
         val preference = OverlayPreference.get(launcher)
         overlayMinus = if (preference.minusEnabled) {
-            val view = MinuscreenView(launcher)
-            view.observeProgress {
-                callbacks?.onOverlayScrollChanged(it)
-            }
-            OverlayDragSource(view).also {
-                it.addView(launcher)
+            // OPPO parity: Quick Glance is a remote WindowServer when DQG is installed.
+            if (QuickGlanceLauncherClient.isPackageAvailable(launcher)) {
+                myLogger.d("minus: QuickGlance remote AIDL")
+                QuickGlanceRemoteOverlay(launcher).also {
+                    it.addView(launcher)
+                }
+            } else {
+                myLogger.d("minus: local MinuscreenView (DQG not installed)")
+                val view = MinuscreenView(launcher)
+                view.observeProgress {
+                    callbacks?.onOverlayScrollChanged(it)
+                }
+                OverlayDragSource(view).also {
+                    it.addView(launcher)
+                }
             }
         } else {
             null
@@ -66,8 +80,18 @@ class OverlayCombine() : OverlayBase() {
         }
     }
 
-    override fun onScrollChange(progress: Float, rtl: Boolean) {
+    override fun onScrollInteractionEndWithVelocity(velocityPx: Float) {
+        myLogger.d("onScrollInteractionEndWithVelocity: $swipeRtl v=$velocityPx")
         if (swipeRtl) {
+            overlayPlus?.onScrollInteractionEndWithVelocity(velocityPx)
+        } else {
+            overlayMinus?.onScrollInteractionEndWithVelocity(velocityPx)
+        }
+    }
+
+    override fun onScrollChange(progress: Float, rtl: Boolean) {
+        swipeRtl = rtl
+        if (rtl) {
             overlayPlus?.onScrollChange(progress, rtl)
         } else {
             overlayMinus?.onScrollChange(progress, rtl)

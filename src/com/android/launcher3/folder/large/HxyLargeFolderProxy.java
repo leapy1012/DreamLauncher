@@ -260,13 +260,21 @@ public class HxyLargeFolderProxy {
         return sPreviewOffsetY;
     }
 
-    public static View getFloatingIconView(View originalView, String targetPackageName, UserHandle user) {
-        return getFloatingIconView(originalView, targetPackageName, 0);
+    public static View getFloatingIconView(View originalView, String targetPackageName,
+            UserHandle user) {
+        int userId = user != null ? user.getIdentifier() : 0;
+        return getFloatingIconView(originalView, targetPackageName, userId);
     }
 
     public static View getFloatingIconView(View originalView, String targetPackageName, int userId) {
-        if (!HxyLargeFolderUtils.isEmpty(targetPackageName) && (originalView instanceof HxyLargeFolderIcon)) {
-            return ((HxyLargeFolderIcon) originalView).getFirstMatchForAppClose(targetPackageName, userId);
+        if (!HxyLargeFolderUtils.isEmpty(targetPackageName)
+                && (originalView instanceof HxyLargeFolderIcon)
+                && isLargeFolder(originalView)) {
+            View cell = ((HxyLargeFolderIcon) originalView).getFirstMatchForAppClose(
+                    ItemInfo.NO_ID, targetPackageName, UserHandle.of(userId));
+            if (cell != null) {
+                return cell;
+            }
         }
         return originalView;
     }

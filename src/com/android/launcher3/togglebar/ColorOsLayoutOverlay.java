@@ -284,8 +284,14 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
                     continue;
                 }
                 boolean widget = child instanceof LauncherAppWidgetHostView;
+                int iconSize = 0;
+                int drawablePadding = 0;
+                if (child instanceof BubbleTextView btv) {
+                    iconSize = btv.getIconSize();
+                    drawablePadding = btv.getCompoundDrawablePadding();
+                }
                 mSavedIcons.add(new SavedIcon(child, page, childLp.getCellX(), childLp.getCellY(),
-                        childLp.cellHSpan, childLp.cellVSpan, widget));
+                        childLp.cellHSpan, childLp.cellVSpan, widget, iconSize, drawablePadding));
             }
         }
         mSavedIcons.sort(Comparator.comparingInt((SavedIcon s) -> s.page)
@@ -358,6 +364,13 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         DeviceProfile dp = mLauncher.getDeviceProfile();
         Point cellSize = dp.getOppoPreviewCellSize(cols, rows);
         int iconSize = dp.getOppoPreviewIconSizePx(cols);
+        // Dense grids may compress live padding to 0; preview always uses a real gap.
+        int iconDrawablePadding = Math.max(dp.iconDrawablePaddingOriginalPx,
+                Math.round(4f * mLauncher.getResources().getDisplayMetrics().density));
+        // MeasureContentHeight must match preview icon/gap or TextView squeezes padding away.
+        dp.layoutPreviewIconAndPaddingPx = new Point(
+                restoreOriginal ? Math.max(iconSize, dp.iconSizePx) : iconSize,
+                iconDrawablePadding);
         for (int page = 0; page < workspace.getPageCount(); page++) {
             View pageView = workspace.getPageAt(page);
             if (!(pageView instanceof CellLayout cell)) {
@@ -365,14 +378,16 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
             }
             if (restoreOriginal) {
                 restorePageChrome(cell);
-                cell.resetCellSize(dp);
                 cell.setGridSize(cols, rows);
-                restorePageIcons(page);
+                // Keep preview cell tall enough for icon + gap + 2-line label (do not
+                // resetCellSize to the live dense-compressed height).
+                cell.setCellDimensions(Math.max(1, cellSize.x), Math.max(1, cellSize.y));
+                restorePageIcons(page, iconDrawablePadding);
             } else {
                 applyOppoCellLayoutPadding(dp, cell, workspace, cellSize, cols, rows);
                 cell.setGridSize(cols, rows);
                 cell.setCellDimensions(Math.max(1, cellSize.x), Math.max(1, cellSize.y));
-                placePageIcons(page, cols, rows, iconSize);
+                placePageIcons(page, cols, rows, iconSize, iconDrawablePadding);
             }
             cell.requestLayout();
         }
@@ -431,7 +446,7 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         resetPageAnim(cell);
     }
 
-    private void restorePageIcons(int page) {
+    private void restorePageIcons(int page, int iconDrawablePaddingPx) {
         for (SavedIcon saved : mSavedIcons) {
             if (saved.page != page) {
                 continue;
@@ -449,7 +464,7 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
                 saved.view.setVisibility(INVISIBLE);
             } else {
                 saved.view.setVisibility(VISIBLE);
-                applyPreviewIconSize(saved.view, 0);
+                applyPreviewIconSize(saved.view, saved.iconSizePx, iconDrawablePaddingPx);
             }
         }
     }
@@ -458,7 +473,8 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
      * Oppo {@code arrangeItemsOnScreen}: widgets keep occupancy while hidden; icons
      * pack into vacant cells (original grid restore uses {@link #restorePageIcons}).
      */
-    private void placePageIcons(int page, int cols, int rows, int iconSizePx) {
+    private void placePageIcons(int page, int cols, int rows, int iconSizePx,
+            int iconDrawablePaddingPx) {
         GridOccupancy occupancy = new GridOccupancy(cols, rows);
         int[] vacant = new int[2];
         for (SavedIcon saved : mSavedIcons) {
@@ -492,7 +508,7 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
             saved.view.setScaleX(1f);
             saved.view.setScaleY(1f);
             saved.view.setVisibility(VISIBLE);
-            applyPreviewIconSize(saved.view, iconSizePx);
+            applyPreviewIconSize(saved.view, iconSizePx, iconDrawablePaddingPx);
         }
     }
 
@@ -522,20 +538,23 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
     }
 
     /**
-     * Oppo {@code getIconSizeTmp}: change the drawable bounds, not the whole view
-     * scale (that also shrinks the label).
+     * Oppo {@code getIconSizeTmp}: update measure size + icon↔label gap for the previewed grid.
+     * Dense live profiles may have compressed drawable padding to 0; preview must not keep that
+     * when switching to a roomier grid (e.g. 5×7 → 4×6).
      */
-    private static void applyPreviewIconSize(View view, int iconSizePx) {
+    private static void applyPreviewIconSize(View view, int iconSizePx, int drawablePaddingPx) {
         if (!(view instanceof BubbleTextView icon)) {
             return;
         }
-        Drawable drawable = icon.getIcon();
-        if (drawable == null) {
-            return;
-        }
         int size = iconSizePx > 0 ? iconSizePx : icon.getIconSize();
-        drawable.setBounds(0, 0, size, size);
-        icon.invalidate();
+        int minPad = Math.round(4f * view.getResources().getDisplayMetrics().density);
+        int padding = Math.max(minPad, Math.max(0, drawablePaddingPx));
+        icon.setIconSizeForLayoutPreview(size);
+        icon.setCompoundDrawablePadding(padding);
+        if (icon.getIcon() != null) {
+            icon.setIcon(icon.getIcon());
+            icon.setCompoundDrawablePadding(padding);
+        }
     }
 
     private static final class SavedIcon {
@@ -546,8 +565,11 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         final int spanX;
         final int spanY;
         final boolean widget;
+        final int iconSizePx;
+        final int drawablePaddingPx;
 
-        SavedIcon(View view, int page, int cellX, int cellY, int spanX, int spanY, boolean widget) {
+        SavedIcon(View view, int page, int cellX, int cellY, int spanX, int spanY, boolean widget,
+                int iconSizePx, int drawablePaddingPx) {
             this.view = view;
             this.page = page;
             this.cellX = cellX;
@@ -555,6 +577,8 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
             this.spanX = spanX;
             this.spanY = spanY;
             this.widget = widget;
+            this.iconSizePx = iconSizePx;
+            this.drawablePaddingPx = drawablePaddingPx;
         }
     }
 
@@ -619,6 +643,7 @@ public class ColorOsLayoutOverlay extends AbstractFloatingView implements Insett
         cancelPreviewAnim();
         cancelSheetSpring();
         ColorOsLayoutSettings.setPreviewHideNames(null);
+        mLauncher.getDeviceProfile().layoutPreviewIconAndPaddingPx = null;
         if (!mApplied) {
             previewGrid(mOriginalCols, mOriginalRows, false);
             ColorOsLayoutSettings.applyToWorkspace(mLauncher);

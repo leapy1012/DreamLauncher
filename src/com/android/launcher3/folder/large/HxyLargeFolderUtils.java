@@ -99,8 +99,16 @@ public class HxyLargeFolderUtils {
     }
 
     public static boolean equals(ItemInfo info, String packageName, UserHandle user) {
-        // todo
-        return equals(info, packageName, 0);
+        if (info == null || info.getTargetComponent() == null) {
+            return false;
+        }
+        if (!equals(info.getTargetComponent().getPackageName(), packageName)) {
+            return false;
+        }
+        if (user == null) {
+            return true;
+        }
+        return user.equals(info.user);
     }
 
     public static String getClassName(WorkspaceItemInfo data) {

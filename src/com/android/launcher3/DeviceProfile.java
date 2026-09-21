@@ -174,6 +174,15 @@ public class DeviceProfile {
     public int iconDrawablePaddingPx;
     public int iconDrawablePaddingOriginalPx;
 
+    /**
+     * While ToggleBar Layout live-preview is active: preview icon size (x) and
+     * icon↔label drawable padding (y). Null means use live {@link #iconSizePx} /
+     * {@link #iconDrawablePaddingPx}. Without this, measure still uses a dense-grid
+     * compressed content height and TextView squeezes compound-drawable padding to 0.
+     */
+    @Nullable
+    public Point layoutPreviewIconAndPaddingPx;
+
     public float cellScaleToFit;
     public int cellWidthPx;
     public int cellHeightPx;
@@ -1370,9 +1379,20 @@ public class DeviceProfile {
     /**
      * Oppo CellLayoutParam.getContentHeight: iconSize + drawablePadding + textHeight.
      * Text height uses Paint descent-ascent (IconParam.calculateTextHeightIgnoreFontPadding).
+     * Layout preview may override icon/padding via {@link #layoutPreviewIconAndPaddingPx}.
+     * Workspace BubbleTextView is two-line; preview must reserve both lines or TextView
+     * vertically compresses compound-drawable padding to zero (flush labels).
      */
     public int getOppoWorkspaceContentHeight() {
-        return iconSizePx + iconDrawablePaddingPx + getOppoIconTextHeightPx();
+        int icon = iconSizePx;
+        int pad = iconDrawablePaddingPx;
+        int textLines = 1;
+        if (layoutPreviewIconAndPaddingPx != null) {
+            icon = layoutPreviewIconAndPaddingPx.x;
+            pad = layoutPreviewIconAndPaddingPx.y;
+            textLines = 2;
+        }
+        return icon + pad + (getOppoIconTextHeightPx() * textLines);
     }
 
     /**
@@ -1404,7 +1424,16 @@ public class DeviceProfile {
                 / getPanelCount();
         int contentWidth = workspaceWidth - (2 * padHor);
         result.x = calculateCellWidth(contentWidth, cellLayoutBorderSpacePx.x, cols);
-        result.y = getOppoWorkspaceCellHeightForGrid(result.x, cols, rows);
+        // Preview icons use the target-grid size; workspace labels are two-line.
+        // Use uncompressed drawable padding (min 6dp) so cell height matches icon↔label gap.
+        int iconSize = getOppoPreviewIconSizePx(cols);
+        int textHeight = getOppoIconTextHeightPx() * 2;
+        int drawablePad = Math.max(iconDrawablePaddingOriginalPx,
+                pxFromDp(4f, mMetrics));
+        int contentHeight = iconSize + drawablePad + textHeight;
+        int minVerticalPadding = 2 * getOppoCellPaddingTopMin(cols);
+        result.y = Math.max(contentHeight + minVerticalPadding,
+                result.x + getOppoDiffCellHeightWithCellWidth(cols, rows));
         return result;
     }
 

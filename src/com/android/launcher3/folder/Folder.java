@@ -1065,6 +1065,8 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     /**
      * Undo {@link HxyFolderAnimationManager} open companion fade (Workspace/Hotseat α → 0).
+     * Also restores page {@link ShortcutAndWidgetContainer} alphas that Overview→NORMAL
+     * may have forced to 0 while a folder stayed open.
      */
     public void restoreWorkspaceCompanionAlpha() {
         if (mLauncher == null) {
@@ -1075,6 +1077,16 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         View pageIndicator = workspace != null ? workspace.getPageIndicator() : null;
         if (workspace != null) {
             workspace.setAlpha(1f);
+            final int pageCount = workspace.getChildCount();
+            for (int i = 0; i < pageCount; i++) {
+                View page = workspace.getChildAt(i);
+                if (page instanceof CellLayout) {
+                    View container = ((CellLayout) page).getShortcutsAndWidgets();
+                    if (container != null) {
+                        container.setAlpha(1f);
+                    }
+                }
+            }
         }
         if (hotseat != null) {
             // Keep hidden if edit-mode long-press already hid the dock.

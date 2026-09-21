@@ -168,6 +168,8 @@ import com.android.launcher3.dragndrop.LauncherDragController;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderGridOrganizer;
 import com.android.launcher3.folder.FolderIcon;
+import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.HxyLargeFolderProxy;
 import com.android.launcher3.icons.IconCache;
 import com.android.launcher3.keyboard.ViewGroupFocusHelper;
 import com.android.launcher3.logger.LauncherAtom;
@@ -1325,10 +1327,7 @@ public class Launcher extends StatefulActivity<LauncherState>
     public void onStateSetEnd(LauncherState state) {
         super.onStateSetEnd(state);
         getAppWidgetHolder().setStateIsNormal(state == LauncherState.NORMAL);
-        // Roll/cylinder strip draw needs an unclipped workspace; do not re-enable clipping.
-        if (getWorkspace() != null && !getWorkspace().isRollScrollEffectActive()) {
-            getWorkspace().setClipChildren(!state.hasFlag(FLAG_MULTI_PAGE));
-        }
+        getWorkspace().setClipChildren(!state.hasFlag(FLAG_MULTI_PAGE));
 
         finishAutoCancelActionMode();
         removeActivityFlags(ACTIVITY_STATE_TRANSITION_ACTIVE);
@@ -3274,8 +3273,27 @@ public class Launcher extends StatefulActivity<LauncherState>
                 -> containers.add(((CellLayout) page).getShortcutsAndWidgets()));
 
         // Order: Preferred item by itself or in folder, then by matching package/user
-        return getFirstMatch(containers, preferredItem, forFolderMatch(preferredItem),
+        View match = getFirstMatch(containers, preferredItem, forFolderMatch(preferredItem),
                 packageAndUserAndApp, forFolderMatch(packageAndUserAndApp));
+        // OPPO FlexibleFolderIcon → BigFolderItemIcon: close into the preview cell, not the
+        // whole large-folder plate (hiding the plate causes the workspace folder to blink).
+        return resolveLargeFolderCloseTarget(match, preferredItemId, packageName, user);
+    }
+
+    /**
+     * When the workspace match is a large folder plate, resolve the specific preview cell so
+     * {@link FloatingIconView} only hides that cell and scales into its bounds.
+     */
+    @Nullable
+    private static View resolveLargeFolderCloseTarget(@Nullable View match, int preferredItemId,
+            String packageName, UserHandle user) {
+        if (!(match instanceof HxyLargeFolderIcon)
+                || !HxyLargeFolderProxy.isLargeFolder(match)) {
+            return match;
+        }
+        View cell = ((HxyLargeFolderIcon) match).getFirstMatchForAppClose(
+                preferredItemId, packageName, user);
+        return cell != null ? cell : match;
     }
 
     /**

@@ -24,8 +24,8 @@ import com.android.launcher3.model.data.WorkspaceItemInfo;
  * Rules for which workspace icons show edit-mode selection checkmarks / actions.
  * <p>
  * Always excludes hotseat.<br>
- * Cleanup / Switch wallpaper show checks and can be removed from Home, but never
- * uninstalled (they are launcher-owned activities).<br>
+ * Cleanup / Switch wallpaper are launcher-owned utilities: they show a remove (−) badge
+ * (not a checkmark), can leave Home, and are never uninstalled.<br>
  * Workspace icons with a DB id can be selected (Create folder, etc.).<br>
  * Checkmarks still show on system apps (Oppo); Uninstall is gated separately.
  */
@@ -55,6 +55,10 @@ public final class EditSelectionEligibility {
         if (isHotseat(info)) {
             return false;
         }
+        // Utilities use the remove (−) badge instead of multi-select checks.
+        if (isLauncherUtility(info)) {
+            return false;
+        }
         // Folders draw their own chrome (check / count badge); not via BubbleTextView.
         if (view instanceof FolderIcon || info instanceof FolderInfo) {
             return false;
@@ -67,6 +71,19 @@ public final class EditSelectionEligibility {
             return canRemoveFromWorkspace(info) || isInsideFolder(info);
         }
         return false;
+    }
+
+    /**
+     * Cleanup / Switch wallpaper in home-edit: widget-style remove (−), not a checkmark.
+     */
+    public static boolean canShowRemoveBadge(Context context, @Nullable View view) {
+        if (view == null || !(view.getTag() instanceof ItemInfo info)) {
+            return false;
+        }
+        if (isHotseat(info) || !canRemoveFromWorkspace(info)) {
+            return false;
+        }
+        return isLauncherUtility(info);
     }
 
     public static boolean canToggle(Context context, @Nullable View view) {
@@ -176,12 +193,20 @@ public final class EditSelectionEligibility {
     }
 
     /** Cleanup / Switch wallpaper — launcher-owned utilities (remove icon, never uninstall). */
-    private static boolean isLauncherUtility(ItemInfo info) {
+    public static boolean isLauncherUtility(ItemInfo info) {
         ComponentName cn = info.getTargetComponent();
         if (cn == null) {
             return false;
         }
-        return CLEANUP.equals(cn) || SWITCH_WALLPAPER.equals(cn);
+        return isCleanupUtility(cn) || isSwitchWallpaperUtility(cn);
+    }
+
+    public static boolean isCleanupUtility(@Nullable ComponentName cn) {
+        return CLEANUP.equals(cn);
+    }
+
+    public static boolean isSwitchWallpaperUtility(@Nullable ComponentName cn) {
+        return SWITCH_WALLPAPER.equals(cn);
     }
 
     private static boolean canRemoveFromWorkspace(ItemInfo info) {

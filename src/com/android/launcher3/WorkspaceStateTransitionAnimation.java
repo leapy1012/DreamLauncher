@@ -115,9 +115,14 @@ public class WorkspaceStateTransitionAnimation {
     private void setWorkspaceProperty(LauncherState state, PropertySetter propertySetter,
             StateAnimationConfig config) {
         Folder openFolder = Folder.getOpen(mLauncher);
-        // Retained open folder under Overview→NORMAL: hold companions + folder dim so the
-        // Overview exit does not flash a bright undimmed desktop (white wash).
-        final boolean holdOpenFolderUi = openFolder != null && !state.overviewUi;
+        LauncherState fromState = mLauncher.getStateManager().getState();
+        // Retained open folder under Overview→NORMAL only: hold companions so Overview
+        // exit does not flash a bright undimmed desktop. Must not apply for other
+        // transitions (e.g. SPRING_LOADED→NORMAL after dropping into a drag-opened
+        // folder) — that forced page container α to 0 and folder close only restores
+        // Workspace View.ALPHA, leaving all icons invisible.
+        final boolean holdOpenFolderUi = openFolder != null && !state.overviewUi
+                && fromState.overviewUi;
 
         ScaleAndTranslation scaleAndTranslation = state.getWorkspaceScaleAndTranslation(mLauncher);
         ScaleAndTranslation hotseatScaleAndTranslation = state.getHotseatScaleAndTranslation(
@@ -141,7 +146,6 @@ public class WorkspaceStateTransitionAnimation {
         int elements = state.getVisibleElements(mLauncher);
         Hotseat hotseat = mWorkspace.getHotseat();
         Interpolator scaleInterpolator = config.getInterpolator(ANIM_WORKSPACE_SCALE, ZOOM_OUT);
-        LauncherState fromState = mLauncher.getStateManager().getState();
 
         boolean shouldSpring = propertySetter instanceof PendingAnimation
                 && fromState == HINT_STATE && state == NORMAL;

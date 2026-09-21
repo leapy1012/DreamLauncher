@@ -95,6 +95,15 @@ public interface ActivityContext {
         return false;
     }
 
+    /**
+     * When false, {@link com.android.launcher3.dragndrop.DragLayer} must not translate/fade with
+     * overlay progress. Remote Quick Glance already moves in its own window; translating the
+     * home layer fights AIDL progress echo and shakes every icon.
+     */
+    default boolean shouldTranslateDragLayerForOverlay() {
+        return true;
+    }
+
     default DotInfo getDotInfoForItem(ItemInfo info) {
         return null;
     }

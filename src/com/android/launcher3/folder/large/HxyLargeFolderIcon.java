@@ -10,6 +10,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.UserHandle;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -17,6 +18,8 @@ import android.view.ViewTreeObserver;
 import android.view.animation.PathInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+
+import androidx.annotation.Nullable;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
@@ -1054,18 +1057,104 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         return HxyLargeFolderUtils.loadValidBitmapInfo(getContext(), this.mInfo.contents);
     }
 
+    /**
+     * Finds the preview cell for Home/app-close animation (OPPO BigFolderItemIcon parity).
+     * Snaps the closed large-folder preview to the page that contains the item when needed.
+     */
+    @Nullable
+    public View getFirstMatchForAppClose(int preferredItemId, String packageName,
+            UserHandle user) {
+        if (!isLargeFolder() || mListView == null || mInfo == null) {
+            return null;
+        }
+        View cell = findPreviewCellForAppClose(preferredItemId, packageName, user);
+        if (cell != null) {
+            return cell;
+        }
+        int contentIndex = findContentIndexForAppClose(preferredItemId, packageName, user);
+        if (contentIndex < 0) {
+            return null;
+        }
+        int page = pageForContentIndex(contentIndex);
+        if (page != mPreviewPage && mPagingController != null) {
+            mPagingController.snapToPage(page, false /* animate */);
+            cell = findPreviewCellForAppClose(preferredItemId, packageName, user);
+        }
+        return cell;
+    }
+
+    /** @deprecated Prefer {@link #getFirstMatchForAppClose(int, String, UserHandle)}. */
     public View getFirstMatchForAppClose(String packageName, int userId) {
-        int count = this.mListView.getChildCount();
-        if (count > HxyLargeFolderProxy.getMaxSize()) {
+        return getFirstMatchForAppClose(ItemInfo.NO_ID, packageName,
+                UserHandle.of(userId));
+    }
+
+    @Nullable
+    private View findPreviewCellForAppClose(int preferredItemId, String packageName,
+            UserHandle user) {
+        if (mListView == null) {
+            return null;
+        }
+        int count = mListView.getChildCount();
+        int max = mAdapter != null ? mAdapter.getMaxSize() : HxyLargeFolderProxy.getMaxSize();
+        if (count > max) {
             count--;
         }
+        View packageMatch = null;
         for (int i = 0; i < count; i++) {
-            HxyLargeFolderIconItem child = (HxyLargeFolderIconItem) this.mListView.getChildAt(i);
-            if (HxyLargeFolderUtils.equals((ItemInfo) (WorkspaceItemInfo) child.getTag(), packageName, userId)) {
-                return child;
+            View child = mListView.getChildAt(i);
+            if (!(child instanceof HxyLargeFolderIconItem)) {
+                continue;
+            }
+            HxyLargeFolderIconItem itemView = (HxyLargeFolderIconItem) child;
+            if (itemView.isCountOut()) {
+                continue;
+            }
+            Object tag = itemView.getTag();
+            if (!(tag instanceof WorkspaceItemInfo)) {
+                continue;
+            }
+            WorkspaceItemInfo info = (WorkspaceItemInfo) tag;
+            if (preferredItemId != ItemInfo.NO_ID && info.id == preferredItemId) {
+                return itemView;
+            }
+            if (packageMatch == null
+                    && HxyLargeFolderUtils.equals(info, packageName, user)) {
+                packageMatch = itemView;
             }
         }
-        return null;
+        return packageMatch;
+    }
+
+    private int findContentIndexForAppClose(int preferredItemId, String packageName,
+            UserHandle user) {
+        if (mInfo == null || mInfo.contents == null) {
+            return -1;
+        }
+        int packageIndex = -1;
+        for (int i = 0; i < mInfo.contents.size(); i++) {
+            WorkspaceItemInfo info = mInfo.contents.get(i);
+            if (preferredItemId != ItemInfo.NO_ID && info.id == preferredItemId) {
+                return i;
+            }
+            if (packageIndex < 0 && HxyLargeFolderUtils.equals(info, packageName, user)) {
+                packageIndex = i;
+            }
+        }
+        return packageIndex;
+    }
+
+    private int pageForContentIndex(int contentIndex) {
+        if (mInfo == null || contentIndex < 0) {
+            return 0;
+        }
+        int without = HxyBigFolderPreviewModes.getMaxPreviewWithoutStacked(mInfo, 0);
+        if (without <= 0) {
+            return 0;
+        }
+        int page = contentIndex / without;
+        int pageCount = getPreviewPageCount();
+        return Math.max(0, Math.min(pageCount - 1, page));
     }
 
     private void setListViewVisible(boolean visible) {

@@ -328,7 +328,8 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     private final StatsLogManager mStatsLogManager;
     public ScrollEffect mScrollEffect;
     /** Oppo-style: finger travel past min/max before damping (not the visual scroll). */
-    private int mUnboundedScroll;
+    /** Unbounded primary scroll used for ColorOS rubber-band overscroll (and overlay drive). */
+    protected int mUnboundedScroll;
     private boolean mWasInOverscroll;
 
     /**
@@ -1562,34 +1563,11 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         }
     }
 
-    public boolean isRollScrollEffectActive() {
-        return mScrollEffect != null
-                && ScrollEffect.SCROLL_EFFECT_OPPO_ROLL.equals(mScrollEffect.getName());
-    }
-
-    /**
-     * Cylinder strip draw uses Camera + per-column clipRect then {@link #drawChild}. If the
-     * workspace clips children, drawChild re-clips to the full page bounds in the already
-     * transformed canvas space and the strips collapse into one cube-like plane (seen on MTK).
-     * Keep unclipped while Roll is active — including against {@code onStateSetEnd} resets.
-     */
-    @Override
-    public void setClipChildren(boolean clipChildren) {
-        super.setClipChildren(isRollScrollEffectActive() ? false : clipChildren);
-    }
-
-    @Override
-    public void setClipToPadding(boolean clipToPadding) {
-        super.setClipToPadding(isRollScrollEffectActive() ? false : clipToPadding);
-    }
-
     public void setScrollEffect(ScrollEffect scrollEffect) {
         this.mScrollEffect = scrollEffect;
         mUnboundedScroll = mOrientationHandler.getPrimaryScroll(this);
-        // Oppo keeps workspace unclipped for cylinder strips that draw outside page bounds.
-        boolean roll = isRollScrollEffectActive();
-        setClipChildren(!roll);
-        setClipToPadding(!roll);
+        setClipChildren(true);
+        setClipToPadding(true);
         for (int i = 0; i < getChildCount(); i++) {
             View pageAt = getPageAt(i);
             if (pageAt != null) {
@@ -1613,87 +1591,6 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         ScrollEffect.setFromString(this, str);
     }
 
-    public float getScrollProgressForEffect(int screenCenter, View page, int pageIndex) {
-        return getScrollProgress(screenCenter, page, pageIndex);
-    }
-
-    /**
-     * Oppo cylinder visible range: pages intersecting the unscaled viewport (no scaleX expand).
-     */
-    public int[] getCylinderVisibleChildrenRange() {
-        final float viewportRight = getMeasuredWidth();
-        int first = -1;
-        int last = -1;
-        final int childCount = getChildCount();
-        for (int i = 0; i < childCount; i++) {
-            View page = getPageAt(i);
-            if (page == null) {
-                continue;
-            }
-            float left = page.getLeft() + page.getTranslationX() - getScrollX();
-            if (left < viewportRight && left + page.getMeasuredWidth() > 0f) {
-                if (first == -1) {
-                    first = i;
-                }
-                last = i;
-            }
-        }
-        mTmpIntPair[0] = first;
-        mTmpIntPair[1] = last;
-        return mTmpIntPair;
-    }
-
-    /** Oppo CylinderEffectAgent fragment count = DeviceProfile column count. */
-    public int getCylinderFragmentCount() {
-        return Math.max(1, mLauncher.getDeviceProfile().inv.numColumns);
-    }
-
-    /**
-     * Distance used by {@link #getScrollProgress} between {@code page} and its scroll neighbor.
-     * Cylinder pageBase must use this (not raw width) or icons drift then snap.
-     */
-    public float getPageScrollDistanceForEffect(int page) {
-        int panelCount = getPanelCount();
-        int pageCount = getChildCount();
-        if (page < 0 || page >= pageCount) {
-            return getMeasuredWidth();
-        }
-        int screenCenter = getScrollX() + getMeasuredWidth() / 2;
-        int delta = screenCenter - (getScrollForPage(page) + getMeasuredWidth() / 2);
-        int adjacentPage = page + panelCount;
-        if ((delta < 0 && !mIsRtl) || (delta > 0 && mIsRtl)) {
-            adjacentPage = page - panelCount;
-        }
-        if (adjacentPage >= 0 && adjacentPage < pageCount) {
-            return Math.abs(getScrollForPage(adjacentPage) - getScrollForPage(page));
-        }
-        View v = getPageAt(page);
-        float width = v != null ? v.getMeasuredWidth() : getMeasuredWidth();
-        return width + getPageSpacing();
-    }
-
-    public boolean drawChildForEffect(Canvas canvas, View child) {
-        // drawChild would re-clip to the page box when clipChildren is on; force off for strips.
-        boolean wasClipChildren = getClipChildren();
-        boolean wasClipToPadding = getClipToPadding();
-        if (wasClipChildren) {
-            super.setClipChildren(false);
-        }
-        if (wasClipToPadding) {
-            super.setClipToPadding(false);
-        }
-        try {
-            return drawChild(canvas, child, getDrawingTime());
-        } finally {
-            if (wasClipChildren) {
-                super.setClipChildren(true);
-            }
-            if (wasClipToPadding) {
-                super.setClipToPadding(true);
-            }
-        }
-    }
-
     public boolean isPageInTransitionForEffect() {
         return isPageInTransition();
     }
@@ -1707,11 +1604,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     }
 
     public boolean drawVisiblePagesForEffect(Canvas canvas) {
-        // Prefer cylinder range while Roll is active so fallback matches effect pages.
-        int[] range = (mScrollEffect != null
-                && ScrollEffect.SCROLL_EFFECT_OPPO_ROLL.equals(mScrollEffect.getName()))
-                ? getCylinderVisibleChildrenRange()
-                : getVisibleChildrenRange();
+        int[] range = getVisibleChildrenRange();
         if (range[0] < 0 || range[1] < 0) {
             return false;
         }
@@ -3864,8 +3757,10 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     @Override
     protected boolean shouldPullEdgeGlow() {
-        // ColorOS uses rubber-band page overscroll (not EdgeEffect glow) so transitions keep running.
-        return false;
+        // When a LauncherOverlay is installed (Quick Glance / plus), use OverlayEdgeEffect so
+        // page-0 right-swipe drives ILauncherOverlay scroll. Without an overlay, keep ColorOS
+        // rubber-band overscroll (no EdgeEffect glow).
+        return mOverlayEdgeEffect != null;
     }
 
     /**
@@ -3917,6 +3812,10 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     /**
      * Oppo {@code oplusScrollTo} + {@code dampedOverScroll}: keep full finger travel in
      * {@link #mUnboundedScroll}, set visual scroll to bound + damped(amount).
+     * <p>
+     * When a minus-side LauncherOverlay (Quick Glance) is installed, pin the visual scroll
+     * at the first-page edge instead of rubber-banding / page-transitioning — overlay
+     * progress is driven from {@link #mUnboundedScroll} (see CustomizeWorkspace).
      */
     @Override
     public void scrollTo(int x, int y) {
@@ -3931,16 +3830,25 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
         if (mAllowOverScroll && size > 0 && (pastMin || pastMax)) {
             mWasInOverscroll = true;
-            if (!isPageInTransition()) {
-                pageBeginTransition();
+            // Minus-side overlay: LTR pastMin / RTL pastMax. Do not play workspace
+            // page-transition or rubber-band ahead of Quick Glance.
+            final boolean minusOverlayOverscroll = mOverlayEdgeEffect != null
+                    && ((pastMin && !mIsRtl) || (pastMax && mIsRtl));
+            final int visualPrimary;
+            if (minusOverlayOverscroll) {
+                visualPrimary = pastMin ? mMinScroll : mMaxScroll;
+            } else {
+                if (!isPageInTransition()) {
+                    pageBeginTransition();
+                }
+                // While dragging: damp absolute finger travel (Oppo dampedOverScroll).
+                // While settling: scroller already drives visual position — do not re-damp.
+                visualPrimary = isHandlingTouch()
+                        ? (pastMin ? mMinScroll : mMaxScroll)
+                            + OverScroll.dampedScroll(
+                                    primary - (pastMin ? mMinScroll : mMaxScroll), size)
+                        : primary;
             }
-            // While dragging: damp absolute finger travel (Oppo dampedOverScroll).
-            // While settling: scroller already drives visual position — do not re-damp.
-            final int visualPrimary = isHandlingTouch()
-                    ? (pastMin ? mMinScroll : mMaxScroll)
-                        + OverScroll.dampedScroll(
-                                primary - (pastMin ? mMinScroll : mMaxScroll), size)
-                    : primary;
             if (horizontal) {
                 x = visualPrimary;
                 y = secondary;

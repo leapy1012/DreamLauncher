@@ -78,7 +78,10 @@ filegroup {
 
 filegroup {
     name: "Mtklauncher-customize-src",
-    srcs: [ "customize/src/**/*.java", "customize/src/**/*.kt" ],
+    srcs: [
+        "customize/src/**/*.java",
+        "customize/src/**/*.kt",
+    ],
 }
 
 // Proguard files for Launcher3

@@ -81,8 +81,17 @@
     <string name="launcher_is_compact_arrangement_title">图标自动补位</string>
     <string name="home_screen_double_tap_to_off">双击息屏</string>
     <string name="home_screen_double_tap_to_off_summary">锁屏或桌面空白处双击，可息屏</string>
+    <string name="launcher_settings_gestures">手势</string>
+    <string name="home_screen_swipe_down">主屏幕下拉</string>
+    <string name="home_screen_swipe_right">主屏幕右滑</string>
+    <string name="home_swipe_down_global_search">全局搜索</string>
+    <string name="home_swipe_down_notification">通知中心</string>
+    <string name="home_swipe_right_none">无</string>
+    <string name="home_swipe_right_quick_glance">速览</string>
     <string name="home_screen_memory_clean">一键清理</string>
+    <string name="home_screen_memory_clean_summary">在主屏幕上显示一键清理图标</string>
     <string name="home_screen_wallpaper_set">切换壁纸</string>
+    <string name="home_screen_wallpaper_set_summary">在主屏幕上显示切换壁纸图标</string>
     <string name="home_screen_icon_shape">图标风格</string>
     <string name="home_screen_icon_shape_default">默认</string>
     <string name="home_screen_icon_shape_droplet">水滴</string>

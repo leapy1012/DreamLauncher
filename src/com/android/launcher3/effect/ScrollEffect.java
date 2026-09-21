@@ -1,18 +1,12 @@
 package com.android.launcher3.effect;
 
 import android.animation.TimeInterpolator;
-import android.graphics.Camera;
 import android.graphics.Canvas;
-import android.graphics.Matrix;
-import android.graphics.Rect;
-import android.graphics.RectF;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
-import com.android.launcher3.CellLayout;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.R;
@@ -29,7 +23,6 @@ public abstract class ScrollEffect {
     public static final String SCROLL_EFFECT_OPPO_CARD = "oppo-card";
     public static final String SCROLL_EFFECT_OPPO_CUBE = "oppo-cube";
     public static final String SCROLL_EFFECT_OPPO_FLIP = "oppo-flip";
-    public static final String SCROLL_EFFECT_OPPO_ROLL = "oppo-roll";
     public static final String SCROLL_EFFECT_OPPO_TILT = "oppo-tilt";
     public static final String SCROLL_EFFECT_OVERVIEW = "overview";
     public static final String SCROLL_EFFECT_STACK = "stack";
@@ -42,10 +35,6 @@ public abstract class ScrollEffect {
     private static final float OPPO_FLIP_CAMERA_DISTANCE = 3500.0f;
     private static final float OPPO_FLIP_MIN_SCALE = 0.35f;
     private static final float OPPO_TILT_MAX_ROTATION = 45.0f;
-    private static final int OPPO_ROLL_BACK_ALPHA = 150;
-    private static final float OPPO_ROLL_CAMERA_Z = 2.498f;
-    private static final float OPPO_ROLL_EXPAND_THRESHOLD = 0.05f;
-    private static final float OPPO_ROLL_RADIUS_RATIO = 0.452f;
     public static float mDensity;
     public final Workspace mWorkspace;
     public final String mEffectName;
@@ -299,294 +288,6 @@ public abstract class ScrollEffect {
         }
     }
 
-    /**
-     * ColorOS "Roll" — port of {@code CylinderEffectAgent}.
-     * Draws each page as numColumns vertical strips with Camera Y-rotation (not View.rotationY).
-     */
-    public static class OppoRoll extends ScrollEffect {
-        private final Camera mCamera = new Camera();
-        private final Matrix mCameraMatrix = new Matrix();
-        private final Matrix mMatrix = new Matrix();
-        private final RectF mClipRect = new RectF();
-        private final RectF mLayerRect = new RectF();
-        private final Rect mViewLocation = new Rect();
-        private final DecelerateInterpolator mInterpolator = new DecelerateInterpolator();
-        private int mCurrentPage = -1;
-        private int mFragmentCount = -1;
-        private float mCylinderRadius;
-        private float mDeltaFragmentAngle;
-        private boolean mCameraInited;
-        private boolean mHasExpandAllView;
-        /** Oppo {@code mDrawSelfSuccess}: only skip normal drawChild when strips painted. */
-        private boolean mDrawSelfSuccess;
-
-        public OppoRoll(Workspace workspace) {
-            super(workspace, SCROLL_EFFECT_OPPO_ROLL);
-        }
-
-        public void onScreenScrolled(View view, int i, float f) {
-            // Cylinder never uses page View transforms — clear any leftover Cube/Tilt state.
-            view.setAlpha(1.0f);
-            view.setRotation(0.0f);
-            view.setRotationX(0.0f);
-            view.setRotationY(0.0f);
-            view.setScaleX(1.0f);
-            view.setScaleY(1.0f);
-            view.setTranslationX(0.0f);
-            view.setTranslationY(0.0f);
-        }
-
-        @Override
-        public void reset() {
-            mHasExpandAllView = false;
-            mDrawSelfSuccess = false;
-            mCameraInited = false;
-            for (int i = 0; i < mWorkspace.getChildCount(); i++) {
-                View child = mWorkspace.getChildAt(i);
-                if (child != null && child.getAlpha() != 1.0f) {
-                    child.setAlpha(1.0f);
-                }
-            }
-        }
-
-        @Override
-        public boolean drawWorkspace(Canvas canvas) {
-            // Oppo drawAllChild: agent only while page-in-transition; else normal children.
-            mDrawSelfSuccess = false;
-            if (!mWorkspace.isPageInTransitionForEffect()) {
-                mHasExpandAllView = false;
-                return false;
-            }
-            int[] range = mWorkspace.getCylinderVisibleChildrenRange();
-            if (range == null || (range[0] == -1 && range[1] == -1)) {
-                return false;
-            }
-            int first = range[0];
-            int last = range[1];
-            if (first < 0 || last < 0) {
-                return false;
-            }
-
-            int screenCenter = mWorkspace.getScrollX() + mWorkspace.getMeasuredWidth() / 2;
-            boolean isRtl = Utilities.isRtl(mWorkspace.getResources());
-
-            // Same direction probe as CylinderEffectAgent.applyEffect.
-            int directionProbe = ((mCurrentPage * 2) - first) - last;
-            int direction;
-            if (directionProbe > 0) {
-                mCurrentPage = last;
-                direction = 1;
-            } else if (directionProbe < 0) {
-                mCurrentPage = first;
-                direction = -1;
-            } else {
-                direction = last == mWorkspace.getPageCount() - 1 ? -1 : 0;
-                mCurrentPage = first;
-            }
-            direction *= isRtl ? -1 : 1;
-
-            View current = null;
-            View adjacent = null;
-            float remain = 0.0f;
-            float expand = 0.0f;
-            for (int i = first; i <= last; i++) {
-                View page = mWorkspace.getPageAt(i);
-                if (page == null) {
-                    continue;
-                }
-                if (i == mCurrentPage) {
-                    float amount = Math.abs(
-                            mWorkspace.getScrollProgressForEffect(screenCenter, page, i));
-                    remain = 1.0f - amount;
-                    // Oppo: expand ramps in first/last 5%, else 1.
-                    float interpolation = amount < OPPO_ROLL_EXPAND_THRESHOLD
-                            ? mInterpolator.getInterpolation(amount / OPPO_ROLL_EXPAND_THRESHOLD)
-                            : amount < 1.0f - OPPO_ROLL_EXPAND_THRESHOLD
-                                    ? 1.0f
-                                    : mInterpolator.getInterpolation(remain / OPPO_ROLL_EXPAND_THRESHOLD);
-                    if (interpolation == 1.0f) {
-                        mHasExpandAllView = true;
-                    }
-                    // Oppo lock: expand=1 only while finger down (not during fling settle).
-                    expand = ((mCurrentPage != 0 || amount > 0.5f)
-                            && mWorkspace.isPageInTransitionForEffect()
-                            && mHasExpandAllView
-                            && mWorkspace.isHandlingTouch())
-                            ? 1.0f : interpolation;
-                    current = page;
-                } else {
-                    adjacent = page;
-                }
-            }
-            if (current == null) {
-                return false;
-            }
-            drawCylinderPair(canvas, current, adjacent, remain, expand, direction,
-                    last == 0 || first == mWorkspace.getPageCount() - 1, last != 0);
-            return mDrawSelfSuccess;
-        }
-
-        private void drawCylinderPair(Canvas canvas, View current, View adjacent, float remain,
-                float expand, int direction, boolean edgePage, boolean hasLeftPage) {
-            applyCylinderEffect();
-            // Oppo doAnim — also guard null adjacent (single visible page mid-swipe).
-            if (edgePage || adjacent == null) {
-                clipDraw(canvas, current, 0, 1, expand, remain, true, direction,
-                        (1.0f - remain) * current.getWidth(), hasLeftPage);
-            } else if (remain > 0.5f) {
-                clipDraw(canvas, adjacent, 1, 0, expand, remain, false, direction, 0.0f,
-                        hasLeftPage);
-                clipDraw(canvas, current, 0, 1, expand, remain, false, direction, 0.0f,
-                        hasLeftPage);
-            } else {
-                clipDraw(canvas, current, 0, 0, expand, remain, false, direction, 0.0f,
-                        hasLeftPage);
-                clipDraw(canvas, adjacent, 1, 1, expand, remain, false, direction, 0.0f,
-                        hasLeftPage);
-            }
-        }
-
-        private void applyCylinderEffect() {
-            int fragments = Math.max(1, mWorkspace.getCylinderFragmentCount());
-            if (mFragmentCount != fragments) {
-                mFragmentCount = fragments;
-                mCameraInited = false;
-            }
-            mDeltaFragmentAngle = 360.0f / (mFragmentCount * 2.0f);
-            if (mCameraInited) {
-                return;
-            }
-            DisplayMetrics metrics = mWorkspace.getResources().getDisplayMetrics();
-            float cameraZ = -(mWorkspace.getMeasuredHeight() * OPPO_ROLL_CAMERA_Z);
-            mCamera.setLocation(0.0f, 0.0f, (metrics.density / metrics.densityDpi) * cameraZ);
-            mCameraInited = true;
-        }
-
-        private void clipDraw(Canvas canvas, View page, int pageSide, int drawSide, float expand,
-                float remain, boolean edgePage, int direction, float edgeOffset,
-                boolean hasLeftPage) {
-            if (page == null) {
-                return;
-            }
-            // Oppo: edgeOffset ignored when hasLeftPage; freeze remain on first-page-only edge.
-            float effectiveEdgeOffset = hasLeftPage ? 0.0f : edgeOffset;
-            float effectiveRemain = (edgePage && !hasLeftPage) ? 1.0f : remain;
-            float edgeRamp = 1.0f - effectiveRemain;
-            float alphaScale = expand * (edgeRamp <= 0.1f ? 10.0f * edgeRamp : 1.0f);
-            float transformScale = drawSide == 0 ? mix(1.0f, expand, 0.025f) : expand;
-
-            initViewLocation(page, mViewLocation);
-            int left = mViewLocation.left;
-            int top = mViewLocation.top;
-            int bottom = mViewLocation.bottom;
-            int viewWidth = mViewLocation.width();
-            int viewHeight = mViewLocation.height();
-            if (viewWidth <= 0 || viewHeight <= 0 || mFragmentCount <= 0) {
-                return;
-            }
-
-            mCylinderRadius = viewWidth * OPPO_ROLL_RADIUS_RATIO;
-            int stripWidth = Math.max(1, viewWidth / mFragmentCount);
-            float pivotY = top + (viewHeight * 0.5f);
-            boolean isRtl = Utilities.isRtl(mWorkspace.getResources());
-            int logicalPage = isRtl
-                    ? (mWorkspace.getChildCount() - 1 - mCurrentPage) : mCurrentPage;
-            int paddingCenter = (mWorkspace.getPaddingLeft() + mWorkspace.getPaddingRight()) / 2;
-            // Portrait Oppo: pageOffset = -logicalPage (small index nudge).
-            int pageOffset = -logicalPage;
-            float pageX = page.getX();
-            float pageY = page.getY();
-            int pageWidth = page.getWidth();
-            // Oppo pageBase: travel term uses view.getWidth(), not page spacing.
-            float pageBase = pageX - ((pageWidth + paddingCenter) * logicalPage)
-                    + ((1.0f - remain) * direction * pageWidth)
-                    - paddingCenter - effectiveEdgeOffset
-                    + (pageSide * direction * paddingCenter)
-                    + pageOffset;
-
-            for (int i = 0; i < mFragmentCount; i++) {
-                int stripIndex = shouldReverseFragments(direction, pageSide)
-                        ? mFragmentCount - i - 1 : i;
-                float cylinderAngle = ((((pageSide * mFragmentCount) + stripIndex) + 0.5f)
-                        * mDeltaFragmentAngle) - 90.0f;
-                float angle = (edgeRamp * 180.0f * direction) + cylinderAngle;
-                if (angle >= 270.0f) {
-                    angle -= 360.0f;
-                } else if (angle < -90.0f) {
-                    angle += 360.0f;
-                }
-
-                float stripLeft = left + (stripIndex * stripWidth);
-                float stripRight = stripLeft + stripWidth;
-                float stripCenter = stripLeft + (stripWidth * 0.5f);
-                double radians = Math.toRadians(angle);
-                float z = (1.0f - (float) Math.cos(radians)) * mCylinderRadius;
-                float cylinderX = (float) (((Math.sin(radians) * mCylinderRadius)
-                        + (viewWidth * 0.5f) + left - stripCenter) * transformScale);
-                float matrixX = cylinderX * transformScale;
-                float matrixZ = z * transformScale;
-                // Oppo back-face: angle%360 in (90, 270] → reduced alpha.
-                float mod = angle % 360.0f;
-                if (mod < 0.0f) {
-                    mod += 360.0f;
-                }
-                int alpha = (mod <= 90.0f || mod > 270.0f)
-                        ? 255 : (int) (OPPO_ROLL_BACK_ALPHA * alphaScale);
-
-                mClipRect.set(stripLeft, top, stripRight, bottom);
-                mLayerRect.set(mClipRect);
-                mLayerRect.offset((pageX - pageBase) + matrixX, pageY);
-
-                int save = canvas.saveLayerAlpha(mLayerRect, alpha);
-                updateMatrix(angle * transformScale, matrixX, matrixZ, stripCenter, pivotY);
-                canvas.translate(pageX, pageY);
-                mMatrix.postTranslate(-pageBase, 0.0f);
-                canvas.concat(mMatrix);
-                canvas.translate(-pageX, -pageY);
-                mClipRect.offset(pageX, pageY);
-                canvas.clipRect(mClipRect);
-                mWorkspace.drawChildForEffect(canvas, page);
-                canvas.restoreToCount(save);
-            }
-            mDrawSelfSuccess = true;
-        }
-
-        private boolean shouldReverseFragments(int direction, int pageSide) {
-            // Oppo: direction==-1 → reverse when pageSide==1; else reverse when pageSide!=1.
-            return (direction == -1 && pageSide == 1) || (direction != -1 && pageSide != 1);
-        }
-
-        private float mix(float start, float end, float amount) {
-            // Oppo: (end * amount) + ((1 - amount) * start)
-            return (end * amount) + ((1.0f - amount) * start);
-        }
-
-        private void initViewLocation(View view, Rect rect) {
-            float pivotX = view.getPivotX();
-            float pivotY = view.getPivotY();
-            float scaleX = view.getScaleX();
-            float scaleY = view.getScaleY();
-            int width = view.getWidth();
-            int height = view.getHeight();
-            rect.left = (int) (pivotX - (scaleX * pivotX));
-            rect.top = (int) (((-scaleY) * pivotY) + pivotY);
-            rect.right = (int) (pivotX + ((width - pivotX) * scaleX));
-            rect.bottom = (int) (pivotY + ((height - pivotY) * scaleY));
-        }
-
-        private void updateMatrix(float angle, float tx, float z, float pivotX, float pivotY) {
-            mMatrix.reset();
-            mCamera.save();
-            mCamera.translate(0.0f, 0.0f, z);
-            mCamera.rotateY(angle);
-            mCamera.getMatrix(mCameraMatrix);
-            mCameraMatrix.preTranslate(-pivotX, -pivotY);
-            mCameraMatrix.postTranslate(pivotX + tx, pivotY);
-            mMatrix.postConcat(mCameraMatrix);
-            mCamera.restore();
-        }
-    }
-
     public static class ZInterpolator implements TimeInterpolator {
         public float focalLength;
 
@@ -623,8 +324,6 @@ public abstract class ScrollEffect {
         Log.d("ScrollEffect", "zr_effect setFromString effect = " + str + ", mDensity=" + mDensity);
         if (str.equals("none")) {
             workspace.setScrollEffect((ScrollEffect) null);
-        } else if (str.equals(SCROLL_EFFECT_OPPO_ROLL)) {
-            workspace.setScrollEffect(new OppoRoll(workspace));
         } else if (str.equals(SCROLL_EFFECT_OPPO_CUBE)) {
             workspace.setScrollEffect(new OppoCube(workspace));
         } else if (str.equals(SCROLL_EFFECT_OPPO_FLIP)) {
@@ -678,17 +377,12 @@ public abstract class ScrollEffect {
         if (!isOppoStyleEffect()) {
             return drawWorkspace(canvas);
         }
-        // Oppo drawAllChild(cylinder): agent canvas first; fall back only if strips declined.
-        if (SCROLL_EFFECT_OPPO_ROLL.equals(getName())) {
-            return drawWorkspace(canvas) || mWorkspace.drawVisiblePagesForEffect(canvas);
-        }
         return mWorkspace.drawVisiblePagesForEffect(canvas);
     }
 
     private boolean isOppoStyleEffect() {
         String effectName = getName();
-        return SCROLL_EFFECT_OPPO_ROLL.equals(effectName)
-                || SCROLL_EFFECT_OPPO_CUBE.equals(effectName)
+        return SCROLL_EFFECT_OPPO_CUBE.equals(effectName)
                 || SCROLL_EFFECT_OPPO_FLIP.equals(effectName)
                 || SCROLL_EFFECT_OPPO_CARD.equals(effectName)
                 || SCROLL_EFFECT_OPPO_TILT.equals(effectName);

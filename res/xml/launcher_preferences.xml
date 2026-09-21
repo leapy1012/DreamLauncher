@@ -52,6 +52,31 @@
     </com.coui.appcompat.preference.COUIPreferenceCategory>
 
     <com.coui.appcompat.preference.COUIPreferenceCategory
+        android:key="hxyos_desktop_gestures"
+        android:title="@string/launcher_settings_gestures"
+        android:order="12">
+        <com.coui.appcompat.preference.COUIMenuPreference
+            android:key="pref_swipe_down"
+            android:title="@string/home_screen_swipe_down"
+            android:entries="@array/home_swipe_down_entries"
+            android:entryValues="@array/home_swipe_down_values"
+            android:defaultValue="global_search"
+            android:persistent="true"/>
+        <com.coui.appcompat.preference.COUIMenuPreference
+            android:key="pref_swipe_right"
+            android:title="@string/home_screen_swipe_right"
+            android:entries="@array/home_swipe_right_entries"
+            android:entryValues="@array/home_swipe_right_values"
+            android:defaultValue="none"
+            android:persistent="true"/>
+        <com.coui.appcompat.preference.COUISwitchPreference
+            android:key="pref_double_tap"
+            android:title="@string/home_screen_double_tap_to_off"
+            android:defaultValue="false"
+            android:persistent="true"/>
+    </com.coui.appcompat.preference.COUIPreferenceCategory>
+
+    <com.coui.appcompat.preference.COUIPreferenceCategory
         android:key="hxyos_desktop_display"
         android:title="@string/launcher_settings_display"
         android:order="15">
@@ -65,6 +90,18 @@
             android:key="pref_app_name"
             android:title="@string/home_screen_app_name_length"
             android:summary="@string/home_screen_app_name_length_tips"
+            android:defaultValue="true"
+            android:persistent="true"/>
+        <com.coui.appcompat.preference.COUISwitchPreference
+            android:key="pref_memory_clean"
+            android:title="@string/home_screen_memory_clean"
+            android:summary="@string/home_screen_memory_clean_summary"
+            android:defaultValue="true"
+            android:persistent="true"/>
+        <com.coui.appcompat.preference.COUISwitchPreference
+            android:key="pref_wallpaper_set"
+            android:title="@string/home_screen_wallpaper_set"
+            android:summary="@string/home_screen_wallpaper_set_summary"
             android:defaultValue="true"
             android:persistent="true"/>
     </com.coui.appcompat.preference.COUIPreferenceCategory>
@@ -136,21 +173,5 @@
             <intent android:action="hxy.intent.action.CHOOSE_THEME"/>
         </com.coui.appcompat.preference.COUIJumpPreference>
         <!-- hxy-feature: desktop theme-->
-        <com.coui.appcompat.preference.COUISwitchPreference
-            android:key="pref_double_tap"
-            android:title="@string/home_screen_double_tap_to_off"
-            android:summary="@string/home_screen_double_tap_to_off_summary"
-            android:defaultValue="false"
-            android:persistent="true"/>
-        <com.coui.appcompat.preference.COUISwitchPreference
-            android:key="pref_memory_clean"
-            android:title="@string/home_screen_memory_clean"
-            android:defaultValue="true"
-            android:persistent="true"/>
-        <com.coui.appcompat.preference.COUISwitchPreference
-            android:key="pref_wallpaper_set"
-            android:title="@string/home_screen_wallpaper_set"
-            android:defaultValue="true"
-            android:persistent="true"/>
     </com.coui.appcompat.preference.COUIPreferenceCategory>
 </PreferenceScreen>

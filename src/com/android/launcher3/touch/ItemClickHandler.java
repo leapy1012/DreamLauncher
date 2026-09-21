@@ -75,6 +75,10 @@ import static com.android.launcher3.LauncherState.SPRING_LOADED;
 import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.LauncherState;
 import com.android.launcher3.big.HxyAnimBubbleTextView;
+import com.android.launcher3.editselection.EditSelectionActions;
+import com.android.launcher3.editselection.EditSelectionEligibility;
+import com.android.launcher3.LauncherPrefs;
+import android.content.ComponentName;
 
 /**
  * Class for handling clicks on workspace and all-apps items
@@ -103,6 +107,22 @@ public class ItemClickHandler {
             // tap an app toggles selection (does not launch).
             if (v instanceof FolderIcon) {
                 onClickFolderIcon(v);
+                return;
+            }
+            // Cleanup / Switch wallpaper: tap removes from Home (same as widget −).
+            if (EditSelectionEligibility.canShowRemoveBadge(launcher, v)
+                    && v.getTag() instanceof ItemInfo info) {
+                if (EditSelectionEligibility.isLauncherUtility(info)) {
+                    ComponentName cn = info.getTargetComponent();
+                    if (cn != null) {
+                        String prefKey = EditSelectionEligibility.isCleanupUtility(cn)
+                                ? LauncherPrefs.WORKSPACE_MEMORY_CLEAN
+                                : LauncherPrefs.WORKSPACE_WALLPAPER_SET;
+                        LauncherPrefs.getPrefs(launcher).edit().putBoolean(prefKey, false).apply();
+                    }
+                }
+                launcher.removeItem(v, info, true /* deleteFromDb */);
+                EditSelectionActions.stripEmptyWorkspaceScreens(launcher);
                 return;
             }
             if (launcher.getEditSelectionManager().toggle(v)) {

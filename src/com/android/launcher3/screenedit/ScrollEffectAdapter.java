@@ -77,9 +77,6 @@ public class ScrollEffectAdapter extends GridGalleryAdapter {
         // Oppo Transitions first, then classic MTK/AOSP effects.
         this.scrollEffectItems.add(new ScrollEffectItem("none", R.string.transition_effect_none,
                 R.drawable.ic_toggle_bar_default_effect_thumbnail));
-        this.scrollEffectItems.add(new ScrollEffectItem(ScrollEffect.SCROLL_EFFECT_OPPO_ROLL,
-                R.string.transition_effect_oppo_roll,
-                R.drawable.ic_toggle_bar_cylinder_effect_thumbnail));
         this.scrollEffectItems.add(new ScrollEffectItem(ScrollEffect.SCROLL_EFFECT_OPPO_CUBE,
                 R.string.transition_effect_oppo_cube,
                 R.drawable.ic_toggle_bar_cube_effect_thumbnail));

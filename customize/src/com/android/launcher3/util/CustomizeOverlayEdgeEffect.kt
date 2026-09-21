@@ -9,6 +9,10 @@ class CustomizeOverlayEdgeEffect(
     overlay: LauncherOverlayManager.LauncherOverlay,
     val swipeRtl: Boolean
 ) : OverlayEdgeEffect(context, overlay) {
+
+    val launcherOverlay: LauncherOverlayManager.LauncherOverlay
+        get() = mOverlay
+
     override fun onPullDistance(deltaDistance: Float, displacement: Float): Float {
         if (mOverlay is OverlayBase) {
             mOverlay.swipeRtl = swipeRtl

@@ -10,6 +10,7 @@ import com.android.customize.common.di.LauncherContainer
 import com.android.customize.overlay.OverlayManagerImpl
 import com.android.customize.overlay.extension.getFirstMatchForAppClose
 import com.android.customize.overlay.preference.OverlayPreference
+import com.android.launcher3.settings.HomeScreenGestures
 import com.android.launcher3.statemanager.StateManager
 import com.android.launcher3.uioverrides.QuickstepLauncher
 import com.android.systemui.plugins.shared.LauncherOverlayManager
@@ -23,7 +24,12 @@ class CustomizeLauncher : QuickstepLauncher() {
         OverlayManagerImpl(this)
     }
 
+    /** Remote Quick Glance owns the slide; do not translate DragLayer (icon shake). */
+    override fun shouldTranslateDragLayerForOverlay(): Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Align swipe-right SharedPreferences with OverlayPreference before overlay binds.
+        HomeScreenGestures.reconcileSwipeRightWithOverlay(this)
         if (overlayPreference.overlayEnabled) {
             deferOverlayCallbacksUntilNextResumeOrStop()
         }
@@ -47,7 +53,22 @@ class CustomizeLauncher : QuickstepLauncher() {
         if (screenView != null && screenView.canHandleBack()) {
             return screenView
         }
+        if (workspace.isOverlayShown) {
+            return object : OnBackAnimationCallback {
+                override fun onBackInvoked() {
+                    overlayManager.hideOverlay(true)
+                }
+            }
+        }
         return super.getOnBackAnimationCallback()
+    }
+
+    override fun onBackPressed() {
+        if (workspace.isOverlayShown) {
+            overlayManager.hideOverlay(true)
+            return
+        }
+        super.onBackPressed()
     }
 
     override fun getFirstMatchForAppClose(

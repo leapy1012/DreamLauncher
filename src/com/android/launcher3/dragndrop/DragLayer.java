@@ -497,6 +497,12 @@ public class DragLayer extends BaseDragLayer<Launcher> implements LauncherOverla
 
     @Override
     public void onOverlayScrollChanged(float progress) {
+        if (!mActivity.shouldTranslateDragLayerForOverlay()) {
+            // Keep home icons pinned; OverlayHomeEffect handles frost separately.
+            setTranslationX(0f);
+            getAlphaProperty(ALPHA_INDEX_OVERLAY).setValue(1f);
+            return;
+        }
         float alpha = 1 - Interpolators.DEACCEL_3.getInterpolation(progress);
         float transX = getMeasuredWidth() * progress;
 

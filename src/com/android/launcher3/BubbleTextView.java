@@ -203,7 +203,8 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
     private final boolean mLayoutHorizontal;
     private final boolean mIsRtl;
-    public final int mIconSize;
+    /** Workspace/folder icon pixel size; mutable for ToggleBar Layout preview. */
+    public int mIconSize;
 
     @ViewDebug.ExportedProperty(category = "launcher")
     private boolean mHideBadge = false;
@@ -803,6 +804,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         if (!selection.shouldDrawChecks()) {
             return;
         }
+        // Cleanup / Switch wallpaper: remove (−) like widgets, not multi-select checks.
+        if (EditSelectionEligibility.canShowRemoveBadge(getContext(), this)) {
+            drawEditSelectionRemoveBadge(canvas);
+            return;
+        }
         if (!EditSelectionEligibility.canShowCheckmark(getContext(), this)) {
             return;
         }
@@ -831,6 +837,28 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         check = check.mutate();
         check.setBounds(checkBounds);
         check.draw(canvas);
+    }
+
+    private void drawEditSelectionRemoveBadge(Canvas canvas) {
+        Rect iconBounds = new Rect();
+        getIconBounds(iconBounds);
+        if (iconBounds.isEmpty()) {
+            return;
+        }
+        int size = getResources().getDimensionPixelSize(R.dimen.edit_selection_widget_remove_size);
+        int topOffset = getResources().getDimensionPixelSize(R.dimen.edit_selection_check_top_offset);
+        int rightOffset = getResources().getDimensionPixelSize(
+                R.dimen.edit_selection_check_right_offset);
+        Rect removeBounds = new Rect();
+        EditSelectionBadgeLayout.getAppCheckBounds(iconBounds, size, rightOffset, topOffset,
+                EditSelectionBadgeLayout.isRtl(this), removeBounds);
+        Drawable remove = getContext().getDrawable(R.drawable.launcher_ic_widget_remove);
+        if (remove == null) {
+            return;
+        }
+        remove = remove.mutate();
+        remove.setBounds(removeBounds);
+        remove.draw(canvas);
     }
 
     private void drawResizePreview(Canvas canvas) {
@@ -1603,6 +1631,32 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
     public int getIconSize() {
         return mIconSize;
+    }
+
+    /**
+     * ToggleBar Layout preview: match measure to the target grid icon size.
+     * Only changing drawable bounds left {@link #mIconSize} oversized and clipped two-line labels.
+     */
+    public void setIconSizeForLayoutPreview(int sizePx) {
+        if (sizePx <= 0) {
+            return;
+        }
+        if (sizePx == mIconSize) {
+            if (mIcon != null) {
+                Rect bounds = mIcon.getBounds();
+                if (bounds.width() != sizePx || bounds.height() != sizePx) {
+                    mIcon.setBounds(0, 0, sizePx, sizePx);
+                    invalidate();
+                }
+            }
+            return;
+        }
+        mIconSize = sizePx;
+        if (mIcon != null) {
+            mIcon.setBounds(0, 0, sizePx, sizePx);
+        }
+        requestLayout();
+        invalidate();
     }
 
     public boolean isDisplaySearchResult() {

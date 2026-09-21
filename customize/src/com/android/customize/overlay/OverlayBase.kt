@@ -14,4 +14,11 @@ abstract class OverlayBase() : LauncherOverlay {
 
     abstract fun addView(launcher: CustomizeLauncher)
     abstract fun removeView()
+
+    /**
+     * Optional fling velocity (px/s, positive = opening). Default ignores velocity.
+     */
+    open fun onScrollInteractionEndWithVelocity(velocityPx: Float) {
+        onScrollInteractionEnd()
+    }
 }

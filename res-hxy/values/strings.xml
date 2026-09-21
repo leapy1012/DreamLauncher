@@ -40,7 +40,6 @@
     <string name="transition_effect_oppo_card">Card</string>
     <string name="transition_effect_oppo_cube">Cube</string>
     <string name="transition_effect_oppo_flip">Flip</string>
-    <string name="transition_effect_oppo_roll">Roll</string>
     <string name="transition_effect_oppo_tilt">Tilt</string>
     <string name="transition_effects_toolbar_title">Transitions</string>
     <string name="transition_effect_overview">Overview</string>
@@ -65,6 +64,7 @@
     <string name="memory_clean_start_animator">Cleanup</string>
     <string name="app_name_memory_clean">Cleanup</string>
     <string name="home_screen_memory_clean">Cleanup</string>
+    <string name="home_screen_memory_clean_summary">Show the Cleanup icon on the Home screen</string>
     <string name="hxy_clear_memrey_all_locked">Your phone is at its best</string>
     <string name="hxy_clear_memrey_toast">Release %s memory</string>
     <string name="wallpaper_choose_widget_title">Switch wallpaper</string>
@@ -102,7 +102,15 @@
     <string name="home_screen_fill_cell">Fill cells of uninstalled apps</string>
     <string name="home_screen_double_tap_to_off">Double click to turn off the screen</string>
     <string name="home_screen_double_tap_to_off_summary">On the lockscreen or standby interface, double-click on the blank space to turn off the screen</string>
+    <string name="launcher_settings_gestures">Gestures</string>
+    <string name="home_screen_swipe_down">Swipe down on Home screen</string>
+    <string name="home_screen_swipe_right">Swipe right on Home screen</string>
+    <string name="home_swipe_down_global_search">Global Search</string>
+    <string name="home_swipe_down_notification">Notification shade</string>
+    <string name="home_swipe_right_none">None</string>
+    <string name="home_swipe_right_quick_glance">Quick Glance</string>
     <string name="home_screen_wallpaper_set">Switch wallpaper</string>
+    <string name="home_screen_wallpaper_set_summary">Show the Switch wallpaper icon on the Home screen</string>
     <string name="home_screen_icon_shape">Icon Shape</string>
     <string name="home_screen_icon_shape_default">default</string>
     <string name="home_screen_icon_shape_droplet">droplet</string>

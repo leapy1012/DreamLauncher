@@ -141,6 +141,7 @@ import com.android.launcher3.uioverrides.touchcontrollers.NoButtonQuickSwitchTou
 import com.android.launcher3.uioverrides.touchcontrollers.PortraitStatesTouchController;
 import com.android.launcher3.uioverrides.touchcontrollers.QuickSwitchTouchController;
 import com.android.launcher3.uioverrides.touchcontrollers.StatusBarTouchController;
+import com.android.launcher3.uioverrides.touchcontrollers.WorkspaceSwipeDownTouchController;
 import com.android.launcher3.uioverrides.touchcontrollers.TaskViewTouchController;
 import com.android.launcher3.uioverrides.touchcontrollers.TransposedQuickSwitchTouchController;
 import com.android.launcher3.uioverrides.touchcontrollers.TwoButtonNavbarTouchController;
@@ -581,6 +582,10 @@ public class QuickstepLauncher extends Launcher {
         boolean isEnable = getResources().getBoolean(R.bool.config_workspaceProhibitsStatusbar);
         if (isEnable && !getDeviceProfile().isMultiWindowMode) {
             list.add(new StatusBarTouchController(this));
+        }
+        // ColorOS Gestures: swipe-down → Global Search / notification shade.
+        if (!getDeviceProfile().isMultiWindowMode) {
+            list.add(new WorkspaceSwipeDownTouchController(this));
         }
 
         list.add(new LauncherTaskViewController(this));
