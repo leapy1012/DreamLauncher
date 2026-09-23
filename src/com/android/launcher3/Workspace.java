@@ -2998,8 +2998,11 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             manageReorderOnDragOver(d, targetCellDistance, nearestDropOccupied, minSpanX, minSpanY,
                     reorderX, reorderY);
 
-            if (mDragMode == DRAG_MODE_CREATE_FOLDER || mDragMode == DRAG_MODE_ADD_TO_FOLDER ||
-                    !nearestDropOccupied) {
+            // Empty insert slots on the dock must keep the insert reorder preview.
+            // AOSP reverts temp state when the nearest cell is vacant (workspace holes);
+            // ColorOS pack-insert uses those vacancies intentionally.
+            if (mDragMode == DRAG_MODE_CREATE_FOLDER || mDragMode == DRAG_MODE_ADD_TO_FOLDER
+                    || (!nearestDropOccupied && !mLauncher.isHotseatLayout(mDragTargetLayout))) {
                 if (mDragTargetLayout != null) {
                     mDragTargetLayout.revertTempState();
                 }
@@ -3012,6 +3015,26 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
         ItemInfo item = d.dragInfo;
         final View child = (mDragInfo == null) ? null : mDragInfo.cell;
+
+        // Oppo hotseat: always compute insert-index reorder (do not wait for occupied cell).
+        if (mLauncher.isHotseatLayout(mDragTargetLayout)) {
+            if (mDragMode == DRAG_MODE_CREATE_FOLDER || mDragMode == DRAG_MODE_ADD_TO_FOLDER) {
+                return;
+            }
+            int[] span = new int[2];
+            int[] cell = mDragTargetLayout.performReorder((int) mDragViewVisualCenter[0],
+                    (int) mDragViewVisualCenter[1], minSpanX, minSpanY, item.spanX, item.spanY,
+                    child, mTargetCell, span, CellLayout.MODE_DRAG_OVER);
+            if (cell[0] >= 0) {
+                mTargetCell[0] = cell[0];
+                mTargetCell[1] = cell[1];
+                mDragTargetLayout.visualizeDropLocation(mTargetCell[0], mTargetCell[1], span[0],
+                        span[1], d);
+                setDragMode(DRAG_MODE_REORDER);
+            }
+            return;
+        }
+
         if (!nearestDropOccupied) {
             int[] span = new int[2];
             mDragTargetLayout.performReorder((int) mDragViewVisualCenter[0],

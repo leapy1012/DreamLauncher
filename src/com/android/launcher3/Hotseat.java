@@ -32,6 +32,7 @@ import android.widget.FrameLayout;
 
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.model.data.ItemInfo;
+import com.android.launcher3.util.CellAndSpan;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -516,6 +517,180 @@ public class Hotseat extends CellLayout implements Insettable {
      */
     public View getQsb() {
         return mQsb;
+    }
+
+    // ---- Phase C: Oppo-style insert-by-finger-index reorder --------------------
+
+    private boolean shouldUseInsertReorder() {
+        if (mHasVerticalHotseat) {
+            return false;
+        }
+        DeviceProfile dp = mActivity.getDeviceProfile();
+        return !dp.isTablet && !dp.isVerticalBarLayout();
+    }
+
+    /**
+     * Oppo {@code getTargetCellx}: insertion index among current dock icon centers.
+     */
+    public int getTargetCellX(int pixelX) {
+        return getTargetCellX(pixelX, collectDockIcons(getShortcutsAndWidgets()));
+    }
+
+    private int getTargetCellX(int pixelX, List<View> icons) {
+        if (icons.isEmpty()) {
+            return 0;
+        }
+        // Centers must be walked left→right.
+        List<View> ordered = new ArrayList<>(icons);
+        ordered.sort(Comparator.comparingInt(v -> {
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
+            if (lp == null) {
+                return 0;
+            }
+            return lp.useTmpCoords ? lp.getTmpCellX() : lp.getCellX();
+        }));
+        int insert = 0;
+        for (View v : ordered) {
+            float centerX = getIconCenterX(v);
+            if (centerX < pixelX) {
+                insert++;
+            } else {
+                break;
+            }
+        }
+        return insert;
+    }
+
+    private float getIconCenterX(View v) {
+        CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
+        int cellW = getCellWidth() > 0 ? getCellWidth() : mActivity.getDeviceProfile().iconSizePx;
+        if (lp != null) {
+            int cellX = lp.useTmpCoords ? lp.getTmpCellX() : lp.getCellX();
+            return getPaddingLeft() + cellX * cellW + cellW / 2f;
+        }
+        return v.getLeft() + v.getWidth() / 2f;
+    }
+
+    /**
+     * For folder merge: nearest occupied dock cell. Insert index is handled by
+     * {@link #performReorder}.
+     */
+    @Override
+    public int[] findNearestAreaIgnoreOccupied(int pixelX, int pixelY, int spanX, int spanY,
+            int[] result) {
+        if (!shouldUseInsertReorder()) {
+            return super.findNearestAreaIgnoreOccupied(pixelX, pixelY, spanX, spanY, result);
+        }
+        if (result == null) {
+            result = new int[2];
+        }
+        List<View> icons = collectDockIcons(getShortcutsAndWidgets());
+        if (icons.isEmpty()) {
+            result[0] = 0;
+            result[1] = 0;
+            return result;
+        }
+        double bestDist = Double.MAX_VALUE;
+        int bestX = 0;
+        for (View v : icons) {
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
+            if (lp == null) {
+                continue;
+            }
+            int cellX = lp.useTmpCoords ? lp.getTmpCellX() : lp.getCellX();
+            float cx = getIconCenterX(v);
+            float cy = getPaddingTop() + getCellHeight() / 2f;
+            double dist = Math.hypot(pixelX - cx, pixelY - cy);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestX = cellX;
+            }
+        }
+        result[0] = bestX;
+        result[1] = 0;
+        return result;
+    }
+
+    @Override
+    int[] performReorder(int pixelX, int pixelY, int minSpanX, int minSpanY, int spanX, int spanY,
+            View dragView, int[] result, int[] resultSpan, int mode) {
+        if (!shouldUseInsertReorder()) {
+            return super.performReorder(pixelX, pixelY, minSpanX, minSpanY, spanX, spanY,
+                    dragView, result, resultSpan, mode);
+        }
+        if (resultSpan == null) {
+            resultSpan = new int[]{-1, -1};
+        }
+        if (result == null) {
+            result = new int[]{-1, -1};
+        }
+
+        ItemConfiguration solution = calculateInsertSolution(pixelX, dragView, spanX, spanY, mode);
+        mPreviousSolution = (mode == MODE_ON_DROP || mode == MODE_ON_DROP_EXTERNAL)
+                ? null : solution;
+        if (solution == null || !solution.isSolution) {
+            result[0] = result[1] = resultSpan[0] = resultSpan[1] = -1;
+            return result;
+        }
+        result[0] = solution.cellX;
+        result[1] = solution.cellY;
+        resultSpan[0] = solution.spanX;
+        resultSpan[1] = solution.spanY;
+        performReorder(solution, dragView, mode);
+        return result;
+    }
+
+    /**
+     * Build an Oppo-style pack insert: drag occupies {@code insertIndex}, icons at/after
+     * that index shift right by one.
+     */
+    private ItemConfiguration calculateInsertSolution(int pixelX, View dragView,
+            int spanX, int spanY, int mode) {
+        List<View> icons = collectDockIcons(getShortcutsAndWidgets());
+        boolean dragInHotseat = dragView != null
+                && dragView.getParent() == getShortcutsAndWidgets();
+        if (dragInHotseat) {
+            icons.remove(dragView);
+        }
+        icons.sort(Comparator.comparingInt(v -> {
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
+            if (lp == null) {
+                return 0;
+            }
+            return lp.useTmpCoords ? lp.getTmpCellX() : lp.getCellX();
+        }));
+
+        int max = getMaxIconCount();
+        boolean isNewIcon = !dragInHotseat;
+        if (isNewIcon && icons.size() >= max) {
+            ItemConfiguration fail = new ItemConfiguration();
+            fail.isSolution = false;
+            return fail;
+        }
+
+        int insert = getTargetCellX(pixelX, icons);
+        insert = Math.max(0, Math.min(insert, icons.size()));
+        // Keep within expanded grid.
+        insert = Math.min(insert, Math.max(0, getCountX() - 1));
+
+        ItemConfiguration config = new ItemConfiguration();
+        config.isSolution = true;
+        config.cellX = insert;
+        config.cellY = 0;
+        config.spanX = Math.max(1, spanX);
+        config.spanY = Math.max(1, spanY);
+
+        for (int i = 0; i < icons.size(); i++) {
+            View v = icons.get(i);
+            int newX = i < insert ? i : i + 1;
+            if (newX >= getCountX()) {
+                // Should not happen when under capacity; clamp for safety.
+                newX = getCountX() - 1;
+            }
+            config.map.put(v, new CellAndSpan(newX, 0, 1, 1));
+            config.sortedViews.add(v);
+        }
+        return config;
     }
 
 }
