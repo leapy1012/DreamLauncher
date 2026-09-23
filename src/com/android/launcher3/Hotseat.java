@@ -16,6 +16,9 @@
 
 package com.android.launcher3;
 
+import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_HOTSEAT;
+import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION;
+
 import android.content.Context;
 import android.graphics.Rect;
 import android.util.AttributeSet;
@@ -34,8 +37,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_HOTSEAT;
-
 /**
  * View class that represents the bottom row of the home screen.
  *
@@ -46,6 +47,8 @@ import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_HOTSEAT
  *   <li>Icons are packed contiguously and centered.</li>
  *   <li>Cell width uses workspace column pitch when {@code n <= numColumns},
  *       otherwise divides by {@code n} (see {@link #getAdaptiveCellDivisor}).</li>
+ *   <li>During an active drag over the dock, the grid stays expanded to max equal-width
+ *       cells (no adaptive side pad / mid-drag reflow) so drop targets stay stable.</li>
  * </ul>
  */
 public class Hotseat extends CellLayout implements Insettable {
@@ -62,6 +65,14 @@ public class Hotseat extends CellLayout implements Insettable {
 
     /** Extra side inset applied so a contiguous icon row sits centered. */
     private int mAdaptiveSidePad;
+
+    /**
+     * True from first {@link #onDragEnter()} until {@link #endDragSession()} after drop/cancel.
+     * Prevents leave/re-enter from posting a mid-drag {@link #reflowIcons()} shrink.
+     */
+    private boolean mDragSessionActive;
+
+    private final Runnable mReflowRunnable = this::reflowIcons;
 
     public Hotseat(Context context) {
         this(context, null);
@@ -96,6 +107,8 @@ public class Hotseat extends CellLayout implements Insettable {
         removeAllViewsInLayout();
         mHasVerticalHotseat = hasVerticalHotseat;
         mAdaptiveSidePad = 0;
+        mDragSessionActive = false;
+        removeCallbacks(mReflowRunnable);
         DeviceProfile dp = mActivity.getDeviceProfile();
         resetCellSize(dp);
         if (hasVerticalHotseat) {
@@ -105,11 +118,30 @@ public class Hotseat extends CellLayout implements Insettable {
         }
     }
 
+    /** Number of persistent (non-prediction) dock icons. */
+    public int getPersistentIconCount() {
+        return collectDockIcons(getShortcutsAndWidgets()).size();
+    }
+
+    /** Max dock capacity from the device profile. */
+    public int getMaxIconCount() {
+        return Math.max(1, mActivity.getDeviceProfile().numShownHotseatIcons);
+    }
+
+    /** Whether the dock can accept another workspace/external icon (not already in hotseat). */
+    public boolean canAcceptNewIcon() {
+        return getPersistentIconCount() < getMaxIconCount();
+    }
+
     /**
      * Oppo-style: reflow dock icons into a contiguous centered row and apply adaptive
-     * cell width. Safe to call after bind, drop, or remove.
+     * cell width. Safe to call after bind, drop, or remove. No-op during an active drag
+     * session so expand geometry stays stable.
      */
     public void reflowIcons() {
+        if (mDragSessionActive) {
+            return;
+        }
         if (mHasVerticalHotseat) {
             return;
         }
@@ -149,12 +181,14 @@ public class Hotseat extends CellLayout implements Insettable {
             lp.cellHSpan = 1;
             lp.cellVSpan = 1;
             Object tag = v.getTag();
-            if (tag instanceof ItemInfo info) {
-                boolean changed = info.cellX != i || info.screenId != i;
+            if (tag instanceof ItemInfo info && isPersistentHotseatItem(info)) {
+                boolean changed = info.cellX != i || info.screenId != i
+                        || info.container != CONTAINER_HOTSEAT;
                 info.cellX = i;
                 info.cellY = 0;
                 info.screenId = i;
-                if (changed && launcher != null) {
+                info.container = CONTAINER_HOTSEAT;
+                if (changed && launcher != null && info.id != ItemInfo.NO_ID) {
                     launcher.getModelWriter().moveItemInDatabase(
                             info,
                             CONTAINER_HOTSEAT,
@@ -177,6 +211,7 @@ public class Hotseat extends CellLayout implements Insettable {
     @Override
     public void onDragEnter() {
         super.onDragEnter();
+        beginDragSession();
         if (mHasVerticalHotseat) {
             return;
         }
@@ -184,6 +219,42 @@ public class Hotseat extends CellLayout implements Insettable {
         if (dp.isTablet || dp.isVerticalBarLayout()) {
             return;
         }
+        applyExpandedDragMetrics(/* remakeOccupied= */ true);
+    }
+
+    @Override
+    public void onDragExit() {
+        super.onDragExit();
+        // Do not reflow here — leave/re-enter would shrink mid-drag. Workspace calls
+        // {@link #endDragSession()} after drop/cancel settles.
+    }
+
+    /**
+     * Ends the dock drag session and restores the packed/centered idle layout.
+     * Call once from Workspace after drop completed or cancelled.
+     */
+    public void endDragSession() {
+        if (!mDragSessionActive) {
+            // Still reflow — covers remove-from-hotseat and non-session callers.
+            removeCallbacks(mReflowRunnable);
+            reflowIcons();
+            return;
+        }
+        mDragSessionActive = false;
+        removeCallbacks(mReflowRunnable);
+        reflowIcons();
+    }
+
+    private void beginDragSession() {
+        if (mDragSessionActive) {
+            return;
+        }
+        mDragSessionActive = true;
+        removeCallbacks(mReflowRunnable);
+    }
+
+    private void applyExpandedDragMetrics(boolean remakeOccupied) {
+        DeviceProfile dp = mActivity.getDeviceProfile();
         int max = Math.max(1, dp.numShownHotseatIcons);
         if (getCountX() != max) {
             setGridSize(max, 1);
@@ -199,18 +270,13 @@ public class Hotseat extends CellLayout implements Insettable {
             int cellH = getCellHeight() > 0 ? getCellHeight() : dp.hotseatCellHeightPx;
             setCellDimensions(avail / max, cellH);
         }
-        mOccupied.clear();
-        for (View v : collectDockIcons(getShortcutsAndWidgets())) {
-            markCellsAsOccupiedForView(v);
+        if (remakeOccupied) {
+            mOccupied.clear();
+            for (View v : collectDockIcons(getShortcutsAndWidgets())) {
+                markCellsAsOccupiedForView(v);
+            }
+            requestLayout();
         }
-        requestLayout();
-    }
-
-    @Override
-    public void onDragExit() {
-        super.onDragExit();
-        // Restore centered adaptive layout if the drag did not land here.
-        post(this::reflowIcons);
     }
 
     /**
@@ -254,6 +320,9 @@ public class Hotseat extends CellLayout implements Insettable {
                 basePad.bottom);
     }
 
+    /**
+     * Persistent dock icons only — skips predictions and views without ItemInfo.
+     */
     private static List<View> collectDockIcons(ShortcutAndWidgetContainer container) {
         List<View> icons = new ArrayList<>();
         if (container == null) {
@@ -264,10 +333,22 @@ public class Hotseat extends CellLayout implements Insettable {
             if (child == null || child.getVisibility() == View.GONE) {
                 continue;
             }
-            // QSB is a Hotseat direct child, not under ShortcutAndWidgetContainer.
+            Object tag = child.getTag();
+            if (!(tag instanceof ItemInfo info) || !isPersistentHotseatItem(info)) {
+                continue;
+            }
             icons.add(child);
         }
         return icons;
+    }
+
+    private static boolean isPersistentHotseatItem(ItemInfo info) {
+        if (info == null) {
+            return false;
+        }
+        // Predictions are visual fillers; never pack/DB-write them as favorites.
+        return !info.isPredictedItem()
+                && info.container != CONTAINER_HOTSEAT_PREDICTION;
     }
 
     @Override
@@ -335,27 +416,46 @@ public class Hotseat extends CellLayout implements Insettable {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        // Recompute adaptive cell width from current icon count before children measure.
         if (!mHasVerticalHotseat) {
             DeviceProfile dp = mActivity.getDeviceProfile();
             if (!dp.isVerticalBarLayout() && !dp.isTablet) {
-                int n = collectDockIcons(getShortcutsAndWidgets()).size();
-                // Temporarily clear side pad so avail width is correct, then re-apply.
-                Rect basePad = dp.getHotseatLayoutPadding(getContext());
-                setPadding(basePad.left, basePad.top, basePad.right, basePad.bottom);
-                mAdaptiveSidePad = 0;
-                int widthSize = MeasureSpec.getSize(widthMeasureSpec);
-                int avail = widthSize - basePad.left - basePad.right;
-                if (avail > 0) {
-                    int divisor = getAdaptiveCellDivisor(n, dp.inv.numColumns,
-                            dp.numShownHotseatIcons);
-                    int cellW = avail / divisor;
-                    int cellH = getCellHeight() > 0 ? getCellHeight() : dp.hotseatCellHeightPx;
-                    setCellDimensions(cellW, cellH);
-                    int used = n > 0 ? n * cellW : 0;
-                    mAdaptiveSidePad = n > 0 ? Math.max(0, (avail - used) / 2) : 0;
-                    setPadding(basePad.left + mAdaptiveSidePad, basePad.top,
-                            basePad.right + mAdaptiveSidePad, basePad.bottom);
+                if (mDragSessionActive) {
+                    // Keep expanded equal-width cells; do not restore idle side pad.
+                    // Use the measure width — getMeasuredWidth() may still be stale here.
+                    DeviceProfile dragDp = mActivity.getDeviceProfile();
+                    int max = Math.max(1, dragDp.numShownHotseatIcons);
+                    if (getCountX() != max) {
+                        setGridSize(max, 1);
+                    }
+                    mAdaptiveSidePad = 0;
+                    Rect basePad = dragDp.getHotseatLayoutPadding(getContext());
+                    setPadding(basePad.left, basePad.top, basePad.right, basePad.bottom);
+                    int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+                    int avail = widthSize - basePad.left - basePad.right;
+                    if (avail > 0) {
+                        int cellH = getCellHeight() > 0
+                                ? getCellHeight() : dragDp.hotseatCellHeightPx;
+                        setCellDimensions(avail / max, cellH);
+                    }
+                } else {
+                    int n = collectDockIcons(getShortcutsAndWidgets()).size();
+                    // Temporarily clear side pad so avail width is correct, then re-apply.
+                    Rect basePad = dp.getHotseatLayoutPadding(getContext());
+                    setPadding(basePad.left, basePad.top, basePad.right, basePad.bottom);
+                    mAdaptiveSidePad = 0;
+                    int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+                    int avail = widthSize - basePad.left - basePad.right;
+                    if (avail > 0) {
+                        int divisor = getAdaptiveCellDivisor(n, dp.inv.numColumns,
+                                dp.numShownHotseatIcons);
+                        int cellW = avail / divisor;
+                        int cellH = getCellHeight() > 0 ? getCellHeight() : dp.hotseatCellHeightPx;
+                        setCellDimensions(cellW, cellH);
+                        int used = n > 0 ? n * cellW : 0;
+                        mAdaptiveSidePad = n > 0 ? Math.max(0, (avail - used) / 2) : 0;
+                        setPadding(basePad.left + mAdaptiveSidePad, basePad.top,
+                                basePad.right + mAdaptiveSidePad, basePad.bottom);
+                    }
                 }
             }
         }

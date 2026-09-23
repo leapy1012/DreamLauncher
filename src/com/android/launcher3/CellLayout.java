@@ -1917,14 +1917,32 @@ public class CellLayout extends ViewGroup {
             // We do a null check here because the item info can be null in the case of the
             // AllApps button in the hotseat.
             if (info != null && child != dragView) {
+                // Predictions are not DB-backed favorites — update layout only.
+                if (info.isPredictedItem()
+                        || info.container == Favorites.CONTAINER_HOTSEAT_PREDICTION) {
+                    lp.setCellX(lp.getTmpCellX());
+                    lp.setCellY(lp.getTmpCellY());
+                    continue;
+                }
                 CellPos presenterPos = mActivity.getCellPosMapper().mapModelToPresenter(info);
-                final boolean requiresDbUpdate = (presenterPos.cellX != lp.getTmpCellX()
-                        || presenterPos.cellY != lp.getTmpCellY() || info.spanX != lp.cellHSpan
-                        || info.spanY != lp.cellVSpan || presenterPos.screenId != screenId);
+                // Hotseat presenter screenId is the rank; ModelWriter remaps DB screenId from
+                // cellX when container is HOTSEAT. Do not treat screenId != -1 as dirty.
+                final boolean requiresDbUpdate;
+                if (mContainerType == HOTSEAT) {
+                    requiresDbUpdate = presenterPos.cellX != lp.getTmpCellX()
+                            || presenterPos.cellY != lp.getTmpCellY()
+                            || info.spanX != lp.cellHSpan
+                            || info.spanY != lp.cellVSpan
+                            || info.container != Favorites.CONTAINER_HOTSEAT;
+                } else {
+                    requiresDbUpdate = (presenterPos.cellX != lp.getTmpCellX()
+                            || presenterPos.cellY != lp.getTmpCellY() || info.spanX != lp.cellHSpan
+                            || info.spanY != lp.cellVSpan || presenterPos.screenId != screenId);
+                }
 
                 lp.setCellX(lp.getTmpCellX());
                 lp.setCellY(lp.getTmpCellY());
-                if (requiresDbUpdate) {
+                if (requiresDbUpdate && info.id != ItemInfo.NO_ID) {
                     Launcher.cast(mActivity).getModelWriter().modifyItemInDatabase(info, container,
                             screenId, lp.getCellX(), lp.getCellY(), lp.cellHSpan, lp.cellVSpan);
                 }

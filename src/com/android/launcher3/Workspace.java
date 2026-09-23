@@ -2076,6 +2076,10 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     public boolean acceptDrop(DragObject d) {
         // If it's an external drop (e.g. from All Apps), check if it should be accepted
         CellLayout dropTargetLayout = mDropToLayout;
+        if (dropTargetLayout != null && mLauncher.isHotseatLayout(dropTargetLayout)
+                && !acceptHotseatCapacity(d, dropTargetLayout)) {
+            return false;
+        }
         if (d.dragSource != this) {
             // Don't accept the drop if we're not over a valid drop target at time of drop
             if (dropTargetLayout == null) {
@@ -2140,6 +2144,41 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         }
 
         return true;
+    }
+
+    /**
+     * Oppo-style: reject a new icon when the dock is already at
+     * {@link Hotseat#getMaxIconCount()}, unless the drop is a folder merge or a
+     * within-hotseat reorder.
+     */
+    private boolean acceptHotseatCapacity(DragObject d, CellLayout dropTargetLayout) {
+        ItemInfo info = d.dragInfo;
+        if (info != null
+                && info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT) {
+            return true;
+        }
+        Hotseat hotseat = mLauncher.getHotseat();
+        if (hotseat == null || hotseat.canAcceptNewIcon()) {
+            return true;
+        }
+
+        // Folder create/add is still allowed when the dock is full.
+        mDragViewVisualCenter = d.getVisualCenter(mDragViewVisualCenter);
+        mapPointFromDropLayout(dropTargetLayout, mDragViewVisualCenter);
+        int spanX = info != null ? info.spanX : 1;
+        int spanY = info != null ? info.spanY : 1;
+        mTargetCell = findNearestArea((int) mDragViewVisualCenter[0],
+                (int) mDragViewVisualCenter[1], spanX, spanY, dropTargetLayout, mTargetCell);
+        float distance = dropTargetLayout.getDistanceFromWorkspaceCellVisualCenter(
+                mDragViewVisualCenter[0], mDragViewVisualCenter[1], mTargetCell);
+        if (willCreateUserFolder(d.dragInfo, dropTargetLayout, mTargetCell, distance, true)
+                || willAddToExistingUserFolder(d.dragInfo, dropTargetLayout, mTargetCell,
+                distance)) {
+            return true;
+        }
+
+        onNoCellFound(dropTargetLayout, d.dragInfo, d.logInstanceId);
+        return false;
     }
 
     boolean willCreateUserFolder(ItemInfo info, CellLayout target, int[] targetCell,
@@ -3048,8 +3087,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                 || isDragWidget(dragObject)) {
             return false;
         }
-        View hotseatShortcuts = mLauncher.getHotseat().getShortcutsAndWidgets();
-        getViewBoundsRelativeToWorkspace(hotseatShortcuts, mTempRect);
+        // Use the full Hotseat bar (including adaptive side padding), not only the
+        // shrunk ShortcutAndWidgetContainer — otherwise empty side margins miss the dock.
+        getViewBoundsRelativeToWorkspace(mLauncher.getHotseat(), mTempRect);
         return mTempRect.contains(dragObject.x, dragObject.y);
     }
 
@@ -3625,10 +3665,10 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         }
         mDragInfo = null;
 
-        // Oppo-style dock: pack + center after any successful workspace/hotseat drop.
+        // Oppo-style dock: end expand session and pack + center after drop/cancel.
         Hotseat hotseat = mLauncher.getHotseat();
         if (hotseat != null) {
-            hotseat.reflowIcons();
+            hotseat.endDragSession();
         }
     }
 
