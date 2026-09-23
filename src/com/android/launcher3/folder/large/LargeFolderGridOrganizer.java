@@ -4,8 +4,8 @@ import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.folder.FolderGridOrganizer;
 import com.android.launcher3.folder.ClippedFolderIconLayoutRule;
 
-public class HxyFolderGridOrganizer extends FolderGridOrganizer {
-    public HxyFolderGridOrganizer(InvariantDeviceProfile profile) {
+public class LargeFolderGridOrganizer extends FolderGridOrganizer {
+    public LargeFolderGridOrganizer(InvariantDeviceProfile profile) {
         super(profile);
         // Keep profile folder grid (ColorOS hxy: 3 cols x 4 rows).
         this.mMaxItemsPerPage = this.mMaxCountX * this.mMaxCountY;

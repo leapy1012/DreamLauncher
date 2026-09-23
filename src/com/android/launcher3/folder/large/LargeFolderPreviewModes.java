@@ -9,7 +9,7 @@ import com.android.launcher3.model.data.ItemInfo;
  * Default (neither bit) is the 3×3 nine-grid — avoids clashing with
  * {@link FolderInfo#FLAG_MANUAL_FOLDER_NAME} (bit 8).
  */
-public final class HxyBigFolderPreviewModes {
+public final class LargeFolderPreviewModes {
     /** Oppo {@code BIG_FOLDER_TYPE_2_2}. */
     public static final int TYPE_FOUR = 16;
     /** Oppo {@code BIG_FOLDER_TYPE_HIGHLIGHT}. */
@@ -19,7 +19,7 @@ public final class HxyBigFolderPreviewModes {
     public static final int INDEX_FOUR = 1;
     public static final int INDEX_HIGHLIGHT = 2;
 
-    private HxyBigFolderPreviewModes() {
+    private LargeFolderPreviewModes() {
     }
 
     public static int getModeIndex(ItemInfo info) {
@@ -70,7 +70,7 @@ public final class HxyBigFolderPreviewModes {
         if (mode == INDEX_HIGHLIGHT && page <= 0) {
             return 6;
         }
-        return HxyLargeFolderProxy.getMaxSize();
+        return LargeFolderProxy.getMaxSize();
     }
 
     public static boolean isHighlightPage(ItemInfo info, int page) {

@@ -9,7 +9,7 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.PreviewBackground;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 import com.android.launcher3.model.data.FolderInfo;
 
 /**
@@ -61,7 +61,7 @@ public final class EditSelectionFolderBadge {
         float radius = 10f * density;
         float cx;
         float cy;
-        if (HxyLargeFolderProxy.isLargeFolder(folderIcon)) {
+        if (LargeFolderProxy.isLargeFolder(folderIcon)) {
             cx = sTmpRect.right - radius / 4f;
             cy = sTmpRect.top + radius / 4f;
         } else {
@@ -81,7 +81,7 @@ public final class EditSelectionFolderBadge {
         if (folderIcon.mActivity == null) {
             return false;
         }
-        boolean isLargeFolder = HxyLargeFolderProxy.isLargeFolder(folderIcon);
+        boolean isLargeFolder = LargeFolderProxy.isLargeFolder(folderIcon);
         if (isLargeFolder) {
             // Oppo uses PreviewBackground / plate bounds, not the full cell padding box.
             PreviewBackground bg = folderIcon.getFolderBackground();

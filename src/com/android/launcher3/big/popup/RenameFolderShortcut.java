@@ -6,7 +6,7 @@ import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.folder.Folder;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderIcon;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.popup.SystemShortcut;
 import com.android.launcher3.touch.ItemClickHandler;
@@ -14,12 +14,12 @@ import com.android.launcher3.views.ActivityContext;
 
 /** Opens the folder and starts rename (Oppo "Rename"). */
 public class RenameFolderShortcut extends SystemShortcut<Launcher> {
-    private final HxyLargeFolderIcon mFolderIcon;
+    private final LargeFolderIcon mFolderIcon;
 
     public RenameFolderShortcut(Launcher target, ItemInfo itemInfo, View originalView) {
         super(R.drawable.hxy_folder_rename, R.string.hxy_folder_rename, target, itemInfo,
                 originalView);
-        this.mFolderIcon = (HxyLargeFolderIcon) originalView;
+        this.mFolderIcon = (LargeFolderIcon) originalView;
     }
 
     @Override

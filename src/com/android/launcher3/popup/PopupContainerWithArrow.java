@@ -89,9 +89,9 @@ import com.android.launcher3.big.popup.OpenFolderShortcut;
 import com.android.launcher3.big.popup.RenameFolderShortcut;
 import com.android.launcher3.big.popup.SwitchFolderShortcut;
 import com.android.launcher3.big.popup.UngroupFolderShortcut;
-import com.android.launcher3.folder.large.HxyBigFolderPreviewSelector;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderPreviewSelector;
+import com.android.launcher3.folder.large.LargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 
 /**
  * A container for shortcuts to deep links and notifications associated with an app.
@@ -110,7 +110,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
     private static boolean isLensCase = false;
 
     private final float mShortcutHeight;
-    private HxyLargeFolderIcon mFolderIcon;
+    private LargeFolderIcon mFolderIcon;
     private BubbleTextView mOriginalIcon;
     /** Long-pressed workspace widget (Oppo showForIcon widget path). */
     private LauncherAppWidgetHostView mOriginalWidget;
@@ -1193,7 +1193,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         }
     }
 
-    public static PopupContainerWithArrow showForFolder(HxyLargeFolderIcon icon) {
+    public static PopupContainerWithArrow showForFolder(LargeFolderIcon icon) {
         Launcher launcher = Launcher.getLauncher(icon.getContext());
         if (getOpen(launcher) != null) {
             icon.clearFocus();
@@ -1217,13 +1217,13 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         return container;
     }
 
-    public void populateAndShow(SystemShortcut systemShortcut, HxyLargeFolderIcon view) {
+    public void populateAndShow(SystemShortcut systemShortcut, LargeFolderIcon view) {
         List<SystemShortcut> shortcuts = new ArrayList<>(1);
         shortcuts.add(systemShortcut);
         populateAndShowColorOsForFolder(shortcuts, view);
     }
 
-    public void populateAndShow(List<SystemShortcut> shortcuts, HxyLargeFolderIcon view) {
+    public void populateAndShow(List<SystemShortcut> shortcuts, LargeFolderIcon view) {
         populateAndShowColorOsForFolder(shortcuts, view);
     }
 
@@ -1232,7 +1232,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
      * (Oppo {@code oplus_deep_shortcut_folder_drag} only when {@code hasExtendedGrids}).
      */
     public void populateAndShowColorOsForFolder(List<SystemShortcut> shortcuts,
-            HxyLargeFolderIcon folderIcon) {
+            LargeFolderIcon folderIcon) {
         mColorOsStylePopup = true;
         mFolderIcon = folderIcon;
         mContainerWidth = getResources().getDimensionPixelSize(R.dimen.coloros_popup_item_width);
@@ -1249,8 +1249,8 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         card.setClipToOutline(true);
 
         // Preview modes only for 2×2 big folders (Oppo BigFolderConvert / hasExtendedGrids).
-        if (HxyLargeFolderProxy.isLargeFolder(folderIcon)) {
-            HxyBigFolderPreviewSelector selector = inflateAndAdd(
+        if (LargeFolderProxy.isLargeFolder(folderIcon)) {
+            LargeFolderPreviewSelector selector = inflateAndAdd(
                     R.layout.hxy_folder_preview_selector, card);
             selector.getLayoutParams().width = mContainerWidth;
             selector.bind(folderIcon);

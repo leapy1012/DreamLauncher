@@ -5,14 +5,14 @@ import android.view.View;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.model.data.ItemInfo;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderIcon;
 
 public class NextPageParams extends BaseSwitchParams {
-    private static final String TAG = "HxyLargeFolderSwitcher_NextPageParams";
+    private static final String TAG = "LargeFolderSwitcher_NextPageParams";
     private ShortcutAndWidgetContainer mContainer;
     private final Runnable mNextRunnable = new NextPageRunnable(this);
 
-    public NextPageParams(Launcher launcher, HxyLargeFolderIcon folderIcon, ShortcutAndWidgetContainer container, boolean isLargeFolder) {
+    public NextPageParams(Launcher launcher, LargeFolderIcon folderIcon, ShortcutAndWidgetContainer container, boolean isLargeFolder) {
         super(launcher, folderIcon, 2, isLargeFolder);
         this.mContainer = container;
     }

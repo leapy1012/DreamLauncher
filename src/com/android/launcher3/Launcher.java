@@ -168,8 +168,8 @@ import com.android.launcher3.dragndrop.LauncherDragController;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderGridOrganizer;
 import com.android.launcher3.folder.FolderIcon;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 import com.android.launcher3.icons.IconCache;
 import com.android.launcher3.keyboard.ViewGroupFocusHelper;
 import com.android.launcher3.logger.LauncherAtom;
@@ -3287,11 +3287,11 @@ public class Launcher extends StatefulActivity<LauncherState>
     @Nullable
     private static View resolveLargeFolderCloseTarget(@Nullable View match, int preferredItemId,
             String packageName, UserHandle user) {
-        if (!(match instanceof HxyLargeFolderIcon)
-                || !HxyLargeFolderProxy.isLargeFolder(match)) {
+        if (!(match instanceof LargeFolderIcon)
+                || !LargeFolderProxy.isLargeFolder(match)) {
             return match;
         }
-        View cell = ((HxyLargeFolderIcon) match).getFirstMatchForAppClose(
+        View cell = ((LargeFolderIcon) match).getFirstMatchForAppClose(
                 preferredItemId, packageName, user);
         return cell != null ? cell : match;
     }

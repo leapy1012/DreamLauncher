@@ -12,7 +12,7 @@ import com.android.launcher3.util.IntSparseArrayMap;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HxyLargeFolderUtils {
+public class LargeFolderUtils {
     public static boolean isInvalidBitmap(WorkspaceItemInfo info) {
         return info.usingLowResIcon();
     }

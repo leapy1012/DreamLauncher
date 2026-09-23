@@ -35,7 +35,7 @@ import android.view.ViewGroup;
 import com.android.launcher3.CellLayout.ContainerType;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.folder.FolderIcon;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 import com.android.launcher3.iconresize.IconResizeHelper;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.views.ActivityContext;
@@ -170,7 +170,7 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
                 // Folder preview uses folderIconSizePx; large folders override padding in onMeasure.
                 int contentHeight = cHeight;
                 if (child instanceof FolderIcon
-                        && !HxyLargeFolderProxy.isLargeFolder(child)) {
+                        && !LargeFolderProxy.isLargeFolder(child)) {
                     contentHeight = dp.getOppoFolderWorkspaceContentHeight();
                 }
                 // Multi-span icons: top padding from a single cell row, not full span height.

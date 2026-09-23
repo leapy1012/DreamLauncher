@@ -92,7 +92,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 
 public class CellLayout extends ViewGroup {
     private static final String TAG = "CellLayout";
@@ -1001,7 +1001,7 @@ public class CellLayout extends ViewGroup {
     }
 
     private boolean isLargeFolder(int[] targetCell) {
-        return HxyLargeFolderProxy.isLargeFolder(getChildAt(targetCell[0], targetCell[1]));
+        return LargeFolderProxy.isLargeFolder(getChildAt(targetCell[0], targetCell[1]));
     }
 
     /**
@@ -1013,7 +1013,7 @@ public class CellLayout extends ViewGroup {
         DeviceProfile grid = mActivity.getDeviceProfile();
         float iconVisibleRadius = ICON_VISIBLE_AREA_FACTOR * grid.iconSizePx / 2;
         float iconPart = isLargeFolder(targetCell)
-                ? HxyLargeFolderProxy.getMaxDistanceForFolderCreation()
+                ? LargeFolderProxy.getMaxDistanceForFolderCreation()
                 : iconVisibleRadius;
         return (getReorderRadius(targetCell, 1, 1) + iconPart) / 2f;
     }
@@ -1088,7 +1088,7 @@ public class CellLayout extends ViewGroup {
         }
 
         if (this.mContainerType == WORKSPACE) {
-            HxyLargeFolderProxy.initFolderIconSize(getContext(), this.mActivity, this.mCellWidth, this.mCellHeight, getPaddingLeft(), getPaddingRight(), getPaddingTop(), getPaddingTop());
+            LargeFolderProxy.initFolderIconSize(getContext(), this.mActivity, this.mCellWidth, this.mCellHeight, getPaddingLeft(), getPaddingRight(), getPaddingTop(), getPaddingTop());
         }
 
         int newWidth = childWidthSize;

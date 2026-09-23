@@ -9,28 +9,28 @@ import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.views.BaseDragLayer;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 
-public class HxyLargeDragView extends FrameLayout {
+public class LargeFolderDragView extends FrameLayout {
     private final int[] mCoordinateXY;
     private DragLayer mDragLayer;
     private FolderIcon mFolderIcon;
     private int mHeight;
     private int mWidth;
 
-    public HxyLargeDragView(Launcher launcher, FolderIcon folderIcon) {
+    public LargeFolderDragView(Launcher launcher, FolderIcon folderIcon) {
         this(launcher, folderIcon, false);
     }
 
-    public HxyLargeDragView(Launcher launcher, FolderIcon folderIcon, boolean isForceLarge) {
+    public LargeFolderDragView(Launcher launcher, FolderIcon folderIcon, boolean isForceLarge) {
         super(launcher);
         this.mCoordinateXY = new int[2];
         this.mDragLayer = launcher.getDragLayer();
         this.mWidth = folderIcon.getMeasuredWidth();
         this.mHeight = folderIcon.getMeasuredHeight();
         FolderInfo info = (FolderInfo) folderIcon.getTag();
-        boolean isLargeFolder = HxyLargeFolderProxy.isLargeFolder((ItemInfo) info);
-        FolderInfo newInfo = HxyLargeFolderProxy.cloneFolderInfo(info);
+        boolean isLargeFolder = LargeFolderProxy.isLargeFolder((ItemInfo) info);
+        FolderInfo newInfo = LargeFolderProxy.cloneFolderInfo(info);
         if (isForceLarge && !isLargeFolder) {
             newInfo.spanX = 2;
             newInfo.spanY = 2;

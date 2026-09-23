@@ -18,13 +18,13 @@ import java.util.List;
 /**
  * Ungroups a folder: moves every child onto the workspace and deletes the folder.
  */
-public final class HxyFolderDisbandHelper {
-    private static final String TAG = "HxyFolderDisband";
+public final class LargeFolderDisbandHelper {
+    private static final String TAG = "LargeFolderDisband";
 
-    private HxyFolderDisbandHelper() {
+    private LargeFolderDisbandHelper() {
     }
 
-    public static void ungroup(Launcher launcher, HxyLargeFolderIcon folderIcon) {
+    public static void ungroup(Launcher launcher, LargeFolderIcon folderIcon) {
         if (launcher == null || folderIcon == null) {
             return;
         }

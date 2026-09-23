@@ -117,7 +117,7 @@ import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.pm.PackageManager;
 import android.graphics.Point;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 
 /**
  * TextView that draws a bubble behind the text. We cannot use a LineBackgroundSpan
@@ -1137,7 +1137,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         }
         if (getTag() != null && getTag() instanceof ItemInfo && ((ItemInfo) getTag()).container == LauncherSettings.Favorites.CONTAINER_DESKTOP) {
             android.util.Log.d("liu-db", "onMeasure: tag=" + getTag() + ", paddingTop=" + getPaddingTop());
-            HxyLargeFolderProxy.setFolderPaddingTop(getPaddingTop());
+            LargeFolderProxy.setFolderPaddingTop(getPaddingTop());
         }
         // Only apply two line for all_apps and device search only if necessary.
         if (shouldUseTwoLine() && (mLastOriginalText != null)) {

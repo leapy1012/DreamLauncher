@@ -2,7 +2,7 @@ package com.android.launcher3.folder.large.switchparams;
 
 import android.graphics.Rect;
 import com.android.launcher3.Launcher;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderIcon;
 
 public class CurrentPageParams extends BaseSwitchParams {
     private float mDragBeginAlpha = 0.0f;
@@ -14,9 +14,9 @@ public class CurrentPageParams extends BaseSwitchParams {
     private int mDragRelativeX = 0;
     private int mDragRelativeY = 0;
 
-    public CurrentPageParams(Launcher launcher, HxyLargeFolderIcon folderIcon, boolean isSwitchLarge) {
+    public CurrentPageParams(Launcher launcher, LargeFolderIcon folderIcon, boolean isSwitchLarge) {
         super(launcher, folderIcon, 1, isSwitchLarge);
-        this.mDragView = new HxyLargeDragView(this.mLauncher, this.mView, true);
+        this.mDragView = new LargeFolderDragView(this.mLauncher, this.mView, true);
     }
 
     private void prepare() {

@@ -28,7 +28,7 @@ import com.android.launcher3.folder.ClippedFolderIconLayoutRule;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.FolderPagedView;
-import com.android.launcher3.folder.large.listview.HxyLargeFolderIconItem;
+import com.android.launcher3.folder.large.listview.LargeFolderIconItem;
 import com.android.launcher3.folder.PreviewBackground;
 import com.android.launcher3.folder.PreviewItemDrawingParams;
 import androidx.dynamicanimation.animation.FloatValueHolder;
@@ -45,7 +45,7 @@ import java.util.function.Consumer;
  * ColorOS {@code OplusFolderAnimationManager} open/close path:
  * per-icon COUI springs (bounce/response) + workspace/hotseat 1↔0.92 companion fade.
  */
-public class HxyFolderAnimationManager {
+public class LargeFolderAnimationManager {
     /** Exact ColorOS OplusFolderAnimationManager constants. */
     private static final float OPEN_TRANS_BOUNCE = 0.15f;
     private static final float OPEN_TRANS_RESPONSE = 0.45f;
@@ -78,7 +78,7 @@ public class HxyFolderAnimationManager {
     private final boolean mIsOpening;
     private final Launcher mLauncher;
     private final PreviewBackground mPreviewBackground;
-    private final HxyFolderGridOrganizer mPreviewVerifier;
+    private final LargeFolderGridOrganizer mPreviewVerifier;
     private final PreviewItemDrawingParams mTmpParams = new PreviewItemDrawingParams(0f, 0f, 0f);
     private final ArrayList<COUISpringAnimation> mRunningSprings = new ArrayList<>();
     /** Close-end icon poses; applied when the gate ends so icons don't snap back to grid. */
@@ -100,7 +100,7 @@ public class HxyFolderAnimationManager {
         }
     }
 
-    public HxyFolderAnimationManager(Folder folder, boolean isOpening) {
+    public LargeFolderAnimationManager(Folder folder, boolean isOpening) {
         mFolder = folder;
         mContent = folder.mContent;
         mFolderIcon = folder.getFolderIcon();
@@ -108,7 +108,7 @@ public class HxyFolderAnimationManager {
         mContext = folder.getContext();
         mLauncher = (Launcher) folder.getContext();
         mIsOpening = isOpening;
-        mPreviewVerifier = new HxyFolderGridOrganizer(mLauncher.getDeviceProfile().inv);
+        mPreviewVerifier = new LargeFolderGridOrganizer(mLauncher.getDeviceProfile().inv);
         Resources res = mContent.getResources();
         // Full ColorOS path uses folder_open_duration / folder_close_duration (850 / 800).
         mDuration = res.getInteger(isOpening
@@ -120,8 +120,8 @@ public class HxyFolderAnimationManager {
         if (!isOpening && mFolderIcon != null) {
             // Small folders: suppress PreviewItemManager immediately.
             // Large folders: defer until after landing math (list must stay laid out).
-            if (!(mFolderIcon instanceof HxyLargeFolderIcon
-                    && HxyLargeFolderProxy.isLargeFolder(mFolderIcon))) {
+            if (!(mFolderIcon instanceof LargeFolderIcon
+                    && LargeFolderProxy.isLargeFolder(mFolderIcon))) {
                 mFolderIcon.onFolderAnimStartClose(mContent.getCurrentPage());
             }
         }
@@ -404,9 +404,9 @@ public class HxyFolderAnimationManager {
         boolean largeStackOverflow = false;
         int largeWithoutStacked = 0;
         int largeStackSlots = 0;
-        if (HxyLargeFolderProxy.isLargeFolder(mFolderIcon)
-                && mFolderIcon instanceof HxyLargeFolderIcon) {
-            HxyLargeFolderIcon largeIcon = (HxyLargeFolderIcon) mFolderIcon;
+        if (LargeFolderProxy.isLargeFolder(mFolderIcon)
+                && mFolderIcon instanceof LargeFolderIcon) {
+            LargeFolderIcon largeIcon = (LargeFolderIcon) mFolderIcon;
             int largeCount = largeIcon.getLargePreviewParamCount();
             if (largeCount > 0) {
                 previewParamCount = largeCount;
@@ -414,7 +414,7 @@ public class HxyFolderAnimationManager {
             if (largeIcon.hasStackOverflowPreview()) {
                 largeStackOverflow = true;
                 largeWithoutStacked = largeIcon.getLargePreviewWithoutStacked();
-                largeStackSlots = HxyLargeFolderIconItem.getMaxOutCount();
+                largeStackSlots = LargeFolderIconItem.getMaxOutCount();
                 // Oppo: 8 full + 4 stacked minis (then requireScaleChild beyond).
                 previewParamCount = largeWithoutStacked + largeStackSlots;
             }
@@ -569,8 +569,8 @@ public class HxyFolderAnimationManager {
 
         if (!mIsOpening) {
             // Keep workspace at state scale (already snapped in playWorkspaceCompanion).
-            if (mFolderIcon instanceof HxyLargeFolderIcon
-                    && HxyLargeFolderProxy.isLargeFolder(mFolderIcon)) {
+            if (mFolderIcon instanceof LargeFolderIcon
+                    && LargeFolderProxy.isLargeFolder(mFolderIcon)) {
                 mFolderIcon.onFolderAnimStartClose(mContent.getCurrentPage());
             }
         }
@@ -626,7 +626,7 @@ public class HxyFolderAnimationManager {
 
     /**
      * Resolve open-start / close-end pose. Large folders land on
-     * {@link HxyLargeFolderListView} cells; small folders use ClippedFolder rule offsets.
+     * {@link LargeFolderListView} cells; small folders use ClippedFolder rule offsets.
      * When the last cell is a 2×2 overflow stack, {@code stackIndex} (0–3) lands on that
      * mini-icon (ColorOS {@code getCurrentStackedParams} / {@code initStackedParams}).
      */
@@ -634,9 +634,9 @@ public class HxyFolderAnimationManager {
             boolean overflow, int previewParamCount, int stackIndex,
             float previewTransX, float previewTransY, float previewIconSize,
             float[] folderIconLoc, float folderIconScaleRel) {
-        if (HxyLargeFolderProxy.isLargeFolder(mFolderIcon)
-                && mFolderIcon instanceof HxyLargeFolderIcon) {
-            HxyLargeFolderIcon largeIcon = (HxyLargeFolderIcon) mFolderIcon;
+        if (LargeFolderProxy.isLargeFolder(mFolderIcon)
+                && mFolderIcon instanceof LargeFolderIcon) {
+            LargeFolderIcon largeIcon = (LargeFolderIcon) mFolderIcon;
             int largeCount = largeIcon.getLargePreviewParamCount();
             if (largeCount > 0) {
                 // Overflow 2×2 mini-slot landing (Oppo stacked preview params).
@@ -669,7 +669,7 @@ public class HxyFolderAnimationManager {
                     if (overflow) {
                         if (largeIcon.hasStackOverflowPreview()) {
                             Rect subBounds = new Rect();
-                            int lastMini = HxyLargeFolderIconItem.getMaxOutCount() - 1;
+                            int lastMini = LargeFolderIconItem.getMaxOutCount() - 1;
                             if (largeIcon.getStackedPreviewItemBoundsInDragLayer(
                                     lastMini, subBounds)) {
                                 size = Math.min(subBounds.width(), subBounds.height())

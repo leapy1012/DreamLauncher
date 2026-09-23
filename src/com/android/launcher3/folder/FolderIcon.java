@@ -87,8 +87,8 @@ import java.util.function.Predicate;
 import com.android.launcher3.dot.NumberDotRenderer;
 import com.android.launcher3.dot.DotDrawUtils;
 import android.graphics.Point;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 import android.text.TextUtils;
 import android.graphics.Paint;
 
@@ -203,7 +203,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         if (folderInfo != null && (folderInfo.title == null || folderInfo.title.length() < 1) && group != null) {
             folderInfo.title = group.getContext().getResources().getString(R.string.folder_unnamed);
         }
-        if (HxyLargeFolderProxy.SUPPORT_LARGE_FOLDER) {
+        if (LargeFolderProxy.SUPPORT_LARGE_FOLDER) {
             resId = R.layout.hxy_large_folder_icon;
         }
         DeviceProfile grid = activity.getDeviceProfile();
@@ -245,7 +245,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         icon.updatePreviewItems(false);
 
         folderInfo.addListener(icon);
-        if (HxyLargeFolderProxy.SUPPORT_LARGE_FOLDER) {
+        if (LargeFolderProxy.SUPPORT_LARGE_FOLDER) {
             icon.initLargeFolderIcon();
         }
         return icon;
@@ -673,7 +673,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
 
     public void drawDot(Canvas canvas) {
         // ColorOS: large/extended folders use per-preview-cell badges, not a plate corner badge.
-        if (HxyLargeFolderProxy.isLargeFolder((View) this)) {
+        if (LargeFolderProxy.isLargeFolder((View) this)) {
             return;
         }
         if (!mForceHideDot && ((mDotInfo != null && mDotInfo.hasDot()) || mDotScale > 0)) {
@@ -704,7 +704,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
 
     @Override
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        boolean isLargeFolder = HxyLargeFolderProxy.isLargeFolder((View) this);
+        boolean isLargeFolder = LargeFolderProxy.isLargeFolder((View) this);
         if (isLargeFolder) {
             ItemInfo itemInfo = (ItemInfo) getTag();
             Paint.FontMetrics fm = this.mFolderName.getPaint().getFontMetrics();
@@ -718,7 +718,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
         }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         if (isLargeFolder) {
-            ((HxyLargeFolderIcon) this).refreshListData();
+            ((LargeFolderIcon) this).refreshListData();
         }
     }
 
@@ -731,7 +731,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
             } else {
                 paddingTop = (((height - cellHeightPx) * 3) / 4) + 3;
             }
-        } else if (!HxyLargeFolderProxy.isLargeFolder((View) this)) {
+        } else if (!LargeFolderProxy.isLargeFolder((View) this)) {
             DeviceProfile grid = this.mActivity.getDeviceProfile();
             if (grid.useOppoWorkspaceMetrics()) {
                 int folderContentHeight = grid.getOppoFolderWorkspaceContentHeight();
@@ -741,10 +741,10 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
                 paddingTop = ((height - cellHeightPx) / 2) - 3;
             }
         } else {
-            if (HxyLargeFolderProxy.is4X6Grid(getContext())) {
+            if (LargeFolderProxy.is4X6Grid(getContext())) {
                 paddingTop = ((height - cellHeightPx) / 3) + 2;
             } else {
-                paddingTop = HxyLargeFolderProxy.getFolderPaddingTop();
+                paddingTop = LargeFolderProxy.getFolderPaddingTop();
             }
         }
         return paddingTop;

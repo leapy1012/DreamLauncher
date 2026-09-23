@@ -8,11 +8,11 @@ import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.views.ActivityContext;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 
-public class HxyLargeFolderSwitcher implements ISwitchFolderAnimation {
-    private static final String TAG = "HxyLargeFolderSwitcher";
+public class LargeFolderSwitcher implements ISwitchFolderAnimation {
+    private static final String TAG = "LargeFolderSwitcher";
     private BaseSwitchParams mAniParams = null;
 
     public void release() {
@@ -27,11 +27,11 @@ public class HxyLargeFolderSwitcher implements ISwitchFolderAnimation {
         }
     }
 
-    public void switchLargeFolder(ActivityContext context, HxyLargeFolderIcon child, int spanX, int spanY) {
+    public void switchLargeFolder(ActivityContext context, LargeFolderIcon child, int spanX, int spanY) {
         int screenId;
         boolean isLargeFolder;
         CellLayout newCellLayout;
-        HxyLargeFolderIcon hxyLargeFolderIcon = child;
+        LargeFolderIcon hxyLargeFolderIcon = child;
         releaseAnimationParams();
         CellLayout cellLayout = getCellLayout(child);
         if (cellLayout != null) {
@@ -41,7 +41,7 @@ public class HxyLargeFolderSwitcher implements ISwitchFolderAnimation {
                 ItemInfo info = (ItemInfo) child.getTag();
                 int[] cellXY = {info.cellX, info.cellY};
                 int[] screenIds = {screenId};
-                isLargeFolder = HxyLargeFolderProxy.isLargeFolder(spanX, spanY);
+                isLargeFolder = LargeFolderProxy.isLargeFolder(spanX, spanY);
                 if (isLargeFolder) {
                     newCellLayout = updateLargeFolderLayout(launcher.getWorkspace(), cellLayout, child, screenIds, cellXY, spanX, spanY);
                 } else {
@@ -56,7 +56,7 @@ public class HxyLargeFolderSwitcher implements ISwitchFolderAnimation {
                 } else {
                     this.mAniParams = new CurrentLocationParams(launcher, hxyLargeFolderIcon, isLargeFolder);
                 }
-                Log.d(TAG, "HxyLargeFolderSwitcher switchLargeFolder ; cellX = " + cellXY[0] + "; cellY = " + cellXY[1] + "; screenId = " + screenIds[0] + "; getSwitchMode = " + this.mAniParams.getSwitchMode() + "; isLargeFolder = " + isLargeFolder + "; info.cellX = " + info.cellX + "; info.cellY = " + info.cellY);
+                Log.d(TAG, "LargeFolderSwitcher switchLargeFolder ; cellX = " + cellXY[0] + "; cellY = " + cellXY[1] + "; screenId = " + screenIds[0] + "; getSwitchMode = " + this.mAniParams.getSwitchMode() + "; isLargeFolder = " + isLargeFolder + "; info.cellX = " + info.cellX + "; info.cellY = " + info.cellY);
                 int i = screenIds[0];
                 this.mAniParams.setSwitchFolderBean(new SwitchFolderBean(launcher, targetLayout, child, i, cellXY[0], cellXY[1], spanX, spanY));
                 this.mAniParams.onSwitchFolderBegin();
@@ -90,7 +90,7 @@ public class HxyLargeFolderSwitcher implements ISwitchFolderAnimation {
         return info.cellX != cellXY[0] || info.cellY != cellXY[1];
     }
 
-    private CellLayout updateLargeFolderLayout(Workspace workspace, CellLayout cellLayout, HxyLargeFolderIcon child, int[] screenIds, int[] cellXY, int spanX, int spanY) {
+    private CellLayout updateLargeFolderLayout(Workspace workspace, CellLayout cellLayout, LargeFolderIcon child, int[] screenIds, int[] cellXY, int spanX, int spanY) {
         if (isSupportLarge(cellLayout.getShortcutsAndWidgets(), child)) {
             return null;
         }

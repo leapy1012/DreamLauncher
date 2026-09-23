@@ -309,7 +309,7 @@
     -->
     <!-- COUI page indicator for closed big-folder; absolute colors so it works under
          HomeScreenElementTheme when Theme.COUI.Main wraps the view. -->
-    <style name="HxyLargeFolder.COUIPageIndicator" parent="@style/Widget.COUI.COUIPageIndicator.Light">
+    <style name="LargeFolder.COUIPageIndicator" parent="@style/Widget.COUI.COUIPageIndicator.Light">
         <item name="dotClickable">false</item>
         <item name="dotSize">@dimen/hxy_large_folder_indicator_dot_size</item>
         <item name="dotSizeMedium">@dimen/hxy_large_folder_indicator_dot_size</item>

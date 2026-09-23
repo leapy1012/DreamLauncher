@@ -1,7 +1,7 @@
 package com.android.launcher3.folder.large.switchparams;
 
 import com.android.launcher3.Launcher;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderIcon;
 
 public class CurrentLocationParams extends BaseSwitchParams {
     private int mAlphaDuration = 0;
@@ -21,9 +21,9 @@ public class CurrentLocationParams extends BaseSwitchParams {
     private float mOffsetScaleX = 0.0f;
     private float mOffsetScaleY = 0.0f;
 
-    public CurrentLocationParams(Launcher launcher, HxyLargeFolderIcon folderIcon, boolean isSwitchLarge) {
+    public CurrentLocationParams(Launcher launcher, LargeFolderIcon folderIcon, boolean isSwitchLarge) {
         super(launcher, folderIcon, 0, isSwitchLarge);
-        this.mDragView = new HxyLargeDragView(this.mLauncher, this.mView);
+        this.mDragView = new LargeFolderDragView(this.mLauncher, this.mView);
     }
 
     public void setAnimationProgress(float progress) {

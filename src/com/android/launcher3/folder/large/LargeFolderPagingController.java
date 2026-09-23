@@ -17,12 +17,12 @@ import com.android.launcher3.views.ActivityContext;
 /**
  * ColorOS-style closed big-folder horizontal page swipe (gesture + snap + fling).
  */
-public class HxyLargeFolderPagingController {
+public class LargeFolderPagingController {
     private static final float SNAP_THRESHOLD_DP = 20f;
     private static final float FLING_VELOCITY_DP = 200f;
     private static final long SNAP_DURATION_MS = 280;
 
-    private final HxyLargeFolderIcon mIcon;
+    private final LargeFolderIcon mIcon;
     private final PointF mDown = new PointF();
     private final PointF mScrollStartPoint = new PointF();
     private final int mTouchSlop;
@@ -41,7 +41,7 @@ public class HxyLargeFolderPagingController {
     /** Ignore {@link Animator#cancel()} end callbacks from a replaced snap animator. */
     private int mSnapGeneration;
 
-    public HxyLargeFolderPagingController(HxyLargeFolderIcon icon) {
+    public LargeFolderPagingController(LargeFolderIcon icon) {
         mIcon = icon;
         Context context = icon.getContext();
         float density = context.getResources().getDisplayMetrics().density;

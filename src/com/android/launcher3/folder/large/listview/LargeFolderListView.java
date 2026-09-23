@@ -5,14 +5,14 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.View;
 import com.android.launcher3.R;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 
 /**
  * Closed big-folder preview grid. Supports ColorOS nine / four layouts and the
  * highlight layout (index 0 = 2×2 featured icon; indices 1–2 right column;
  * 3–4 bottom row; 5 = overflow stack).
  */
-public class HxyLargeFolderListView extends PageLinearLayout {
+public class LargeFolderListView extends PageLinearLayout {
     /**
      * Fraction of the equal cell stride used by the icon itself. Leftover becomes the
      * gutter between icons (ColorOS uses ~0.63–0.67 of bubble; our stride is already
@@ -27,17 +27,17 @@ public class HxyLargeFolderListView extends PageLinearLayout {
     private boolean mHighlightLayout;
     private Context mContext;
 
-    public HxyLargeFolderListView(Context context) {
+    public LargeFolderListView(Context context) {
         super(context);
         mContext = context;
     }
 
-    public HxyLargeFolderListView(Context context, AttributeSet attrs) {
+    public LargeFolderListView(Context context, AttributeSet attrs) {
         super(context, attrs);
         mContext = context;
     }
 
-    public HxyLargeFolderListView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public LargeFolderListView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         mContext = context;
     }
@@ -153,8 +153,8 @@ public class HxyLargeFolderListView extends PageLinearLayout {
         int count = getChildCount();
         for (int i = 0; i < count; i++) {
             View child = getChildAt(i);
-            if (child instanceof HxyLargeFolderIconItem) {
-                ((HxyLargeFolderIconItem) child).rebindIfNeeded();
+            if (child instanceof LargeFolderIconItem) {
+                ((LargeFolderIconItem) child).rebindIfNeeded();
             }
         }
     }
@@ -234,8 +234,8 @@ public class HxyLargeFolderListView extends PageLinearLayout {
 
     public void onChildLayout(View child, int left, int top) {
         super.onChildLayout(child, left, top);
-        if (child instanceof HxyLargeFolderIconItem) {
-            ((HxyLargeFolderIconItem) child).setCoordinateXY(left, top);
+        if (child instanceof LargeFolderIconItem) {
+            ((LargeFolderIconItem) child).setCoordinateXY(left, top);
         }
     }
 

@@ -10,11 +10,11 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.popup.PopupContainerWithArrow;
 import com.android.launcher3.popup.SystemShortcut;
 import com.android.launcher3.widget.LauncherAppWidgetHostView;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderIcon;
 import java.util.List;
 
 public class HxyShortcutsProxy {
-    public static DragOptions.PreDragCondition startLongPressActionFolder(HxyLargeFolderIcon view) {
+    public static DragOptions.PreDragCondition startLongPressActionFolder(LargeFolderIcon view) {
         PopupContainerWithArrow popup = PopupContainerWithArrow.showForFolder(view);
         if (popup != null) {
             return popup.createPreDragCondition(true);

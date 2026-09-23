@@ -14,7 +14,7 @@ import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
-import com.android.launcher3.folder.large.listview.HxyLargeFolderIconItem;
+import com.android.launcher3.folder.large.listview.LargeFolderIconItem;
 import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.widget.LauncherAppWidgetHostView;
@@ -173,7 +173,7 @@ public final class EditSelectionManager {
             return false;
         }
         // Preview cells inside large-folder plate — never select in place.
-        if (view instanceof HxyLargeFolderIconItem) {
+        if (view instanceof LargeFolderIconItem) {
             return false;
         }
         if (view instanceof FolderIcon) {
@@ -420,7 +420,7 @@ public final class EditSelectionManager {
                 for (int j = 0; j < container.getChildCount(); j++) {
                     View child = container.getChildAt(j);
                     if (child instanceof BubbleTextView && isSelected(child)
-                            && !(child instanceof HxyLargeFolderIconItem)) {
+                            && !(child instanceof LargeFolderIconItem)) {
                         out.add(child);
                     }
                 }

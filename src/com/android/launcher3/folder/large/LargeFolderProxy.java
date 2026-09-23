@@ -13,7 +13,7 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.R;
 
-public class HxyLargeFolderProxy {
+public class LargeFolderProxy {
     private static final int MAX_3X3_SIZE = 9;
     private static final int SPAN_3X3_COUNT = 3;
     public static final boolean SUPPORT_LARGE_FOLDER = HxyOption.HXY_LAUNCHER_SUPPORT_LARGE_FOLDER;
@@ -146,7 +146,7 @@ public class HxyLargeFolderProxy {
         // Leftover inside the plate — used as list content padding to center the grid.
         sPreviewOffsetY = Math.max(0, previewHeight - sFolderIconSize * getSpanCount());
         sPreviewOffsetX = Math.max(0, previewWidth - sFolderIconSize * getSpanCount());
-        Log.d("HxyLargeFolderProxy", "initFolderIconSize previewWidth = " + previewWidth
+        Log.d("LargeFolderProxy", "initFolderIconSize previewWidth = " + previewWidth
                 + "; previewHeight = " + previewHeight
                 + "; folderIconSize = " + sFolderIconSize
                 + "; contentInset = " + contentInset
@@ -208,7 +208,7 @@ public class HxyLargeFolderProxy {
     }
 
     public static boolean isLargeFolder(View view) {
-        if (!SUPPORT_LARGE_FOLDER || !(view instanceof HxyLargeFolderIcon)) {
+        if (!SUPPORT_LARGE_FOLDER || !(view instanceof LargeFolderIcon)) {
             return false;
         }
         Object info = view.getTag();
@@ -267,10 +267,10 @@ public class HxyLargeFolderProxy {
     }
 
     public static View getFloatingIconView(View originalView, String targetPackageName, int userId) {
-        if (!HxyLargeFolderUtils.isEmpty(targetPackageName)
-                && (originalView instanceof HxyLargeFolderIcon)
+        if (!LargeFolderUtils.isEmpty(targetPackageName)
+                && (originalView instanceof LargeFolderIcon)
                 && isLargeFolder(originalView)) {
-            View cell = ((HxyLargeFolderIcon) originalView).getFirstMatchForAppClose(
+            View cell = ((LargeFolderIcon) originalView).getFirstMatchForAppClose(
                     ItemInfo.NO_ID, targetPackageName, UserHandle.of(userId));
             if (cell != null) {
                 return cell;

@@ -20,20 +20,20 @@ import com.android.launcher3.model.data.FolderInfo;
  * {@code FolderManager.convertBigFolder} → {@code doPreviewSpringAnim} on preview
  * params. DreamLauncher mirrors that: close popup, then spring the live list cells.
  */
-public class HxyBigFolderPreviewSelector extends LinearLayout {
+public class LargeFolderPreviewSelector extends LinearLayout {
     private final View[] mIcons = new View[3];
-    private int mCurIndex = HxyBigFolderPreviewModes.INDEX_NINE;
-    private HxyLargeFolderIcon mFolderIcon;
+    private int mCurIndex = LargeFolderPreviewModes.INDEX_NINE;
+    private LargeFolderIcon mFolderIcon;
 
-    public HxyBigFolderPreviewSelector(Context context) {
+    public LargeFolderPreviewSelector(Context context) {
         super(context);
     }
 
-    public HxyBigFolderPreviewSelector(Context context, AttributeSet attrs) {
+    public LargeFolderPreviewSelector(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
-    public HxyBigFolderPreviewSelector(Context context, AttributeSet attrs, int defStyle) {
+    public LargeFolderPreviewSelector(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
     }
 
@@ -59,10 +59,10 @@ public class HxyBigFolderPreviewSelector extends LinearLayout {
         }
     }
 
-    public void bind(HxyLargeFolderIcon folderIcon) {
+    public void bind(LargeFolderIcon folderIcon) {
         mFolderIcon = folderIcon;
         Object tag = folderIcon.getTag();
-        mCurIndex = HxyBigFolderPreviewModes.getModeIndex(
+        mCurIndex = LargeFolderPreviewModes.getModeIndex(
                 tag instanceof FolderInfo ? (FolderInfo) tag : null);
         applySelectionTints();
     }
@@ -73,10 +73,10 @@ public class HxyBigFolderPreviewSelector extends LinearLayout {
         }
         Launcher launcher = Launcher.getLauncher(getContext());
         FolderInfo info = (FolderInfo) mFolderIcon.getTag();
-        HxyBigFolderPreviewModes.applyMode(info, index, launcher.getModelWriter());
+        LargeFolderPreviewModes.applyMode(info, index, launcher.getModelWriter());
         mCurIndex = index;
         applySelectionTints();
-        final HxyLargeFolderIcon folderIcon = mFolderIcon;
+        final LargeFolderIcon folderIcon = mFolderIcon;
         // Oppo: OplusPopupContainerWithArrow.closeOpenContainerAfter → convertBigFolder.
         AbstractFloatingView.closeOpenViews(launcher, true, AbstractFloatingView.TYPE_ACTION_POPUP);
         folderIcon.post(folderIcon::applyPreviewModeAnimated);

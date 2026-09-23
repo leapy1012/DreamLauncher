@@ -6,15 +6,15 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.popup.SystemShortcut;
 import com.android.launcher3.views.ActivityContext;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 
 public class SwitchFolderShortcut extends SystemShortcut<Launcher> {
-    private final HxyLargeFolderIcon mView;
+    private final LargeFolderIcon mView;
 
     public SwitchFolderShortcut(Launcher target, ItemInfo itemInfo, View originalView) {
-        super(HxyLargeFolderProxy.getSwitchIconResId(itemInfo), HxyLargeFolderProxy.getSwitchLabelResId(itemInfo), target, itemInfo, originalView);
-        this.mView = (HxyLargeFolderIcon) originalView;
+        super(LargeFolderProxy.getSwitchIconResId(itemInfo), LargeFolderProxy.getSwitchLabelResId(itemInfo), target, itemInfo, originalView);
+        this.mView = (LargeFolderIcon) originalView;
     }
 
     @Override

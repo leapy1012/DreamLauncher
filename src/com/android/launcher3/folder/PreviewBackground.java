@@ -47,7 +47,7 @@ import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.ActivityContext;
 
 import android.graphics.RectF;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 
 /**
  * This object represents a FolderIcon preview background. It stores drawing / measurement
@@ -173,10 +173,10 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
 
         basePreviewOffsetX = (availableSpaceX - previewSize) / 2;
         basePreviewOffsetY = topPadding + grid.folderIconOffsetYPx;
-        if (HxyLargeFolderProxy.isLargeFolder(invalidateDelegate)) {
-            this.mPreviewWidth = HxyLargeFolderProxy.computePreviewWidth(invalidateDelegate, availableSpaceX, this.previewSize);
-            this.mPreviewHeight = HxyLargeFolderProxy.computePreviewHeight(invalidateDelegate, availableSpaceY, this.previewSize);
-            this.basePreviewOffsetX = HxyLargeFolderProxy.getPreviewOffsetX(availableSpaceX, this.mPreviewWidth);
+        if (LargeFolderProxy.isLargeFolder(invalidateDelegate)) {
+            this.mPreviewWidth = LargeFolderProxy.computePreviewWidth(invalidateDelegate, availableSpaceX, this.previewSize);
+            this.mPreviewHeight = LargeFolderProxy.computePreviewHeight(invalidateDelegate, availableSpaceY, this.previewSize);
+            this.basePreviewOffsetX = LargeFolderProxy.getPreviewOffsetX(availableSpaceX, this.mPreviewWidth);
             // Reserve the workspace label band under the plate — otherwise
             // folder_icon_name is measured to ~20px and the title clips.
             int labelBand = grid.getOppoFolderWorkspaceContentHeight() - grid.folderIconSizePx;
@@ -185,7 +185,7 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
                 this.mPreviewHeight = maxPreviewH;
             }
             this.previewSize = (this.mPreviewWidth + this.mPreviewHeight) / 2;
-        } else if (HxyLargeFolderProxy.SUPPORT_LARGE_FOLDER) {
+        } else if (LargeFolderProxy.SUPPORT_LARGE_FOLDER) {
             this.mPreviewWidth = this.previewSize;
             this.mPreviewHeight = this.previewSize;
         }
@@ -211,7 +211,7 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
         int left = basePreviewOffsetX;
         int right = left + previewSize;
         int bottom = top + previewSize;
-        if (HxyLargeFolderProxy.isLargeFolder(this.mInvalidateDelegate)) {
+        if (LargeFolderProxy.isLargeFolder(this.mInvalidateDelegate)) {
             right = left + this.mPreviewWidth;
             bottom = top + this.mPreviewHeight;
         }
@@ -491,9 +491,9 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
     }
 
     public void drawThemeBackground(Canvas canvas, Context context) {
-        if (HxyLargeFolderProxy.SUPPORT_LARGE_FOLDER) {
+        if (LargeFolderProxy.SUPPORT_LARGE_FOLDER) {
             View view = this.mInvalidateDelegate;
-            if ((view instanceof FolderIcon) && HxyLargeFolderProxy.isLargeFolder(view)) {
+            if ((view instanceof FolderIcon) && LargeFolderProxy.isLargeFolder(view)) {
                 drawPreviewBackground(canvas, context);
                 return;
             }
@@ -502,7 +502,7 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
     }
 
     private void drawPreviewBackground(Canvas canvas, Context context, RectF rectF) {
-        int round = HxyLargeFolderProxy.getFolderRound(context);
+        int round = LargeFolderProxy.getFolderRound(context);
         canvas.drawRoundRect(rectF, (float) round, (float) round, this.mPaint);
     }
 
@@ -523,7 +523,7 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
      * inside {@code availableSpaceY}.
      */
     public void capPreviewHeightForLabelBand(int availableSpaceY, int labelBandPx) {
-        if (!HxyLargeFolderProxy.isLargeFolder(mInvalidateDelegate) || labelBandPx <= 0) {
+        if (!LargeFolderProxy.isLargeFolder(mInvalidateDelegate) || labelBandPx <= 0) {
             return;
         }
         int maxPreviewH = availableSpaceY - basePreviewOffsetY - labelBandPx;

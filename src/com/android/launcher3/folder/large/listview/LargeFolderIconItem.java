@@ -19,8 +19,8 @@ import com.android.launcher3.graphics.IconShape;
 import com.android.launcher3.icons.BitmapInfo;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.big.HxyBubbleTextView;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
-import com.android.launcher3.folder.large.HxyLargeFolderUtils;
+import com.android.launcher3.folder.large.LargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderUtils;
 import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.R;
@@ -35,7 +35,7 @@ import java.util.List;
  * Notification badges are drawn per cell (ColorOS BigFolderPreviewItemManager), not on
  * the folder plate.
  */
-public class HxyLargeFolderIconItem extends HxyBubbleTextView {
+public class LargeFolderIconItem extends HxyBubbleTextView {
     private static final int MAX_OUT_COUNT = 4;
     private static final int SPAN_COUNT = 2;
     /** ColorOS {@code BigFolderNumBadgeRender.DOT_SCALE} — outward nudge into the gutter. */
@@ -56,15 +56,15 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
             new NumberDotRenderer.DrawParams(0);
     private final Paint mStackDotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    public HxyLargeFolderIconItem(Context context) {
+    public LargeFolderIconItem(Context context) {
         this(context, (AttributeSet) null);
     }
 
-    public HxyLargeFolderIconItem(Context context, AttributeSet attrs) {
+    public LargeFolderIconItem(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public HxyLargeFolderIconItem(Context context, AttributeSet attrs, int defStyle) {
+    public LargeFolderIconItem(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         this.mCoordinateXY = new int[2];
         this.mClassName = null;
@@ -269,7 +269,7 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
         if (getMeasuredWidth() > 0 && getMeasuredHeight() > 0) {
             return Math.min(getMeasuredWidth(), getMeasuredHeight());
         }
-        int proxy = HxyLargeFolderProxy.getFolderIconSize();
+        int proxy = LargeFolderProxy.getFolderIconSize();
         if (proxy > 0) {
             return proxy;
         }
@@ -279,7 +279,7 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
     private void applyBoundDrawables() {
         WorkspaceItemInfo data = mBoundData;
         boolean isCountOut = mCountOut;
-        String className = HxyLargeFolderUtils.getClassName(data);
+        String className = LargeFolderUtils.getClassName(data);
         if (!isCountOut) {
             setTag(data);
         } else {
@@ -331,7 +331,7 @@ public class HxyLargeFolderIconItem extends HxyBubbleTextView {
                 || stackIndex < 0 || stackIndex >= MAX_OUT_COUNT) {
             return false;
         }
-        int gap = Math.max(1, HxyLargeFolderProxy.getFolderIconOutSpace(context));
+        int gap = Math.max(1, LargeFolderProxy.getFolderIconOutSpace(context));
         int subIconSize = Math.max(1, (cellSize - gap) / 2);
         while (subIconSize * 2 + gap > cellSize && subIconSize > 1) {
             subIconSize--;

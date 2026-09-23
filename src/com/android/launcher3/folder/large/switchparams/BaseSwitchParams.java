@@ -7,7 +7,7 @@ import android.animation.ValueAnimator;
 import android.graphics.Rect;
 import android.util.Property;
 import com.android.launcher3.Launcher;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderIcon;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -28,12 +28,12 @@ public abstract class BaseSwitchParams implements ISwitchFolderAnimation {
     public static final int SWITCH_NEXT_PAGE = 2;
     protected final boolean isSwitchLarge;
     public float mAnimationProgress = 0.0f;
-    protected HxyLargeDragView mDragView;
+    protected LargeFolderDragView mDragView;
     protected Launcher mLauncher;
     private ValueAnimator mProgressAnimator = null;
     private SwitchFolderBean mSwitchFolderBean = null;
     private final int mSwitchMode;
-    protected HxyLargeFolderIcon mView;
+    protected LargeFolderIcon mView;
 
     @Retention(RetentionPolicy.SOURCE)
     public @interface SwitchMode {
@@ -43,7 +43,7 @@ public abstract class BaseSwitchParams implements ISwitchFolderAnimation {
 
     public abstract void stopAnimation();
 
-    public BaseSwitchParams(Launcher launcher, HxyLargeFolderIcon folderIcon, int switchMode, boolean isSwitchLarge2) {
+    public BaseSwitchParams(Launcher launcher, LargeFolderIcon folderIcon, int switchMode, boolean isSwitchLarge2) {
         this.mLauncher = launcher;
         this.mView = folderIcon;
         this.mSwitchMode = switchMode;
@@ -64,7 +64,7 @@ public abstract class BaseSwitchParams implements ISwitchFolderAnimation {
     }
 
     private void releaseDragView() {
-        HxyLargeDragView hxyLargeDragView = this.mDragView;
+        LargeFolderDragView hxyLargeDragView = this.mDragView;
         if (hxyLargeDragView != null) {
             hxyLargeDragView.release();
             this.mDragView = null;
@@ -102,14 +102,14 @@ public abstract class BaseSwitchParams implements ISwitchFolderAnimation {
     }
 
     public void onSwitchFolderBegin() {
-        HxyLargeFolderIcon hxyLargeFolderIcon = this.mView;
+        LargeFolderIcon hxyLargeFolderIcon = this.mView;
         if (hxyLargeFolderIcon != null) {
             hxyLargeFolderIcon.onSwitchFolderBegin();
         }
     }
 
     public void onSwitchFolderEnd() {
-        HxyLargeFolderIcon hxyLargeFolderIcon = this.mView;
+        LargeFolderIcon hxyLargeFolderIcon = this.mView;
         if (hxyLargeFolderIcon != null) {
             hxyLargeFolderIcon.onSwitchFolderEnd();
         }

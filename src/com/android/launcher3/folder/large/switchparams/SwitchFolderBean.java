@@ -5,19 +5,19 @@ import com.android.launcher3.CellLayout;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.model.data.ItemInfo;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderIcon;
 
 public class SwitchFolderBean {
     private int cellX;
     private int cellY;
-    private HxyLargeFolderIcon child;
+    private LargeFolderIcon child;
     private Launcher launcher;
     private int screenId;
     private int spanX;
     private int spanY;
     private CellLayout targetLayout;
 
-    public SwitchFolderBean(Launcher launcher2, CellLayout targetLayout2, HxyLargeFolderIcon child2, int screenId2, int cellX2, int cellY2, int spanX2, int spanY2) {
+    public SwitchFolderBean(Launcher launcher2, CellLayout targetLayout2, LargeFolderIcon child2, int screenId2, int cellX2, int cellY2, int spanX2, int spanY2) {
         this.launcher = launcher2;
         this.targetLayout = targetLayout2;
         this.child = child2;
@@ -73,7 +73,7 @@ public class SwitchFolderBean {
         return this.targetLayout;
     }
 
-    public HxyLargeFolderIcon getChild() {
+    public LargeFolderIcon getChild() {
         return this.child;
     }
 

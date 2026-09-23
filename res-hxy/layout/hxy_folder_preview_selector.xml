@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ColorOS big-folder preview mode strip (Oppo oplus_deep_shortcut_folder_drag). -->
-<com.android.launcher3.folder.large.HxyBigFolderPreviewSelector
+<com.android.launcher3.folder.large.LargeFolderPreviewSelector
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="@dimen/coloros_popup_item_width"
     android:layout_height="wrap_content"
@@ -57,4 +57,4 @@
             android:contentDescription="@string/hxy_folder_preview_highlight"
             android:forceDarkAllowed="false" />
     </FrameLayout>
-</com.android.launcher3.folder.large.HxyBigFolderPreviewSelector>
+</com.android.launcher3.folder.large.LargeFolderPreviewSelector>

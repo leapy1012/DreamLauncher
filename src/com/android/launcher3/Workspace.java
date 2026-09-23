@@ -144,7 +144,7 @@ import java.util.stream.Collectors;
 
 import com.android.launcher3.effect.ScrollEffect;
 import com.android.launcher3.LauncherPrefs;
-import com.android.launcher3.folder.large.HxyLargeFolderIcon;
+import com.android.launcher3.folder.large.LargeFolderIcon;
 import com.android.launcher3.big.popup.HxyShortcutsProxy;
 import com.android.launcher3.BuildConfig;
 
@@ -1333,10 +1333,10 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             }
             for (int j = 0; j < cl.getChildCount(); j++) {
                 View child = cl.getChildAt(j);
-                if (!(child instanceof HxyLargeFolderIcon)) {
+                if (!(child instanceof LargeFolderIcon)) {
                     continue;
                 }
-                HxyLargeFolderIcon folder = (HxyLargeFolderIcon) child;
+                LargeFolderIcon folder = (LargeFolderIcon) child;
                 if (!folder.canPageSwipe()) {
                     continue;
                 }
@@ -1899,8 +1899,8 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         // Folder plate-paging must not keep Workspace/DragLayer from driving the drag.
         mBigFolderIntercept = false;
         mIsEventOverPageableBigFolder = false;
-        if (child instanceof HxyLargeFolderIcon) {
-            ((HxyLargeFolderIcon) child).abortPagingGesture();
+        if (child instanceof LargeFolderIcon) {
+            ((LargeFolderIcon) child).abortPagingGesture();
         }
         // Oppo rearranges hide the source immediately. Keeping resizable icons visible
         // for the resize frame caused a second "ghost" icon beside the DragView when
@@ -2003,8 +2003,8 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                 dragOptions.preDragEndScale = (float) mAllAppsIconSize / btv.getIconSize();
             }
         } else if (child instanceof FolderIcon && !((FolderIcon) child).isInHotseat()) {
-            if (!dragOptions.isAccessibleDrag && child instanceof HxyLargeFolderIcon) {
-                dragOptions.preDragCondition = HxyShortcutsProxy.startLongPressActionFolder((HxyLargeFolderIcon) child);
+            if (!dragOptions.isAccessibleDrag && child instanceof LargeFolderIcon) {
+                dragOptions.preDragCondition = HxyShortcutsProxy.startLongPressActionFolder((LargeFolderIcon) child);
             }
         } else if (child instanceof LauncherAppWidgetHostView && !dragOptions.isAccessibleDrag) {
             dragOptions.preDragCondition = HxyShortcutsProxy.startLongPressActionWidget(

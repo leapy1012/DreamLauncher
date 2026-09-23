@@ -31,11 +31,11 @@ import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.PreviewItemManager;
 import com.android.launcher3.folder.large.listview.BasePageLinearAdapter;
-import com.android.launcher3.folder.large.listview.HxyLargeFolderAdapter;
-import com.android.launcher3.folder.large.listview.HxyLargeFolderIconItem;
-import com.android.launcher3.folder.large.listview.HxyLargeFolderListView;
+import com.android.launcher3.folder.large.listview.LargeFolderAdapter;
+import com.android.launcher3.folder.large.listview.LargeFolderIconItem;
+import com.android.launcher3.folder.large.listview.LargeFolderListView;
 import com.android.launcher3.folder.large.switchparams.ISwitchFolderAnimation;
-import com.android.launcher3.folder.large.switchparams.HxyLargeFolderSwitcher;
+import com.android.launcher3.folder.large.switchparams.LargeFolderSwitcher;
 import com.android.launcher3.graphics.DragPreviewProvider;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
@@ -47,7 +47,7 @@ import com.coui.appcompat.indicator.COUIPageIndicator2;
 import java.util.ArrayList;
 import java.util.function.Predicate;
 
-public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnimation {
+public class LargeFolderIcon extends FolderIcon implements ISwitchFolderAnimation {
     public static final int LARGE_FOLDER_SPAN_X = 2;
     public static final int LARGE_FOLDER_SPAN_Y = 2;
     private static final int RECURSION_LOAD_COUNT = 3;
@@ -65,12 +65,12 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             new PathInterpolator(0.33f, 0f, 0.67f, 1f);
 
     private boolean isFirstFolderNameTop;
-    private HxyLargeFolderAdapter mAdapter;
-    private HxyLargeFolderAdapter mAdjacentAdapter;
-    private HxyLargeFolderListView mListView;
-    private HxyLargeFolderListView mAdjacentListView;
-    private HxyLargeFolderSwitcher mSwitcher;
-    private HxyLargeFolderPagingController mPagingController;
+    private LargeFolderAdapter mAdapter;
+    private LargeFolderAdapter mAdjacentAdapter;
+    private LargeFolderListView mListView;
+    private LargeFolderListView mAdjacentListView;
+    private LargeFolderSwitcher mSwitcher;
+    private LargeFolderPagingController mPagingController;
     private COUIPageIndicator2 mIndicator;
     private float mScrollDistance;
     private int mPreviewPage;
@@ -101,11 +101,11 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private final Runnable mRestoreChromeRunnable = this::restoreNameAfterScroll;
 
-    public HxyLargeFolderIcon(Context context) {
+    public LargeFolderIcon(Context context) {
         this(context, (AttributeSet) null);
     }
 
-    public HxyLargeFolderIcon(Context context, AttributeSet attrs) {
+    public LargeFolderIcon(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.mListView = null;
         this.mAdapter = null;
@@ -140,8 +140,8 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private void initData() {
-        mSwitcher = new HxyLargeFolderSwitcher();
-        mPagingController = new HxyLargeFolderPagingController(this);
+        mSwitcher = new LargeFolderSwitcher();
+        mPagingController = new LargeFolderPagingController(this);
     }
 
     @Override
@@ -256,7 +256,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         int previewH = getFolderBackground().getPreviewHeight();
         int plateBottom = getFolderBackground().getBasePreviewOffsetY() + previewH;
         if (previewH <= 0) {
-            plateBottom = HxyLargeFolderProxy.computePreviewHeight(
+            plateBottom = LargeFolderProxy.computePreviewHeight(
                     this, getMeasuredHeight(), grid.folderIconSizePx);
         }
         int gap = grid.iconDrawablePaddingPx;
@@ -267,14 +267,14 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     @Override
     public int measurePaddingTop(int height, int cellHeightPx) {
-        if (isLargeFolder() && HxyLargeFolderProxy.isLargeFolder((ItemInfo) getTag())) {
+        if (isLargeFolder() && LargeFolderProxy.isLargeFolder((ItemInfo) getTag())) {
             height /= 2;
         }
         return super.measurePaddingTop(height, cellHeightPx);
     }
 
     private boolean isLargeFolder() {
-        return HxyLargeFolderProxy.isLargeFolder((View) this);
+        return LargeFolderProxy.isLargeFolder((View) this);
     }
 
     private void setFolderNameTop() {
@@ -313,11 +313,11 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         int previewW = getFolderBackground().getPreviewWidth();
         int previewH = getFolderBackground().getPreviewHeight();
         if (previewW <= 0) {
-            previewW = HxyLargeFolderProxy.computePreviewWidth(
+            previewW = LargeFolderProxy.computePreviewWidth(
                     this, getMeasuredWidth(), grid.folderIconSizePx);
         }
         if (previewH <= 0) {
-            previewH = HxyLargeFolderProxy.computePreviewHeight(
+            previewH = LargeFolderProxy.computePreviewHeight(
                     this, getMeasuredHeight(), grid.folderIconSizePx);
         }
         int platePadX = getPreviewOffsetX();
@@ -338,7 +338,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
             mListView.setLayoutParams(lp);
         }
-        // Item gutters are set in HxyLargeFolderListView.onMeasure (Oppo-style).
+        // Item gutters are set in LargeFolderListView.onMeasure (Oppo-style).
         if (mListView.getPaddingLeft() != inset || mListView.getPaddingTop() != inset) {
             mListView.setPadding(inset, inset, inset, inset);
         }
@@ -372,14 +372,14 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (this.mActivity == null) {
             return 0;
         }
-        return HxyLargeFolderProxy.getPreviewOffsetY(getPaddingTop(), this.mActivity.getDeviceProfile().folderIconOffsetYPx);
+        return LargeFolderProxy.getPreviewOffsetY(getPaddingTop(), this.mActivity.getDeviceProfile().folderIconOffsetYPx);
     }
 
     private int getPreviewOffsetX() {
         if (this.mActivity == null) {
             return 0;
         }
-        return HxyLargeFolderProxy.getPreviewOffsetX(getMeasuredWidth(), HxyLargeFolderProxy.computePreviewWidth((View) this, getMeasuredWidth(), this.mActivity.getDeviceProfile().folderIconSizePx));
+        return LargeFolderProxy.getPreviewOffsetX(getMeasuredWidth(), LargeFolderProxy.computePreviewWidth((View) this, getMeasuredWidth(), this.mActivity.getDeviceProfile().folderIconSizePx));
     }
 
     private int getFolderNameTop() {
@@ -392,12 +392,12 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     @Override
     public void initLargeFolderIcon() {
-        this.mListView = (HxyLargeFolderListView) findViewById(R.id.folder_icon_content);
+        this.mListView = (LargeFolderListView) findViewById(R.id.folder_icon_content);
         this.mAdjacentListView =
-                (HxyLargeFolderListView) findViewById(R.id.folder_icon_content_adjacent);
+                (LargeFolderListView) findViewById(R.id.folder_icon_content_adjacent);
         this.mIndicator = findViewById(R.id.folder_icon_indicator);
-        this.mAdapter = new HxyLargeFolderAdapter(getContext());
-        this.mAdjacentAdapter = new HxyLargeFolderAdapter(getContext());
+        this.mAdapter = new LargeFolderAdapter(getContext());
+        this.mAdjacentAdapter = new LargeFolderAdapter(getContext());
         // Per-cell badges may overhang into preview gutters (ColorOS).
         setClipChildren(false);
         setClipToPadding(false);
@@ -410,7 +410,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             mAdjacentListView.setClipToPadding(false);
         }
         if (mPagingController == null) {
-            mPagingController = new HxyLargeFolderPagingController(this);
+            mPagingController = new LargeFolderPagingController(this);
         }
         applyPreviewMode();
         this.mListView.setAdapter(this.mAdapter);
@@ -444,17 +444,17 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         mPreviewPage = 0;
         mScrollDistance = 0f;
         mAdjacentBoundPage = -1;
-        int span = HxyBigFolderPreviewModes.getPreviewSpan(info);
-        int max = HxyBigFolderPreviewModes.getPreviewMaxSize(info, mPreviewPage);
+        int span = LargeFolderPreviewModes.getPreviewSpan(info);
+        int max = LargeFolderPreviewModes.getPreviewMaxSize(info, mPreviewPage);
         mAdapter.setFolderInfo(info);
         mAdapter.setMaxSize(max);
         mListView.setSpanCount(span);
         mListView.setHighlightLayout(
-                HxyBigFolderPreviewModes.isHighlightPage(info, mPreviewPage));
+                LargeFolderPreviewModes.isHighlightPage(info, mPreviewPage));
         if (mAdjacentAdapter != null && mAdjacentListView != null) {
             mAdjacentAdapter.setFolderInfo(info);
             mAdjacentAdapter.setMaxSize(
-                    HxyBigFolderPreviewModes.getPreviewMaxSize(info, 1));
+                    LargeFolderPreviewModes.getPreviewMaxSize(info, 1));
             mAdjacentListView.setSpanCount(span);
             mAdjacentListView.setHighlightLayout(false);
         }
@@ -900,7 +900,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             boolean result = loadValidBitmapInfo();
             refreshListView();
             if (!result) {
-                postDelayed(new HxyLargeFolderIconRunnable(this, index), 800);
+                postDelayed(new LargeFolderIconRunnable(this, index), 800);
             }
         }
     }
@@ -925,7 +925,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             mAdapter.setList(mInfo.contents, mPreviewPage);
             if (mListView != null) {
                 mListView.setHighlightLayout(
-                        HxyBigFolderPreviewModes.isHighlightPage(mInfo, mPreviewPage));
+                        LargeFolderPreviewModes.isHighlightPage(mInfo, mPreviewPage));
             }
             updatePageIndicator();
             if (!mScrolling) {
@@ -1020,7 +1020,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private void onFolderItemClick(View view, WorkspaceItemInfo data) {
-        HxyLargeFolderIconItem itemView = (HxyLargeFolderIconItem) view;
+        LargeFolderIconItem itemView = (LargeFolderIconItem) view;
         // Oppo PAGE_PREVIEW: tapping a large-folder preview always opens the folder so apps
         // inside can be selected — never toggle selection on the preview cell itself.
         if (mActivity instanceof Launcher launcher
@@ -1040,7 +1040,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private boolean isHotseatLayout() {
-        return HxyLargeFolderSwitcher.isHotseatLayout(this.mActivity, HxyLargeFolderSwitcher.getCellLayout(this));
+        return LargeFolderSwitcher.isHotseatLayout(this.mActivity, LargeFolderSwitcher.getCellLayout(this));
     }
 
     public void switchFolderSize() {
@@ -1054,7 +1054,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private boolean loadValidBitmapInfo() {
-        return HxyLargeFolderUtils.loadValidBitmapInfo(getContext(), this.mInfo.contents);
+        return LargeFolderUtils.loadValidBitmapInfo(getContext(), this.mInfo.contents);
     }
 
     /**
@@ -1096,17 +1096,17 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             return null;
         }
         int count = mListView.getChildCount();
-        int max = mAdapter != null ? mAdapter.getMaxSize() : HxyLargeFolderProxy.getMaxSize();
+        int max = mAdapter != null ? mAdapter.getMaxSize() : LargeFolderProxy.getMaxSize();
         if (count > max) {
             count--;
         }
         View packageMatch = null;
         for (int i = 0; i < count; i++) {
             View child = mListView.getChildAt(i);
-            if (!(child instanceof HxyLargeFolderIconItem)) {
+            if (!(child instanceof LargeFolderIconItem)) {
                 continue;
             }
-            HxyLargeFolderIconItem itemView = (HxyLargeFolderIconItem) child;
+            LargeFolderIconItem itemView = (LargeFolderIconItem) child;
             if (itemView.isCountOut()) {
                 continue;
             }
@@ -1119,7 +1119,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
                 return itemView;
             }
             if (packageMatch == null
-                    && HxyLargeFolderUtils.equals(info, packageName, user)) {
+                    && LargeFolderUtils.equals(info, packageName, user)) {
                 packageMatch = itemView;
             }
         }
@@ -1137,7 +1137,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             if (preferredItemId != ItemInfo.NO_ID && info.id == preferredItemId) {
                 return i;
             }
-            if (packageIndex < 0 && HxyLargeFolderUtils.equals(info, packageName, user)) {
+            if (packageIndex < 0 && LargeFolderUtils.equals(info, packageName, user)) {
                 packageIndex = i;
             }
         }
@@ -1148,7 +1148,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (mInfo == null || contentIndex < 0) {
             return 0;
         }
-        int without = HxyBigFolderPreviewModes.getMaxPreviewWithoutStacked(mInfo, 0);
+        int without = LargeFolderPreviewModes.getMaxPreviewWithoutStacked(mInfo, 0);
         if (without <= 0) {
             return 0;
         }
@@ -1223,7 +1223,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         invalidatePreviewDotCells(mAdjacentListView);
     }
 
-    private static void invalidatePreviewDotCells(HxyLargeFolderListView list) {
+    private static void invalidatePreviewDotCells(LargeFolderListView list) {
         if (list == null) {
             return;
         }
@@ -1234,7 +1234,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private Path getCachedPlateClipPath() {
-        float round = HxyLargeFolderProxy.getFolderRound(getContext());
+        float round = LargeFolderProxy.getFolderRound(getContext());
         int w = getFolderBackground().getPreviewWidth();
         int h = getFolderBackground().getPreviewHeight();
         if (w != mPlateClipW || h != mPlateClipH || round != mPlateClipRound) {
@@ -1335,7 +1335,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (mInfo == null) {
             return 1;
         }
-        return HxyBigFolderPreviewModes.getPreviewPageCount(mInfo, mInfo.contents.size());
+        return LargeFolderPreviewModes.getPreviewPageCount(mInfo, mInfo.contents.size());
     }
 
     public int getPageWidth() {
@@ -1440,7 +1440,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
             mAdjacentBoundPage = neighborPage;
         }
         mAdjacentListView.setHighlightLayout(
-                HxyBigFolderPreviewModes.isHighlightPage(mInfo, neighborPage));
+                LargeFolderPreviewModes.isHighlightPage(mInfo, neighborPage));
         mAdjacentListView.setAlpha(1f);
         // Keep INVISIBLE until caller sets VISIBLE with translation — still lays out.
         if (mAdjacentListView.getVisibility() == GONE) {
@@ -1473,12 +1473,12 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         rebindListChildren(mAdjacentListView);
     }
 
-    private void bindPageIfNeeded(HxyLargeFolderAdapter adapter, HxyLargeFolderListView list,
+    private void bindPageIfNeeded(LargeFolderAdapter adapter, LargeFolderListView list,
             int page) {
         if (adapter == null || list == null || mInfo == null) {
             return;
         }
-        list.setHighlightLayout(HxyBigFolderPreviewModes.isHighlightPage(mInfo, page));
+        list.setHighlightLayout(LargeFolderPreviewModes.isHighlightPage(mInfo, page));
         if (adapter.getPageIndex() != page) {
             adapter.setFolderInfo(mInfo);
             adapter.setList(mInfo.contents, page);
@@ -1543,7 +1543,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         }
         if (mListView != null) {
             mListView.setHighlightLayout(
-                    HxyBigFolderPreviewModes.isHighlightPage(mInfo, page));
+                    LargeFolderPreviewModes.isHighlightPage(mInfo, page));
         }
         applyIdlePageLayout();
         // Sync layout so the first post-swipe frame isn't tiny unbound cells.
@@ -1555,7 +1555,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         mHandler.postDelayed(mRestoreChromeRunnable, SCROLL_END_RESTORE_DELAY_MS);
     }
 
-    private void ensureListLaidOut(HxyLargeFolderListView list) {
+    private void ensureListLaidOut(LargeFolderListView list) {
         if (list == null) {
             return;
         }
@@ -1583,28 +1583,28 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         list.layout(left, top, left + w, top + h);
     }
 
-    private void rebindListChildren(HxyLargeFolderListView list) {
+    private void rebindListChildren(LargeFolderListView list) {
         if (list == null) {
             return;
         }
         int count = list.getChildCount();
         for (int i = 0; i < count; i++) {
             View child = list.getChildAt(i);
-            if (child instanceof HxyLargeFolderIconItem) {
-                ((HxyLargeFolderIconItem) child).rebindIfNeeded();
+            if (child instanceof LargeFolderIconItem) {
+                ((LargeFolderIconItem) child).rebindIfNeeded();
             }
         }
     }
 
-    private void forceRebindListChildren(HxyLargeFolderListView list) {
+    private void forceRebindListChildren(LargeFolderListView list) {
         if (list == null) {
             return;
         }
         int count = list.getChildCount();
         for (int i = 0; i < count; i++) {
             View child = list.getChildAt(i);
-            if (child instanceof HxyLargeFolderIconItem) {
-                ((HxyLargeFolderIconItem) child).forceRebind();
+            if (child instanceof LargeFolderIconItem) {
+                ((LargeFolderIconItem) child).forceRebind();
             }
         }
     }
@@ -1733,13 +1733,13 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     /**
      * DragLayer bounds of mini-icon {@code stackIndex} (0–3) inside the overflow cell.
-     * Matches {@link HxyLargeFolderIconItem} 2×2 layout used when {@link #hasStackOverflowPreview()}.
+     * Matches {@link LargeFolderIconItem} 2×2 layout used when {@link #hasStackOverflowPreview()}.
      */
     public boolean getStackedPreviewItemBoundsInDragLayer(int stackIndex, Rect out) {
         if (!isLargeFolder() || mListView == null || mActivity == null || out == null) {
             return false;
         }
-        if (stackIndex < 0 || stackIndex >= HxyLargeFolderIconItem.getMaxOutCount()) {
+        if (stackIndex < 0 || stackIndex >= LargeFolderIconItem.getMaxOutCount()) {
             return false;
         }
         int withoutStacked = getLargePreviewWithoutStacked();
@@ -1748,7 +1748,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         if (cell != null && cell.getWidth() > 0 && cell.getHeight() > 0) {
             int cellSize = Math.min(cell.getWidth(), cell.getHeight());
             Rect local = new Rect();
-            if (!HxyLargeFolderIconItem.computeStackedSubBounds(
+            if (!LargeFolderIconItem.computeStackedSubBounds(
                     getContext(), cellSize, stackIndex, local)) {
                 return false;
             }
@@ -1772,7 +1772,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         }
         int cellSize = Math.min(cellBounds.width(), cellBounds.height());
         Rect local = new Rect();
-        if (!HxyLargeFolderIconItem.computeStackedSubBounds(
+        if (!LargeFolderIconItem.computeStackedSubBounds(
                 getContext(), cellSize, stackIndex, local)) {
             return false;
         }
@@ -1845,7 +1845,7 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     public void onSwitchFolderEnd() {
         initLoadListData(isLargeFolder());
-        CellLayout layout = HxyLargeFolderSwitcher.getCellLayout(this);
+        CellLayout layout = LargeFolderSwitcher.getCellLayout(this);
         if (layout != null) {
             layout.markCellsAsOccupiedForView(this);
         }
@@ -1856,14 +1856,14 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
     }
 
     private float computeLargePreviewItemScale() {
-        return (((float) HxyLargeFolderProxy.getFolderIconSize()) * 1.0f) / ((float) this.mActivity.getDeviceProfile().folderIconSizePx);
+        return (((float) LargeFolderProxy.getFolderIconSize()) * 1.0f) / ((float) this.mActivity.getDeviceProfile().folderIconSizePx);
     }
 
     @Override
     public void computeLargePreviewItemLocation(DragView dragView, int index, Rect to) {
         int[] coordinate;
         super.computeLargePreviewItemLocation(dragView, index, to);
-        HxyLargeFolderListView hxyLargeFolderListView = this.mListView;
+        LargeFolderListView hxyLargeFolderListView = this.mListView;
         if (hxyLargeFolderListView != null && hxyLargeFolderListView.getChildCount() >= 1) {
             if (index >= this.mAdapter.getMaxSize() || index >= this.mListView.getChildCount()) {
                 coordinate = this.mListView.getCoordinateXY(this.mAdapter.getMaxSize() - 1);
@@ -1897,14 +1897,14 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
 
     private void setPreviewItem(int index, boolean visible) {
         if (mListView != null && mListView.getChildCount() >= 1 && index < mAdapter.getMaxSize() && index < mListView.getChildCount()) {
-            ((HxyLargeFolderIconItem) mListView.getChildAt(index)).setVisibility(visible ? View.VISIBLE : View.GONE);
+            ((LargeFolderIconItem) mListView.getChildAt(index)).setVisibility(visible ? View.VISIBLE : View.GONE);
         }
     }
 
-    private static class HxyLargeFolderIconLongClickListener implements View.OnLongClickListener {
-        public HxyLargeFolderIcon hxyLargeFolderIcon;
+    private static class LargeFolderIconLongClickListener implements View.OnLongClickListener {
+        public LargeFolderIcon hxyLargeFolderIcon;
 
-        public HxyLargeFolderIconLongClickListener(HxyLargeFolderIcon hxyLargeFolderIcon) {
+        public LargeFolderIconLongClickListener(LargeFolderIcon hxyLargeFolderIcon) {
             this.hxyLargeFolderIcon = hxyLargeFolderIcon;
         }
 
@@ -1913,18 +1913,18 @@ public class HxyLargeFolderIcon extends FolderIcon implements ISwitchFolderAnima
         }
     }
 
-    private record HxyLargeFolderIconClickListener(HxyLargeFolderIcon hxyLargeFolderIcon) implements OnClickListener {
+    private record LargeFolderIconClickListener(LargeFolderIcon hxyLargeFolderIcon) implements OnClickListener {
 
         public void onClick(View view) {
                 this.hxyLargeFolderIcon.executeInitLargeFolderIconOnCLick(view);
             }
         }
 
-    private static final class HxyLargeFolderIconRunnable implements Runnable {
-        public final HxyLargeFolderIcon hxyLargeFolderIcon;
+    private static final class LargeFolderIconRunnable implements Runnable {
+        public final LargeFolderIcon hxyLargeFolderIcon;
         public final int index;
 
-        public HxyLargeFolderIconRunnable(HxyLargeFolderIcon hxyLargeFolderIcon, int i) {
+        public LargeFolderIconRunnable(LargeFolderIcon hxyLargeFolderIcon, int i) {
             this.hxyLargeFolderIcon = hxyLargeFolderIcon;
             this.index = i;
         }

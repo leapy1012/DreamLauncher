@@ -122,7 +122,7 @@ import com.android.launcher3.BuildConfig;
 import com.android.launcher3.LauncherPrefs;
 import android.content.res.Resources;
 import com.android.launcher3.util.Partner;
-import com.android.launcher3.folder.large.HxyLargeFolderProxy;
+import com.android.launcher3.folder.large.LargeFolderProxy;
 
 /**
  * Runnable for the thread that loads the contents of the launcher:
@@ -771,8 +771,8 @@ public class LoaderTask implements Runnable {
 
                     // Do not trim the folder label, as is was set by the user.
                     folderInfo.title = c.getString(c.mTitleIndex);
-                    folderInfo.spanX = (c.getSpanX() == 0 || !HxyLargeFolderProxy.SUPPORT_LARGE_FOLDER) ? 1 : c.getSpanX();
-                    folderInfo.spanY = (c.getSpanY() == 0 || !HxyLargeFolderProxy.SUPPORT_LARGE_FOLDER) ? 1 : c.getSpanY();
+                    folderInfo.spanX = (c.getSpanX() == 0 || !LargeFolderProxy.SUPPORT_LARGE_FOLDER) ? 1 : c.getSpanX();
+                    folderInfo.spanY = (c.getSpanY() == 0 || !LargeFolderProxy.SUPPORT_LARGE_FOLDER) ? 1 : c.getSpanY();
                     folderInfo.options = c.getOptions();
                     folderInfo.intent = c.parseIntent();
                     if (folderInfo.intent != null) {

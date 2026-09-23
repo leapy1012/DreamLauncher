@@ -45,7 +45,7 @@ public final class EditSelectionEligibility {
             return false;
         }
         // Large-folder preview cells never draw selection checks.
-        if (view instanceof com.android.launcher3.folder.large.listview.HxyLargeFolderIconItem) {
+        if (view instanceof com.android.launcher3.folder.large.listview.LargeFolderIconItem) {
             return false;
         }
         Object tag = view.getTag();
@@ -88,7 +88,7 @@ public final class EditSelectionEligibility {
 
     public static boolean canToggle(Context context, @Nullable View view) {
         if (view instanceof FolderIcon
-                || view instanceof com.android.launcher3.folder.large.listview.HxyLargeFolderIconItem) {
+                || view instanceof com.android.launcher3.folder.large.listview.LargeFolderIconItem) {
             return false;
         }
         return canShowCheckmark(context, view);

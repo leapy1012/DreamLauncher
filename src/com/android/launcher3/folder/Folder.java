@@ -128,7 +128,7 @@ import com.android.launcher3.Workspace;
 import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.util.window.RefreshRateTracker;
 import com.android.launcher3.views.FloatingIconView;
-import com.android.launcher3.folder.large.HxyFolderAnimationManager;
+import com.android.launcher3.folder.large.LargeFolderAnimationManager;
 import java.util.function.Consumer;
 import com.android.launcher3.LauncherApplication;
 import com.android.launcher3.util.DimenUtils;
@@ -887,7 +887,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         mDeleteFolderOnDropCompleted = false;
 
         cancelRunningAnimations();
-        AnimatorSet anim = new HxyFolderAnimationManager(this, true /* isOpening */).getAnimator(new Consumer<Animator>() {
+        AnimatorSet anim = new LargeFolderAnimationManager(this, true /* isOpening */).getAnimator(new Consumer<Animator>() {
             @Override
             public void accept(Animator animator) {
                 animator.addListener(new AnimatorListenerAdapter() {
@@ -1022,7 +1022,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
 
     /**
      * Snap workspace chrome back after a non-animated folder dismiss.
-     * Matches the end state of {@link HxyFolderAnimationManager} close companions.
+     * Matches the end state of {@link LargeFolderAnimationManager} close companions.
      * When editing ({@link LauncherState#SPRING_LOADED}), reapply state scale/ty —
      * do not force normal-desktop scale 1.0 (that breaks the toggle-bar layout).
      * Always restore companion {@code View.ALPHA}: open-folder fades Workspace itself to 0,
@@ -1064,7 +1064,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
     }
 
     /**
-     * Undo {@link HxyFolderAnimationManager} open companion fade (Workspace/Hotseat α → 0).
+     * Undo {@link LargeFolderAnimationManager} open companion fade (Workspace/Hotseat α → 0).
      * Also restores page {@link ShortcutAndWidgetContainer} alphas that Overview→NORMAL
      * may have forced to 0 while a folder stayed open.
      */
@@ -1114,7 +1114,7 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         mContent.snapToPageImmediately(mContent.getDestinationPage());
 
         cancelRunningAnimations();
-        AnimatorSet a = new HxyFolderAnimationManager(this, false).getAnimator(new Consumer<Animator>() {
+        AnimatorSet a = new LargeFolderAnimationManager(this, false).getAnimator(new Consumer<Animator>() {
             @Override
             public void accept(Animator animator) {
                 animator.addListener(new AnimatorListenerAdapter() {

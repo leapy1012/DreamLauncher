@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Mirrors ColorOS oplus_user_folder_icon_normalized.xml structure/dimens. -->
-<com.android.launcher3.folder.large.HxyLargeFolder xmlns:android="http://schemas.android.com/apk/res/android"
+<com.android.launcher3.folder.large.LargeFolder xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -87,4 +87,4 @@
                 android:elevation="1dp" />
         </LinearLayout>
     </FrameLayout>
-</com.android.launcher3.folder.large.HxyLargeFolder>
+</com.android.launcher3.folder.large.LargeFolder>

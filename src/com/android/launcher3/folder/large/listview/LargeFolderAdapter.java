@@ -3,19 +3,19 @@ package com.android.launcher3.folder.large.listview;
 import android.content.Context;
 import android.view.View;
 
-import com.android.launcher3.folder.large.HxyBigFolderPreviewModes;
+import com.android.launcher3.folder.large.LargeFolderPreviewModes;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.R;
 
 import java.util.List;
 
-public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemInfo> {
+public class LargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemInfo> {
     private int mMaxSize = -1;
     private int mPageIndex = 0;
     private ItemInfo mFolderInfo;
 
-    public HxyLargeFolderAdapter(Context context) {
+    public LargeFolderAdapter(Context context) {
         super(context);
     }
 
@@ -46,7 +46,7 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
     }
 
     public int getPageStart() {
-        return HxyBigFolderPreviewModes.getPageStartIndex(mFolderInfo, mPageIndex);
+        return LargeFolderPreviewModes.getPageStartIndex(mFolderInfo, mPageIndex);
     }
 
     public void setList(List<WorkspaceItemInfo> list) {
@@ -57,7 +57,7 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
         mPageIndex = Math.max(0, pageIndex);
         // Highlight is page-0 only; later pages use nine-grid capacity.
         if (mFolderInfo != null) {
-            mMaxSize = HxyBigFolderPreviewModes.getPreviewMaxSize(mFolderInfo, mPageIndex);
+            mMaxSize = LargeFolderPreviewModes.getPreviewMaxSize(mFolderInfo, mPageIndex);
         }
         super.setList(list, false);
     }
@@ -101,7 +101,7 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
     }
 
     public boolean isHighlightLayout() {
-        return HxyBigFolderPreviewModes.isHighlightPage(mFolderInfo, mPageIndex);
+        return LargeFolderPreviewModes.isHighlightPage(mFolderInfo, mPageIndex);
     }
 
     /**
@@ -122,7 +122,7 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
     }
 
     public static class IVM extends BasePageLinearAdapter.ItemViewModel<WorkspaceItemInfo> {
-        private HxyLargeFolderIconItem mIconView = null;
+        private LargeFolderIconItem mIconView = null;
 
         public IVM(View root, Context context) {
             super(root, context);
@@ -139,7 +139,7 @@ public class HxyLargeFolderAdapter extends BasePageLinearAdapter<WorkspaceItemIn
 
         public void bindTo(WorkspaceItemInfo data, int position) {
             this.mPosition = position;
-            HxyLargeFolderAdapter adapter = (HxyLargeFolderAdapter) getAdapter();
+            LargeFolderAdapter adapter = (LargeFolderAdapter) getAdapter();
             // List index for stack overflow must be absolute in the full contents.
             int listIndex = adapter.getPageStart() + position;
             this.mIconView.bindTo(data, listIndex, adapter.isCountOut(position), adapter.getList());
