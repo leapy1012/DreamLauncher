@@ -41,8 +41,28 @@ class QuickGlanceLauncherClient(
     private var activityState = 0
     private var reconnectAttempt = 0
 
+    /** Last-wins scroll progress waiting for the next main-looper flush. */
+    private var pendingScrollProgress = Float.NaN
+    private var scrollFlushPosted = false
+
     private val reconnectRunnable = Runnable {
         if (!destroyed && !bound) connect()
+    }
+
+    private val flushScrollRunnable = Runnable {
+        scrollFlushPosted = false
+        flushPendingScroll()
+    }
+
+    private fun flushPendingScroll() {
+        if (pendingScrollProgress.isNaN()) return
+        val progress = pendingScrollProgress
+        pendingScrollProgress = Float.NaN
+        try {
+            overlay?.onScroll(progress)
+        } catch (e: RemoteException) {
+            Log.w(TAG, "onScroll", e)
+        }
     }
 
     private val callback = object : ILauncherOverlayCallback.Stub() {
@@ -118,7 +138,10 @@ class QuickGlanceLauncherClient(
     fun disconnect() {
         destroyed = true
         mainHandler.removeCallbacks(reconnectRunnable)
-        mainHandler.removeCallbacksAndMessages(null)
+        mainHandler.removeCallbacks(flushScrollRunnable)
+        pendingScrollProgress = Float.NaN
+        scrollFlushPosted = false
+        // Only clear our queued runnables — do not wipe unrelated main-handler work.
         try {
             overlay?.windowDetached(false)
             overlay?.onDestroy()
@@ -148,6 +171,7 @@ class QuickGlanceLauncherClient(
     }
 
     fun startScroll() {
+        flushPendingScroll()
         try {
             overlay?.startScroll()
         } catch (e: RemoteException) {
@@ -155,15 +179,19 @@ class QuickGlanceLauncherClient(
         }
     }
 
+    /**
+     * Coalesce progress to at most one Binder call per frame (Oppo-style).
+     * Touch / rubber-band can fire faster than AIDL round-trips; last-wins.
+     */
     fun setScroll(progress: Float) {
-        try {
-            overlay?.onScroll(progress)
-        } catch (e: RemoteException) {
-            Log.w(TAG, "onScroll", e)
-        }
+        pendingScrollProgress = progress.coerceIn(0f, 1f)
+        if (scrollFlushPosted) return
+        scrollFlushPosted = true
+        mainHandler.post(flushScrollRunnable)
     }
 
     fun endScroll() {
+        flushPendingScroll()
         try {
             overlay?.endScroll()
         } catch (e: RemoteException) {
@@ -172,6 +200,7 @@ class QuickGlanceLauncherClient(
     }
 
     fun endScrollWithVelocity(velocity: Float) {
+        flushPendingScroll()
         try {
             overlay?.endScrollWithVelocity(velocity)
         } catch (e: RemoteException) {

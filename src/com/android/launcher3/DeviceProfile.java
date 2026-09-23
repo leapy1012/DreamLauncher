@@ -36,7 +36,6 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
-import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -68,6 +67,8 @@ import java.util.Locale;
 import java.util.function.Consumer;
 import android.os.SystemProperties;
 import com.android.launcher3.icons.GraphicsUtils;
+import com.android.launcher3.layoutparam.CellLayoutParam;
+import com.android.launcher3.layoutparam.IconParam;
 import android.provider.Settings;
 import com.android.launcher3.dot.NumberDotRenderer;
 import android.graphics.Path;
@@ -157,6 +158,13 @@ public class DeviceProfile {
     private final int mOppoWorkspacePaddingLeftPx;
     private int mOppoWorkspaceHeightPx = -1;
     private int mOppoHotseatMarginBottomPx = 0;
+
+    /**
+     * Oppo-style layout geometry (CellLayoutParam / IconParam). Lazily created so
+     * DeviceProfile construction can finish before Param accessors run.
+     */
+    @Nullable
+    private CellLayoutParam mCellLayoutParam;
 
     private final int extraSpace;
     private int maxEmptySpace;
@@ -1360,6 +1368,32 @@ public class DeviceProfile {
         return mUseOppoWorkspaceMetrics;
     }
 
+    /** Oppo-style cell / icon geometry; prefer this over ad-hoc getOppo* callers. */
+    public CellLayoutParam cellLayout() {
+        if (mCellLayoutParam == null) {
+            mCellLayoutParam = new CellLayoutParam(this);
+        }
+        return mCellLayoutParam;
+    }
+
+    public IconParam icon() {
+        return cellLayout().icon();
+    }
+
+    /** Package-visible for {@link CellLayoutParam} / {@link IconParam}. */
+    public Resources getResourcesForLayoutParam() {
+        return mResources;
+    }
+
+    /** Package-visible for {@link CellLayoutParam} / {@link IconParam}. */
+    public DisplayMetrics getDisplayMetricsForLayoutParam() {
+        return mMetrics;
+    }
+
+    public int getOppoWorkspacePaddingLeftPx() {
+        return mOppoWorkspacePaddingLeftPx;
+    }
+
     /**
      * Icon Custom seekbar scale from {@link IconSizeSettingActivity} (typically 0.75–1.15).
      * Default seek (62) maps to ~1.0.
@@ -1376,135 +1410,39 @@ public class DeviceProfile {
         return mUseOppoWorkspaceMetrics ? mOppoHotseatMarginBottomPx : 0;
     }
 
-    /**
-     * Oppo CellLayoutParam.getContentHeight: iconSize + drawablePadding + textHeight.
-     * Text height uses Paint descent-ascent (IconParam.calculateTextHeightIgnoreFontPadding).
-     * Layout preview may override icon/padding via {@link #layoutPreviewIconAndPaddingPx}.
-     * Workspace BubbleTextView is two-line; preview must reserve both lines or TextView
-     * vertically compresses compound-drawable padding to zero (flush labels).
-     */
+    /** @see CellLayoutParam#getContentHeight() */
     public int getOppoWorkspaceContentHeight() {
-        int icon = iconSizePx;
-        int pad = iconDrawablePaddingPx;
-        int textLines = 1;
-        if (layoutPreviewIconAndPaddingPx != null) {
-            icon = layoutPreviewIconAndPaddingPx.x;
-            pad = layoutPreviewIconAndPaddingPx.y;
-            textLines = 2;
-        }
-        return icon + pad + (getOppoIconTextHeightPx() * textLines);
+        return cellLayout().getContentHeight();
     }
 
-    /**
-     * Workspace folder preview content height (folder plate + label), not full iconSizePx.
-     */
+    /** @see CellLayoutParam#getFolderWorkspaceContentHeight() */
     public int getOppoFolderWorkspaceContentHeight() {
-        return folderIconSizePx + iconDrawablePaddingPx + getOppoIconTextHeightPx();
+        return cellLayout().getFolderWorkspaceContentHeight();
     }
 
-    /**
-     * Oppo CellLayoutParam.ICON_TOP_FACTOR_HALF / ICON_TOP_FACTOR_THREE_OVER_FIVE
-     * (and IconUtils.getIconFactor): 0.5 for 4-col, 0.6 for 5-col.
-     */
+    /** @see CellLayoutParam#getIconTopFactor() */
     public float getOppoIconTopFactor() {
-        return inv.numColumns == 5 ? 0.6f : 0.5f;
+        return cellLayout().getIconTopFactor();
     }
 
+    /** @see CellLayoutParam#getWorkspaceCellHeight(int) */
     public int getOppoWorkspaceCellHeight(int cellWidth) {
-        return getOppoWorkspaceCellHeightForGrid(cellWidth, inv.numColumns, inv.numRows);
+        return cellLayout().getWorkspaceCellHeight(cellWidth);
     }
 
-    /**
-     * Oppo {@code CellLayoutParam.getCellSize(cols, rows)} used by ToggleBar Layout preview.
-     */
+    /** @see CellLayoutParam#getPreviewCellSize(int, int) */
     public Point getOppoPreviewCellSize(int cols, int rows) {
-        Point result = new Point();
-        int padHor = getOppoPreviewPaddingHor(cols);
-        int workspaceWidth = (availableWidthPx - (2 * mOppoWorkspacePaddingLeftPx))
-                / getPanelCount();
-        int contentWidth = workspaceWidth - (2 * padHor);
-        result.x = calculateCellWidth(contentWidth, cellLayoutBorderSpacePx.x, cols);
-        // Preview icons use the target-grid size; workspace labels are two-line.
-        // Use uncompressed drawable padding (min 6dp) so cell height matches icon↔label gap.
-        int iconSize = getOppoPreviewIconSizePx(cols);
-        int textHeight = getOppoIconTextHeightPx() * 2;
-        int drawablePad = Math.max(iconDrawablePaddingOriginalPx,
-                pxFromDp(4f, mMetrics));
-        int contentHeight = iconSize + drawablePad + textHeight;
-        int minVerticalPadding = 2 * getOppoCellPaddingTopMin(cols);
-        result.y = Math.max(contentHeight + minVerticalPadding,
-                result.x + getOppoDiffCellHeightWithCellWidth(cols, rows));
-        return result;
+        return cellLayout().getPreviewCellSize(cols, rows);
     }
 
+    /** @see CellLayoutParam#getPreviewPaddingHor(int) */
     public int getOppoPreviewPaddingHor(int cols) {
-        int padDp = cols >= 5
-                ? mResources.getInteger(R.integer.oplusLayoutCellLayoutPaddingHor5colDp)
-                : mResources.getInteger(R.integer.oplusLayoutCellLayoutPaddingHor4colDp);
-        return pxFromDp(padDp, mMetrics);
+        return cellLayout().getPreviewPaddingHor(cols);
     }
 
+    /** @see CellLayoutParam#getPreviewIconSizePx(int) */
     public int getOppoPreviewIconSizePx(int cols) {
-        return pxFromDp(cols <= 4 ? 56f : 50f, mMetrics);
-    }
-
-    private int getOppoWorkspaceCellHeightForGrid(int cellWidth, int cols, int rows) {
-        // Prefer the live workspace icon size (includes Icon Custom scale) so cells
-        // grow/shrink with the slider; fall back to grid default for early/preview use.
-        int iconSize = iconSizePx > 0 ? iconSizePx : getOppoPreviewIconSizePx(cols);
-        int contentHeight = iconSize + iconDrawablePaddingPx + getOppoIconTextHeightPx();
-        int minVerticalPadding = 2 * getOppoCellPaddingTopMin(cols);
-        return Math.max(contentHeight + minVerticalPadding,
-                cellWidth + getOppoDiffCellHeightWithCellWidth(cols, rows));
-    }
-
-    /** Matches Oppo IconParam.calculateTextHeightIgnoreFontPadding. */
-    private int getOppoIconTextHeightPx() {
-        Paint paint = new Paint();
-        paint.setTextSize(iconTextSizePx);
-        Paint.FontMetrics fontMetrics = paint.getFontMetrics();
-        return (int) Math.ceil(fontMetrics.descent - fontMetrics.ascent);
-    }
-
-    private int getOppoCellPaddingTopMin() {
-        return getOppoCellPaddingTopMin(inv.numColumns);
-    }
-
-    private int getOppoCellPaddingTopMin(int cols) {
-        return cols == 5
-                ? mResources.getDimensionPixelSize(R.dimen.cellPaddingTopMin5Cols)
-                : mResources.getDimensionPixelSize(R.dimen.cellPaddingTopMin);
-    }
-
-    private int getOppoDiffCellHeightWithCellWidth() {
-        return getOppoDiffCellHeightWithCellWidth(inv.numColumns, inv.numRows);
-    }
-
-    private int getOppoDiffCellHeightWithCellWidth(int cols, int rows) {
-        Resources res = mResources;
-        if (cols == 3 && rows == 5) {
-            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth3x5);
-        }
-        if (cols == 3 && rows == 6) {
-            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth3x6);
-        }
-        if (cols == 4 && rows == 5) {
-            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth4x5);
-        }
-        if (cols == 5 && rows == 5) {
-            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth5x5);
-        }
-        if (cols == 5 && rows == 6) {
-            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth5x6);
-        }
-        if (cols == 5 && rows == 7) {
-            return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth);
-        }
-        if ((cols == 4 && rows == 7)
-                || (cols == 5 && (rows == 8 || rows == 9))) {
-            return 0;
-        }
-        return res.getDimensionPixelSize(R.dimen.diffCellHeightWithCellWidth);
+        return cellLayout().getPreviewIconSizePx(cols);
     }
 
     /**

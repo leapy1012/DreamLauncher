@@ -469,7 +469,7 @@ public class SettingsActivity extends AppCompatActivity
                 updateSwipeRightAssignment(swipeRight);
                 mSwipeRightPref.setOnPreferenceChangeListener((preference, newValue) -> {
                     if (newValue instanceof String value) {
-                        HomeScreenGestures.applySwipeRightPreference(requireContext(), value);
+                        HomeScreenGestures.setSwipeRightAction(requireContext(), value);
                         updateSwipeRightAssignment(value);
                     }
                     return true;

@@ -72,8 +72,16 @@ public final class HomeScreenGestures {
         return SWIPE_RIGHT_QUICK_GLANCE.equals(getSwipeRightAction(context));
     }
 
+    /**
+     * Single write path for swipe-right: SharedPreferences + OverlayPreference.minusEnabled.
+     */
+    public static void setSwipeRightAction(Context context, String value) {
+        prefs(context).edit().putString(PREF_SWIPE_RIGHT, value).apply();
+        applySwipeRightPreference(context, value);
+    }
+
     /** Apply swipe-right preference to the -1 / Quick Glance overlay gate.
-     * When enabled and gd.app.hiboard is installed, OverlayCombine binds the remote
+     * When enabled and gd.app.hiboard is installed, OverlayProxy binds the remote
      * WindowServer (OPPO-style); otherwise falls back to in-process MinuscreenView. */
     public static void applySwipeRightPreference(Context context, String value) {
         boolean enableGlance = SWIPE_RIGHT_QUICK_GLANCE.equals(value);

@@ -2,14 +2,16 @@ package com.android.customize.overlay.preference
 
 import android.content.Context
 import com.android.customize.common.extension.getAsFlow
+import com.android.launcher3.LauncherFiles
 import com.android.launcher3.LauncherPrefs
 import com.android.launcher3.R
 import com.android.launcher3.config.CustomizeFeatureFlags
+import com.android.launcher3.settings.HomeScreenGestures
 import com.android.launcher3.util.MainThreadInitializedObject
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
-class OverlayPreference private constructor(context: Context) {
+class OverlayPreference private constructor(private val context: Context) {
     private val prefs = LauncherPrefs.get(context)
 
     val minusEnabled get() = prefs.get(MINUS_ENABLED)
@@ -20,6 +22,19 @@ class OverlayPreference private constructor(context: Context) {
         }
     fun setMinusEnabled(enabled: Boolean) {
         prefs.put(MINUS_ENABLED, enabled)
+        // Keep HomeScreenGestures.pref_swipe_right in sync (single gesture policy).
+        val gesture = context.getSharedPreferences(
+            LauncherFiles.SHARED_PREFERENCES_KEY,
+            Context.MODE_PRIVATE,
+        )
+        val value = if (enabled) {
+            HomeScreenGestures.SWIPE_RIGHT_QUICK_GLANCE
+        } else {
+            HomeScreenGestures.SWIPE_RIGHT_NONE
+        }
+        if (gesture.getString(HomeScreenGestures.PREF_SWIPE_RIGHT, null) != value) {
+            gesture.edit().putString(HomeScreenGestures.PREF_SWIPE_RIGHT, value).apply()
+        }
     }
     val plusEnabled get() = prefs.get(PLUS_ENABLED)
             && CustomizeFeatureFlags.ENABLE_OVERLAY_PLUS.get()
