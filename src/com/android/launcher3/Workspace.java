@@ -225,6 +225,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
      */
     private CellLayout mDragOverlappingLayout = null;
 
+    /** True while DragView is scaled down for ColorOS dock hover. */
+    private boolean mDragViewScaledForHotseat;
+
     /**
      * The CellLayout which will be dropped to
      */
@@ -3021,6 +3024,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             if (mDragMode == DRAG_MODE_CREATE_FOLDER || mDragMode == DRAG_MODE_ADD_TO_FOLDER) {
                 return;
             }
+            scaleDragViewForHotseat(d, true);
             int[] span = new int[2];
             int[] cell = mDragTargetLayout.performReorder((int) mDragViewVisualCenter[0],
                     (int) mDragViewVisualCenter[1], minSpanX, minSpanY, item.spanX, item.spanY,
@@ -3028,12 +3032,12 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             if (cell[0] >= 0) {
                 mTargetCell[0] = cell[0];
                 mTargetCell[1] = cell[1];
-                mDragTargetLayout.visualizeDropLocation(mTargetCell[0], mTargetCell[1], span[0],
-                        span[1], d);
+                // No visualizeDropLocation chip — gap is neighbor spring only.
                 setDragMode(DRAG_MODE_REORDER);
             }
             return;
         }
+        scaleDragViewForHotseat(d, false);
 
         if (!nearestDropOccupied) {
             int[] span = new int[2];
@@ -3061,6 +3065,42 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                     minSpanX, minSpanY, item.spanX, item.spanY, d, child);
             mReorderAlarm.setOnAlarmListener(listener);
             mReorderAlarm.setAlarm(REORDER_TIMEOUT);
+        }
+    }
+
+    /**
+     * ColorOS dock: shrink DragView toward dock icon size (no oversized white plate).
+     */
+    private void scaleDragViewForHotseat(DragObject d, boolean overHotseat) {
+        if (d == null || d.dragView == null) {
+            return;
+        }
+        View dragView = d.dragView;
+        if (overHotseat) {
+            int iconPx = mLauncher.getDeviceProfile().iconSizePx;
+            int w = dragView.getMeasuredWidth();
+            if (w <= 0) {
+                w = dragView.getWidth();
+            }
+            if (w <= 0) {
+                return;
+            }
+            // Keep slightly larger than dock icon so it stays readable while dragging.
+            float target = Math.min(1f, (iconPx * 1.08f) / w);
+            if (!mDragViewScaledForHotseat
+                    || Math.abs(dragView.getScaleX() - target) > 0.02f) {
+                mDragViewScaledForHotseat = true;
+                dragView.animate().cancel();
+                dragView.animate().scaleX(target).scaleY(target).setDuration(140).start();
+                dragView.setElevation(0f);
+            }
+        } else if (mDragViewScaledForHotseat) {
+            mDragViewScaledForHotseat = false;
+            float end = d.dragView instanceof com.android.launcher3.dragndrop.DragView
+                    ? ((com.android.launcher3.dragndrop.DragView<?>) d.dragView).getEndScale()
+                    : 1f;
+            dragView.animate().cancel();
+            dragView.animate().scaleX(end).scaleY(end).setDuration(140).start();
         }
     }
 
@@ -3693,6 +3733,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         if (hotseat != null) {
             hotseat.endDragSession();
         }
+        mDragViewScaledForHotseat = false;
     }
 
     /**

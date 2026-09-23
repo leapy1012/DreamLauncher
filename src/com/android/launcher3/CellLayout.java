@@ -1591,7 +1591,7 @@ public class CellLayout extends ViewGroup {
         return mOccupied;
     }
 
-    private void copySolutionToTempState(ItemConfiguration solution, View dragView) {
+    protected void copySolutionToTempState(ItemConfiguration solution, View dragView) {
         mTmpOccupied.clear();
 
         int childCount = mShortcutsAndWidgets.getChildCount();
@@ -1611,7 +1611,7 @@ public class CellLayout extends ViewGroup {
         mTmpOccupied.markCells(solution, true);
     }
 
-    private void animateItemsToSolution(ItemConfiguration solution, View dragView, boolean
+    protected void animateItemsToSolution(ItemConfiguration solution, View dragView, boolean
             commitDragView) {
 
         GridOccupancy occupied = DESTRUCTIVE_REORDER ? mOccupied : mTmpOccupied;
@@ -1704,7 +1704,7 @@ public class CellLayout extends ViewGroup {
 
 
     // This method starts or changes the reorder preview animations
-    private void beginOrAdjustReorderPreviewAnimations(ItemConfiguration solution,
+    protected void beginOrAdjustReorderPreviewAnimations(ItemConfiguration solution,
             View dragView, int mode) {
         int childCount = mShortcutsAndWidgets.getChildCount();
         for (int i = 0; i < childCount; i++) {
@@ -1891,14 +1891,14 @@ public class CellLayout extends ViewGroup {
         //end add
     }
 
-    private void completeAndClearReorderPreviewAnimations() {
+    protected void completeAndClearReorderPreviewAnimations() {
         for (ReorderPreviewAnimation a: mShakeAnimators.values()) {
             a.finishAnimation();
         }
         mShakeAnimators.clear();
     }
 
-    private void commitTempPlacement(View dragView) {
+    protected void commitTempPlacement(View dragView) {
         mTmpOccupied.copyTo(mOccupied);
 
         int screenId = getWorkspace().getIdForScreen(this);
@@ -1950,7 +1950,7 @@ public class CellLayout extends ViewGroup {
         }
     }
 
-    private void setUseTempCoords(boolean useTempCoords) {
+    protected void setUseTempCoords(boolean useTempCoords) {
         int childCount = mShortcutsAndWidgets.getChildCount();
         for (int i = 0; i < childCount; i++) {
             CellLayoutLayoutParams lp = (CellLayoutLayoutParams) mShortcutsAndWidgets.getChildAt(
@@ -2899,15 +2899,6 @@ public class CellLayout extends ViewGroup {
 
     /**
      * Animates and submits in the DB the given ItemConfiguration depending of the mode.
-     *
-     * @param solution represents widgets on the screen which the Workspace will animate to and
-     * would be submitted to the database.
-     * @param dragView view which is being dragged over the workspace that trigger the reorder
-     * @param mode depending on the mode different animations would be played and depending on the
-     *             mode the solution would be submitted or not the database.
-     *             The possible modes are {@link MODE_SHOW_REORDER_HINT}, {@link MODE_DRAG_OVER},
-     *             {@link MODE_ON_DROP}, {@link MODE_ON_DROP_EXTERNAL}, {@link  MODE_ACCEPT_DROP}
-     *             defined in {@link CellLayout}.
      */
     public void performReorder(ItemConfiguration solution, View dragView, int mode) {
         if (mode == MODE_SHOW_REORDER_HINT) {

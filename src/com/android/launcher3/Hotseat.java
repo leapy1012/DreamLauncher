@@ -693,4 +693,69 @@ public class Hotseat extends CellLayout implements Insettable {
         return config;
     }
 
+    /** ColorOS dock: no AOSP hollow drop chip — gap is shown by neighbor spring only. */
+    @Override
+    public void visualizeDropLocation(int cellX, int cellY, int spanX, int spanY,
+            DropTarget.DragObject dragObject) {
+        clearDragOutlines();
+        if (dragObject != null && dragObject.stateAnnouncer != null) {
+            dragObject.stateAnnouncer.announce(getItemMoveDescription(cellX, cellY));
+        }
+    }
+
+    /**
+     * Oppo-style insert motion: slide neighbors with a soft spring, no shake preview.
+     */
+    @Override
+    public void performReorder(ItemConfiguration solution, View dragView, int mode) {
+        if (!shouldUseInsertReorder()) {
+            super.performReorder(solution, dragView, mode);
+            return;
+        }
+        if (mode == MODE_SHOW_REORDER_HINT || mode == MODE_ACCEPT_DROP) {
+            return;
+        }
+        if (mode != MODE_DRAG_OVER && mode != MODE_ON_DROP && mode != MODE_ON_DROP_EXTERNAL) {
+            super.performReorder(solution, dragView, mode);
+            return;
+        }
+
+        setUseTempCoords(true);
+        copySolutionToTempState(solution, dragView);
+        setItemPlacementDirty(true);
+        animateInsertSpring(solution, dragView, mode == MODE_ON_DROP);
+
+        if (mode == MODE_ON_DROP || mode == MODE_ON_DROP_EXTERNAL) {
+            commitTempPlacement(dragView);
+            completeAndClearReorderPreviewAnimations();
+            setItemPlacementDirty(false);
+            setUseTempCoords(false);
+        }
+        // Intentionally skip beginOrAdjustReorderPreviewAnimations (AOSP shake).
+        getShortcutsAndWidgets().requestLayout();
+    }
+
+    private void animateInsertSpring(ItemConfiguration solution, View dragView,
+            boolean commitDragView) {
+        if (solution == null || solution.map == null) {
+            return;
+        }
+        final int duration = 420;
+        for (int i = 0; i < getShortcutsAndWidgets().getChildCount(); i++) {
+            View child = getShortcutsAndWidgets().getChildAt(i);
+            if (child == dragView) {
+                continue;
+            }
+            CellAndSpan c = solution.map.get(child);
+            if (c == null) {
+                continue;
+            }
+            // Soft spring-like slide (Oppo COUI spring feel without LiveData ViewModel).
+            animateChildToPosition(child, c.cellX, c.cellY, duration, 0, false, false);
+        }
+        if (commitDragView) {
+            mTmpOccupied.markCells(solution, true);
+        }
+    }
+
 }
