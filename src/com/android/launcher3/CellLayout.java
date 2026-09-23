@@ -857,6 +857,9 @@ public class CellLayout extends ViewGroup {
             if (LOGD) {
                 Log.d(TAG, "Adding view to ShortcutsAndWidgetsContainer: " + child);
             }
+            if (mContainerType == HOTSEAT) {
+                lp.isHotseatChild = true;
+            }
             mShortcutsAndWidgets.addView(child, index, lp);
 
             if (markCells) markCellsAsOccupiedForView(child);

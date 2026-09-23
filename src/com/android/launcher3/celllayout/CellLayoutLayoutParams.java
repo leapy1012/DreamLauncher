@@ -75,6 +75,19 @@ public class CellLayoutLayoutParams extends ViewGroup.MarginLayoutParams {
     @ViewDebug.ExportedProperty
     public int y;
 
+    /**
+     * Oppo ColorOS: pixel X/Y driven by dock springs while {@link #isHotseatChild} is
+     * springing. Layout reads these instead of {@link #x}/{@link #y} so cell/pad changes
+     * do not teleport icons before the spring starts.
+     */
+    @ViewDebug.ExportedProperty
+    public int animX;
+    @ViewDebug.ExportedProperty
+    public int animY;
+
+    /** True when this child lives in the phone Hotseat (enables animX layout). */
+    public boolean isHotseatChild;
+
     /** Destination of the currently running reorder animation, or -1 when idle. */
     public int reorderToCellX = -1;
     public int reorderToCellY = -1;
@@ -104,6 +117,11 @@ public class CellLayoutLayoutParams extends ViewGroup.MarginLayoutParams {
         this.useTmpCoords = source.useTmpCoords;
         this.reorderToCellX = source.reorderToCellX;
         this.reorderToCellY = source.reorderToCellY;
+        this.animX = source.animX;
+        this.animY = source.animY;
+        this.isHotseatChild = source.isHotseatChild;
+        this.x = source.x;
+        this.y = source.y;
     }
 
     public CellLayoutLayoutParams(int cellX, int cellY, int cellHSpan, int cellVSpan) {

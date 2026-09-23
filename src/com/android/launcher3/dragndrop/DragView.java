@@ -106,6 +106,14 @@ public abstract class DragView<T extends Context & ActivityContext> extends Fram
     private int mAnimatedShiftX;
     private int mAnimatedShiftY;
 
+    /**
+     * When set, {@link #applyTranslation()} pins the DragView's visual center to this
+     * Y in DragLayer coordinates (ColorOS dock hover: icon sits in the insert row, not
+     * wherever the finger is below the shelf).
+     */
+    private boolean mLockToHotseatRow;
+    private float mHotseatRowCenterY;
+
     // Below variable only needed IF FeatureFlags.LAUNCHER3_SPRING_ICONS is {@code true}
     private Drawable mBgSpringDrawable, mFgSpringDrawable;
     private SpringFloatValue mTranslateX, mTranslateY;
@@ -467,8 +475,29 @@ public abstract class DragView<T extends Context & ActivityContext> extends Fram
     }
 
     private void applyTranslation() {
-        setTranslationX(mLastTouchX - mRegistrationX + mAnimatedShiftX);
-        setTranslationY(mLastTouchY - mRegistrationY + mAnimatedShiftY);
+        int shiftX = mAnimatedShiftX;
+        int shiftY = mAnimatedShiftY;
+        if (mLockToHotseatRow && mLastTouchY > 0) {
+            // Natural center if we only followed the finger:
+            float naturalCenterY = mLastTouchY - mRegistrationY + (mHeight / 2f);
+            shiftY += Math.round(mHotseatRowCenterY - naturalCenterY);
+        }
+        setTranslationX(mLastTouchX - mRegistrationX + shiftX);
+        setTranslationY(mLastTouchY - mRegistrationY + shiftY);
+    }
+
+    /**
+     * Pin the drag icon to the hotseat icon-row center while still following the finger in X.
+     * Pass {@code false} when leaving the dock.
+     */
+    public void setLockToHotseatRow(boolean lock, float rowCenterYInDragLayer) {
+        mLockToHotseatRow = lock;
+        mHotseatRowCenterY = rowCenterYInDragLayer;
+        applyTranslation();
+    }
+
+    public boolean isLockedToHotseatRow() {
+        return mLockToHotseatRow;
     }
 
     /**
@@ -526,6 +555,14 @@ public abstract class DragView<T extends Context & ActivityContext> extends Fram
 
     public float getEndScale() {
         return mEndScale;
+    }
+
+    public int getRegistrationX() {
+        return mRegistrationX;
+    }
+
+    public int getRegistrationY() {
+        return mRegistrationY;
     }
 
     @Override

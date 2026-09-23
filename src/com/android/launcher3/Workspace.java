@@ -543,6 +543,11 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             }
             if (layout != null) {
                 layout.markCellsAsUnoccupiedForView(mDragInfo.cell);
+                if (layout instanceof Hotseat) {
+                    // Ensure dock session is active so onDragExit can pack+center even
+                    // if the first drop-layout switch is hotseat → workspace.
+                    ((Hotseat) layout).onItemDragStartedFromDock();
+                }
             }
         }
 
@@ -2470,8 +2475,22 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                         } else if (FeatureFlags.IS_STUDIO_BUILD) {
                             throw new NullPointerException("mDragInfo.cell has null parent");
                         }
+                        // Hotseat addViewToCellLayout rejects out-of-range cellX and leaves
+                        // the view detached — expand before reparent (pack may have shrunk).
+                        if (hasMovedIntoHotseat) {
+                            Hotseat hotseat = mLauncher.getHotseat();
+                            if (hotseat != null) {
+                                hotseat.ensureGridHoldsCell(mTargetCell[0]);
+                            }
+                        }
                         addInScreen(cell, container, screenId, mTargetCell[0], mTargetCell[1],
                                 info.spanX, info.spanY);
+                        if (cell.getParent() == null && parentCell != null) {
+                            // Reparent failed — restore so onDrop cleanup does not NPE.
+                            Log.e(TAG, "onDrop: failed to add to target, restoring parent");
+                            parentCell.addViewToCellLayout(cell, -1, info.getViewId(),
+                                    (CellLayoutLayoutParams) cell.getLayoutParams(), true);
+                        }
                     }
 
                     // update the item's position after drop
@@ -2524,7 +2543,16 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                 }
             }
 
-            final CellLayout parent = (CellLayout) cell.getParent().getParent();
+            final ViewParent cellParent = cell.getParent();
+            if (!(cellParent instanceof View) || ((View) cellParent).getParent() == null) {
+                Log.e(TAG, "onDrop: cell has no CellLayout parent, aborting drop cleanup");
+                cell.setVisibility(VISIBLE);
+                if (!mLauncher.isInState(EDIT_MODE)) {
+                    mLauncher.getStateManager().goToState(NORMAL, SPRING_LOADED_EXIT_DELAY);
+                }
+                return;
+            }
+            final CellLayout parent = (CellLayout) ((View) cellParent).getParent();
             if (d.dragView.hasDrawn()) {
                 if (droppedOnOriginalCellDuringTransition) {
                     // Animate the item to its original position, while simultaneously exiting
@@ -3019,10 +3047,21 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         ItemInfo item = d.dragInfo;
         final View child = (mDragInfo == null) ? null : mDragInfo.cell;
 
-        // Oppo hotseat: always compute insert-index reorder (do not wait for occupied cell).
+        // Oppo hotseat: insert-index reorder while over the dock.
+        // Only suppress insert once Workspace has actually entered folder mode
+        // (Oppo canMergeFolder). Do NOT pre-empt with a wide folder radius — that
+        // covered the whole dock and blocked make-room on device.
         if (mLauncher.isHotseatLayout(mDragTargetLayout)) {
+            Hotseat hotseat = mLauncher.getHotseat();
             if (mDragMode == DRAG_MODE_CREATE_FOLDER || mDragMode == DRAG_MODE_ADD_TO_FOLDER) {
+                if (hotseat != null && !hotseat.isDockSourceDrag()) {
+                    hotseat.clearInsertGapForFolderMerge();
+                }
+                scaleDragViewForHotseat(d, true);
                 return;
+            }
+            if (hotseat != null && !hotseat.isDockSourceDrag()) {
+                hotseat.ensureMakeRoomForExternalDrag();
             }
             scaleDragViewForHotseat(d, true);
             int[] span = new int[2];
@@ -3032,7 +3071,6 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             if (cell[0] >= 0) {
                 mTargetCell[0] = cell[0];
                 mTargetCell[1] = cell[1];
-                // No visualizeDropLocation chip — gap is neighbor spring only.
                 setDragMode(DRAG_MODE_REORDER);
             }
             return;
@@ -3069,7 +3107,8 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     }
 
     /**
-     * ColorOS dock: shrink DragView toward dock icon size (no oversized white plate).
+     * ColorOS dock: shrink DragView toward dock icon size while over the hotseat so the
+     * preview matches the insert gap. Do not Y-lock — Oppo DragView follows the finger.
      */
     private void scaleDragViewForHotseat(DragObject d, boolean overHotseat) {
         if (d == null || d.dragView == null) {
@@ -3085,23 +3124,59 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             if (w <= 0) {
                 return;
             }
-            // Keep slightly larger than dock icon so it stays readable while dragging.
-            float target = Math.min(1f, (iconPx * 1.08f) / w);
+            // Slightly under dock icon size so the DragView sits in the insert gap
+            // without covering neighbors (v8 overlapped at 1.08x).
+            float target = Math.min(1f, (iconPx * 0.95f) / w);
             if (!mDragViewScaledForHotseat
                     || Math.abs(dragView.getScaleX() - target) > 0.02f) {
                 mDragViewScaledForHotseat = true;
+                // Scale about the grab point so shrinking does not drop the icon.
+                if (dragView instanceof com.android.launcher3.dragndrop.DragView) {
+                    com.android.launcher3.dragndrop.DragView<?> dv =
+                            (com.android.launcher3.dragndrop.DragView<?>) dragView;
+                    dragView.setPivotX(dv.getRegistrationX());
+                    dragView.setPivotY(dv.getRegistrationY());
+                }
                 dragView.animate().cancel();
                 dragView.animate().scaleX(target).scaleY(target).setDuration(140).start();
                 dragView.setElevation(0f);
             }
+            // Clear any prior Y-lock from older builds.
+            lockDragViewToHotseatRow(d, false);
         } else if (mDragViewScaledForHotseat) {
             mDragViewScaledForHotseat = false;
+            lockDragViewToHotseatRow(d, false);
             float end = d.dragView instanceof com.android.launcher3.dragndrop.DragView
                     ? ((com.android.launcher3.dragndrop.DragView<?>) d.dragView).getEndScale()
                     : 1f;
             dragView.animate().cancel();
             dragView.animate().scaleX(end).scaleY(end).setDuration(140).start();
         }
+    }
+
+    /** Pin DragView Y to the hotseat cell-row center while X still follows the finger. */
+    private void lockDragViewToHotseatRow(DragObject d, boolean lock) {
+        if (!(d.dragView instanceof com.android.launcher3.dragndrop.DragView)) {
+            return;
+        }
+        com.android.launcher3.dragndrop.DragView<?> dv =
+                (com.android.launcher3.dragndrop.DragView<?>) d.dragView;
+        if (!lock) {
+            dv.setLockToHotseatRow(false, 0f);
+            return;
+        }
+        Hotseat hotseat = mLauncher.getHotseat();
+        if (hotseat == null) {
+            return;
+        }
+        int[] hsLoc = new int[2];
+        int[] layerLoc = new int[2];
+        hotseat.getLocationOnScreen(hsLoc);
+        mLauncher.getDragLayer().getLocationOnScreen(layerLoc);
+        float rowCenterY = hsLoc[1] + hotseat.getPaddingTop()
+                + Math.max(hotseat.getCellHeight(), 1) / 2f
+                - layerLoc[1];
+        dv.setLockToHotseatRow(true, rowCenterY);
     }
 
     /**
@@ -3117,9 +3192,25 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
      */
     private boolean setDropLayoutForDragObject(DragObject d, float centerX, float centerY) {
         CellLayout layout = null;
+        Hotseat hotseat = mLauncher.getHotseat();
         if (shouldUseHotseatAsDropLayout(d)) {
-            layout = mLauncher.getHotseat();
-        } else if (!isDragObjectOverSmartSpace(d)) {
+            // Finger may still be inside the hotseat hit rect while the DragView has
+            // already cleared the dock (mtk1 case). For a dock-sourced drag, use the
+            // visual center so pack+center runs like Oppo TypeToOut.
+            boolean dockSource = mDragSourceInternal != null
+                    && mDragSourceInternal.getParent() instanceof Hotseat;
+            if (dockSource && hotseat != null) {
+                getViewBoundsRelativeToWorkspace(hotseat, mTempRect);
+                if (centerY < mTempRect.top) {
+                    // Icon is above the dock — do not keep hotseat as drop layout.
+                } else {
+                    layout = hotseat;
+                }
+            } else {
+                layout = hotseat;
+            }
+        }
+        if (layout == null && !isDragObjectOverSmartSpace(d)) {
             // If the object is over qsb/smartspace, we don't want to highlight anything.
 
             // Check neighbour pages
@@ -3139,7 +3230,18 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         if (layout != mDragTargetLayout) {
             setCurrentDropLayout(layout);
             setCurrentDragOverlappingLayout(layout);
+            // When the finger leaves the dock, Hotseat.onDragExit packs+centers.
+            // But if Hotseat was never the drop target (common when lifting a dock
+            // icon straight onto the workspace), onDragExit never runs — force pack.
+            if (!(layout instanceof Hotseat) && hotseat != null) {
+                hotseat.onFingerAwayFromDock();
+            }
             return true;
+        }
+        // Same target, but dock session may still think we are hovering (started
+        // expanded from onItemDragStartedFromDock without a Hotseat enter/exit).
+        if (!(layout instanceof Hotseat) && hotseat != null) {
+            hotseat.onFingerAwayFromDock();
         }
         return false;
     }

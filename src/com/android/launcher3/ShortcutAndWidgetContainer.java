@@ -250,6 +250,12 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
 
         int childLeft = lp.x;
         int childTop = lp.y;
+        // Oppo OplusHotseat.isMoving(): draw from animX/animY so springs own the seat.
+        if (lp.isHotseatChild && getParent() instanceof Hotseat hotseat
+                && hotseat.isIconSpringMoving()) {
+            childLeft = lp.animX;
+            childTop = lp.animY;
+        }
         child.layout(childLeft, childTop, childLeft + lp.width, childTop + lp.height);
 
         if (lp.dropped) {
