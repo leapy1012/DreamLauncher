@@ -5,7 +5,7 @@ import com.android.customize.common.extension.getAsFlow
 import com.android.launcher3.LauncherFiles
 import com.android.launcher3.LauncherPrefs
 import com.android.launcher3.R
-import com.android.launcher3.config.CustomizeFeatureFlags
+import com.android.launcher3.config.DreamFeatureOption
 import com.android.launcher3.settings.HomeScreenGestures
 import com.android.launcher3.util.MainThreadInitializedObject
 import kotlinx.coroutines.flow.combine
@@ -15,10 +15,10 @@ class OverlayPreference private constructor(private val context: Context) {
     private val prefs = LauncherPrefs.get(context)
 
     val minusEnabled get() = prefs.get(MINUS_ENABLED)
-            && CustomizeFeatureFlags.ENABLE_OVERLAY_MINUS.get()
+            && DreamFeatureOption.isSupportOverlayMinus()
     val minusEnabledFlow = prefs.getAsFlow(MINUS_ENABLED)
         .map {
-            it && CustomizeFeatureFlags.ENABLE_OVERLAY_MINUS.get()
+            it && DreamFeatureOption.isSupportOverlayMinus()
         }
     fun setMinusEnabled(enabled: Boolean) {
         prefs.put(MINUS_ENABLED, enabled)
@@ -37,10 +37,10 @@ class OverlayPreference private constructor(private val context: Context) {
         }
     }
     val plusEnabled get() = prefs.get(PLUS_ENABLED)
-            && CustomizeFeatureFlags.ENABLE_OVERLAY_PLUS.get()
+            && DreamFeatureOption.isSupportOverlayPlus()
     val plusEnabledFlow = prefs.getAsFlow(PLUS_ENABLED)
         .map {
-            it && CustomizeFeatureFlags.ENABLE_OVERLAY_PLUS.get()
+            it && DreamFeatureOption.isSupportOverlayPlus()
         }
     fun setPlusEnabled(enabled: Boolean) {
         prefs.put(PLUS_ENABLED, enabled)

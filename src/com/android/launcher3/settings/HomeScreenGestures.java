@@ -25,6 +25,7 @@ import android.util.Log;
 import com.android.customize.overlay.preference.OverlayPreference;
 import com.android.launcher3.LauncherFiles;
 import com.android.launcher3.R;
+import com.android.launcher3.config.DreamFeatureOption;
 
 /**
  * Home-screen gesture preferences (ColorOS Gestures category parity).
@@ -84,7 +85,8 @@ public final class HomeScreenGestures {
      * When enabled and gd.app.hiboard is installed, OverlayProxy binds the remote
      * WindowServer (OPPO-style); otherwise falls back to in-process MinuscreenView. */
     public static void applySwipeRightPreference(Context context, String value) {
-        boolean enableGlance = SWIPE_RIGHT_QUICK_GLANCE.equals(value);
+        boolean enableGlance = SWIPE_RIGHT_QUICK_GLANCE.equals(value)
+                && DreamFeatureOption.isSupportQuickGlanceGesture();
         OverlayPreference.get(context).setMinusEnabled(enableGlance);
     }
 

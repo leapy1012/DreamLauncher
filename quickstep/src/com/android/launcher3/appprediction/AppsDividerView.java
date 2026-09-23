@@ -90,7 +90,7 @@ public class AppsDividerView extends View implements FloatingHeaderRow {
                 : R.color.all_apps_prediction_row_separator);
 
         ///Hxy:add for set allapps background transparent at 20240120{{&&
-        boolean isTransparent = android.os.SystemProperties.getBoolean("ro.launcher.allapp.bgtransp",false);
+        boolean isTransparent = com.android.launcher3.config.DreamFeatureOption.isSupportAllAppsTransparentBg;
         mAllAppsLabelTextColor = ContextCompat.getColor(context, isMainColorDark
                 ? R.color.all_apps_label_text_dark 
                 : (isTransparent ? R.color.text_color_primary_dark : R.color.all_apps_label_text));

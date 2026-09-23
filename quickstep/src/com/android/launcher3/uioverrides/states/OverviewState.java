@@ -21,7 +21,6 @@ import static com.android.launcher3.logging.StatsLogManager.LAUNCHER_STATE_OVERV
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Rect;
-import android.os.SystemProperties;
 
 import androidx.core.graphics.ColorUtils;
 
@@ -29,6 +28,7 @@ import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherState;
 import com.android.launcher3.R;
+import com.android.launcher3.config.DreamFeatureOption;
 import com.android.launcher3.util.DisplayController;
 import com.android.quickstep.util.LayoutUtils;
 import com.android.quickstep.views.RecentsView;
@@ -160,7 +160,7 @@ public class OverviewState extends LauncherState {
     @Override
     protected float getDepthUnchecked(Context context) {
         //TODO revert when b/178661709 is fixed
-        return SystemProperties.getBoolean("ro.launcher.depth.overview", true) ? 1 : 0;
+        return DreamFeatureOption.isSupportOverviewDepth ? 1 : 0;
     }
 
     @Override

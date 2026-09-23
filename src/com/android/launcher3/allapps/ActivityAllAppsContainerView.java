@@ -207,7 +207,7 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         mNavBarScrimPaint = new Paint();
         // All apps bg transparent need change text color same with workspace start
         //mNavBarScrimPaint.setColor(Themes.getNavBarScrimColor(mActivityContext));
-        mNavBarScrimPaint.setColor(android.os.SystemProperties.getBoolean("ro.launcher.allapp.bgtransp",false)
+        mNavBarScrimPaint.setColor(com.android.launcher3.config.DreamFeatureOption.isSupportAllAppsTransparentBg
                 ? getResources().getColor(android.R.color.transparent)
                 : Themes.getAttrColor(context, R.attr.allAppsNavBarScrimColor));
         // All apps bg transparent need change text color same with workspace end
@@ -908,7 +908,7 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
                         * 255);
         // All apps bg transparent need change text color same with workspace start        
         /* UNISOC: modify for bug 1642718 */
-        if (android.os.SystemProperties.getBoolean("ro.launcher.allapp.bgtransp",false)) {
+        if (com.android.launcher3.config.DreamFeatureOption.isSupportAllAppsTransparentBg) {
             headerColor = getResources().getColor(android.R.color.transparent);
         }
         // All apps bg transparent need change text color same with workspace end             
@@ -1109,7 +1109,7 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         int navBarScrimColor = Themes.getNavBarScrimColor(mActivityContext);
         if (mNavBarScrimPaint.getColor() != navBarScrimColor) {
             //mNavBarScrimPaint.setColor(navBarScrimColor);
-            mNavBarScrimPaint.setColor(android.os.SystemProperties.getBoolean("ro.launcher.allapp.bgtransp",false)
+            mNavBarScrimPaint.setColor(com.android.launcher3.config.DreamFeatureOption.isSupportAllAppsTransparentBg
                 ? getResources().getColor(android.R.color.transparent)
                 : navBarScrimColor);
             invalidate();

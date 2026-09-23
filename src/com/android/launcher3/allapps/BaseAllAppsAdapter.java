@@ -241,7 +241,7 @@ public abstract class BaseAllAppsAdapter<T extends Context & ActivityContext> ex
                 icon.setOnLongClickListener(mOnIconLongClickListener);
                 // Ensure the all apps icon height matches the workspace icons in portrait mode.
                 // All apps bg transparent need change text color same with workspace start
-                if (android.os.SystemProperties.getBoolean("ro.launcher.allapp.bgtransp",false)) {
+                if (com.android.launcher3.config.DreamFeatureOption.isSupportAllAppsTransparentBg) {
                     icon.setTextAppearance(R.style.TransBgAppIcon);
                 }
                 // All apps bg transparent need change text color same with workspace end                

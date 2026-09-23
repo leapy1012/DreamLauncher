@@ -215,7 +215,7 @@ public class PredictionRowView<T extends Context & ActivityContext>
                 icon.setLongPressTimeoutFactor(1f);
                 icon.setOnFocusChangeListener(mFocusHelper);
                 ///Hxy:add for set prediction icon textcolor  when background is transparent at 20240120{{&&
-                if (android.os.SystemProperties.getBoolean("ro.launcher.allapp.bgtransp",false)) {
+                if (com.android.launcher3.config.DreamFeatureOption.isSupportAllAppsTransparentBg) {
                     icon.setTextColor(getResources().getColor(R.color.text_color_primary_dark));
                 }
                 ///&&}}                

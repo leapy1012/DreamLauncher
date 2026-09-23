@@ -24,6 +24,7 @@ import android.util.ArrayMap;
 import android.util.Log;
 
 import com.android.launcher3.R;
+import com.android.launcher3.config.DreamFeatureOption;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.util.Themes;
 
@@ -32,7 +33,6 @@ import org.xmlpull.v1.XmlPullParser;
 import java.util.Collections;
 import java.util.Map;
     //hxy-feature: desktop theme 202312
-import android.os.SystemProperties;
 import android.content.pm.PackageManager.NameNotFoundException;
 
 import android.provider.Settings;
@@ -61,7 +61,7 @@ public class LauncherIconProvider extends IconProvider {
     private String mThemeName = "";
     private Context mContetxt;
     private String packageName = "";
-    private static final boolean SHOW_THEME_ICON = SystemProperties.getInt("persist.sys.hxy_theme_icon", 0) == 1;
+    private static final boolean SHOW_THEME_ICON = DreamFeatureOption.isSupportThemeIcon;
     //hxy-feature: desktop theme 202312
     public LauncherIconProvider(Context context) {
         super(context);

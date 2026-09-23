@@ -113,6 +113,7 @@ import com.android.launcher3.accessibility.LauncherAccessibilityDelegate;
 import com.android.launcher3.anim.AnimatorPlaybackController;
 import com.android.launcher3.anim.PendingAnimation;
 import com.android.launcher3.appprediction.PredictionRowView;
+import com.android.launcher3.config.DreamFeatureOption;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.dragndrop.DragOptions;
 import com.android.launcher3.hybridhotseat.HotseatPredictionController;
@@ -274,7 +275,7 @@ public class QuickstepLauncher extends Launcher {
         mDesktopVisibilityController = new DesktopVisibilityController(this);
         mHotseatPredictionController = new HotseatPredictionController(this);
 
-        mEnableWidgetDepth = SystemProperties.getBoolean("ro.launcher.depth.widget", true);
+        mEnableWidgetDepth = DreamFeatureOption.isSupportWidgetDepth;
         getWorkspace().addOverlayCallback(progress ->
                 onTaskbarInAppDisplayProgressUpdate(progress, MINUS_ONE_PAGE_PROGRESS_INDEX));
     }

@@ -83,7 +83,7 @@ public class ScrimView extends View implements Insettable {
     @Override
     public void setBackgroundColor(int color) {
         // All apps bg transparent need change text color same with workspace start
-        if (android.os.SystemProperties.getBoolean("ro.launcher.allapp.bgtransp",false)) {
+        if (com.android.launcher3.config.DreamFeatureOption.isSupportAllAppsTransparentBg) {
             color = setColorAlphaBound(
                     ALLAPP_BG_COLOR, Math.round((1) * mEndFlatColorAlpha));
         }

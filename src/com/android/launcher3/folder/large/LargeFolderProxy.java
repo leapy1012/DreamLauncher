@@ -6,7 +6,7 @@ import android.util.Log;
 import android.view.View;
 import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.LauncherAppState;
-import com.android.launcher3.HxyOption;
+import com.android.launcher3.config.DreamFeatureOption;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.model.data.FolderInfo;
 import com.android.launcher3.model.data.ItemInfo;
@@ -16,7 +16,7 @@ import com.android.launcher3.R;
 public class LargeFolderProxy {
     private static final int MAX_3X3_SIZE = 9;
     private static final int SPAN_3X3_COUNT = 3;
-    public static final boolean SUPPORT_LARGE_FOLDER = HxyOption.HXY_LAUNCHER_SUPPORT_LARGE_FOLDER;
+    public static final boolean SUPPORT_LARGE_FOLDER = DreamFeatureOption.isSupportLargeFolder;
     private static int sCellHeight = 0;
     private static int sCellWidth = 0;
     private static int sFolderIconOutSize = 0;

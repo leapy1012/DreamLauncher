@@ -62,6 +62,7 @@ import com.android.launcher3.R;
 import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
 import com.coui.appcompat.dialog.adapter.ChoiceListAdapter;
 import com.android.launcher3.Utilities;
+import com.android.launcher3.config.DreamFeatureOption;
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.model.WidgetsModel;
 import com.android.launcher3.states.RotationHelper;
@@ -137,7 +138,7 @@ public class SettingsActivity extends AppCompatActivity
     private static final int DELAY_HIGHLIGHT_DURATION_MILLIS = 600;
     public static final String SAVE_HIGHLIGHTED_KEY = "android:preference_highlighted";
     //hxy-feature: desktop theme 202312
-    private static final boolean SHOW_THEME_ICON = SystemProperties.getInt("persist.sys.hxy_theme_icon", 0) == 1;//added by zhushuangqian for theme
+    private static final boolean SHOW_THEME_ICON = DreamFeatureOption.isSupportThemeIcon;
     //hxy-feature: desktop theme 202312
     public static final String EXTRA_FRAGMENT = ":settings:fragment";
     @VisibleForTesting
@@ -206,7 +207,7 @@ public class SettingsActivity extends AppCompatActivity
             return defaultFragment;
         } else if (!preferenceFragment.equals(defaultFragment)
                 && !VALID_PREFERENCE_FRAGMENTS.contains(preferenceFragment)
-                && !android.os.SystemProperties.getBoolean("ro.launcher.style",false)) {//hxy-feature: add launcher style function  202312
+                && !DreamFeatureOption.isSupportLauncherStyle) {//hxy-feature: add launcher style function  202312
             throw new IllegalArgumentException(
                     "Invalid fragment for this activity: " + preferenceFragment);
         } else {
@@ -843,7 +844,7 @@ public class SettingsActivity extends AppCompatActivity
                     return updateDeveloperOption();
 				//hxy-feature: add launcher style function  202312
 				case LAUNCHER_STYLE_PREFERENCE_KEY:
-					if (android.os.SystemProperties.getBoolean("ro.launcher.style",false)) {
+					if (DreamFeatureOption.isSupportLauncherStyle) {
 						return true;
 					}
 					return false;
