@@ -1585,13 +1585,31 @@ public class DeviceProfile {
             return;
         }
 
-        hotseatBarSizePx = res.getDimensionPixelSize(R.dimen.oplus_hotseat_height);
-        int bottomPadding = res.getDimensionPixelSize(R.dimen.oplus_hotseat_padding_bottom);
-        hotseatCellHeightPx = Math.max(iconSizePx, hotseatBarSizePx - bottomPadding);
-        hotseatQsbSpace = 0;
-        mOppoHotseatMarginBottomPx = res.getDimensionPixelSize(isGestureMode
+        final int baseBar = res.getDimensionPixelSize(R.dimen.oplus_hotseat_height);
+        final int bottomPadding = res.getDimensionPixelSize(R.dimen.oplus_hotseat_padding_bottom);
+        final int baseMargin = res.getDimensionPixelSize(isGestureMode
                 ? R.dimen.oplus_hotseat_margin_bottom_gesture
                 : R.dimen.oplus_hotseat_margin_bottom_nav);
+
+        if (showHotseatText) {
+            // Icon + label must fit. Prefer measured text block; keep hotseatTextSizePx
+            // as a minimum so labels are not cramped.
+            int textBlock = iconDrawablePaddingPx
+                    + Utilities.calculateTextHeight(iconTextSizePx);
+            int labelBlock = Math.max(hotseatTextSizePx, textBlock);
+            hotseatCellHeightPx = iconSizePx + labelBlock;
+            // Tall enough for the cell; never shorter than the ColorOS baseline bar.
+            hotseatBarSizePx = Math.max(baseBar, hotseatCellHeightPx);
+            // Bottom-anchored: eat growth from the bottom margin so the bar top
+            // (icon Y) stays put and labels use the former empty margin strip.
+            int growth = Math.max(0, hotseatBarSizePx - baseBar);
+            mOppoHotseatMarginBottomPx = Math.max(0, baseMargin - growth);
+        } else {
+            hotseatBarSizePx = baseBar;
+            hotseatCellHeightPx = Math.max(iconSizePx, hotseatBarSizePx - bottomPadding);
+            mOppoHotseatMarginBottomPx = baseMargin;
+        }
+        hotseatQsbSpace = 0;
     }
 
     private void logWorkspaceGeometryIfEnabled() {
@@ -1737,10 +1755,14 @@ public class DeviceProfile {
             int hotseatPitchDivisor = Math.min(numShownHotseatIcons, inv.numColumns);
             float hotseatCellWidth = (float) widthPx / Math.max(1, hotseatPitchDivisor);
             int hotseatAdjustment = Math.round((workspaceCellWidth - hotseatCellWidth) / 2);
+            // Oppo: never use negative top padding (lifts icons). Docked App grows the
+            // bar and absorbs it in bottom margin instead (see applyOppoHotseatMetrics).
+            int paddingTop = (showHotseatText && !mUseOppoWorkspaceMetrics)
+                    ? -hotseatTextSizePx : 0;
             hotseatBarPadding.set(
                     hotseatAdjustment + workspacePadding.left + cellLayoutPaddingPx.left
                             + mInsets.left,
-                            - (showHotseatText ? hotseatTextSizePx : 0),
+                    paddingTop,
                     hotseatAdjustment + workspacePadding.right + cellLayoutPaddingPx.right
                             + mInsets.right,
                     getHotseatBarBottomPadding());

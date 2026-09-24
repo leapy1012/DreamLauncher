@@ -544,9 +544,13 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     }
 
     /**
-     *  Only if actual text can be displayed in two line, the {@code true} value will be effective.
+     * Only if actual text can be displayed in two line, the {@code true} value will be effective.
      */
     protected boolean shouldUseTwoLine() {
+        // Dock is too narrow for wrapped titles — keep hotseat labels single-line.
+        if (isHotseatItem()) {
+            return false;
+        }
         //modify:byxiangchangsong for workspace two line start
         boolean enableTwoLine  = getResources().getBoolean(R.bool.config_iconlabel_double_lines);
         //modify:byxiangchangsong for workspace two line end
@@ -554,6 +558,23 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
                 || mDisplay == DISPLAY_WORKSPACE)) && enableTwoLine//modify:byxiangchangsong for workspace two line
                 || (FeatureFlags.ENABLE_TWOLINE_DEVICESEARCH.get()
                 && mDisplay == DISPLAY_SEARCH_RESULT);
+    }
+
+    /** Hotseat / prediction dock icons (Docked App labels). */
+    private boolean isHotseatItem() {
+        Object tag = getTag();
+        if (!(tag instanceof ItemInfo info)) {
+            return false;
+        }
+        return info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT
+                || info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION;
+    }
+
+    /** Dock labels stay one line + ellipsis regardless of workspace multi-line prefs. */
+    private void applyHotseatSingleLineLabel() {
+        setSingleLine(true);
+        setMaxLines(1);
+        setEllipsize(TruncateAt.END);
     }
 
     @UiThread
@@ -570,6 +591,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
             } else {
                 setText(display);
             }
+        }
+        if (info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT
+                || info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION) {
+            applyHotseatSingleLineLabel();
         }
         if (info.contentDescription != null) {
             setContentDescription(info.isDisabled()
@@ -1140,7 +1165,8 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
             LargeFolderProxy.setFolderPaddingTop(getPaddingTop());
         }
         // Only apply two line for all_apps and device search only if necessary.
-        if (shouldUseTwoLine() && (mLastOriginalText != null)) {
+        // Hotseat is always single-line (see applyHotseatSingleLineLabel).
+        if (shouldUseTwoLine() && !isHotseatItem() && (mLastOriginalText != null)) {
             CharSequence modifiedString = modifyTitleToSupportMultiLine(
                     MeasureSpec.getSize(widthMeasureSpec) - getCompoundPaddingLeft()
                             - getCompoundPaddingRight(),
@@ -1158,6 +1184,8 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
                     setMaxLines(1);
                 }
             }
+        } else if (isHotseatItem()) {
+            applyHotseatSingleLineLabel();
         }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
@@ -1217,6 +1245,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         if (hotseat) {
             visible = LauncherPrefs.getPrefs(getContext()).getBoolean(
                     LauncherPrefs.WORKSPACE_DOCKED_APP, false);
+            applyHotseatSingleLineLabel();
         } else if (mDisplay == DISPLAY_WORKSPACE
                 && ColorOsLayoutSettings.isHideIconNames(getContext())) {
             visible = false;

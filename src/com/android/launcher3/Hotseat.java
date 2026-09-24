@@ -25,6 +25,7 @@ import android.content.Context;
 import android.graphics.Rect;
 import android.util.ArrayMap;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -33,9 +34,12 @@ import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.annotation.Nullable;
+
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.hotseat.HotseatSpringMotion;
 import com.android.launcher3.model.data.ItemInfo;
+import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.util.CellAndSpan;
 
 import java.util.ArrayList;
@@ -72,6 +76,38 @@ public class Hotseat extends CellLayout implements Insettable {
 
     /** Extra side inset applied so a contiguous icon row sits centered. */
     private int mAdaptiveSidePad;
+
+    /**
+     * Last make-room insert map from {@link #MODE_DRAG_OVER}. Survives
+     * {@link #onDragExit()} / {@link CellLayout#mPreviousSolution} clear so
+     * {@link #MODE_ON_DROP} can still seat the icon in the hovered gap.
+     */
+    private ItemConfiguration mPendingDropSolution;
+
+    /**
+     * True after {@link #prepareFinalDropLanding(View)} until the DragView flight
+     * finishes and the dropped child is visible again. Holds make-room metrics so
+     * {@link #onMeasure} does not pack n−1 while the child is {@link View#INVISIBLE}.
+     */
+    private boolean mDropLandingPrepared;
+
+    /**
+     * While true, layout must not overwrite {@code animX} with grid X (drop flight /
+     * make-room springs own the visual seats). Idle never sets this — otherwise icons
+     * stick at a stale left edge and the dock fails to center.
+     */
+    public boolean shouldHoldVisualSeats() {
+        if (mDropLandingPrepared) {
+            return true;
+        }
+        // Field may be read during early measure; never block idle centering.
+        if (mSpringMotion == null) {
+            return false;
+        }
+        return (mMakeRoomActive || mPackedAway) && mSpringMotion.isMoving();
+    }
+
+    private final Runnable mFinishDropLandingRunnable = this::finishDropLandingIfReady;
 
     /**
      * True from first {@link #onDragEnter()} until {@link #endDragSession()} after drop/cancel.
@@ -158,11 +194,36 @@ public class Hotseat extends CellLayout implements Insettable {
 
     /** Called by {@link HotseatSpringMotion} when the last spring settles. */
     public void onIconSpringsSettled() {
-        setHotseatClipEnabled(true);
-        ShortcutAndWidgetContainer container = getShortcutsAndWidgets();
-        if (container != null) {
-            container.requestLayout();
+        // Mid-drag TypeToOut / make-room / drop-flight still owns animX — keep clip
+        // off so a settled spring cannot hard-cut neighbors that are still outside
+        // the pad (or mid DragView flight after mDragSessionActive cleared).
+        if (mDragSessionActive || mDropLandingPrepared) {
+            return;
         }
+        setHotseatClipEnabled(true);
+        // Lock seats that have reached their grid x so the next measureChild does not
+        // fight animX (and so unlocked make-room seats can finally sync).
+        ShortcutAndWidgetContainer container = getShortcutsAndWidgets();
+        if (container == null) {
+            return;
+        }
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            if (child == null || child.getVisibility() == GONE) {
+                continue;
+            }
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) child.getLayoutParams();
+            if (lp == null || !lp.isHotseatChild) {
+                continue;
+            }
+            int targetX = mSpringMotion.computeTargetX(child);
+            if (Math.abs(lp.animX - targetX) <= 2) {
+                lp.animX = targetX;
+                lp.x = targetX;
+                lp.isLockedToGrid = true;
+            }
+        }
+        container.requestLayout();
     }
 
     /**
@@ -171,6 +232,11 @@ public class Hotseat extends CellLayout implements Insettable {
      */
     public boolean isIconSpringMoving() {
         return mSpringMotion.isMoving();
+    }
+
+    /** True while {@code child} has an in-flight dock spring. */
+    public boolean isChildIconSpringMoving(View child) {
+        return mSpringMotion.isChildMoving(child);
     }
 
     /**
@@ -199,6 +265,9 @@ public class Hotseat extends CellLayout implements Insettable {
         mSessionMetricCount = 0;
         mMakeRoomActive = false;
         mMakeRoomLayoutActive = false;
+        mPendingDropSolution = null;
+        mDropLandingPrepared = false;
+        removeCallbacks(mFinishDropLandingRunnable);
         mHiddenDragSources.clear();
         cancelPackPadAnimator();
         mSpringMotion.clearAll();
@@ -228,12 +297,42 @@ public class Hotseat extends CellLayout implements Insettable {
     }
 
     /**
+     * When true, {@link #reflowIcons()} is a no-op. Used while dissolving a hotseat folder
+     * so remaining icons are not packed into the folder seat before the final item is
+     * re-inserted (that collision hid Cleanup under Notes).
+     */
+    private boolean mDeferReflow;
+
+    /** Defer idle pack until {@link #endDeferReflow()} (folder → single-icon replace). */
+    public void beginDeferReflow() {
+        mDeferReflow = true;
+    }
+
+    /** Clear deferral and pack now that the replacement icon is in the dock. */
+    public void endDeferReflow() {
+        mDeferReflow = false;
+        // Folder dissolve can finish after a stale drag session (folder was drag source).
+        // Force a real pack so Notes and neighbors get unique seats.
+        if (mDragSessionActive) {
+            mDragSessionActive = false;
+            restoreHiddenDragSources();
+            mDragOverDock = false;
+            mSessionMetricCount = 0;
+            mMakeRoomActive = false;
+            mMakeRoomLayoutActive = false;
+            mPackedAway = false;
+            mSpringMotion.endAll();
+        }
+        reflowIcons();
+    }
+
+    /**
      * Oppo-style: reflow dock icons into a contiguous centered row and apply adaptive
      * cell width. Safe to call after bind, drop, or remove. No-op during an active drag
      * session so expand geometry stays stable.
      */
     public void reflowIcons() {
-        if (mDragSessionActive) {
+        if (mDeferReflow || mDragSessionActive) {
             return;
         }
         if (mHasVerticalHotseat) {
@@ -305,6 +404,7 @@ public class Hotseat extends CellLayout implements Insettable {
     @Override
     public void onDragEnter() {
         super.onDragEnter();
+        mPendingDropSolution = null;
         beginDragSession();
         mDragOverDock = true;
         if (mHasVerticalHotseat) {
@@ -321,50 +421,291 @@ public class Hotseat extends CellLayout implements Insettable {
             return;
         }
         // External make-room OR dock-source return after TypeToOut.
+        // Defer applyMakeRoomMetrics until drag-over confirms we are not over an
+        // icon for folder-merge (otherwise the target springs out from under the
+        // finger and folder create fails when n < max).
         mPackedAway = false;
         mMakeRoomActive = true;
         mMakeRoomLayoutActive = false;
-        applyMakeRoomMetrics();
+        if (mDockSourceDrag) {
+            applyMakeRoomMetrics();
+        }
     }
 
     @Override
     public void onDragExit() {
-        final boolean packOnExit = mDragSessionActive;
-        if (packOnExit) {
+        // Finger-up over the dock: Workspace.onDragExit runs BEFORE onDrop and
+        // clears CellLayout.mPreviousSolution via super.onDragExit(). Persist the
+        // last insert map so ON_DROP still seats into the hovered gap.
+        if (mPreviousSolution != null && mPreviousSolution.isSolution) {
+            mPendingDropSolution = mPreviousSolution;
+        }
+        if (mDragSessionActive) {
             completeAndClearReorderPreviewAnimations();
+            cancelReorderAnimators();
             setItemPlacementDirty(false);
             setUseTempCoords(false);
         }
         super.onDragExit();
-        if (packOnExit) {
-            onFingerAwayFromDock();
+        // Do NOT pack here. Packing before onDrop collapses make-room padding so a
+        // recalculated insert maps to cell 0. Mid-drag leave is handled by
+        // Workspace → onFingerAwayFromDock(); drop/cancel cleanup is endDragSession().
+    }
+
+    /**
+     * Workspace{@link Workspace#setCurrentDropLayout} calls {@code revertTempState()}
+     * <em>before</em> {@link #onDragExit()}. AOSP then runs
+     * {@link #animateChildToPosition} back to the pre-insert cellX, which layouts via
+     * {@code lp.x} and slides the rightmost dock icon off its make-room seat (visible
+     * vanish / retarget for ~1 frame after drop). Insert springs already own the seats.
+     */
+    @Override
+    void revertTempState() {
+        if (shouldUseInsertReorder()) {
+            completeAndClearReorderPreviewAnimations();
+            cancelReorderAnimators();
+            setItemPlacementDirty(false);
+            return;
         }
+        super.revertTempState();
+    }
+
+    private void dumpSeats(String where) {
+        ShortcutAndWidgetContainer container = getShortcutsAndWidgets();
+        if (container == null) {
+            Log.i("HSDrop", where + " container=null");
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append(where)
+                .append(" sess=").append(mSessionMetricCount)
+                .append(" makeRoom=").append(mMakeRoomActive)
+                .append("/").append(mMakeRoomLayoutActive)
+                .append(" dropPrep=").append(mDropLandingPrepared)
+                .append(" dragSess=").append(mDragSessionActive)
+                .append(" countX=").append(getCountX())
+                .append(" cellW=").append(getCellWidth())
+                .append(" padL=").append(getPaddingLeft())
+                .append(" sidePad=").append(mAdaptiveSidePad)
+                .append(" |");
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            if (child == null) {
+                continue;
+            }
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) child.getLayoutParams();
+            Object tag = child.getTag();
+            String name = tag instanceof ItemInfo info && info.title != null
+                    ? info.title.toString() : "?";
+            int cell = lp != null ? lp.getCellX() : -1;
+            int anim = lp != null ? lp.animX : -1;
+            int x = lp != null ? lp.x : -1;
+            boolean locked = lp != null && lp.isLockedToGrid;
+            sb.append(' ').append(name)
+                    .append("{vis=").append(child.getVisibility())
+                    .append(" cell=").append(cell)
+                    .append(" animX=").append(anim)
+                    .append(" x=").append(x)
+                    .append(" lock=").append(locked)
+                    .append('}');
+        }
+        Log.i("HSDrop", sb.toString());
     }
 
     /**
      * Ends the dock drag session and restores the packed/centered idle layout.
      */
     public void endDragSession() {
-        mDragOverDock = false;
-        mPackedAway = false;
+        // Workspace.onDropCompleted and onDragEnd both call this; skip a second
+        // reflow that would retarget neighbors after seats already settled.
+        if (!mDragSessionActive && !mDropLandingPrepared && !mMakeRoomActive
+                && mSessionMetricCount == 0 && mHiddenDragSources.isEmpty()) {
+            return;
+        }
+        dumpSeats("endDragSession:enter");
+        cancelPackPadAnimator();
+        removeCallbacks(mReflowRunnable);
+        mPendingDropSolution = null;
         mDockSourceDrag = false;
         mHasLeftDockDuringDrag = false;
+        mPackedAway = false;
+
+        // onDropCompleted runs in the same stack as onDrop — BEFORE DragView finishes.
+        // Keep make-room metrics until the dropped child is visible again.
+        if (mDropLandingPrepared) {
+            // Drop flight owns source visibility; do not force VISIBLE mid-flight.
+            mHiddenDragSources.clear();
+            mDragSessionActive = false;
+            removeCallbacks(mFinishDropLandingRunnable);
+            postDelayed(mFinishDropLandingRunnable, 32);
+            return;
+        }
+
+        // Cancel / external drop: un-hide any dock seats we GONE'd for TypeToOut pack.
+        restoreHiddenDragSources();
+
+        mDragOverDock = false;
         mSessionMetricCount = 0;
         mMakeRoomActive = false;
         mMakeRoomLayoutActive = false;
-        cancelPackPadAnimator();
-        // Snap in-flight insert springs to their finals, then idle-reflow without
-        // restarting a second left/right shuffle (see reflowIconsAfterDrop).
         mSpringMotion.endAll();
-        mHiddenDragSources.clear();
         if (!mDragSessionActive) {
-            removeCallbacks(mReflowRunnable);
             reflowIconsAfterDrop();
             return;
         }
         mDragSessionActive = false;
-        removeCallbacks(mReflowRunnable);
         reflowIconsAfterDrop();
+    }
+
+    /**
+     * After DragView flight: leave make-room measure path. Reposts while the dropped
+     * child is still {@link View#INVISIBLE}.
+     * <p>Oppo success path does not retarget to a <em>new</em> seat — but it also does
+     * not freeze mid-spring. draganddrop can commit before make-room springs reach
+     * their finals; we must keep driving {@code animX} to the session-locked idle
+     * target (same pixel as hover), never {@code clearAll}+lock at the in-between X.
+     */
+    private void finishDropLandingIfReady() {
+        if (!mDropLandingPrepared) {
+            return;
+        }
+        dumpSeats("finishDropLanding:check");
+        ShortcutAndWidgetContainer container = getShortcutsAndWidgets();
+        if (container != null) {
+            for (int i = 0; i < container.getChildCount(); i++) {
+                View child = container.getChildAt(i);
+                if (child == null || child.getVisibility() != INVISIBLE) {
+                    continue;
+                }
+                Object tag = child.getTag();
+                if (tag instanceof ItemInfo info && isPersistentHotseatItem(info)) {
+                    postDelayed(mFinishDropLandingRunnable, 32);
+                    return;
+                }
+            }
+        }
+
+        List<View> icons = collectDockIcons(container);
+        icons.sort(Comparator.comparingInt(v -> {
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
+            return lp != null ? lp.getCellX() : 0;
+        }));
+
+        mDropLandingPrepared = false;
+        mDragOverDock = false;
+        mMakeRoomActive = false;
+        mMakeRoomLayoutActive = false;
+        mPackedAway = false;
+
+        int n = icons.size();
+        int max = Math.max(1, mActivity.getDeviceProfile().numShownHotseatIcons);
+        int gridX = n > 0 ? Math.min(n, max) : max;
+
+        // Capture screen seats BEFORE clearing session metrics / cellW — otherwise
+        // applyAdaptiveCellMetrics jumps neighbors to a new pitch (visible retarget).
+        ArrayMap<View, int[]> origins = captureVisualOrigins(icons);
+        int lockedMetric = mSessionMetricCount > 0
+                ? Math.min(mSessionMetricCount, max) : n;
+        mSessionMetricCount = 0;
+
+        if (getCountX() != gridX || getCountY() != 1) {
+            setGridSize(gridX, 1);
+        }
+        mOccupied.clear();
+        Launcher launcher = mActivity instanceof Launcher ? (Launcher) mActivity : null;
+        for (int i = 0; i < n; i++) {
+            View v = icons.get(i);
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
+            if (lp == null) {
+                continue;
+            }
+            lp.setCellX(i);
+            lp.setCellY(0);
+            lp.cellHSpan = 1;
+            lp.cellVSpan = 1;
+            lp.useTmpCoords = false;
+            Object tag = v.getTag();
+            if (tag instanceof ItemInfo info && isPersistentHotseatItem(info)) {
+                boolean changed = info.cellX != i || info.screenId != i
+                        || info.container != CONTAINER_HOTSEAT;
+                info.cellX = i;
+                info.cellY = 0;
+                info.screenId = i;
+                info.container = CONTAINER_HOTSEAT;
+                if (changed && launcher != null && info.id != ItemInfo.NO_ID) {
+                    launcher.getModelWriter().moveItemInDatabase(
+                            info, CONTAINER_HOTSEAT, i, i, 0);
+                }
+            }
+            markCellsAsOccupiedForView(v);
+        }
+
+        // Prefer hover-locked pitch when it matches final count (no cellW change).
+        int metric = (lockedMetric == n) ? lockedMetric : n;
+        applyAdaptiveCellMetrics(metric);
+        seedAnimFromCapturedScreens(origins);
+
+        // Snap to grid seats. With locked metric, seed already matches — no visible jump.
+        // Never leave stale animX (that stuck Music on the far left).
+        for (View v : icons) {
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
+            if (lp == null) {
+                continue;
+            }
+            lp.isHotseatChild = true;
+            lp.useTmpCoords = false;
+            int targetX = mSpringMotion.computeTargetX(v);
+            lp.animX = targetX;
+            lp.x = targetX;
+            lp.isLockedToGrid = true;
+        }
+        mSpringMotion.clearAll();
+        setHotseatClipEnabled(true);
+        dumpSeats("finishDropLanding:done");
+        requestLayout();
+    }
+
+    /**
+     * Oppo: on drop, make-room seats are already final — do not retarget neighbors.
+     * Only set the dropped child's {@code lp.x} for {@code animateViewIntoPosition}.
+     * Keep make-room measure active through DragView flight (child is INVISIBLE).
+     */
+    public void prepareFinalDropLanding(View dropped) {
+        removeCallbacks(mFinishDropLandingRunnable);
+        mDropLandingPrepared = true;
+        dumpSeats("prepareFinalDropLanding:start");
+        if (mHasVerticalHotseat || dropped == null) {
+            return;
+        }
+        DeviceProfile dp = mActivity.getDeviceProfile();
+        if (dp.isVerticalBarLayout() || dp.isTablet) {
+            return;
+        }
+        ShortcutAndWidgetContainer container = getShortcutsAndWidgets();
+        if (container == null) {
+            return;
+        }
+        mMakeRoomActive = true;
+        mDragOverDock = true;
+        if (mSessionMetricCount <= 0) {
+            int n = collectDockIcons(container).size();
+            mSessionMetricCount = Math.max(1, Math.min(n, dp.numShownHotseatIcons));
+        }
+        if (!mMakeRoomLayoutActive) {
+            activateMakeRoomLayoutFromVisualStarts(
+                    collectPackableDockIcons(container));
+        }
+
+        CellLayoutLayoutParams lp = (CellLayoutLayoutParams) dropped.getLayoutParams();
+        if (lp != null) {
+            lp.isHotseatChild = true;
+            lp.useTmpCoords = false;
+            lp.isLockedToGrid = true;
+            container.setupLp(dropped);
+            lp.animX = lp.x;
+            lp.animY = lp.y;
+        }
+        dumpSeats("prepareFinalDropLanding:done");
     }
 
     /**
@@ -372,6 +713,10 @@ public class Hotseat extends CellLayout implements Insettable {
      * current screen seats when the idle grid matches (no second spring).
      */
     private void reflowIconsAfterDrop() {
+        reflowIconsAfterDrop(/* animateNeighbors= */ true);
+    }
+
+    private void reflowIconsAfterDrop(boolean animateNeighbors) {
         if (mHasVerticalHotseat) {
             reflowIcons();
             return;
@@ -393,8 +738,7 @@ public class Hotseat extends CellLayout implements Insettable {
         }));
 
         ArrayMap<View, int[]> origins = captureVisualOrigins(icons);
-        boolean gridChanged = getCountX() != gridX || getCountY() != 1;
-        if (gridChanged) {
+        if (getCountX() != gridX || getCountY() != 1) {
             setGridSize(gridX, 1);
         }
 
@@ -432,8 +776,9 @@ public class Hotseat extends CellLayout implements Insettable {
         }
 
         applyAdaptiveCellMetrics(n);
-        // Re-seed so a pad/cellW sync cannot flash icons through a wrong seat.
         seedAnimFromCapturedScreens(origins);
+        // Idle pack must correct seats. Prefer snap over spring to avoid a second
+        // retarget animation; seed keeps continuity when pitch is unchanged.
         for (View v : icons) {
             CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
             if (lp == null) {
@@ -441,17 +786,12 @@ public class Hotseat extends CellLayout implements Insettable {
             }
             lp.isHotseatChild = true;
             int targetX = mSpringMotion.computeTargetX(v);
-            if (Math.abs(lp.animX - targetX) > 1) {
-                mSpringMotion.animateAnimXTo(v, targetX);
-            } else {
-                lp.animX = targetX;
-                lp.x = targetX;
-                lp.isLockedToGrid = true;
-            }
+            lp.animX = targetX;
+            lp.x = targetX;
+            lp.isLockedToGrid = true;
         }
-        if (!mSpringMotion.isMoving()) {
-            requestLayout();
-        }
+        mSpringMotion.clearAll();
+        requestLayout();
     }
 
     private void beginDragSession() {
@@ -510,7 +850,47 @@ public class Hotseat extends CellLayout implements Insettable {
         mMakeRoomActive = false;
         mMakeRoomLayoutActive = false;
         mPackedAway = true;
+        // Leaving for workspace mid-drag — hover insert is no longer valid.
+        mPendingDropSolution = null;
         packRemainingIconsForDragOut(/* animate= */ true);
+    }
+
+    /**
+     * Oppo canMergeFolder: nearest dock icon under the finger for folder create/add.
+     * Make-room vacant cells make {@link #getChildAt(int, int)} miss the real target
+     * when {@code n < max}, so folder create only worked on a full dock.
+     */
+    @Nullable
+    public View findFolderMergeTarget(float pixelX, float pixelY, ItemInfo dragInfo) {
+        if (dragInfo == null
+                || dragInfo.itemType == LauncherSettings.Favorites.ITEM_TYPE_FOLDER) {
+            return null;
+        }
+        List<View> icons = collectPackableDockIcons(getShortcutsAndWidgets());
+        if (icons.isEmpty()) {
+            return null;
+        }
+        DeviceProfile dp = mActivity.getDeviceProfile();
+        // At least half a cell — make-room springs can shift the target ~0.4 cell
+        // before folder mode suppresses insert; stay hittable under the finger.
+        float radius = Math.max(dp.iconSizePx * 0.75f, getCellWidth() * 0.5f);
+        View best = null;
+        double bestDist = radius;
+        for (View v : icons) {
+            Object tag = v.getTag();
+            if (!(tag instanceof WorkspaceItemInfo)
+                    || !isPersistentHotseatItem((ItemInfo) tag)) {
+                continue;
+            }
+            float cx = getIconCenterX(v);
+            float cy = getPaddingTop() + getCellHeight() / 2f;
+            double dist = Math.hypot(pixelX - cx, pixelY - cy);
+            if (dist <= bestDist) {
+                bestDist = dist;
+                best = v;
+            }
+        }
+        return best;
     }
 
     /**
@@ -519,29 +899,7 @@ public class Hotseat extends CellLayout implements Insettable {
      * whole dock and blocks make-room.
      */
     public boolean isFolderMergeLikely(float pixelX, float pixelY, ItemInfo dragInfo) {
-        if (dragInfo == null) {
-            return false;
-        }
-        if (dragInfo.itemType == LauncherSettings.Favorites.ITEM_TYPE_FOLDER) {
-            return false;
-        }
-        List<View> icons = collectPackableDockIcons(getShortcutsAndWidgets());
-        if (icons.isEmpty()) {
-            return false;
-        }
-        // Tight radius: ~0.35 of icon size so only true center-hits count.
-        float radius = Math.max(mActivity.getDeviceProfile().iconSizePx * 0.35f, 1f);
-        for (View v : icons) {
-            float cx = getIconCenterX(v);
-            float cy = getPaddingTop() + getCellHeight() / 2f;
-            if (Math.hypot(pixelX - cx, pixelY - cy) <= radius) {
-                Object tag = v.getTag();
-                if (tag instanceof ItemInfo info && isPersistentHotseatItem(info)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return findFolderMergeTarget(pixelX, pixelY, dragInfo) != null;
     }
 
     /**
@@ -557,12 +915,16 @@ public class Hotseat extends CellLayout implements Insettable {
         }
         mMakeRoomActive = false;
         mMakeRoomLayoutActive = false;
-        packRemainingIconsForDragOut(/* animate= */ true);
+        mSessionMetricCount = 0;
+        // Instant pack — springing here shuffles right icons while entering folder mode.
+        packRemainingIconsForDragOut(/* animate= */ false);
     }
 
     /**
      * Workspace→hotseat make-room: expand countX to n+1 only. Keep packed-n cell metrics
      * until the first insert spring so icons do not jump away from their on-screen seats.
+     * Locks {@link #mSessionMetricCount} to the post-drop icon count so hover seats and
+     * idle land seats share one cellW/pad (avoids drop ping-pong retargets).
      */
     private void applyMakeRoomMetrics() {
         DeviceProfile dp = mActivity.getDeviceProfile();
@@ -574,6 +936,10 @@ public class Hotseat extends CellLayout implements Insettable {
             slots = Math.min(mSessionMetricCount, max);
         } else {
             slots = n >= max ? Math.min(n, max) : Math.min(n + 1, max);
+            // External: final idle count after this drop is slots — lock pitch now.
+            if (!mDockSourceDrag && mSessionMetricCount <= 0) {
+                mSessionMetricCount = slots;
+            }
         }
         if (getCountX() != slots || getCountY() != 1) {
             setGridSize(slots, 1);
@@ -688,10 +1054,13 @@ public class Hotseat extends CellLayout implements Insettable {
         int max = Math.max(1, dp.numShownHotseatIcons);
         // Dock-source TypeToIn: reopen the pre-lift grid (phantom hole). External: n+1.
         int slots;
-        if (mDockSourceDrag && mSessionMetricCount > 0) {
+        if (mSessionMetricCount > 0) {
             slots = Math.min(mSessionMetricCount, max);
+        } else if (mDockSourceDrag) {
+            slots = n >= max ? Math.min(n, max) : Math.min(n + 1, max);
         } else {
             slots = n >= max ? Math.min(n, max) : Math.min(n + 1, max);
+            mSessionMetricCount = slots;
         }
         ArrayMap<View, int[]> origins = captureVisualOrigins(icons);
         if (getCountX() != slots || getCountY() != 1) {
@@ -741,12 +1110,13 @@ public class Hotseat extends CellLayout implements Insettable {
         if (dp.isTablet || dp.isVerticalBarLayout()) {
             return;
         }
-        if (mMakeRoomActive) {
-            return;
-        }
         mPackedAway = false;
         mMakeRoomActive = true;
-        applyMakeRoomMetrics();
+        // onDragEnter may have flagged make-room without applying metrics (folder-merge
+        // deferral). Apply once we know this is an insert, not a folder hover.
+        if (!mMakeRoomLayoutActive) {
+            applyMakeRoomMetrics();
+        }
     }
 
     /**
@@ -872,10 +1242,19 @@ public class Hotseat extends CellLayout implements Insettable {
         }
     }
 
+    /**
+     * Restore seats still parented in this hotseat after a cancelled / aborted drag.
+     * Views that left the dock (successful move) are left alone.
+     */
     private void restoreHiddenDragSources() {
+        ShortcutAndWidgetContainer container = getShortcutsAndWidgets();
         for (View parked : mHiddenDragSources) {
-            if (parked.getParent() != null && parked.getVisibility() == GONE) {
-                parked.setVisibility(INVISIBLE);
+            if (parked == null) {
+                continue;
+            }
+            if (container != null && parked.getParent() == container
+                    && parked.getVisibility() != VISIBLE) {
+                parked.setVisibility(VISIBLE);
             }
         }
         mHiddenDragSources.clear();
@@ -1072,13 +1451,17 @@ public class Hotseat extends CellLayout implements Insettable {
         if (!mHasVerticalHotseat) {
             DeviceProfile dp = mActivity.getDeviceProfile();
             if (!dp.isVerticalBarLayout() && !dp.isTablet) {
-                if (mDragSessionActive && mDragOverDock && mMakeRoomActive) {
-                    // Oppo make-room / TypeToIn: countX = phantom slots. Dock-source keeps
-                    // pre-lift cellW; external keeps packed-n metrics until first insert spring.
+                if ((mDragSessionActive && mDragOverDock && mMakeRoomActive)
+                        || (mDropLandingPrepared && mMakeRoomActive)) {
+                    // Oppo make-room / drop-flight: countX = phantom slots. Session-locked
+                    // metricCount keeps hover cellW == post-drop idle cellW. During
+                    // DragView flight mDragSessionActive is already false — still use
+                    // this branch while mDropLandingPrepared so INVISIBLE drop child
+                    // does not shrink the row to n−1.
                     int n = collectPackableDockIcons(getShortcutsAndWidgets()).size();
                     int max = Math.max(1, dp.numShownHotseatIcons);
                     int slots;
-                    if (mDockSourceDrag && mSessionMetricCount > 0) {
+                    if (mSessionMetricCount > 0) {
                         slots = Math.min(mSessionMetricCount, max);
                     } else {
                         slots = n >= max ? Math.min(Math.max(n, 1), max)
@@ -1088,7 +1471,9 @@ public class Hotseat extends CellLayout implements Insettable {
                         setGridSize(slots, 1);
                     }
                     int metricCount;
-                    if (mDockSourceDrag && mSessionMetricCount > 0) {
+                    if (mSessionMetricCount > 0 && mMakeRoomLayoutActive) {
+                        metricCount = mSessionMetricCount;
+                    } else if (mDockSourceDrag && mSessionMetricCount > 0) {
                         metricCount = mSessionMetricCount;
                     } else {
                         metricCount = mMakeRoomLayoutActive ? slots : Math.max(n, 1);
@@ -1109,18 +1494,33 @@ public class Hotseat extends CellLayout implements Insettable {
                                 ? Math.max(0, (avail - used) / 2) : 0;
                         setPadding(basePad.left + mAdaptiveSidePad, basePad.top,
                                 basePad.right + mAdaptiveSidePad, basePad.bottom);
+                        if (mDropLandingPrepared || mMakeRoomActive) {
+                            Log.i("HSDrop", "onMeasure makeRoom/dropPrep metric="
+                                    + metricCount + " nPack=" + n
+                                    + " cellW=" + cellW + " sidePad=" + mAdaptiveSidePad
+                                    + " padL=" + getPaddingLeft());
+                        }
                     }
                 } else if (mPackPadAnimator != null && mPackPadAnimator.isRunning()) {
                     // Pack TypeToOut animator owns pad/cellW this frame.
                 } else {
-                    // Idle, dock-source pack, or after exit: pack+center visible icons.
-                    // cellX must already be contiguous 0..n-1 (packRemainingIconsForDragOut /
-                    // reflowIcons); only refresh adaptive pad + cellW here.
-                    int n = mDragSessionActive
-                            ? collectPackableDockIcons(getShortcutsAndWidgets()).size()
-                            : collectDockIcons(getShortcutsAndWidgets()).size();
-                    // TypeToOut / idle: metrics follow visible count (mid-drag == final).
-                    int metricCount = n;
+                    // Idle / TypeToOut / post-drop. During DragView flight the dropped
+                    // child is INVISIBLE — never use packable-only count while a session
+                    // metric lock is active (that packed n−1 and retargeted neighbors).
+                    int max = Math.max(1, dp.numShownHotseatIcons);
+                    int n;
+                    int metricCount;
+                    if (mDropLandingPrepared && mSessionMetricCount > 0) {
+                        n = collectDockIcons(getShortcutsAndWidgets()).size();
+                        metricCount = Math.min(mSessionMetricCount, max);
+                        n = Math.max(n, metricCount);
+                    } else if (mDragSessionActive) {
+                        n = collectPackableDockIcons(getShortcutsAndWidgets()).size();
+                        metricCount = Math.max(n, 1);
+                    } else {
+                        n = collectDockIcons(getShortcutsAndWidgets()).size();
+                        metricCount = n;
+                    }
                     Rect basePad = dp.getHotseatLayoutPadding(getContext());
                     setPadding(basePad.left, basePad.top, basePad.right, basePad.bottom);
                     mAdaptiveSidePad = 0;
@@ -1132,9 +1532,9 @@ public class Hotseat extends CellLayout implements Insettable {
                         int cellW = avail / divisor;
                         int cellH = getCellHeight() > 0 ? getCellHeight() : dp.hotseatCellHeightPx;
                         setCellDimensions(cellW, cellH);
-                        // Side pad centers the *visible* row (n), not the metric divisor.
-                        int used = n > 0 ? n * cellW : 0;
-                        mAdaptiveSidePad = n > 0 ? Math.max(0, (avail - used) / 2) : 0;
+                        int used = metricCount > 0 ? metricCount * cellW : 0;
+                        mAdaptiveSidePad = metricCount > 0
+                                ? Math.max(0, (avail - used) / 2) : 0;
                         setPadding(basePad.left + mAdaptiveSidePad, basePad.top,
                                 basePad.right + mAdaptiveSidePad, basePad.bottom);
                     }
@@ -1273,10 +1673,13 @@ public class Hotseat extends CellLayout implements Insettable {
     /** Visual / folder-merge center (may include tmp cell). */
     private float getIconCenterX(View v) {
         CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
-        int cellW = getCellWidth() > 0 ? getCellWidth() : mActivity.getDeviceProfile().iconSizePx;
-        if (lp != null) {
-            int cellX = lp.useTmpCoords ? lp.getTmpCellX() : lp.getCellX();
-            return getPaddingLeft() + cellX * cellW + cellW / 2f;
+        // Prefer the drawn seat (animX). Grid cell centers miss during make-room springs
+        // and blocked folder-merge hit tests when n < max.
+        if (lp != null && lp.isHotseatChild) {
+            int w = lp.width > 0 ? lp.width
+                    : (getCellWidth() > 0 ? getCellWidth()
+                    : mActivity.getDeviceProfile().iconSizePx);
+            return getPaddingLeft() + lp.animX + w / 2f;
         }
         return v.getLeft() + v.getWidth() / 2f;
     }
@@ -1341,9 +1744,27 @@ public class Hotseat extends CellLayout implements Insettable {
             return result;
         }
 
-        ItemConfiguration solution = calculateInsertSolution(pixelX, dragView, spanX, spanY, mode);
-        mPreviousSolution = (mode == MODE_ON_DROP || mode == MODE_ON_DROP_EXTERNAL)
-                ? null : solution;
+        // Finger-up clears mPreviousSolution in onDragExit before onDrop. Prefer the
+        // pending hover insert so the icon seats in the gap the user already saw —
+        // recalculating after a pack maps the same screen point to cell 0.
+        ItemConfiguration solution;
+        boolean isDrop = mode == MODE_ON_DROP || mode == MODE_ON_DROP_EXTERNAL;
+        if (isDrop && mPendingDropSolution != null && mPendingDropSolution.isSolution) {
+            solution = mPendingDropSolution;
+        } else if (isDrop && mPreviousSolution != null && mPreviousSolution.isSolution) {
+            solution = mPreviousSolution;
+        } else {
+            solution = calculateInsertSolution(pixelX, dragView, spanX, spanY, mode);
+        }
+        if (mode == MODE_DRAG_OVER) {
+            mPreviousSolution = solution;
+            if (solution != null && solution.isSolution) {
+                mPendingDropSolution = solution;
+            }
+        } else if (isDrop) {
+            mPreviousSolution = null;
+            mPendingDropSolution = null;
+        }
         if (solution == null || !solution.isSolution) {
             result[0] = result[1] = resultSpan[0] = resultSpan[1] = -1;
             return result;
@@ -1388,12 +1809,15 @@ public class Hotseat extends CellLayout implements Insettable {
         // Phantom gap: external drop OR dock-source TypeToIn while under max.
         boolean reserveInsertGap = isNewIcon || mDockSourceDrag;
         int slots;
-        if (mDockSourceDrag && mSessionMetricCount > 0) {
+        if (mSessionMetricCount > 0) {
             slots = Math.min(mSessionMetricCount, max);
         } else {
             slots = reserveInsertGap
                     ? Math.min(icons.size() + 1, max)
                     : Math.min(Math.max(icons.size(), getCountX()), max);
+            if (reserveInsertGap && !mDockSourceDrag) {
+                mSessionMetricCount = slots;
+            }
         }
         if (reserveInsertGap) {
             if (getCountX() != slots || getCountY() != 1) {
@@ -1479,6 +1903,7 @@ public class Hotseat extends CellLayout implements Insettable {
         }
 
         // MODE_ON_DROP / MODE_ON_DROP_EXTERNAL: commit preview gap, do not re-target springs.
+        cancelReorderAnimators();
         ensureNeighborsAtSolutionSeats(solution, dragView);
         commitTempPlacement(dragView);
         completeAndClearReorderPreviewAnimations();
@@ -1487,8 +1912,9 @@ public class Hotseat extends CellLayout implements Insettable {
     }
 
     /**
-     * After drop, keep neighbors on the drag-over insert seats. If a spring is already
-     * running toward that X, leave it; otherwise snap animX to the committed cell.
+     * After drop, bake the drag-over insert map into cellX. Do <b>not</b> call
+     * {@link HotseatSpringMotion#animateAnimXTo} — that retargets right-side icons
+     * that are already on (or springing to) the make-room seat.
      */
     private void ensureNeighborsAtSolutionSeats(ItemConfiguration solution, View dragView) {
         if (solution == null || solution.map == null) {
@@ -1514,22 +1940,23 @@ public class Hotseat extends CellLayout implements Insettable {
             }
             lp.setTmpCellX(c.cellX);
             lp.setTmpCellY(c.cellY);
-            lp.useTmpCoords = true;
+            lp.setCellX(c.cellX);
+            lp.setCellY(c.cellY);
+            lp.useTmpCoords = false;
             lp.isHotseatChild = true;
+            // Keep hover animX when already on the committed seat; otherwise snap.
             int targetX = mSpringMotion.computeTargetX(child);
-            if (mSpringMotion.isChildMoving(child)) {
-                // Already springing toward the gap from drag-over — keep that motion.
-                mSpringMotion.animateAnimXTo(child, targetX);
-            } else if (Math.abs(lp.animX - targetX) > 1) {
-                // Rare: drop without a prior drag-over spring (e.g. quick flick).
-                mSpringMotion.seedAnimFromLayout(child);
-                mSpringMotion.animateAnimXTo(child, targetX);
-            } else {
+            if (Math.abs(lp.animX - targetX) <= 4) {
                 lp.animX = targetX;
                 lp.x = targetX;
-                lp.isLockedToGrid = false;
+            } else {
+                // Do not spring — but do snap to the committed seat (avoid stale animX).
+                lp.animX = targetX;
+                lp.x = targetX;
             }
+            lp.isLockedToGrid = true;
         }
+        dumpSeats("ensureNeighbors:done");
     }
 
     private void animateInsertSpring(ItemConfiguration solution, View dragView,

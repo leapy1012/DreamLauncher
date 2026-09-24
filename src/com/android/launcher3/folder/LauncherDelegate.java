@@ -26,8 +26,10 @@ import androidx.annotation.Nullable;
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DragSource;
 import com.android.launcher3.DropTarget;
+import com.android.launcher3.Hotseat;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAppState;
+import com.android.launcher3.LauncherSettings;
 import com.android.launcher3.celllayout.CellPosMapper;
 import com.android.launcher3.dragndrop.DragOptions;
 import com.android.launcher3.logging.InstanceId;
@@ -103,21 +105,40 @@ public class LauncherDelegate {
                                 info.container, info.screenId, info.cellX, info.cellY);
                     }
 
-                    // Remove the folder
-                    mLauncher.removeItem(folder.mFolderIcon, info, true /* deleteFromDb */,
-                            "folder removed because there's only 1 item in it");
-                    if (folder.mFolderIcon instanceof DropTarget) {
-                        folder.mDragController.removeDropTarget((DropTarget) folder.mFolderIcon);
+                    // Hotseat: removeWorkspaceItem → reflowIcons packs neighbors into the
+                    // folder seat before Notes is re-inserted. Defer pack until after add.
+                    Hotseat hotseat = null;
+                    if (info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT
+                            || info.container
+                            == LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION) {
+                        hotseat = mLauncher.getHotseat();
+                        if (hotseat != null) {
+                            hotseat.beginDeferReflow();
+                        }
                     }
+                    try {
+                        // Remove the folder
+                        mLauncher.removeItem(folder.mFolderIcon, info, true /* deleteFromDb */,
+                                "folder removed because there's only 1 item in it");
+                        if (folder.mFolderIcon instanceof DropTarget) {
+                            folder.mDragController.removeDropTarget(
+                                    (DropTarget) folder.mFolderIcon);
+                        }
 
-                    if (newIcon != null) {
-                        // We add the child after removing the folder to prevent both from existing
-                        // at the same time in the CellLayout.  We need to add the new item with
-                        // addInScreenFromBind() to ensure that hotseat items are placed correctly.
-                        mLauncher.getWorkspace().addInScreenFromBind(newIcon, info);
+                        if (newIcon != null) {
+                            // We add the child after removing the folder to prevent both from
+                            // existing at the same time in the CellLayout.  We need to add the
+                            // new item with addInScreenFromBind() to ensure that hotseat items
+                            // are placed correctly.
+                            mLauncher.getWorkspace().addInScreenFromBind(newIcon, info);
 
-                        // Focus the newly created child
-                        newIcon.requestFocus();
+                            // Focus the newly created child
+                            newIcon.requestFocus();
+                        }
+                    } finally {
+                        if (hotseat != null) {
+                            hotseat.endDeferReflow();
+                        }
                     }
                     if (finalItem != null) {
                         StatsLogger logger = mLauncher.getStatsLogManager().logger()

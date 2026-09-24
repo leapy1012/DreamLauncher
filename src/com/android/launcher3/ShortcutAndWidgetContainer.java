@@ -162,6 +162,24 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
         } else {
             lp.setup(mCellWidth, mCellHeight, invertLayoutHorizontally(), mCountX, mCountY,
                     mBorderSpace);
+            // Hotseat: setup() writes grid x into lp.x. Drawing uses animX (see layoutChild).
+            // Springing / unlocked make-room: keep animX. Locked idle: sync animX ← grid.
+            if (lp.isHotseatChild) {
+                boolean springing = getParent() instanceof Hotseat hotseat
+                        && hotseat.isChildIconSpringMoving(child);
+                boolean holdVisual = getParent() instanceof Hotseat hotseat
+                        && hotseat.shouldHoldVisualSeats();
+                if (springing || holdVisual) {
+                    lp.x = lp.animX;
+                    lp.y = lp.animY;
+                } else if (lp.isLockedToGrid) {
+                    lp.animX = lp.x;
+                    lp.animY = lp.y;
+                } else {
+                    lp.x = lp.animX;
+                    lp.y = lp.animY;
+                }
+            }
             // Center the icon/folder
             int cHeight = getCellContentHeight();
             int cellPaddingY;
@@ -250,9 +268,9 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
 
         int childLeft = lp.x;
         int childTop = lp.y;
-        // Oppo OplusHotseat.isMoving(): draw from animX/animY so springs own the seat.
-        if (lp.isHotseatChild && getParent() instanceof Hotseat hotseat
-                && hotseat.isIconSpringMoving()) {
+        // Oppo OplusHotseat: dock children always draw from animX/animY. Springs update
+        // animX while moving; idle keeps animX synced to grid x (see measureChild).
+        if (lp.isHotseatChild) {
             childLeft = lp.animX;
             childTop = lp.animY;
         }

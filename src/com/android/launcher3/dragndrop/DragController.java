@@ -224,6 +224,16 @@ public abstract class DragController<T extends ActivityContext>
         }
         mIsInPreDrag = false;
         mPreDragOwnedByCurrentPointer = false;
+        // Pre-drag may have hidden DragView content (hasDragOffset). Real drag must
+        // show the floating preview — hotseat source is GONE and only DragView remains.
+        if (mDragObject.dragView != null) {
+            View content = mDragObject.dragView.getContentView();
+            if (content != null) {
+                content.setVisibility(View.VISIBLE);
+            }
+            mDragObject.dragView.setAlpha(1f);
+            mDragObject.dragView.setVisibility(View.VISIBLE);
+        }
         if (mOptions.preDragEndScale != 0) {
             mDragObject.dragView
                     .animate()

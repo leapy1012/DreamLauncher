@@ -264,6 +264,8 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     /** Target icon morphing into folder preview while CREATE_FOLDER is active (Oppo DragOverViewHelper). */
     private View mFolderCreateDragOverView;
     private ValueAnimator mFolderCreateHoverAnimator;
+    /** View whose FastBitmapDrawable is currently driven by {@link #mFolderCreateHoverAnimator}. */
+    private View mFolderCreateHoverAnimTarget;
     private FolderIcon mDragOverFolderIcon = null;
     private boolean mCreateUserFolderOnDrop = false;
     private boolean mAddToExistingFolderOnDrop = false;
@@ -624,6 +626,15 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
         mDragInfo = null;
         mDragSourceInternal = null;
+
+        // Folder-sourced (and other non-Workspace) drags never hit Workspace.onDropCompleted,
+        // so the dock session must end here or TypeToOut / make-room state sticks and
+        // folder-dissolve reflow is skipped while mDragSessionActive remains true.
+        Hotseat hotseat = mLauncher.getHotseat();
+        if (hotseat != null) {
+            hotseat.endDragSession();
+        }
+        mDragViewScaledForHotseat = false;
     }
 
     /**
@@ -1910,11 +1921,15 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         if (child instanceof LargeFolderIcon) {
             ((LargeFolderIcon) child).abortPagingGesture();
         }
-        // Oppo rearranges hide the source immediately. Keeping resizable icons visible
-        // for the resize frame caused a second "ghost" icon beside the DragView when
-        // drag started without a pre-drag phase (callOnDragStart runs before the frame
-        // registers). Always hide here; the resize frame draws its own chrome.
-        child.setVisibility(INVISIBLE);
+        // Oppo keeps the icon under the shortcuts popup until a real drag begins.
+        // Hiding here blanks the hotseat seat while the menu is open. Defer hide when
+        // a BubbleTextView popup pre-drag will run; onDragStart still hides for drag.
+        boolean deferHideForPopup = !options.isAccessibleDrag
+                && child instanceof BubbleTextView
+                && ((BubbleTextView) child).canShowLongPressPopup();
+        if (!deferHideForPopup) {
+            child.setVisibility(INVISIBLE);
+        }
 
         if (options.isAccessibleDrag) {
             mDragController.addDragListener(
@@ -1964,6 +1979,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         if (child instanceof BubbleTextView) {
             BubbleTextView icon = (BubbleTextView) child;
             icon.clearPressedBackground();
+            // Ensure the drag preview captures a real icon (not a transparent
+            // ColorDrawable left from a prior hide).
+            icon.setIconVisible(true);
         }
 
         if (draggableView == null && child instanceof DraggableView) {
@@ -2191,15 +2209,33 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     boolean willCreateUserFolder(ItemInfo info, CellLayout target, int[] targetCell,
                                  float distance, boolean considerTimeout) {
-        if (distance > target.getFolderCreationRadius(targetCell)) return false;
-        View dropOverView = target.getChildAt(targetCell[0], targetCell[1]);
+        View dropOverView;
+        if (target instanceof Hotseat) {
+            dropOverView = ((Hotseat) target).findFolderMergeTarget(
+                    mDragViewVisualCenter[0], mDragViewVisualCenter[1], info);
+            if (dropOverView == null) {
+                return false;
+            }
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) dropOverView.getLayoutParams();
+            if (lp != null && targetCell != null) {
+                targetCell[0] = lp.getCellX();
+                targetCell[1] = lp.getCellY();
+            }
+        } else {
+            if (distance > target.getFolderCreationRadius(targetCell)) return false;
+            dropOverView = target.getChildAt(targetCell[0], targetCell[1]);
+        }
         return willCreateUserFolder(info, dropOverView, considerTimeout);
     }
 
     boolean willCreateUserFolder(ItemInfo info, View dropOverView, boolean considerTimeout) {
         if (dropOverView != null) {
             CellLayoutLayoutParams lp = (CellLayoutLayoutParams) dropOverView.getLayoutParams();
-            if (lp.useTmpCoords && (lp.getTmpCellX() != lp.getCellX()
+            // Hotseat make-room uses tmp coords for insert preview. AOSP rejects folder
+            // create while tmp ≠ cell — that blocked dock folders whenever n < max.
+            boolean hotseatChild = dropOverView.getParent() instanceof View
+                    && ((View) dropOverView.getParent()).getParent() instanceof Hotseat;
+            if (!hotseatChild && lp.useTmpCoords && (lp.getTmpCellX() != lp.getCellX()
                     || lp.getTmpCellY() != lp.getCellY())) {
                 return false;
             }
@@ -2266,8 +2302,24 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     boolean createUserFolderIfNecessary(View newView, int container, CellLayout target,
             int[] targetCell, float distance, boolean external, DragObject d) {
-        if (distance > target.getFolderCreationRadius(targetCell)) return false;
-        View v = target.getChildAt(targetCell[0], targetCell[1]);
+        View v;
+        if (target instanceof Hotseat) {
+            Hotseat hotseat = (Hotseat) target;
+            v = hotseat.findFolderMergeTarget(mDragViewVisualCenter[0], mDragViewVisualCenter[1],
+                    d != null ? d.dragInfo : null);
+            if (v == null) {
+                return false;
+            }
+            hotseat.clearInsertGapForFolderMerge();
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) v.getLayoutParams();
+            if (lp != null) {
+                targetCell[0] = lp.getCellX();
+                targetCell[1] = lp.getCellY();
+            }
+        } else {
+            if (distance > target.getFolderCreationRadius(targetCell)) return false;
+            v = target.getChildAt(targetCell[0], targetCell[1]);
+        }
 
         boolean hasntMoved = false;
         if (mDragInfo != null) {
@@ -2325,6 +2377,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                 fi.addItem(destInfo);
                 fi.addItem(sourceInfo);
             }
+            if (target instanceof Hotseat) {
+                ((Hotseat) target).reflowIcons();
+            }
             return true;
         }
         return false;
@@ -2332,9 +2387,21 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     boolean addToExistingFolderIfNecessary(View newView, CellLayout target, int[] targetCell,
             float distance, DragObject d, boolean external) {
-        if (distance > target.getFolderCreationRadius(targetCell)) return false;
-
-        View dropOverView = target.getChildAt(targetCell[0], targetCell[1]);
+        View dropOverView;
+        if (target instanceof Hotseat) {
+            // Folder icons are not in findFolderMergeTarget (shortcuts only); use cell hit.
+            if (distance > target.getFolderCreationRadius(targetCell)
+                    && mDragMode != DRAG_MODE_ADD_TO_FOLDER) {
+                return false;
+            }
+            dropOverView = target.getChildAt(targetCell[0], targetCell[1]);
+            if (!(dropOverView instanceof FolderIcon) && mDragOverFolderIcon != null) {
+                dropOverView = mDragOverFolderIcon;
+            }
+        } else {
+            if (distance > target.getFolderCreationRadius(targetCell)) return false;
+            dropOverView = target.getChildAt(targetCell[0], targetCell[1]);
+        }
         if (!mAddToExistingFolderOnDrop) return false;
         mAddToExistingFolderOnDrop = false;
 
@@ -2513,6 +2580,16 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                     }
                     mLauncher.getModelWriter().modifyItemInDatabase(info, container, screenId,
                             lp.getCellX(), lp.getCellY(), item.spanX, item.spanY);
+                    // Collapse make-room → idle seats before DragView flies in so the
+                    // land pixel matches endDragSession (no post-drop retarget).
+                    if (hasMovedIntoHotseat) {
+                        Hotseat hotseat = mLauncher.getHotseat();
+                        if (hotseat != null) {
+                            hotseat.prepareFinalDropLanding(cell);
+                            mTargetCell[0] = lp.getCellX();
+                            mTargetCell[1] = lp.getCellY();
+                        }
+                    }
                 } else {
                     if (!returnToOriginalCellToPreventShuffling) {
                         onNoCellFound(dropTargetLayout, d.dragInfo, d.logInstanceId);
@@ -2802,9 +2879,16 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             mFolderCreateDragOverView = null;
             if (previous != null && previous.isAttachedToWindow()) {
                 startFolderCreateHoverAnimator(previous, /* toAccept= */ false);
-            } else if (mFolderCreateHoverAnimator != null) {
-                mFolderCreateHoverAnimator.cancel();
-                mFolderCreateHoverAnimator = null;
+            } else {
+                // Second cleanup (e.g. CREATE_FOLDER → NONE → REORDER in one drag frame)
+                // finds previous already cleared. Bare cancel left mScale at ~0.18.
+                View animTarget = mFolderCreateHoverAnimTarget;
+                if (animTarget != null) {
+                    resetFolderCreateHoverImmediate(animTarget);
+                } else if (mFolderCreateHoverAnimator != null) {
+                    mFolderCreateHoverAnimator.cancel();
+                    mFolderCreateHoverAnimator = null;
+                }
             }
             return;
         }
@@ -2833,6 +2917,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             btv = null;
             icon = null;
         }
+        mFolderCreateHoverAnimTarget = target;
         if (icon == null && btv == null) {
             // Fallback: whole-view morph for non-BTV targets.
             float s = toAccept ? FOLDER_CREATE_HOVER_SCALE : 1f;
@@ -2842,6 +2927,11 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                     .scaleX(s).scaleY(s).alpha(a)
                     .setDuration(FOLDER_CREATE_HOVER_DURATION_MS)
                     .setInterpolator(Interpolators.CREATE_FOLDER_PREVIEW)
+                    .withEndAction(() -> {
+                        if (!toAccept && mFolderCreateHoverAnimTarget == target) {
+                            mFolderCreateHoverAnimTarget = null;
+                        }
+                    })
                     .start();
             return;
         }
@@ -2871,7 +2961,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         final float toTranslateX = toAccept ? acceptTranslateX : 0f;
         final float toTranslateY = toAccept ? acceptTranslateY : 0f;
         final float fromText = btv != null ? btv.getTextAlpha() : 1f;
-        final float toText = toAccept ? 0f : 1f;
+        // Restore to the real label policy (hotseat may hide names when Docked App is off).
+        final float toText = toAccept ? 0f
+                : (btv != null && btv.shouldTextBeVisible() ? 1f : 0f);
 
         ValueAnimator va = ValueAnimator.ofFloat(0f, 1f);
         va.setDuration(FOLDER_CREATE_HOVER_DURATION_MS);
@@ -2891,10 +2983,41 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             }
         });
         va.addListener(new AnimatorListenerAdapter() {
+            private void applyEndState() {
+                if (icon != null) {
+                    icon.mScale = toScale;
+                    icon.mTranslateX = toTranslateX;
+                    icon.mTranslateY = toTranslateY;
+                    if (!toAccept) {
+                        icon.resetScale();
+                    }
+                    icon.invalidateSelf();
+                }
+                if (btv != null) {
+                    if (!toAccept) {
+                        btv.setTextVisibility(btv.shouldTextBeVisible());
+                    } else {
+                        btv.setTextAlpha(toText);
+                    }
+                    btv.invalidate();
+                }
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                // Cancel must land on the intended end — otherwise a second
+                // cleanupFolderCreation() leaves the icon stuck at ~0.18.
+                applyEndState();
+            }
+
             @Override
             public void onAnimationEnd(Animator animation) {
+                applyEndState();
                 if (mFolderCreateHoverAnimator == va) {
                     mFolderCreateHoverAnimator = null;
+                }
+                if (!toAccept && mFolderCreateHoverAnimTarget == target) {
+                    mFolderCreateHoverAnimTarget = null;
                 }
             }
         });
@@ -2903,9 +3026,16 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     }
 
     private void resetFolderCreateHoverImmediate(View target) {
-        if (mFolderCreateHoverAnimator != null) {
-            mFolderCreateHoverAnimator.cancel();
-            mFolderCreateHoverAnimator = null;
+        ValueAnimator running = mFolderCreateHoverAnimator;
+        mFolderCreateHoverAnimator = null;
+        if (running != null) {
+            running.cancel();
+        }
+        if (mFolderCreateHoverAnimTarget == target) {
+            mFolderCreateHoverAnimTarget = null;
+        }
+        if (target == null) {
+            return;
         }
         target.animate().cancel();
         target.setScaleX(1f);
@@ -2915,7 +3045,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         target.setTranslationY(0f);
         if (target instanceof BubbleTextView) {
             BubbleTextView btv = (BubbleTextView) target;
-            btv.setTextAlpha(1f);
+            btv.setTextVisibility(btv.shouldTextBeVisible());
             Drawable d = btv.getIcon();
             if (d instanceof FastBitmapDrawable) {
                 FastBitmapDrawable icon = (FastBitmapDrawable) d;
@@ -3048,12 +3178,17 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         final View child = (mDragInfo == null) ? null : mDragInfo.cell;
 
         // Oppo hotseat: insert-index reorder while over the dock.
-        // Only suppress insert once Workspace has actually entered folder mode
-        // (Oppo canMergeFolder). Do NOT pre-empt with a wide folder radius — that
-        // covered the whole dock and blocked make-room on device.
+        // Suppress insert as soon as the finger is over an icon center (folder-merge
+        // likely) — waiting for DRAG_MODE_CREATE_FOLDER lets make-room spring the
+        // target away first, so folder create fails whenever n < max.
         if (mLauncher.isHotseatLayout(mDragTargetLayout)) {
             Hotseat hotseat = mLauncher.getHotseat();
-            if (mDragMode == DRAG_MODE_CREATE_FOLDER || mDragMode == DRAG_MODE_ADD_TO_FOLDER) {
+            boolean folderMode = mDragMode == DRAG_MODE_CREATE_FOLDER
+                    || mDragMode == DRAG_MODE_ADD_TO_FOLDER;
+            boolean mergeLikely = !folderMode && hotseat != null
+                    && hotseat.isFolderMergeLikely(mDragViewVisualCenter[0],
+                    mDragViewVisualCenter[1], item);
+            if (folderMode || mergeLikely) {
                 if (hotseat != null && !hotseat.isDockSourceDrag()) {
                     hotseat.clearInsertGapForFolderMerge();
                 }
@@ -3117,6 +3252,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         View dragView = d.dragView;
         if (overHotseat) {
             int iconPx = mLauncher.getDeviceProfile().iconSizePx;
+            if (iconPx <= 0) {
+                return;
+            }
             int w = dragView.getMeasuredWidth();
             if (w <= 0) {
                 w = dragView.getWidth();
@@ -3125,8 +3263,9 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                 return;
             }
             // Slightly under dock icon size so the DragView sits in the insert gap
-            // without covering neighbors (v8 overlapped at 1.08x).
-            float target = Math.min(1f, (iconPx * 0.95f) / w);
+            // without covering neighbors (v8 overlapped at 1.08x). Floor so a bad
+            // width measurement cannot shrink the preview to invisible.
+            float target = Math.min(1f, Math.max(0.55f, (iconPx * 0.95f) / w));
             if (!mDragViewScaledForHotseat
                     || Math.abs(dragView.getScaleX() - target) > 0.02f) {
                 mDragViewScaledForHotseat = true;
@@ -3134,12 +3273,20 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                 if (dragView instanceof com.android.launcher3.dragndrop.DragView) {
                     com.android.launcher3.dragndrop.DragView<?> dv =
                             (com.android.launcher3.dragndrop.DragView<?>) dragView;
+                    dv.cancelAnimation();
                     dragView.setPivotX(dv.getRegistrationX());
                     dragView.setPivotY(dv.getRegistrationY());
                 }
                 dragView.animate().cancel();
+                dragView.setAlpha(1f);
                 dragView.animate().scaleX(target).scaleY(target).setDuration(140).start();
-                dragView.setElevation(0f);
+                // Keep drag_elevation — zeroing it let the dock paint over the preview.
+                float elev = mLauncher.getResources()
+                        .getDimension(com.android.launcher3.R.dimen.drag_elevation);
+                dragView.setElevation(elev);
+                if (dragView.getParent() instanceof android.view.ViewGroup parent) {
+                    parent.bringChildToFront(dragView);
+                }
             }
             // Clear any prior Y-lock from older builds.
             lockDragViewToHotseatRow(d, false);
@@ -3150,6 +3297,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
                     ? ((com.android.launcher3.dragndrop.DragView<?>) d.dragView).getEndScale()
                     : 1f;
             dragView.animate().cancel();
+            dragView.setAlpha(1f);
             dragView.animate().scaleX(end).scaleY(end).setDuration(140).start();
         }
     }
@@ -3326,22 +3474,50 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     }
 
     private void manageFolderFeedback(float distance, DragObject dragObject) {
-        if (distance > mDragTargetLayout.getFolderCreationRadius(mTargetCell)) {
-            if ((mDragMode == DRAG_MODE_ADD_TO_FOLDER
-                    || mDragMode == DRAG_MODE_CREATE_FOLDER)) {
-                setDragMode(DRAG_MODE_NONE);
+        final View dragOverView;
+        if (mLauncher.isHotseatLayout(mDragTargetLayout)) {
+            // Make-room vacant cells: getChildAt(mTargetCell) often misses the icon under
+            // the finger when n < max. Resolve by icon center (Oppo canMergeFolder).
+            Hotseat hotseat = mLauncher.getHotseat();
+            View merge = hotseat != null
+                    ? hotseat.findFolderMergeTarget(mDragViewVisualCenter[0],
+                    mDragViewVisualCenter[1], dragObject.dragInfo) : null;
+            if (merge == null) {
+                if (mDragMode == DRAG_MODE_ADD_TO_FOLDER
+                        || mDragMode == DRAG_MODE_CREATE_FOLDER) {
+                    setDragMode(DRAG_MODE_NONE);
+                }
+                return;
             }
-            return;
+            // Collapse insert gap so drop sees a stable seat (and tmpCoords clear).
+            if (hotseat != null && !hotseat.isDockSourceDrag()) {
+                hotseat.clearInsertGapForFolderMerge();
+            }
+            CellLayoutLayoutParams lp = (CellLayoutLayoutParams) merge.getLayoutParams();
+            if (lp != null) {
+                mTargetCell[0] = lp.getCellX();
+                mTargetCell[1] = lp.getCellY();
+            }
+            dragOverView = merge;
+        } else {
+            if (distance > mDragTargetLayout.getFolderCreationRadius(mTargetCell)) {
+                if ((mDragMode == DRAG_MODE_ADD_TO_FOLDER
+                        || mDragMode == DRAG_MODE_CREATE_FOLDER)) {
+                    setDragMode(DRAG_MODE_NONE);
+                }
+                return;
+            }
+            dragOverView = mDragTargetLayout.getChildAt(mTargetCell[0], mTargetCell[1]);
         }
 
-        final View dragOverView = mDragTargetLayout.getChildAt(mTargetCell[0], mTargetCell[1]);
         ItemInfo info = dragObject.dragInfo;
         boolean userFolderPending = willCreateUserFolder(info, dragOverView, false);
         if (mDragMode == DRAG_MODE_NONE && userFolderPending) {
 
             mFolderCreateBg = new PreviewBackground(getContext());
             mFolderCreateBg.setup(mLauncher, mLauncher, null,
-                    dragOverView.getMeasuredWidth(), dragOverView.getMeasuredHeight(), dragOverView.getPaddingTop());
+                    dragOverView.getMeasuredWidth(), dragOverView.getMeasuredHeight(),
+                    dragOverView.getPaddingTop());
 
             // The full preview background should appear behind the icon
             mFolderCreateBg.isClipping = false;
@@ -3615,6 +3791,21 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
             addInScreen(view, container, screenId, mTargetCell[0], mTargetCell[1],
                     info.spanX, info.spanY);
             cellLayout.onDropChild(view);
+            if (mLauncher.isHotseatLayout(cellLayout)) {
+                Hotseat hotseat = mLauncher.getHotseat();
+                if (hotseat != null) {
+                    hotseat.prepareFinalDropLanding(view);
+                    CellLayoutLayoutParams lp =
+                            (CellLayoutLayoutParams) view.getLayoutParams();
+                    if (lp != null) {
+                        mTargetCell[0] = lp.getCellX();
+                        mTargetCell[1] = lp.getCellY();
+                        info.cellX = lp.getCellX();
+                        info.cellY = lp.getCellY();
+                        info.screenId = lp.getCellX();
+                    }
+                }
+            }
             cellLayout.getShortcutsAndWidgets().measureChild(view);
 
             if (d.dragView != null) {

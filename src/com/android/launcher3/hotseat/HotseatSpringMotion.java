@@ -25,6 +25,8 @@ public final class HotseatSpringMotion {
 
     private final Hotseat mHotseat;
     private final ArrayMap<View, COUISpringAnimation> mAnimXSprings = new ArrayMap<>();
+    /** Last spring final requested per child — skip DRAG_OVER noise retargets. */
+    private final ArrayMap<View, Integer> mAnimXFinals = new ArrayMap<>();
     private int mRunningCount;
     private boolean mMoving;
 
@@ -114,7 +116,9 @@ public final class HotseatSpringMotion {
 
     /**
      * Ensure a per-child animX spring exists and retarget it to {@code targetX}.
-     * If already running, only the final position updates (Oppo retarget).
+     * If already running (or settled) within 2px of {@code targetX}, do nothing —
+     * every DRAG_OVER was re-calling this with ±1px noise and that is the visible
+     * right-icon "retarget" shuffle.
      */
     public void animateAnimXTo(View child, int targetX) {
         if (child == null) {
@@ -124,8 +128,26 @@ public final class HotseatSpringMotion {
         if (lp == null) {
             return;
         }
+        Integer prevFinal = mAnimXFinals.get(child);
+        if (prevFinal != null && Math.abs(prevFinal - targetX) <= 2) {
+            // Same seat as last request. Skip only if already settling there or on it —
+            // otherwise a cancelled spring would leave the icon stranded mid-way.
+            if (isChildMoving(child) || Math.abs(lp.animX - targetX) <= 2) {
+                return;
+            }
+        }
+        if (Math.abs(lp.animX - targetX) <= 2 && !isChildMoving(child)) {
+            lp.animX = targetX;
+            lp.x = targetX;
+            lp.isLockedToGrid = true;
+            mAnimXFinals.put(child, targetX);
+            return;
+        }
+
         lp.isHotseatChild = true;
+        lp.isLockedToGrid = false;
         mMoving = true;
+        mAnimXFinals.put(child, targetX);
 
         COUISpringAnimation spring = mAnimXSprings.get(child);
         if (spring == null) {
@@ -166,6 +188,10 @@ public final class HotseatSpringMotion {
             mRunningCount++;
         }
         mHotseat.setHotseatClipEnabled(false);
+        android.util.Log.i("HSDrop", "animateAnimXTo "
+                + (child.getTag() instanceof com.android.launcher3.model.data.ItemInfo info
+                && info.title != null ? info.title : "?")
+                + " from=" + lp.animX + " to=" + targetX);
         spring.animateToFinalPosition(targetX);
     }
 
@@ -178,6 +204,7 @@ public final class HotseatSpringMotion {
             }
         }
         mAnimXSprings.clear();
+        mAnimXFinals.clear();
         mRunningCount = 0;
         mMoving = false;
         mHotseat.onIconSpringsSettled();
@@ -192,6 +219,7 @@ public final class HotseatSpringMotion {
             }
         }
         mAnimXSprings.clear();
+        mAnimXFinals.clear();
         mRunningCount = 0;
         mMoving = false;
         mHotseat.onIconSpringsSettled();
@@ -200,6 +228,7 @@ public final class HotseatSpringMotion {
     /** Drop one child's spring so the next animate starts from a freshly seeded animX. */
     public void clearChild(View child) {
         COUISpringAnimation spring = mAnimXSprings.remove(child);
+        mAnimXFinals.remove(child);
         if (spring != null) {
             if (spring.isRunning()) {
                 spring.cancel();

@@ -837,12 +837,11 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
 
             private void onPreDragStartIcon() {
                 if (mOriginalIcon != null) {
-                    if (mIsAboveIcon) {
-                        mOriginalIcon.setIconVisible(false);
-                        mOriginalIcon.setVisibility(View.VISIBLE);
-                        return;
-                    }
-                    mOriginalIcon.setVisibility(View.INVISIBLE);
+                    // Oppo keeps the long-pressed icon visible under the popup until a
+                    // real drag starts. AOSP hid the drawable (or left INVISIBLE from
+                    // Workspace.startDrag), which made hotseat icons vanish on long-press.
+                    mOriginalIcon.setIconVisible(true);
+                    mOriginalIcon.setVisibility(View.VISIBLE);
                 }
             }
 

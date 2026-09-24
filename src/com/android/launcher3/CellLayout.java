@@ -1234,10 +1234,21 @@ public class CellLayout extends ViewGroup {
                     // Oppo OplusCellLayout.animateChildToPosition: lerp lp.x/y + requestLayout.
                     lp.x = (int) (newX * r + oldX * inv);
                     lp.y = (int) (newY * r + oldY * inv);
+                    // Hotseat draws from animX (see ShortcutAndWidgetContainer.layoutChild).
+                    // Keep animX in sync — otherwise this layout(lp.x) fights COUI springs
+                    // and the rightmost dock icon vanishes for a frame after drop.
+                    int left = lp.x;
+                    int top = lp.y;
+                    if (lp.isHotseatChild) {
+                        lp.animX = lp.x;
+                        lp.animY = lp.y;
+                        left = lp.animX;
+                        top = lp.animY;
+                    }
                     // Position directly without scheduling a full workspace measure/layout on
                     // every frame. Final grid state is reconciled in onAnimationEnd.
-                    child.layout(lp.x, lp.y,
-                            lp.x + child.getMeasuredWidth(), lp.y + child.getMeasuredHeight());
+                    child.layout(left, top,
+                            left + child.getMeasuredWidth(), top + child.getMeasuredHeight());
                 }
             });
             va.addListener(new AnimatorListenerAdapter() {
@@ -2013,6 +2024,17 @@ public class CellLayout extends ViewGroup {
             }
             setItemPlacementDirty(false);
         }
+    }
+
+    /** Cancel in-flight {@link #animateChildToPosition} animators without finishing them. */
+    protected void cancelReorderAnimators() {
+        for (int i = mReorderAnimators.size() - 1; i >= 0; i--) {
+            Animator anim = mReorderAnimators.valueAt(i);
+            if (anim != null) {
+                anim.cancel();
+            }
+        }
+        mReorderAnimators.clear();
     }
 
     boolean createAreaForResize(int cellX, int cellY, int spanX, int spanY,

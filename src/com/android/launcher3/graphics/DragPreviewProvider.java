@@ -20,6 +20,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
@@ -99,9 +100,54 @@ public class DragPreviewProvider {
             height = mView.getHeight();
         }
 
+        // Icons are often HARDWARE bitmaps. Drawing them into a software Canvas
+        // crashes; recording them into a Picture can yield an empty DragView on
+        // some devices (hotseat drag looked like a missing floating icon). Copy
+        // to ARGB_8888 and compose the preview explicitly when possible.
+        Bitmap softwarePreview = createSoftwareIconPreview(width, height, scale);
+        if (softwarePreview != null) {
+            return new FastBitmapDrawable(softwarePreview);
+        }
+
         return new FastBitmapDrawable(
                 BitmapRenderer.createHardwareBitmap(width + blurSizeOutline,
                         height + blurSizeOutline, (c) -> drawDragView(c, scale)));
+    }
+
+    @Nullable
+    private Bitmap createSoftwareIconPreview(int width, int height, float scale) {
+        if (!(mView instanceof com.android.launcher3.BubbleTextView)
+                || width <= 0 || height <= 0) {
+            return null;
+        }
+        Drawable icon = ((com.android.launcher3.BubbleTextView) mView).getIcon();
+        if (!(icon instanceof FastBitmapDrawable)) {
+            return null;
+        }
+        Bitmap src = ((FastBitmapDrawable) icon).getBitmap();
+        if (src == null || src.isRecycled()) {
+            return null;
+        }
+        Bitmap soft = src;
+        if (src.getConfig() == Bitmap.Config.HARDWARE) {
+            soft = src.copy(Bitmap.Config.ARGB_8888, false);
+            if (soft == null) {
+                return null;
+            }
+        }
+        Bitmap out = Bitmap.createBitmap(width + blurSizeOutline, height + blurSizeOutline,
+                Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(out);
+        int save = canvas.save();
+        canvas.scale(scale, scale);
+        float pad = blurSizeOutline / 2f;
+        RectF dst = new RectF(pad, pad, pad + width, pad + height);
+        canvas.drawBitmap(soft, null, dst, null);
+        canvas.restoreToCount(save);
+        if (soft != src) {
+            soft.recycle();
+        }
+        return out;
     }
 
     /**

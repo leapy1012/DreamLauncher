@@ -105,6 +105,11 @@ public class FastBitmapDrawable extends Drawable implements Drawable.Callback {
         setFilterBitmap(true);
     }
 
+    /** Underlying icon bitmap (may be {@link Bitmap.Config#HARDWARE}). */
+    public Bitmap getBitmap() {
+        return mBitmap;
+    }
+
     @Override
     protected void onBoundsChange(Rect bounds) {
         super.onBoundsChange(bounds);
