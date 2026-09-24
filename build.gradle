@@ -258,13 +258,27 @@ def applyReorderRule(Project project) {
                 task.classpath = reorderClasspath(task.classpath.files)
             }
         }
+        // Kotlin: framework.jar must precede android.jar (same as Java)
+        project.tasks.matching { it.name.matches(/compile.*Kotlin/) }.configureEach { task ->
+            task.doFirst {
+                if (task.hasProperty('libraries')) {
+                    task.libraries.setFrom(reorderClasspath(task.libraries.files))
+                } else if (task.hasProperty('classpath')) {
+                    task.classpath = reorderClasspath(task.classpath.files)
+                }
+            }
+        }
     }
 }
 
 def reorderClasspath(Set<File> classpathSet) {
-    def androidJar = classpathSet.find { it.name == "android.jar" }
-    def others = classpathSet - (androidJar ? [androidJar] : [])
-    return files((others + (androidJar ?: [])).toArray())
+    // Hidden APIs live in libs/framework.jar; public android.jar must come last so
+    // framework types (UserHandle.getIdentifier, etc.) win for both javac and kotlinc.
+    def list = classpathSet as List
+    def framework = list.findAll { it.name == 'framework.jar' || it.path.contains("${File.separator}libs${File.separator}framework.jar") }
+    def androidJar = list.findAll { it.name == 'android.jar' }
+    def others = list.findAll { f -> !(framework.contains(f) || androidJar.contains(f)) }
+    return files((framework + others + androidJar).toArray())
 }
 
 def applyDefaultConfig(Project project) {

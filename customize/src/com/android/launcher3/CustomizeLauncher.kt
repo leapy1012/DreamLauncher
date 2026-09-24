@@ -24,7 +24,12 @@ class CustomizeLauncher : QuickstepLauncher() {
         OverlayManagerImpl(this)
     }
 
-    /** Remote Quick Glance owns the slide; do not translate DragLayer (icon shake). */
+    /**
+     * Oppo does NOT slide/fade DragLayer for Assist (setOverlayTranslation is
+     * storage-only). Keep icons on-screen so [OverlayHomeEffect] frost can cover
+     * them. DragLayer scale is also left at 1.0 (Oppo only scales when overlay
+     * blur is available).
+     */
     override fun shouldTranslateDragLayerForOverlay(): Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -7,11 +7,15 @@ import com.android.launcher3.views.BaseDragLayer
 import kotlin.math.pow
 
 /**
- * ColorOS-style home frost while Quick Glance scrolls.
+ * Home effect while Quick Glance scrolls.
  *
- * Do **not** translate/scale Workspace or Hotseat on the progress hot path — that fights
- * the remote overlay panel (and AIDL round-trip echo) and shakes every icon.
- * Dim only via DragLayer foreground.
+ * Oppo [OverlayAnimManager] only creates the DragLayer scale anim when
+ * workspace overlay blur is available; otherwise scale stays at 1.0. We do not
+ * have that blur path, so scaling DragLayer left a visible "scaled icons vs
+ * full-bleed wallpaper" frame. Keep frost only; no scale.
+ *
+ * Home slide translation stays disabled
+ * ([CustomizeLauncher.shouldTranslateDragLayerForOverlay] = false).
  */
 class OverlayHomeEffect(private val launcher: CustomizeLauncher) {
 
@@ -26,7 +30,12 @@ class OverlayHomeEffect(private val launcher: CustomizeLauncher) {
         val dragLayer = launcher.dragLayer as? BaseDragLayer<*> ?: return
         ensureFrost(dragLayer)
 
-        val frost = p.toDouble().pow(1.1).toFloat()
+        // Match Oppo non-blur path: leave DragLayer at identity scale.
+        dragLayer.scaleX = 1f
+        dragLayer.scaleY = 1f
+
+        // Translucent sheet over still-visible icons (gesture-reactive).
+        val frost = p.toDouble().pow(0.9).toFloat()
         dragFrost?.alpha = (frost * SCRIM_MAX_ALPHA * 255f).toInt().coerceIn(0, 255)
 
         if (p <= 0f) {
@@ -37,8 +46,12 @@ class OverlayHomeEffect(private val launcher: CustomizeLauncher) {
     fun reset() {
         lastProgress = -1f
         val dragLayer = launcher.dragLayer as? BaseDragLayer<*>
-        if (dragLayer != null && dragLayer.foreground === dragFrost) {
-            dragLayer.foreground = null
+        if (dragLayer != null) {
+            dragLayer.scaleX = 1f
+            dragLayer.scaleY = 1f
+            if (dragLayer.foreground === dragFrost) {
+                dragLayer.foreground = null
+            }
         }
         dragFrost = null
     }
@@ -53,7 +66,8 @@ class OverlayHomeEffect(private val launcher: CustomizeLauncher) {
     private fun absEq(a: Float, b: Float): Boolean = kotlin.math.abs(a - b) < 0.001f
 
     companion object {
-        private const val SCRIM_MAX_ALPHA = 0.55f
-        private val SCRIM_COLOR = Color.rgb(12, 16, 30)
+        /** Matches Oppo mid-swipe light-blue sheet over home icons. */
+        private const val SCRIM_MAX_ALPHA = 0.42f
+        private val SCRIM_COLOR = Color.rgb(0x83, 0x97, 0xCC)
     }
 }

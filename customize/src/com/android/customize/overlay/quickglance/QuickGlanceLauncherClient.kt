@@ -36,14 +36,21 @@ class QuickGlanceLauncherClient(
     private val mainHandler = Handler(Looper.getMainLooper())
     private var overlay: ILauncherOverlay? = null
     private var bound = false
+    /** True after bindService until connected/disconnected — avoids duplicate binds. */
+    private var binding = false
     private var destroyed = false
     private var layoutParams: WindowManager.LayoutParams? = null
     private var activityState = 0
     private var reconnectAttempt = 0
+    private var deathRecipient: IBinder.DeathRecipient? = null
 
     /** Last-wins scroll progress waiting for the next main-looper flush. */
     private var pendingScrollProgress = Float.NaN
     private var scrollFlushPosted = false
+
+    /** Binder is up (may still be waiting on windowAttached2 STATUS_CONNECTED). */
+    val isBound: Boolean
+        get() = bound && overlay != null
 
     private val reconnectRunnable = Runnable {
         if (!destroyed && !bound) connect()
@@ -80,38 +87,54 @@ class QuickGlanceLauncherClient(
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             Log.i(TAG, "onServiceConnected $name")
+            unlinkDeath()
             overlay = ILauncherOverlay.Stub.asInterface(service)
             bound = true
+            binding = false
             reconnectAttempt = 0
             mainHandler.removeCallbacks(reconnectRunnable)
-            // Enable scroll immediately; windowAttached may still be in flight.
-            listener.onServiceStateChanged(true)
+            linkDeath(service)
+            // Do not report connected until windowAttached2 succeeds — otherwise
+            // Workspace drives scroll with no surface and swipe-right looks dead.
             exchangeConfig()
             syncActivityState()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             Log.w(TAG, "onServiceDisconnected $name")
-            overlay = null
+            handleBinderGone()
+        }
+
+        override fun onBindingDied(name: ComponentName?) {
+            Log.w(TAG, "onBindingDied $name")
+            handleBinderGone()
+        }
+
+        override fun onNullBinding(name: ComponentName?) {
+            Log.w(TAG, "onNullBinding $name")
+            binding = false
             bound = false
+            overlay = null
             listener.onServiceStateChanged(false)
+            wakeOverlayPackage()
             scheduleReconnect()
         }
     }
 
     fun connect() {
-        if (destroyed || bound) return
+        if (destroyed || bound || binding) return
         if (!isPackageAvailable(activity)) {
             Log.w(TAG, "Quick Glance package missing: ${QuickGlanceContract.PACKAGE}")
             listener.onServiceStateChanged(false)
             scheduleReconnect()
             return
         }
-        wakeStoppedPackage()
-        val intent = Intent(QuickGlanceContract.ACTION_WINDOW_SERVER).setPackage(
-            QuickGlanceContract.PACKAGE,
-        )
+        val intent = Intent(QuickGlanceContract.ACTION_WINDOW_SERVER)
+            .setPackage(QuickGlanceContract.PACKAGE)
+            // Cleared STOPPED packages so bind works after force-stop / reboot.
+            .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
         try {
+            binding = true
             val ok = activity.bindService(
                 intent,
                 connection,
@@ -119,19 +142,28 @@ class QuickGlanceLauncherClient(
             )
             Log.i(TAG, "bindService=$ok attempt=$reconnectAttempt")
             if (!ok) {
+                binding = false
                 listener.onServiceStateChanged(false)
+                wakeOverlayPackage()
                 scheduleReconnect()
             }
         } catch (e: Exception) {
+            binding = false
             Log.e(TAG, "bindService failed", e)
             listener.onServiceStateChanged(false)
+            wakeOverlayPackage()
             scheduleReconnect()
         }
     }
 
     /** Re-bind if cold-start / STOPPED package left us disconnected (e.g. after reboot). */
     fun ensureConnected() {
-        if (destroyed || bound) return
+        if (destroyed) return
+        if (bound && overlay != null) {
+            // Binder up but window may be gone — re-push token.
+            exchangeConfig()
+            return
+        }
         connect()
     }
 
@@ -141,7 +173,7 @@ class QuickGlanceLauncherClient(
         mainHandler.removeCallbacks(flushScrollRunnable)
         pendingScrollProgress = Float.NaN
         scrollFlushPosted = false
-        // Only clear our queued runnables — do not wipe unrelated main-handler work.
+        unlinkDeath()
         try {
             overlay?.windowDetached(false)
             overlay?.onDestroy()
@@ -155,6 +187,7 @@ class QuickGlanceLauncherClient(
         }
         overlay = null
         bound = false
+        binding = false
         listener.onServiceStateChanged(false)
     }
 
@@ -185,6 +218,16 @@ class QuickGlanceLauncherClient(
      */
     fun setScroll(progress: Float) {
         pendingScrollProgress = progress.coerceIn(0f, 1f)
+        // Flush immediately when already on main — cuts one frame of AIDL lag on
+        // rapid reverse. Otherwise coalesce to next looper pass.
+        if (Looper.myLooper() == mainHandler.looper) {
+            if (scrollFlushPosted) {
+                mainHandler.removeCallbacks(flushScrollRunnable)
+                scrollFlushPosted = false
+            }
+            flushPendingScroll()
+            return
+        }
         if (scrollFlushPosted) return
         scrollFlushPosted = true
         mainHandler.post(flushScrollRunnable)
@@ -235,6 +278,9 @@ class QuickGlanceLauncherClient(
     fun onResume() {
         activityState = activityState or STATE_RESUMED
         ensureConnected()
+        // Re-send layout token — after process death / BadToken the binder can
+        // stay up while the overlay window is gone (mNumWindow=0).
+        exchangeConfig()
         try {
             overlay?.onResume()
         } catch (_: RemoteException) {
@@ -260,25 +306,75 @@ class QuickGlanceLauncherClient(
     private fun scheduleReconnect() {
         if (destroyed || bound) return
         mainHandler.removeCallbacks(reconnectRunnable)
-        val delay = RECONNECT_DELAY_MS * (1L shl reconnectAttempt.coerceAtMost(4))
+        // First retries are fast — first swipe after relaunch must recover quickly.
+        val delay = when (reconnectAttempt) {
+            0 -> 200L
+            1 -> 500L
+            2 -> 1000L
+            else -> RECONNECT_DELAY_MS * (1L shl (reconnectAttempt - 2).coerceAtMost(3))
+        }
         reconnectAttempt++
         Log.i(TAG, "scheduleReconnect in ${delay}ms attempt=$reconnectAttempt")
         mainHandler.postDelayed(reconnectRunnable, delay)
     }
 
-    /**
-     * Force-stop / never-launched packages stay STOPPED across reboot; bindService then
-     * returns false. An explicit start with INCLUDE_STOPPED_PACKAGES clears that for
-     * privileged system clients so the subsequent bind can succeed.
-     */
-    private fun wakeStoppedPackage() {
+    private fun handleBinderGone() {
+        unlinkDeath()
+        overlay = null
+        bound = false
+        binding = false
+        listener.onServiceStateChanged(false)
+        scheduleReconnect()
+    }
+
+    private fun linkDeath(service: IBinder?) {
+        if (service == null) return
+        val recipient = IBinder.DeathRecipient {
+            Log.w(TAG, "binder died")
+            mainHandler.post { handleBinderGone() }
+        }
         try {
-            val wake = Intent(QuickGlanceContract.ACTION_WINDOW_SERVER)
-                .setPackage(QuickGlanceContract.PACKAGE)
-                .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-            activity.startService(wake)
+            service.linkToDeath(recipient, 0)
+            deathRecipient = recipient
+        } catch (e: RemoteException) {
+            Log.w(TAG, "linkToDeath failed", e)
+            handleBinderGone()
+        }
+    }
+
+    private fun unlinkDeath() {
+        val recipient = deathRecipient ?: return
+        deathRecipient = null
+        try {
+            overlay?.asBinder()?.unlinkToDeath(recipient, 0)
+        } catch (_: Exception) {
+        }
+    }
+
+    /**
+     * Un-STOP the Quick Glance package after force-stop/reboot so bindService can succeed.
+     * Uses a quiet activity start (exclude from recents) — bind alone is not enough when
+     * the package is in the stopped state on some OEM builds.
+     */
+    private fun wakeOverlayPackage() {
+        if (!isPackageAvailable(activity)) return
+        try {
+            val launch = Intent()
+                .setClassName(
+                    QuickGlanceContract.PACKAGE,
+                    "${QuickGlanceContract.PACKAGE}.HiboardActivity",
+                )
+                .putExtra("gd.app.hiboard.extra.WAKE_ONLY", true)
+                .addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+                        or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+                        or Intent.FLAG_ACTIVITY_NO_ANIMATION
+                        or Intent.FLAG_INCLUDE_STOPPED_PACKAGES,
+                )
+            activity.applicationContext.startActivity(launch)
+            Log.i(TAG, "wakeOverlayPackage: started HiboardActivity (wake-only)")
         } catch (e: Exception) {
-            Log.w(TAG, "wakeStoppedPackage", e)
+            Log.w(TAG, "wakeOverlayPackage failed", e)
         }
     }
 
@@ -300,6 +396,8 @@ class QuickGlanceLauncherClient(
             o.windowAttached2(bundle, callback)
         } catch (e: RemoteException) {
             Log.w(TAG, "windowAttached2 failed", e)
+            // Dead binder: don't leave connected=true with a stale overlay.
+            handleBinderGone()
         }
     }
 

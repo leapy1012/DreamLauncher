@@ -6,7 +6,6 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.VelocityTracker
 import android.view.View
-import android.view.ViewConfiguration
 import com.android.customize.overlay.OverlayBase
 import com.android.launcher3.DropTarget.DragObject
 import com.android.launcher3.pageindicators.PageIndicator
@@ -15,18 +14,26 @@ import com.android.launcher3.util.EdgeEffectCompat
 import com.android.systemui.plugins.shared.LauncherOverlayManager.LauncherOverlay
 import kotlin.math.abs
 
+/**
+ * Oppo [OplusWorkspace.overScroll] — pure amount/width pipeline:
+ * - progress = |unbounded overscroll| / width (no EdgeEffect, no finger-Δx, no seed)
+ * - onScrollChange every eligible frame (not gated on session begin — Oppo 5112-5113)
+ * - Session begin only: interactionBegan + scroller idle (Oppo isFinished)
+ * - Gate overlay while page springing only (Oppo isSpringing ≈ isPageSpringing)
+ * - z6: leave overscroll zone with prior progress → force 0
+ * - Home frost/scale from overlayScrollChanged (no DragLayer slide+fade)
+ */
 class CustomizeWorkspace<T> @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : Workspace<T>(context, attrs, defStyleAttr) where T : View, T : PageIndicator {
 
-    private var overlayScrollActive = false
+    /** Oppo mStartedSendingScrollEvents */
+    private var startedSendingScrollEvents = false
+    /** Oppo mScrollInteractionBegan */
+    private var scrollInteractionBegan = false
     private var lastOverlayProgress = 0f
-    /** Overlay open velocity (px/s); positive = opening. */
-    private var overlayVelocityPx = 0f
     private var overlayRtl = false
     private var velocityTracker: VelocityTracker? = null
-    private val minFlingVelocity =
-        ViewConfiguration.get(context).scaledMinimumFlingVelocity.toFloat()
 
     override fun onOverlayScrollChanged(scroll: Float) {
         super.onOverlayScrollChanged(scroll)
@@ -36,6 +43,9 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
             for (i in 0 until count) {
                 mOverlayCallbacks[i].onOverlayScrollChanged(mOverlayProgress)
             }
+        }
+        if (!startedSendingScrollEvents) {
+            lastOverlayProgress = abs(mOverlayProgress)
         }
     }
 
@@ -63,17 +73,8 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
         onOverlayScrollChanged(0f)
     }
 
-    /**
-     * ColorOS rubber-band overscroll is the only overlay driver.
-     * Returning false prevents OverlayEdgeEffect from also firing on the same gesture
-     * (double begin/scroll/end was the main swipe stutter).
-     */
     override fun shouldPullEdgeGlow(): Boolean = false
 
-    /**
-     * ColorOS Workspace uses rubber-band [scrollTo] instead of EdgeEffect for overscroll.
-     * Drive the installed [LauncherOverlay] from that path so Quick Glance opens on swipe.
-     */
     override fun scrollTo(x: Int, y: Int) {
         super.scrollTo(x, y)
         driveOverlayFromOverscroll()
@@ -84,6 +85,8 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
             MotionEvent.ACTION_DOWN -> {
                 velocityTracker?.recycle()
                 velocityTracker = VelocityTracker.obtain().also { it.addMovement(ev) }
+                // Oppo onScrollInteractionBegin sets mScrollInteractionBegan.
+                scrollInteractionBegan = true
             }
             MotionEvent.ACTION_MOVE -> velocityTracker?.addMovement(ev)
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -95,10 +98,9 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
 
     override fun onTouchEvent(ev: MotionEvent): Boolean {
         when (ev.actionMasked) {
-            // End overlay before Workspace processes UP so post-UP rubber-band scrollTo
-            // cannot start a new overlay interaction in the same gesture.
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 endOverlayScrollIfNeeded()
+                scrollInteractionBegan = false
                 velocityTracker?.recycle()
                 velocityTracker = null
             }
@@ -106,27 +108,73 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
         return super.onTouchEvent(ev)
     }
 
+    /**
+     * Oppo gates with OverScroller.isSpringing() only — page snap spring.
+     * Do not treat residual COUI settle as springing; that deadens reverse swipes.
+     */
+    private fun isScrollerSpringing(): Boolean = mScroller.isPageSpringing()
+
+    /**
+     * Oppo [OplusWorkspace.overScroll].
+     */
     private fun driveOverlayFromOverscroll() {
         if (mOverlayEdgeEffect == null) return
-        // Only drive while the finger is down. After UP, Workspace rubber-band settle
-        // still calls scrollTo; starting a new overlay interaction there cancels DQG's
-        // open settle animator and leaves a full-screen touchable ghost window.
-        if (!isHandlingTouch()) return
+
         val size = mOrientationHandler.getMeasuredSize(this).toFloat().coerceAtLeast(1f)
-        val unbounded = getUnboundedScrollForOverlay()
+        val unbounded = mUnboundedScroll
         val overLeft = (mMinScroll - unbounded).toFloat()
         val overRight = (unbounded - mMaxScroll).toFloat()
+        val pastMinus = if (!mIsRtl) overLeft > 0.5f else overRight > 0.5f
+        val pastPlus = if (!mIsRtl) overRight > 0.5f else overLeft > 0.5f
+        val minusAmount = if (!mIsRtl) overLeft else overRight
 
-        when {
-            overLeft > 0.5f && !mIsRtl ->
-                dispatchOverlayProgress(overLeft / size, rtl = false)
-            overRight > 0.5f && !mIsRtl ->
-                dispatchOverlayProgress(overRight / size, rtl = true)
-            overRight > 0.5f && mIsRtl ->
-                dispatchOverlayProgress(overRight / size, rtl = false)
-            overLeft > 0.5f && mIsRtl ->
-                dispatchOverlayProgress(overLeft / size, rtl = true)
+        // Oppo shouldScrollOverlay
+        val shouldScrollOverlay = pastMinus && !isScrollerSpringing() &&
+            mLauncher.stateManager.isInStableState(LauncherState.NORMAL)
+
+        // Oppo z6: left overscroll zone exited while we still had glance progress.
+        val z6 = lastOverlayProgress > SHOWING_EPSILON && !pastMinus &&
+            lastOverlayProgress > 0f && !overlayRtl
+
+        if (shouldScrollOverlay) {
+            maybeBeginScrollSession()
+            // Oppo: always emit amount/width while eligible — not gated on begin.
+            dispatchOverlayProgress((minusAmount / size).coerceIn(0f, 1f), rtl = false)
+        } else if (pastPlus && !isScrollerSpringing() &&
+            mLauncher.stateManager.isInStableState(LauncherState.NORMAL)
+        ) {
+            val plusAmount = if (!mIsRtl) overRight else overLeft
+            maybeBeginScrollSession()
+            dispatchOverlayProgress((plusAmount / size).coerceIn(0f, 1f), rtl = true)
         }
+
+        if (z6) {
+            lastOverlayProgress = 0f
+            dispatchOverlayProgress(0f, rtl = false)
+        }
+    }
+
+    /**
+     * Oppo: only start AIDL session when interaction began / being dragged,
+     * scroller finished, not icon-dragging, translationY stable.
+     */
+    private fun maybeBeginScrollSession() {
+        if (startedSendingScrollEvents) return
+        if (!(scrollInteractionBegan || isHandlingTouch())) return
+        if (mLauncher.dragController.isDragging) {
+            scrollInteractionBegan = false
+            return
+        }
+        // Oppo: mScroller.isFinished()
+        if (!mScroller.isCOUIFinished()) return
+        if (abs(translationY) > 0.5f) return
+
+        Log.i(TAG, "overlay scroll begin")
+        val edge = (mEdgeGlowLeft as? CustomizeOverlayEdgeEffect)
+            ?: (mEdgeGlowRight as? CustomizeOverlayEdgeEffect)
+            ?: return
+        edge.launcherOverlay.onScrollInteractionBegin()
+        startedSendingScrollEvents = true
     }
 
     private fun dispatchOverlayProgress(rawProgress: Float, rtl: Boolean) {
@@ -136,52 +184,56 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
         } else {
             mEdgeGlowLeft as? CustomizeOverlayEdgeEffect
         } ?: return
-        val overlay = edge.launcherOverlay
-        if (!overlayScrollActive) {
-            Log.i(TAG, "overlay scroll begin progress=$progress rtl=$rtl")
-            overlay.onScrollInteractionBegin()
-            overlayScrollActive = true
-            overlayVelocityPx = 0f
-        }
         overlayRtl = rtl
-        if (abs(progress - lastOverlayProgress) > 0.01f || progress >= 0.99f) {
-            lastOverlayProgress = progress
-            overlay.onScrollChange(progress, rtl)
+        lastOverlayProgress = progress
+        // Oppo 5112-5113: every eligible frame → onScrollChange (session optional).
+        edge.launcherOverlay.onScrollChange(progress, rtl)
+        // Drive home frost/scale immediately (Oppo OverlayAnimManager). Remote
+        // overlayScrollChanged will echo the same progress during settle.
+        if (!rtl) {
+            onOverlayScrollChanged(progress)
         }
     }
 
     private fun computeOverlayFlingVelocity(): Float {
         val tracker = velocityTracker ?: return 0f
         tracker.computeCurrentVelocity(1000)
-        // Minus-side open: finger moves right (positive X). Plus-side: left (negative X).
         val vx = tracker.xVelocity
-        val opening = if (overlayRtl) -vx else vx
-        return if (abs(opening) >= minFlingVelocity) opening else 0f
+        // Always forward signed open-direction velocity. Zeroing below
+        // minFlingVelocity made quick flicks settle late/wrong on the remote.
+        return if (!overlayRtl) vx else -vx
     }
 
     private fun endOverlayScrollIfNeeded() {
-        if (!overlayScrollActive) return
+        if (!startedSendingScrollEvents) {
+            // Oppo may have streamed onScrollChange without begin; still end if we
+            // marked a session via progress-only path on the remote (auto-start).
+            if (lastOverlayProgress <= SHOWING_EPSILON) return
+            val edge = (mEdgeGlowLeft as? CustomizeOverlayEdgeEffect)
+                ?: (mEdgeGlowRight as? CustomizeOverlayEdgeEffect)
+                ?: return
+            // Ensure begin+end pair so QG can settle.
+            edge.launcherOverlay.onScrollInteractionBegin()
+            startedSendingScrollEvents = true
+        }
         val edge = (mEdgeGlowLeft as? CustomizeOverlayEdgeEffect)
             ?: (mEdgeGlowRight as? CustomizeOverlayEdgeEffect)
             ?: return
         val overlay = edge.launcherOverlay
         val velocity = computeOverlayFlingVelocity()
-        overlayVelocityPx = velocity
         Log.i(TAG, "overlay scroll end last=$lastOverlayProgress v=$velocity")
         if (overlay is OverlayBase) {
             overlay.onScrollInteractionEndWithVelocity(velocity)
         } else {
             overlay.onScrollInteractionEnd()
         }
-        overlayScrollActive = false
-        lastOverlayProgress = 0f
-        overlayVelocityPx = 0f
+        startedSendingScrollEvents = false
+        scrollInteractionBegan = false
     }
-
-    private fun getUnboundedScrollForOverlay(): Int = mUnboundedScroll
 
     companion object {
         private const val TAG = "CustomizeWorkspace"
+        private const val SHOWING_EPSILON = 0.02f
     }
 }
 

@@ -4154,10 +4154,17 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
 
     @Override
     protected boolean shouldPullEdgeGlow() {
-        // When a LauncherOverlay is installed (Quick Glance / plus), use OverlayEdgeEffect so
-        // page-0 right-swipe drives ILauncherOverlay scroll. Without an overlay, keep ColorOS
-        // rubber-band overscroll (no EdgeEffect glow).
-        return mOverlayEdgeEffect != null;
+        // Oppo: overlay progress is driven from unbounded overScroll amount / width, never from
+        // EdgeEffect.onPull. Without an overlay, keep rubber-band overscroll (no glow).
+        return false;
+    }
+
+    /**
+     * @deprecated Oppo does not seed unbounded from overlay progress; removed.
+     * Kept as no-op so any stale call sites compile.
+     */
+    protected void seedOverlayUnboundedScroll(float progress) {
+        // no-op — pure overScroll amount/width only
     }
 
     /**
