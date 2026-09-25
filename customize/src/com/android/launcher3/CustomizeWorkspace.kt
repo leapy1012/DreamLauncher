@@ -139,13 +139,14 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
         if (shouldScrollOverlay) {
             maybeBeginScrollSession()
             // Oppo: always emit amount/width while eligible — not gated on begin.
-            dispatchOverlayProgress((minusAmount / size).coerceIn(0f, 1f), rtl = false)
+            // Do not clamp to 1: Assist rubber-bands past full open (OplusWorkspace).
+            dispatchOverlayProgress(minusAmount / size, rtl = false)
         } else if (pastPlus && !isScrollerSpringing() &&
             mLauncher.stateManager.isInStableState(LauncherState.NORMAL)
         ) {
             val plusAmount = if (!mIsRtl) overRight else overLeft
             maybeBeginScrollSession()
-            dispatchOverlayProgress((plusAmount / size).coerceIn(0f, 1f), rtl = true)
+            dispatchOverlayProgress(plusAmount / size, rtl = true)
         }
 
         if (z6) {
@@ -178,7 +179,8 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
     }
 
     private fun dispatchOverlayProgress(rawProgress: Float, rtl: Boolean) {
-        val progress = rawProgress.coerceIn(0f, 1f)
+        // Oppo: no upper clamp — |amount|/width may exceed 1 during open overscroll.
+        val progress = rawProgress.coerceAtLeast(0f)
         val edge = if (rtl) {
             mEdgeGlowRight as? CustomizeOverlayEdgeEffect
         } else {
@@ -188,10 +190,9 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
         lastOverlayProgress = progress
         // Oppo 5112-5113: every eligible frame → onScrollChange (session optional).
         edge.launcherOverlay.onScrollChange(progress, rtl)
-        // Drive home frost/scale immediately (Oppo OverlayAnimManager). Remote
-        // overlayScrollChanged will echo the same progress during settle.
+        // Drive home frost immediately (Oppo OverlayAnimManager). Frost uses [0,1].
         if (!rtl) {
-            onOverlayScrollChanged(progress)
+            onOverlayScrollChanged(progress.coerceAtMost(1f))
         }
     }
 

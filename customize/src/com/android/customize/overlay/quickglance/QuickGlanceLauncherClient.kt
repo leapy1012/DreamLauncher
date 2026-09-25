@@ -217,7 +217,8 @@ class QuickGlanceLauncherClient(
      * Touch / rubber-band can fire faster than AIDL round-trips; last-wins.
      */
     fun setScroll(progress: Float) {
-        pendingScrollProgress = progress.coerceIn(0f, 1f)
+        // Oppo LauncherClient: pass through (may be > 1 for open rubber-band).
+        pendingScrollProgress = progress.coerceAtLeast(0f)
         // Flush immediately when already on main — cuts one frame of AIDL lag on
         // rapid reverse. Otherwise coalesce to next looper pass.
         if (Looper.myLooper() == mainHandler.looper) {
