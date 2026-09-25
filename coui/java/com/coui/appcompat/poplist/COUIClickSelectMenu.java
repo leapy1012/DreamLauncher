@@ -56,21 +56,32 @@ public class COUIClickSelectMenu {
     }
 
     public void registerForClickSelectItems(View view, ArrayList<PopupListItem> items) {
-        if (items.size() <= 0) {
+        if (items == null || items.size() <= 0) {
+            // Leapy modified: Empty bind must clear any prior PreciseClickHelper.
+            // Otherwise a recycled row keeps the previous preference's popup (e.g.
+            // FF/rewind 5s–60s showing on ReplayGain after scroll).
+            if (mHelper != null) {
+                mHelper.unSet();
+                mHelper = null;
+            }
             return;
         }
         mPopup.setItemList(items);
         view.setClickable(true);
         view.setLongClickable(true);
         mPopup.setAnchorView(view);
-        if (mHelper == null || mHelper.getTargetView() != view) {
-            mHelper = new PreciseClickHelper(view, new ClickListener());
-            if (mEnable) {
-                mHelper.setup();
-            }
-        } else {
-            Log.w(TAG, "ItemView is same, no need to create PreciseClickHelper");
+        if (mHelper != null && mHelper.getTargetView() != view) {
+            mHelper.unSet();
+            mHelper = null;
         }
+        if (mHelper == null) {
+            mHelper = new PreciseClickHelper(view, new ClickListener());
+        }
+        // Always re-setup: Preference rebinds / sibling prefs can steal OnClickListener.
+        if (mEnable) {
+            mHelper.setup();
+        }
+        // Leapy end
     }
 
     @Deprecated

@@ -31,6 +31,8 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
     private var startedSendingScrollEvents = false
     /** Oppo mScrollInteractionBegan */
     private var scrollInteractionBegan = false
+    /** True if this finger gesture actually dispatched overlay progress. */
+    private var dispatchedOverlayThisGesture = false
     private var lastOverlayProgress = 0f
     private var overlayRtl = false
     private var velocityTracker: VelocityTracker? = null
@@ -87,6 +89,7 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
                 velocityTracker = VelocityTracker.obtain().also { it.addMovement(ev) }
                 // Oppo onScrollInteractionBegin sets mScrollInteractionBegan.
                 scrollInteractionBegan = true
+                dispatchedOverlayThisGesture = false
             }
             MotionEvent.ACTION_MOVE -> velocityTracker?.addMovement(ev)
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -133,8 +136,13 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
             mLauncher.stateManager.isInStableState(LauncherState.NORMAL)
 
         // Oppo z6: left overscroll zone exited while we still had glance progress.
+        // Only while the finger session is live. After endScroll the scroller
+        // rubber-band also leaves pastMinus — dispatching 0 then cancels the
+        // remote open settle (short-quick swipe-right looks like it opens then
+        // snaps closed).
         val z6 = lastOverlayProgress > SHOWING_EPSILON && !pastMinus &&
-            lastOverlayProgress > 0f && !overlayRtl
+            lastOverlayProgress > 0f && !overlayRtl &&
+            (startedSendingScrollEvents || scrollInteractionBegan || isHandlingTouch())
 
         if (shouldScrollOverlay) {
             maybeBeginScrollSession()
@@ -188,6 +196,7 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
         } ?: return
         overlayRtl = rtl
         lastOverlayProgress = progress
+        dispatchedOverlayThisGesture = true
         // Oppo 5112-5113: every eligible frame → onScrollChange (session optional).
         edge.launcherOverlay.onScrollChange(progress, rtl)
         // Drive home frost immediately (Oppo OverlayAnimManager). Frost uses [0,1].
@@ -207,13 +216,16 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
 
     private fun endOverlayScrollIfNeeded() {
         if (!startedSendingScrollEvents) {
-            // Oppo may have streamed onScrollChange without begin; still end if we
-            // marked a session via progress-only path on the remote (auto-start).
+            // Oppo may stream onScrollChange without begin. Only synthesize end if
+            // THIS finger gesture actually dispatched progress. Using stale
+            // lastOverlayProgress from a prior open (e.g. 0.15) made rapid
+            // left/right fire bogus begin+end with random VelocityTracker tips —
+            // open/close no longer matched the gesture.
+            if (!dispatchedOverlayThisGesture) return
             if (lastOverlayProgress <= SHOWING_EPSILON) return
             val edge = (mEdgeGlowLeft as? CustomizeOverlayEdgeEffect)
                 ?: (mEdgeGlowRight as? CustomizeOverlayEdgeEffect)
                 ?: return
-            // Ensure begin+end pair so QG can settle.
             edge.launcherOverlay.onScrollInteractionBegin()
             startedSendingScrollEvents = true
         }
@@ -230,6 +242,7 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
         }
         startedSendingScrollEvents = false
         scrollInteractionBegan = false
+        dispatchedOverlayThisGesture = false
     }
 
     companion object {
