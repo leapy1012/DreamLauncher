@@ -222,5 +222,6 @@
     <dimen name="coloros_popup_padding_end">16dp</dimen>
     <dimen name="coloros_popup_text_size">16sp</dimen>
     <dimen name="coloros_popup_group_divider_height">4dp</dimen>
-    <dimen name="coloros_popup_corner_radius">@dimen/coui_round_corner_m</dimen>
+    <!-- Oppo COUI M mapped for OS17+ (smooth M ≈ 16dp circular on MTK). -->
+    <dimen name="coloros_popup_corner_radius">@dimen/coui_round_corner_m_radius_os17</dimen>
 </resources>

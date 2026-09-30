@@ -36,6 +36,10 @@
         <item name="toolbarNavigationButtonStyle">@style/Widget.COUI.Toolbar.Button.Navigation</item>
         <item name="couiSwitchStyle">@style/COUISwitchStyle.Light</item>
         <item name="preferenceTheme">@style/PreferenceThemeOverlay.COUITheme.FullScreen.OnlyTitleBar</item>
+        <!-- MTK ignores Oppo windowPreviewType=0; suppress icon splash here. -->
+        <item name="android:windowSplashScreenBackground">@color/coloros_surface_page</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/settings_splash_empty</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/coloros_surface_page</item>
     </style>
 
     <!-- Legacy collapsing-toolbar styles still referenced by layout-v31 resources. -->

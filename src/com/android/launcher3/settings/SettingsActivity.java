@@ -70,7 +70,6 @@ import com.android.launcher3.uioverrides.flags.DeveloperOptionsFragment;
 import com.android.launcher3.uioverrides.plugins.PluginManagerWrapper;
 import com.android.launcher3.util.DisplayController;
 
-import java.util.Collections;
 import java.util.List;
 //hxy-feature: add launcher style function  202312
 import android.provider.Settings;
@@ -123,9 +122,12 @@ public class SettingsActivity extends AppCompatActivity
     /** List of fragments that can be hosted by this activity. */
     private static final List<String> VALID_PREFERENCE_FRAGMENTS =
             !Utilities.IS_DEBUG_DEVICE
-                    ? Collections.singletonList(LauncherStyleFragment.class.getName())
+                    ? java.util.Arrays.asList(
+                            LauncherStyleFragment.class.getName(),
+                            IconFallenFragment.class.getName())
                     : java.util.Arrays.asList(
                             LauncherStyleFragment.class.getName(),
+                            IconFallenFragment.class.getName(),
                             DeveloperOptionsFragment.class.getName());
 
     private static final String DEVELOPER_OPTIONS_KEY = "pref_developer_options";
@@ -148,6 +150,41 @@ public class SettingsActivity extends AppCompatActivity
     public static Intent createHomeScreenIntent(Context context) {
         return new Intent(context, SettingsActivity.class)
                 .putExtra(EXTRA_FRAGMENT, LauncherStyleFragment.class.getName());
+    }
+
+    /**
+     * Start Settings without the Android 12+ app-icon splash (MTK does not honor
+     * Oppo's {@code windowPreviewType=0}). Theme splash attrs + solid-color style.
+     */
+    public static void startWithoutIconSplash(Context context, Intent intent) {
+        if (intent == null) {
+            return;
+        }
+        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) == 0
+                && !(context instanceof android.app.Activity)) {
+            intent = new Intent(intent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        Bundle opts = null;
+        if (Utilities.ATLEAST_T) {
+            android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
+            options.setSplashScreenStyle(
+                    android.window.SplashScreen.SPLASH_SCREEN_STYLE_SOLID_COLOR);
+            opts = options.toBundle();
+        }
+        context.startActivity(intent, opts);
+    }
+
+    /** Home-screen settings page without icon splash. */
+    public static void startHomeScreen(Context context) {
+        startWithoutIconSplash(context, createHomeScreenIntent(context)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+    }
+
+    /** Main launcher preferences without icon splash. */
+    public static void startLauncherPreferences(Context context) {
+        startWithoutIconSplash(context, new Intent(Intent.ACTION_APPLICATION_PREFERENCES)
+                .setPackage(context.getPackageName())
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
     }
 
     @Override

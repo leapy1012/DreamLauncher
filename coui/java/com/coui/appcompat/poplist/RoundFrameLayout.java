@@ -83,11 +83,7 @@ public class RoundFrameLayout extends FrameLayout {
 
     private Path genPath() {
         this.mPath.reset();
-        float value = this.mRoundCornerRadius;
-        if (value == 0.0f) {
-            value = this.mRadius;
-        }
-        float value_2 = value;
+        float value_2 = resolveCornerRadius();
         if (!RoundCornerUtil.supportSRCCompatibleBlur(this.mBackgroundBlurBuilder.useBackgroundBlur())) {
             this.mPath.addRoundRect(this.mRectF, value_2, value_2, Path.Direction.CW);
         } else if (execute15SRC()) {
@@ -110,6 +106,31 @@ public class RoundFrameLayout extends FrameLayout {
             this.mPath.addRoundRect(this.mRectF, value_2, value_2, Path.Direction.CW);
         }
         return this.mPath;
+    }
+
+    /** Prefer XML/theme radius; never leave 0 (clips rounded bg to a square on MTK). */
+    private float resolveCornerRadius() {
+        float value = this.mRoundCornerRadius != 0.0f ? this.mRoundCornerRadius : this.mRadius;
+        if (value > 0.0f) {
+            return value;
+        }
+        int fallback = COUIContextUtil.getAttrDimens(getContext(), R.attr.couiRoundCornerM);
+        if (fallback <= 0) {
+            fallback = getResources().getDimensionPixelSize(R.dimen.coui_round_corner_m);
+        }
+        if (!ShadowUtils.checkOPlusViewElevationSDK()) {
+            fallback = RoundCornerUtil.getRoundCornerForOS17(getContext(), fallback);
+        }
+        this.mRadius = fallback;
+        return fallback;
+    }
+
+    /** Re-apply LV4 after background swaps (createContentView replaces the solid fill). */
+    public void ensurePopupShadow() {
+        if (this.mClipMode == OUTLINE_CLIP) {
+            ShadowUtils.setElevationToView(this, ShadowUtils.SHADOW_LV4);
+            invalidateOutline();
+        }
     }
 
     public void clearOverrideOutline() {
@@ -173,6 +194,9 @@ public class RoundFrameLayout extends FrameLayout {
                     value = this.mRadius9dpForOS16_1;
                 }
             }
+            if (value <= 0.0f) {
+                value = resolveCornerRadius();
+            }
             this.mBackgroundBlurBuilder.setCornerRadius(value);
             this.mBackgroundBlurBuilder.applyBlurBackground();
         }
@@ -188,6 +212,7 @@ public class RoundFrameLayout extends FrameLayout {
     public void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         this.mRectF.set(getPaddingLeft(), getPaddingTop(), w - getPaddingRight(), h - getPaddingBottom());
+        invalidateOutline();
     }
 
     public void setAllowDispatchEvent(boolean allowDispatchEvent) {
@@ -210,6 +235,7 @@ public class RoundFrameLayout extends FrameLayout {
             setElevation(0.0f);
             setBackgroundColor(0);
         } else if (clipMode == OUTLINE_CLIP) {
+            resolveCornerRadius();
             setClipToOutline(true);
             ShadowUtils.setElevationToView(this, ShadowUtils.SHADOW_LV4);
             setBackgroundColor(-1);
@@ -265,13 +291,24 @@ public class RoundFrameLayout extends FrameLayout {
             @Override
             public void getOutline(View view, Outline outline) {
                 if (RoundFrameLayout.this.mOverrideRect.isEmpty()) {
-                    RoundFrameLayout.this.mOutlineRect.set((int) RoundFrameLayout.this.mRectF.left, (int) RoundFrameLayout.this.mRectF.top, (int) RoundFrameLayout.this.mRectF.right, (int) RoundFrameLayout.this.mRectF.bottom);
+                    if (RoundFrameLayout.this.mRectF.width() <= 0 || RoundFrameLayout.this.mRectF.height() <= 0) {
+                        RoundFrameLayout.this.mOutlineRect.set(0, 0, view.getWidth(), view.getHeight());
+                    } else {
+                        RoundFrameLayout.this.mOutlineRect.set(
+                                (int) RoundFrameLayout.this.mRectF.left,
+                                (int) RoundFrameLayout.this.mRectF.top,
+                                (int) RoundFrameLayout.this.mRectF.right,
+                                (int) RoundFrameLayout.this.mRectF.bottom);
+                    }
                 } else {
                     outline.setAlpha(RoundFrameLayout.this.mOutlineAlpha);
                     RoundFrameLayout.this.mOutlineRect.set(RoundFrameLayout.this.mOverrideRect);
                 }
-                float value = RoundFrameLayout.this.mRoundCornerRadius != 0.0f ? RoundFrameLayout.this.mRoundCornerRadius : RoundFrameLayout.this.mRadius;
-                if (!RoundCornerUtil.supportSRCCompatibleBlur(RoundFrameLayout.this.mBackgroundBlurBuilder.useBackgroundBlur())) {
+                float value = RoundFrameLayout.this.resolveCornerRadius();
+                boolean blurCompat = RoundFrameLayout.this.mBackgroundBlurBuilder != null
+                        && RoundCornerUtil.supportSRCCompatibleBlur(
+                                RoundFrameLayout.this.mBackgroundBlurBuilder.useBackgroundBlur());
+                if (!blurCompat) {
                     outline.setRoundRect(RoundFrameLayout.this.mOutlineRect, value);
                     return;
                 }
@@ -297,6 +334,8 @@ public class RoundFrameLayout extends FrameLayout {
                 }
             }
         });
+        // Resolve radius before clip mode so outline/clip never starts at 0.
+        resolveCornerRadius();
         setClipMode(this.mClipMode);
         setDefaultFocusHighlightEnabled(false);
         COUIBackgroundBlurBuilder cOUIBackgroundBlurBuilder = new COUIBackgroundBlurBuilder(getContext());

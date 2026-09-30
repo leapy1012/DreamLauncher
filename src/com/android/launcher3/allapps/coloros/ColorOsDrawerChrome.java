@@ -1,7 +1,6 @@
 package com.android.launcher3.allapps.coloros;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -21,6 +20,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.customize.overlay.controller.CategoryController;
@@ -69,6 +69,9 @@ public final class ColorOsDrawerChrome {
     private View mTopFadeOverlay;
     private View mBottomFadeOverlay;
     private ColorOsCategoryAdapter mCategoryAdapter;
+    @Nullable private ColorOsCategoryItemTouchCallback mCategoryTouchCallback;
+    @Nullable private ColorOsCategoryDragDecoration mCategoryDragDecoration;
+    @Nullable private ItemTouchHelper mCategoryTouchHelper;
     private boolean mShowingCategories;
     private boolean mPageAnimating;
     /** ColorOS search focus/IME session — drawer chrome faded (Oppo animateForSearch). */
@@ -125,6 +128,68 @@ public final class ColorOsDrawerChrome {
         return mSelectController != null && mSelectController.isActive();
     }
 
+    /** True while a Categories card is being long-press dragged. */
+    boolean isCategoryDragging() {
+        return mCategoryTouchCallback != null && mCategoryTouchCallback.isDragging();
+    }
+
+    private void onCategoryDragStateChanged() {
+        // Relax clipping so the scaled drag shadow is not cut by the drawer pager.
+        boolean dragging = isCategoryDragging();
+        mContainer.setClipChildren(!dragging);
+        if (mCategoryList != null) {
+            mCategoryList.setClipChildren(false);
+        }
+        if (dragging) {
+            endSwipeTracking();
+        }
+        // Oppo disableTabWithAnim: tabs/menu → 0.2, search → 0 + scale 0.8.
+        animateChromeForCategoryDrag(dragging);
+    }
+
+    /**
+     * Oppo {@code BackgroundAnimationManager#disableTabWithAnim} during category reorder.
+     */
+    private void animateChromeForCategoryDrag(boolean dragging) {
+        float chromeAlpha = dragging ? 0.2f : 1f;
+        if (mTabHeader != null && !isDrawerSelectActive() && !mSearchUiActive) {
+            // Keep header visible (not INVISIBLE) so the faded chrome still shows like Oppo.
+            mTabHeader.setVisibility(View.VISIBLE);
+            mTabHeader.animate().cancel();
+            mTabHeader.animate().alpha(chromeAlpha).setDuration(220).start();
+            mTabHeader.setEnabled(!dragging);
+            if (mSegment != null) {
+                mSegment.setEnabled(!dragging);
+                mSegment.setClickable(!dragging);
+            }
+            View menu = mTabHeader.findViewById(R.id.coloros_all_apps_menu);
+            if (menu != null) {
+                menu.setEnabled(!dragging);
+            }
+        }
+        View search = mContainer.getSearchView();
+        if (search != null) {
+            search.animate().cancel();
+            if (dragging) {
+                search.animate()
+                        .alpha(0f)
+                        .scaleX(0.8f)
+                        .scaleY(0.8f)
+                        .setDuration(220)
+                        .start();
+                search.setEnabled(false);
+            } else if (!mSearchUiActive) {
+                search.animate()
+                        .alpha(1f)
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(220)
+                        .start();
+                search.setEnabled(true);
+            }
+        }
+    }
+
     /**
      * Oppo {@code changeTabViewStatus}: hide segment/menu while Select header shows.
      */
@@ -162,12 +227,23 @@ public final class ColorOsDrawerChrome {
         boolean hide = isDrawerSelectActive() || mSearchUiActive
                 || (mLetterCluster != null && mLetterCluster.isShowing());
         mTabHeader.animate().cancel();
-        mTabHeader.setAlpha(hide ? 0f : 1f);
-        mTabHeader.setEnabled(!hide);
-        mTabHeader.setVisibility(hide ? View.INVISIBLE : View.VISIBLE);
+        if (hide) {
+            mTabHeader.setAlpha(0f);
+            mTabHeader.setEnabled(false);
+            mTabHeader.setVisibility(View.INVISIBLE);
+        } else if (isCategoryDragging()) {
+            // Oppo drag chrome: keep faded tabs visible at 0.2.
+            mTabHeader.setVisibility(View.VISIBLE);
+            mTabHeader.setAlpha(0.2f);
+            mTabHeader.setEnabled(false);
+        } else {
+            mTabHeader.setAlpha(1f);
+            mTabHeader.setEnabled(true);
+            mTabHeader.setVisibility(View.VISIBLE);
+        }
         if (mSegment != null) {
-            mSegment.setEnabled(!hide);
-            mSegment.setClickable(!hide);
+            mSegment.setEnabled(!hide && !isCategoryDragging());
+            mSegment.setClickable(!hide && !isCategoryDragging());
         }
         if (!hide) {
             mTabHeader.bringToFront();
@@ -263,7 +339,7 @@ public final class ColorOsDrawerChrome {
      * Returns true when this gesture should own the stream.
      */
     public boolean onInterceptPageSwipe(MotionEvent ev) {
-        if (isDrawerSelectActive()) {
+        if (isDrawerSelectActive() || isCategoryDragging()) {
             endSwipeTracking();
             return false;
         }
@@ -519,11 +595,13 @@ public final class ColorOsDrawerChrome {
         mCategoryAdapter.attachSpanSizeLookup(glm);
         mCategoryList.setLayoutManager(glm);
         mCategoryList.setAdapter(mCategoryAdapter);
-        mCategoryList.setItemAnimator(null);
+        // Oppo CategoryPageItemAnimator: spring-move siblings on reorder.
+        mCategoryList.setItemAnimator(new ColorOsCategoryPageItemAnimator());
         mCategoryList.setVisibility(View.GONE);
         // Oppo pager: clipChildren + inset top (not full-bleed).
+        // clipChildren=false so drag scale/elevation is not clipped mid-gesture.
         mCategoryList.setClipToPadding(true);
-        mCategoryList.setClipChildren(true);
+        mCategoryList.setClipChildren(false);
         mCategoryList.setBackground(null);
         int hPad = dp(16);
         mCategoryList.setPadding(hPad, 0, hPad, dp(16));
@@ -535,11 +613,24 @@ public final class ColorOsDrawerChrome {
                 R.dimen.coloros_all_apps_content_margin_top);
         catLp.bottomMargin = 0;
         mContainer.addView(mCategoryList, catLp);
+        // Oppo: long-press category cards to reorder (OplusItemTouchHelper + FocusedItemDecorator).
+        mCategoryDragDecoration = new ColorOsCategoryDragDecoration(mContainer.getContext());
+        mCategoryList.addItemDecoration(mCategoryDragDecoration);
+        mCategoryTouchCallback = new ColorOsCategoryItemTouchCallback(
+                mCategoryAdapter,
+                mCategoryDragDecoration,
+                () -> mShowingCategories && !isDrawerSelectActive() && !mSearchUiActive,
+                this::onCategoryDragStateChanged);
+        mCategoryTouchHelper = new ItemTouchHelper(mCategoryTouchCallback);
+        mCategoryTouchHelper.attachToRecyclerView(mCategoryList);
         // Prefetch so the first All→Categories switch is not a cold bind/layout.
         bindCategories();
         mContainer.getAppsStore().addUpdateListener(() -> {
             // Avoid main-thread PackageManager storms during model churn; refresh
-            // only when Categories is visible or still empty.
+            // only when Categories is visible or still empty. Skip mid-drag.
+            if (isCategoryDragging()) {
+                return;
+            }
             if (mShowingCategories || mCategoryAdapter == null
                     || mCategoryAdapter.getItemCount() == 0) {
                 bindCategories();
@@ -1099,9 +1190,7 @@ public final class ColorOsDrawerChrome {
             // Leave All Apps first: Home from Settings resumes this task, and
             // without a NORMAL transition the drawer scrim stays on the workspace.
             mLauncher.getStateManager().goToState(LauncherState.NORMAL, false);
-            Intent intent = SettingsActivity.createHomeScreenIntent(mLauncher);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            mLauncher.startActivity(intent);
+            SettingsActivity.startHomeScreen(mLauncher);
         }
         // MENU_ID_SORT opens COUI submenu; ignore main click.
     }

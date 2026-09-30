@@ -31,6 +31,7 @@ import android.animation.AnimatorSet;
 import android.animation.LayoutTransition;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Outline;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -43,6 +44,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.widget.ImageView;
 
 import androidx.annotation.LayoutRes;
@@ -92,6 +94,9 @@ import com.android.launcher3.big.popup.UngroupFolderShortcut;
 import com.android.launcher3.folder.large.LargeFolderPreviewSelector;
 import com.android.launcher3.folder.large.LargeFolderIcon;
 import com.android.launcher3.folder.large.LargeFolderProxy;
+import com.coui.appcompat.contextutil.COUIContextUtil;
+import com.coui.appcompat.roundcorner.RoundCornerUtil;
+import com.coui.appcompat.uiutil.ShadowUtils;
 
 /**
  * A container for shortcuts to deep links and notifications associated with an app.
@@ -433,12 +438,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         mArrowColor = popupSurface;
 
         ViewGroup card = inflateAndAdd(R.layout.coloros_popup_card, this);
-        card.setForceDarkAllowed(false);
-        GradientDrawable cardBg = new GradientDrawable();
-        cardBg.setColor(popupSurface);
-        cardBg.setCornerRadius(getResources().getDimension(R.dimen.coloros_popup_corner_radius));
-        card.setBackground(cardBg);
-        card.setClipToOutline(true);
+        applyColorOsPopupCardChrome(card, popupSurface);
 
         boolean hasDeep = deepShortcutCount > 0;
         boolean hasSystem = !systemShortcuts.isEmpty();
@@ -498,8 +498,8 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         // Do not tag as iterate-children: Material U would inject inter-group margins and
         // recolor the card via setChildColor. forceDarkAllowed=false keeps the fill opaque.
         show();
-        cardBg.setColor(popupSurface);
-        card.setBackground(cardBg);
+        // show() may tint the card transparent — restore Oppo surface + COUI radius.
+        applyColorOsPopupCardChrome(card, popupSurface);
         mArrowColor = popupSurface;
         updateArrowColor();
         // Re-apply system icons after assignMarginsAndBackgrounds so Material U cannot replace them.
@@ -515,6 +515,45 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
             }
         }
         loadAppShortcuts((ItemInfo) originalIcon.getTag(), /* notificationKeys= */ emptyList());
+    }
+
+    /**
+     * Oppo {@code COUIPopupWindow}: opaque rounded card + LV4 shadow on the host
+     * (not the inner card — wrap_content parent would clip child elevation).
+     */
+    private GradientDrawable applyColorOsPopupCardChrome(ViewGroup card, int surfaceColor) {
+        setBackground(null);
+        setClipChildren(false);
+        setClipToPadding(false);
+        final float radiusPx = resolveColorOsPopupCornerRadius();
+        GradientDrawable cardBg = new GradientDrawable();
+        cardBg.setColor(surfaceColor);
+        cardBg.setCornerRadius(radiusPx);
+        card.setForceDarkAllowed(false);
+        card.setBackground(cardBg);
+        // Shadow is on the host; keep card flat so outline matches the visible plate.
+        card.setElevation(0f);
+        card.setClipToOutline(true);
+        setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), radiusPx);
+            }
+        });
+        setClipToOutline(true);
+        // 2dp deep_shortcuts_elevation is invisible; Oppo uses ShadowUtils LV4.
+        ShadowUtils.setElevationToView(this, ShadowUtils.SHADOW_LV4);
+        return cardBg;
+    }
+
+    /** Oppo popup list: {@code couiRoundCornerM}, mapped via {@link RoundCornerUtil} for OS17. */
+    private float resolveColorOsPopupCornerRadius() {
+        int base = COUIContextUtil.getAttrDimens(getContext(),
+                com.coui.appcompat.R.attr.couiRoundCornerM);
+        if (base <= 0) {
+            base = getResources().getDimensionPixelSize(R.dimen.coloros_popup_corner_radius);
+        }
+        return RoundCornerUtil.getRoundCornerForOS17(getContext(), base);
     }
 
     /** Oppo oplus_deep_shortcut: sans-serif-regular / weight 400, primary label color. */
@@ -1139,12 +1178,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         mArrowColor = popupSurface;
 
         ViewGroup card = inflateAndAdd(R.layout.coloros_popup_card, this);
-        card.setForceDarkAllowed(false);
-        GradientDrawable cardBg = new GradientDrawable();
-        cardBg.setColor(popupSurface);
-        cardBg.setCornerRadius(getResources().getDimension(R.dimen.coloros_popup_corner_radius));
-        card.setBackground(cardBg);
-        card.setClipToOutline(true);
+        applyColorOsPopupCardChrome(card, popupSurface);
 
         mSystemShortcutContainer = inflateAndAdd(R.layout.coloros_popup_shortcut_group, card);
         mWidgetContainer = mSystemShortcutContainer;
@@ -1170,8 +1204,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         }
 
         show();
-        cardBg.setColor(popupSurface);
-        card.setBackground(cardBg);
+        applyColorOsPopupCardChrome(card, popupSurface);
         mArrowColor = popupSurface;
         updateArrowColor();
         if (mSystemShortcutContainer != null) {
@@ -1240,12 +1273,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         mArrowColor = popupSurface;
 
         ViewGroup card = inflateAndAdd(R.layout.coloros_popup_card, this);
-        card.setForceDarkAllowed(false);
-        GradientDrawable cardBg = new GradientDrawable();
-        cardBg.setColor(popupSurface);
-        cardBg.setCornerRadius(getResources().getDimension(R.dimen.coloros_popup_corner_radius));
-        card.setBackground(cardBg);
-        card.setClipToOutline(true);
+        applyColorOsPopupCardChrome(card, popupSurface);
 
         // Preview modes only for 2×2 big folders (Oppo BigFolderConvert / hasExtendedGrids).
         if (LargeFolderProxy.isLargeFolder(folderIcon)) {
@@ -1282,8 +1310,7 @@ public class PopupContainerWithArrow<T extends Context & ActivityContext>
         }
 
         show();
-        cardBg.setColor(popupSurface);
-        card.setBackground(cardBg);
+        applyColorOsPopupCardChrome(card, popupSurface);
         mArrowColor = popupSurface;
         updateArrowColor();
         if (mSystemShortcutContainer != null) {

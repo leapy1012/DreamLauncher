@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Oppo launcher_icon_fallen_settings: illustration card + switch card. -->
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.coui.appcompat.preference.COUIPreferenceCategory
+        android:enabled="true"
+        android:key="category_launcher_icon_fallen"
+        app:isFirstCategory="true">
+        <com.android.launcher3.settings.IconFallenIntroPreference
+            android:key="key_launcher_icon_fallen_intro"
+            android:persistent="false" />
+    </com.coui.appcompat.preference.COUIPreferenceCategory>
+
+    <com.coui.appcompat.preference.COUIPreferenceCategory
+        android:key="key_category_launcher_icon_fallen_switch">
+        <com.coui.appcompat.preference.COUISwitchPreference
+            android:defaultValue="false"
+            android:key="pref_icon_fallen"
+            android:persistent="true"
+            android:title="@string/launcher_icon_fallen_title" />
+    </com.coui.appcompat.preference.COUIPreferenceCategory>
+</androidx.preference.PreferenceScreen>

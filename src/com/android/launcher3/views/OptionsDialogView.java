@@ -38,6 +38,7 @@ import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
 import com.android.launcher3.util.LayoutLockHelper;
+import com.android.launcher3.settings.SettingsActivity;
 import com.android.launcher3.widget.picker.WidgetsFullSheet;
 import com.android.launcher3.util.PackageManagerHelper;
 import static com.android.launcher3.AbstractFloatingView.TYPE_OPTIONS_POPUP_DIALOG;
@@ -454,9 +455,7 @@ public class OptionsDialogView extends AbstractFloatingView {
     private static boolean startSettings(View view) {
         TestLogging.recordEvent(TestProtocol.SEQUENCE_MAIN, "start: startSettings");
         Launcher launcher = Launcher.getLauncher(view.getContext());
-        launcher.startActivity(new Intent(Intent.ACTION_APPLICATION_PREFERENCES)
-                .setPackage(launcher.getPackageName())
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        SettingsActivity.startLauncherPreferences(launcher);
         return true;
     }
 

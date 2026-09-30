@@ -46,9 +46,28 @@ public class ShadowUtils {
         if (view == null) {
             return;
         }
-        view.setOutlineAmbientShadowColor(spotShadowColor);
-        view.setOutlineSpotShadowColor(spotShadowColor);
-        view.setElevation(elevationPx);
+        // Ensure opaque-enough spot color so AOSP shadows remain visible on light surfaces.
+        int color = spotShadowColor != 0
+                ? spotShadowColor
+                : ContextCompat.getColor(view.getContext(), R.color.coui_popup_outline_spot_shadow_color);
+        view.setOutlineAmbientShadowColor(color);
+        view.setOutlineSpotShadowColor(color);
+        view.setElevation(Math.max(0, elevationPx));
+        // translationZ stacks with elevation on AOSP and helps when parents flatten Z.
+        if (!checkOPlusViewElevationSDK() && elevationPx > 0) {
+            view.setTranslationZ(0f);
+        }
+    }
+
+    /**
+     * Extra inset (px) needed around an elevated view so AOSP outline shadows are not
+     * clipped by a tightly sized {@link android.widget.PopupWindow} surface.
+     */
+    public static int getAospShadowPaddingPx(View view, int level) {
+        if (view == null || checkOPlusViewElevationSDK()) {
+            return 0;
+        }
+        return view.getResources().getDimensionPixelSize(R.dimen.support_shadow_size_level_popup_padding);
     }
 
     public static void setElevationToViewFromOPlusView(View view, int index, int index_2, int index_3, int index_4, int index_5, int index_6) {

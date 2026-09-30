@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Press-only ListView selector (Oppo couiColorPress). Default must stay transparent. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <color android:color="@color/coui_color_press" />
+    </item>
+    <item android:state_selected="true">
+        <color android:color="@color/coui_color_card_pressed" />
+    </item>
+    <item>
+        <color android:color="@android:color/transparent" />
+    </item>
+</selector>

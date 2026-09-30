@@ -151,11 +151,12 @@ public final class LayoutLockHelper {
             COUISnackBar snackBar = COUISnackBar.make(
                     launcher, host, message, SNACKBAR_DURATION_MS, bottomMargin);
             snackBar.setOnAction(R.string.launcher_locked_toast_look_setting, v -> {
-                launcher.startActivity(new Intent(Intent.ACTION_APPLICATION_PREFERENCES)
+                Intent intent = new Intent(Intent.ACTION_APPLICATION_PREFERENCES)
                         .setPackage(launcher.getPackageName())
                         .putExtra(SettingsActivity.EXTRA_FRAGMENT_ARG_KEY,
                                 LauncherPrefs.WORKSPACE_LAYOUT_DOCK)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                SettingsActivity.startWithoutIconSplash(launcher, intent);
                 snackBar.dismiss();
             });
             snackBar.show();

@@ -89,6 +89,13 @@ class TaskMenuAdapter extends BaseAdapter {
             convertView = mInflater.inflate(R.layout.task_menu_option_item, parent, false);
             // Must stay non-clickable so ListView OnItemClickListener receives the tap.
             convertView.setClickable(false);
+            convertView.setFocusable(false);
+            // Duplicate parent ListView pressed state for row highlight when selector is on top.
+            View rowContent = convertView.findViewById(R.id.task_menu_item_content);
+            if (rowContent != null) {
+                rowContent.setBackgroundResource(R.drawable.coloros_popup_item_press);
+                rowContent.setDuplicateParentStateEnabled(true);
+            }
             holder = new ViewHolder();
             holder.icon = convertView.findViewById(com.coui.appcompat.R.id.popup_list_window_item_icon);
             holder.title = convertView.findViewById(com.coui.appcompat.R.id.popup_list_window_item_title);

@@ -41,8 +41,9 @@ import java.util.List;
  */
 public final class ColorOsCategoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private static final int TYPE_RECENT = 0;
-    private static final int TYPE_CATEGORY = 1;
+    /** Exposed for {@link ColorOsCategoryItemTouchCallback} / page item animator. */
+    static final int TYPE_RECENT = 0;
+    static final int TYPE_CATEGORY = 1;
     private static final int MAX_PREVIEW = 4;
     private static final int MAX_RECENT_COLLECT = 8;
 
@@ -51,6 +52,8 @@ public final class ColorOsCategoryAdapter extends RecyclerView.Adapter<RecyclerV
     private float mDensity = 3f;
     @Nullable
     private CellMetrics mMetrics;
+    @Nullable
+    private Context mContext;
 
     public ColorOsCategoryAdapter(CategoryController controller) {
         mController = controller;
@@ -58,17 +61,22 @@ public final class ColorOsCategoryAdapter extends RecyclerView.Adapter<RecyclerV
 
     public void bind(@NonNull Context context, @NonNull List<AppInfo> apps,
             @NonNull List<CategoryInfo> categories) {
+        mContext = context.getApplicationContext();
         mDensity = context.getResources().getDisplayMetrics().density;
         mMetrics = metricsForContext(context);
         mRows.clear();
 
         List<AppInfo> recent = collectRecentApps(context, apps);
-        if (!recent.isEmpty() && ColorOsHomeSettings.isShowAppSuggestions(context)) {
+        // Oppo Categories "Recently installed" is independent of "Show app suggestions"
+        // (that toggle only gates All-tab predicted apps).
+        if (!recent.isEmpty()) {
             mRows.add(Row.recent(context.getString(R.string.coloros_category_recently_installed),
                     recent));
         }
 
-        for (CategoryInfo info : categories) {
+        List<CategoryInfo> ordered = new ArrayList<>(categories);
+        ColorOsCategoryOrderStore.applyOrder(context, ordered);
+        for (CategoryInfo info : ordered) {
             List<AppInfo> resolved = resolveApps(info);
             if (resolved.isEmpty()) {
                 continue;
@@ -76,6 +84,48 @@ public final class ColorOsCategoryAdapter extends RecyclerView.Adapter<RecyclerV
             mRows.add(Row.category(info.getFolderName(), resolved));
         }
         notifyDataSetChanged();
+    }
+
+    /** True for reorderable category folder cards (not Recently installed). */
+    boolean isCategoryRow(int position) {
+        return position >= 0 && position < mRows.size()
+                && mRows.get(position).type == TYPE_CATEGORY;
+    }
+
+    /**
+     * Oppo {@code BaseAllAppsAdapter#swapPosition}: bubble-swap category rows and persist.
+     *
+     * @return true if the move was applied
+     */
+    boolean swapPosition(int from, int to) {
+        if (from == to || !isCategoryRow(from) || !isCategoryRow(to)) {
+            return false;
+        }
+        if (from < to) {
+            for (int i = from; i < to; i++) {
+                Collections.swap(mRows, i, i + 1);
+            }
+        } else {
+            for (int i = from; i > to; i--) {
+                Collections.swap(mRows, i, i - 1);
+            }
+        }
+        notifyItemMoved(from, to);
+        persistOrder();
+        return true;
+    }
+
+    private void persistOrder() {
+        if (mContext == null) {
+            return;
+        }
+        List<String> names = new ArrayList<>();
+        for (Row row : mRows) {
+            if (row.type == TYPE_CATEGORY) {
+                names.add(row.title);
+            }
+        }
+        ColorOsCategoryOrderStore.saveOrder(mContext, names);
     }
 
     public void attachSpanSizeLookup(GridLayoutManager glm) {

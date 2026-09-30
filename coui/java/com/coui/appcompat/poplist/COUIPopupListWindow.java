@@ -257,6 +257,9 @@ public class COUIPopupListWindow extends COUIPopupWindow {
             this.mSubMenuWrapper.setBackground(drawable.getConstantState().newDrawable());
         }
         typedArrayObtainStyledAttributes.recycle();
+        // Background swap can drop LV4 elevation; restore Oppo card shadow on MTK AOSP.
+        this.mMainMenuWrapper.ensurePopupShadow();
+        this.mSubMenuWrapper.ensurePopupShadow();
         cOUIPopupMenuRootView.setOnSubMenuStateChangedListener(new COUIPopupMenuRootView.OnMenuStateChangedListener() {
             private void requestAccessibilityFocusForListHeader(ViewGroup viewGroup) {
                 View childAt = viewGroup.getChildAt(0);

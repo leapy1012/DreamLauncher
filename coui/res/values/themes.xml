@@ -5,6 +5,8 @@
     <style name="BaseActivityDialog" parent="@style/Theme.COUI" />
 
     <style name="Theme.COUI" parent="@style/ThemeOverrideBase">
+        <!-- AppCompat leaves this tiny; pin Oppo COUI M (OS17) for all COUI apps. -->
+        <item name="android:dialogCornerRadius">@dimen/coui_round_corner_m_radius_os17</item>
         <item name="android:textAppearance">@style/TextAppearance.COUI</item>
         <item name="android:textAppearanceInverse">@style/TextAppearance.COUI.Inverse</item>
         <item name="android:textColorPrimary">@color/coui_primary_text_dark</item>

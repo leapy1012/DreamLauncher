@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Oppo launcher_fallen_choice_layout: illustration card for Icon pull-down settings. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="bottom"
+    android:layout_marginStart="@dimen/coloros_card_content_padding"
+    android:layout_marginEnd="@dimen/coloros_card_content_padding"
+    android:background="@drawable/launcher_setting_background"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingTop="@dimen/coloros_space_content"
+    android:paddingBottom="@dimen/coloros_space_xxlarge">
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/color_ep_guide_animation"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/coloros_launcher_mode_preview_height"
+        android:layout_gravity="center_horizontal"
+        android:adjustViewBounds="true"
+        android:forceDarkAllowed="false"
+        android:scaleType="fitCenter" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/coloros_space_xxlarge"
+        android:clickable="false"
+        android:lineSpacingMultiplier="1.2"
+        android:paddingStart="@dimen/coloros_space_xxlarge"
+        android:paddingEnd="@dimen/coloros_space_xxlarge"
+        android:text="@string/launcher_icon_fallen_tip"
+        android:textColor="@color/coloros_text_tertiary"
+        android:textSize="12sp" />
+</LinearLayout>

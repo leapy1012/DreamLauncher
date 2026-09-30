@@ -54,7 +54,6 @@ import com.android.quickstep.TaskOverlayFactory;
 import com.android.quickstep.views.TaskView.TaskIdAttributeContainer;
 import com.coui.appcompat.animation.COUIMoveEaseInterpolator;
 import com.coui.appcompat.contextutil.COUIContextUtil;
-import com.coui.appcompat.list.COUIForegroundListView;
 import com.coui.appcompat.poplist.PopupListItem;
 import com.coui.appcompat.uiutil.ShadowUtils;
 
@@ -62,7 +61,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * ColorOS-style Recents task ⋮ menu: single COUI popup card ({@link COUIForegroundListView}
+ * ColorOS-style Recents task ⋮ menu: single COUI popup card ({@code COUIForegroundListView}
  * + {@link TaskMenuAdapter}), anchored top-right near the menu button — same chrome as Oppo's
  * {@code OplusTaskMenuViewImpl}, without adopting Oppo-only shortcut actions.
  */
@@ -174,8 +173,8 @@ public class TaskMenuView extends AbstractFloatingView {
         mActivity.getDragLayer().addView(this);
         mTaskView = taskContainer.getTaskView();
         mTaskContainer = taskContainer;
-        // ColorOS LV4; ShadowUtils maps to AOSP elevation when Oppo ViewExt is absent.
-        ShadowUtils.setElevationToView(this, ShadowUtils.SHADOW_LV4);
+        // Shadow applied in createContentView on this host (LV4).
+        setBackground(null);
         if (!populateAndLayoutMenu()) {
             return false;
         }
@@ -285,7 +284,6 @@ public class TaskMenuView extends AbstractFloatingView {
                 com.coui.appcompat.R.drawable.coui_popup_window_background);
         if (background != null) {
             background = background.mutate();
-            // Prefer solid Oppo-style surface; keep round corners from the drawable.
             if (background instanceof GradientDrawable) {
                 ((GradientDrawable) background).setColor(surfaceColor);
             } else {
@@ -294,15 +292,37 @@ public class TaskMenuView extends AbstractFloatingView {
         } else {
             background = new ColorDrawable(surfaceColor);
         }
-        mListView.setBackground(background);
-        setBackgroundColor(surfaceColor);
+        // Card fill on RoundFrameLayout; LV4 shadow on this host (child elevation is clipped).
+        content.setBackground(background);
+        content.setElevation(0f);
+        mListView.setBackground(null);
+        mListView.setSelector(ContextCompat.getDrawable(
+                couiContext, R.drawable.task_menu_list_selector));
+        mListView.setDrawSelectorOnTop(true);
 
-        int radius = getResources().getDimensionPixelSize(
-                com.coui.appcompat.R.dimen.coui_round_corner_m);
-        if (mListView instanceof COUIForegroundListView) {
-            ((COUIForegroundListView) mListView).setRadius(radius);
-        }
+        setBackground(null);
+        setClipChildren(false);
+        setClipToPadding(false);
+        final float radiusPx = resolveTaskMenuCornerRadius();
+        setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), radiusPx);
+            }
+        });
+        setClipToOutline(true);
+        ShadowUtils.setElevationToView(this, ShadowUtils.SHADOW_LV4);
         return (ViewGroup) content;
+    }
+
+    private float resolveTaskMenuCornerRadius() {
+        int base = COUIContextUtil.getAttrDimens(getContext(),
+                com.coui.appcompat.R.attr.couiRoundCornerM);
+        if (base <= 0) {
+            base = getResources().getDimensionPixelSize(
+                    com.coui.appcompat.R.dimen.coui_round_corner_m);
+        }
+        return base;
     }
 
     private final AdapterView.OnItemClickListener mItemClickListener =

@@ -13,6 +13,7 @@ import android.widget.FrameLayout;
 
 import com.coui.appcompat.grid.COUIResponsiveUtils;
 import com.coui.appcompat.log.COUILog;
+import com.coui.appcompat.uiutil.ShadowUtils;
 
 
 public class COUIPopupMenuRootView extends FrameLayout {
@@ -536,6 +537,27 @@ public class COUIPopupMenuRootView extends FrameLayout {
             setWillNotDraw(false);
         }
         setFocusable(false);
-        setLayerType(2, null);
+        // OEM ColorOS uses a hardware layer with OPlus light-source shadows. On AOSP/MTK that
+        // layer flattens / clips child elevation, so keep software/none for visible LV4 shadows.
+        if (ShadowUtils.checkOPlusViewElevationSDK()) {
+            setLayerType(LAYER_TYPE_HARDWARE, null);
+        } else {
+            setLayerType(LAYER_TYPE_NONE, null);
+        }
+        // Allow RoundFrameLayout LV4 elevation to paint outside the card bounds (MTK AOSP).
+        setClipChildren(false);
+        setClipToPadding(false);
+    }
+
+    /** Re-apply Oppo card shadows after background is swapped in {@code createContentView}. */
+    public void ensureCardShadows() {
+        ensureCardShadow(mMainMenuRootView);
+        ensureCardShadow(mSubMenuRootView);
+    }
+
+    private static void ensureCardShadow(ViewGroup card) {
+        if (card instanceof RoundFrameLayout) {
+            ((RoundFrameLayout) card).ensurePopupShadow();
+        }
     }
 }

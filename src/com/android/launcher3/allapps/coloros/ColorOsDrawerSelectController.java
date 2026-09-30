@@ -472,15 +472,19 @@ public final class ColorOsDrawerSelectController {
         }
         ActivityContext ctx = ActivityContext.lookupContext(row.getContext());
         boolean active = false;
+        boolean categoryDragging = false;
         if (ctx instanceof Launcher launcher
                 && launcher.getAppsView() instanceof
                 com.android.launcher3.allapps.LauncherAllAppsContainerView apps) {
             ColorOsDrawerSelectController select = apps.getDrawerSelectController();
             active = select != null && select.isActive();
+            ColorOsDrawerChrome chrome = apps.getColorOsChrome();
+            categoryDragging = chrome != null && chrome.isCategoryDragging();
         }
         row.animate().cancel();
-        row.setAlpha(active ? RECENT_ROW_SELECT_ALPHA : 1f);
-        setRecentChildrenEnabled(row, !active);
+        boolean dim = active || categoryDragging;
+        row.setAlpha(dim ? RECENT_ROW_SELECT_ALPHA : 1f);
+        setRecentChildrenEnabled(row, !dim);
         clearImageForegrounds(row);
     }
 

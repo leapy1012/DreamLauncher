@@ -28,6 +28,8 @@
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowShowWallpaper">true</item>
+        <!-- AppCompat leaves dialogCornerRadius tiny; pin Oppo COUI M (OS17). -->
+        <item name="android:dialogCornerRadius">@dimen/coui_round_corner_m_radius_os17</item>
     </style>
 
     <style name="SideGesturesGuideTheme" parent="@android:style/Theme.Material.Light.NoActionBar">

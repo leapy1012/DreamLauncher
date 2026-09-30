@@ -57,6 +57,7 @@ import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
 import com.android.launcher3.util.LayoutLockHelper;
 import com.android.launcher3.util.PackageManagerHelper;
+import com.android.launcher3.settings.SettingsActivity;
 import com.android.launcher3.widget.picker.WidgetsFullSheet;
 
 import java.util.ArrayList;
@@ -258,9 +259,7 @@ public class OptionsPopupView extends ArrowPopup<Launcher>
     private static boolean startSettings(View view) {
         TestLogging.recordEvent(TestProtocol.SEQUENCE_MAIN, "start: startSettings");
         Launcher launcher = Launcher.getLauncher(view.getContext());
-        launcher.startActivity(new Intent(Intent.ACTION_APPLICATION_PREFERENCES)
-                .setPackage(launcher.getPackageName())
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        SettingsActivity.startLauncherPreferences(launcher);
         return true;
     }
 
