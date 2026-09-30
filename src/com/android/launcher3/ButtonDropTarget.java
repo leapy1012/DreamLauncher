@@ -219,6 +219,11 @@ public abstract class ButtonDropTarget extends TextView
 
     @Override
     public boolean isDropEnabled() {
+        // Dream never shows DropTargetBar; keep targets inert so an invisible
+        // Cancel/Remove strip cannot steal drops near the status bar.
+        if (mDropTargetBar == null || !mDropTargetBar.isDragStripActive()) {
+            return false;
+        }
         return mActive && (mAccessibleDrag ||
                 mActivityContext.getDragController().getDistanceDragged()
                         >= mDragDistanceThreshold);

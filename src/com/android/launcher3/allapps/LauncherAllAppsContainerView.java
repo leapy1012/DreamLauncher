@@ -60,6 +60,10 @@ public class LauncherAllAppsContainerView extends ActivityAllAppsContainerView<L
                     if (finalState == LauncherState.ALL_APPS) {
                         ensureColorOsChromeAttached();
                         if (mColorOsChrome != null) {
+                            // Dismiss any stuck letter-cluster before sync so the apps
+                            // grid cannot remain at alpha 0 with chrome still visible.
+                            mColorOsChrome.dismissLetterCluster();
+                            mColorOsChrome.restoreAppsListContentVisible();
                             mColorOsChrome.syncPageVisibility();
                         }
                     } else {

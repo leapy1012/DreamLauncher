@@ -137,6 +137,9 @@ class QuickGlanceRemoteOverlay(
     fun openOverlay() = client.openOverlay()
     fun closeOverlay() = client.closeOverlay()
 
+    /** @return true if nested Quick Glance UI consumed Back. */
+    fun onBackPressed(): Boolean = client.onBackPressed()
+
     private fun flushPendingScrollSession() {
         if (!pendingScrollSession || !serviceAttached) return
         Log.i(

@@ -296,13 +296,21 @@ final class ColorOsLetterClusterOverlay {
         float alpha = visible ? 1f : 0f;
         ViewGroup pager = mContainer.getAppsRecyclerViewContainer();
         if (pager != null) {
+            pager.animate().cancel();
             pager.setAlpha(alpha);
             pager.setEnabled(visible);
+            if (visible) {
+                pager.setVisibility(View.VISIBLE);
+            }
         }
         View appsList = mContainer.findViewById(R.id.apps_list_view);
         if (appsList != null && appsList != pager) {
+            appsList.animate().cancel();
             appsList.setAlpha(alpha);
             appsList.setEnabled(visible);
+            if (visible) {
+                appsList.setVisibility(View.VISIBLE);
+            }
         }
     }
 

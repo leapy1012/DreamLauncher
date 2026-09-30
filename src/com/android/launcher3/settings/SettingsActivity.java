@@ -476,6 +476,15 @@ public class SettingsActivity extends AppCompatActivity
                     return true;
                 });
             }
+            Preference iconFallenPref = findPreference(HomeScreenGestures.PREF_ICON_FALLEN);
+            if (iconFallenPref != null) {
+                // Match Oppo: Icon Fallen is phone-only.
+                DeviceProfile dp = InvariantDeviceProfile.INSTANCE.get(requireContext())
+                        .getDeviceProfile(requireContext());
+                if (dp.isTablet) {
+                    iconFallenPref.setVisible(false);
+                }
+            }
             Preference pref = findPreference(WORKSPACE_LAYOUT_DOCK);
             if (pref instanceof SwitchPreference) {
                 mLayoutLockPref = (SwitchPreference) pref;

@@ -1716,10 +1716,14 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
             if (launcherIsForceInvisibleOrOpening) {
                 addCujInstrumentation(
                         anim, InteractionJankMonitorWrapper.CUJ_APP_CLOSE_TO_HOME);
-                // Only register the content animation for cancellation when state changes
-                mLauncher.getStateManager().setCurrentAnimation(anim, NORMAL);
+                // Only register the content animation for cancellation when state changes.
+                // Returning into All Apps must stay ALL_APPS: tagging NORMAL flips the state
+                // while the drawer is still shown and onStateSetEnd(NORMAL) reveals the hotseat.
+                boolean returningToAllApps = mLauncher.isInState(LauncherState.ALL_APPS);
+                mLauncher.getStateManager().setCurrentAnimation(anim,
+                        returningToAllApps ? LauncherState.ALL_APPS : NORMAL);
 
-                if (mLauncher.isInState(LauncherState.ALL_APPS)) {
+                if (returningToAllApps) {
                     Pair<AnimatorSet, Runnable> contentAnimator =
                             getLauncherContentAnimator(false, LAUNCHER_RESUME_START_DELAY,
                                     skipAllAppsScale);

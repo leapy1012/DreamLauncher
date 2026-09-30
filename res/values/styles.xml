@@ -18,8 +18,9 @@
 -->
 
 <resources>
-    <!-- Launcher theme -->
-    <style name="BaseLauncherTheme" parent="@android:style/Theme.DeviceDefault.Light">
+    <!-- Oppo BaseLauncherTheme parents OplusSupportBaseTheme (Theme.COUI.Main.*)
+         so COUI attrs (couiRoundCornerM, etc.) resolve for COUIPopupListWindow. -->
+    <style name="BaseLauncherTheme" parent="@style/OplusSupportBaseTheme">
         <item name="disabledIconAlpha">.54</item>
         <item name="android:colorBackgroundCacheHint">@null</item>
         <item name="android:colorEdgeEffect">#FF757575</item>

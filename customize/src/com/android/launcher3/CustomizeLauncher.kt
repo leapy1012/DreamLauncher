@@ -7,12 +7,15 @@ import android.window.OnBackAnimationCallback
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import com.android.customize.common.di.LauncherContainer
+import com.android.customize.iconfallen.IconFallenTouchController
 import com.android.customize.overlay.OverlayManagerImpl
 import com.android.customize.overlay.extension.getFirstMatchForAppClose
 import com.android.customize.overlay.preference.OverlayPreference
+import com.android.launcher3.allapps.LauncherAllAppsContainerView
 import com.android.launcher3.settings.HomeScreenGestures
 import com.android.launcher3.statemanager.StateManager
 import com.android.launcher3.uioverrides.QuickstepLauncher
+import com.android.launcher3.util.TouchController
 import com.android.systemui.plugins.shared.LauncherOverlayManager
 
 class CustomizeLauncher : QuickstepLauncher() {
@@ -23,6 +26,8 @@ class CustomizeLauncher : QuickstepLauncher() {
     val overlayManager by lazy {
         OverlayManagerImpl(this)
     }
+
+    private var iconFallenTouchController: IconFallenTouchController? = null
 
     /**
      * Oppo does NOT slide/fade DragLayer for Assist (setOverlayTranslation is
@@ -44,9 +49,43 @@ class CustomizeLauncher : QuickstepLauncher() {
             override fun onStateTransitionStart(toState: LauncherState) {
                 if (toState == LauncherState.OVERVIEW) {
                     getOpenScreenView()?.close(true)
+                    iconFallenTouchController?.resetFallenIcons(false)
+                } else if (toState != LauncherState.NORMAL) {
+                    iconFallenTouchController?.resetFallenIcons(false)
+                }
+            }
+
+            override fun onStateTransitionComplete(finalState: LauncherState) {
+                if (finalState == LauncherState.ALL_APPS) {
+                    // Safety: letter-cluster can leave the apps grid at alpha 0 while
+                    // tabs/search stay visible — force-restore when drawer settles.
+                    (appsView as? LauncherAllAppsContainerView)?.colorOsChrome?.let { chrome ->
+                        chrome.dismissLetterCluster()
+                        chrome.restoreAppsListContentVisible()
+                        chrome.syncPageVisibility()
+                    }
                 }
             }
         })
+    }
+
+    override fun createTouchControllers(): Array<TouchController> {
+        val base = super.createTouchControllers()
+        val fallen = IconFallenTouchController(this)
+        iconFallenTouchController = fallen
+        // Register early (after DragController) so the edge-up gesture wins over
+        // All Apps / overview swipe controllers in the side strips.
+        val list = ArrayList<TouchController>(base.size + 1)
+        if (base.isNotEmpty()) {
+            list.add(base[0]) // DragController
+            list.add(fallen)
+            for (i in 1 until base.size) {
+                list.add(base[i])
+            }
+        } else {
+            list.add(fallen)
+        }
+        return list.toTypedArray()
     }
 
     override fun getDefaultOverlay(): LauncherOverlayManager {
@@ -54,6 +93,14 @@ class CustomizeLauncher : QuickstepLauncher() {
     }
 
     override fun getOnBackAnimationCallback(): OnBackAnimationCallback {
+        val fallen = iconFallenTouchController
+        if (fallen != null && fallen.isActive()) {
+            return object : OnBackAnimationCallback {
+                override fun onBackInvoked() {
+                    fallen.resetFallenIcons(true)
+                }
+            }
+        }
         val screenView = getOpenScreenView()
         if (screenView != null && screenView.canHandleBack()) {
             return screenView
@@ -61,7 +108,11 @@ class CustomizeLauncher : QuickstepLauncher() {
         if (workspace.isOverlayShown) {
             return object : OnBackAnimationCallback {
                 override fun onBackInvoked() {
-                    overlayManager.hideOverlay(true)
+                    // Nested Quick Glance UI first (Add widgets → glance home);
+                    // only then dismiss overlay to workspace (Oppo Assist parity).
+                    if (!overlayManager.onOverlayBackPressed()) {
+                        overlayManager.hideOverlay(true)
+                    }
                 }
             }
         }
@@ -69,8 +120,15 @@ class CustomizeLauncher : QuickstepLauncher() {
     }
 
     override fun onBackPressed() {
+        val fallen = iconFallenTouchController
+        if (fallen != null && fallen.isActive()) {
+            fallen.resetFallenIcons(true)
+            return
+        }
         if (workspace.isOverlayShown) {
-            overlayManager.hideOverlay(true)
+            if (!overlayManager.onOverlayBackPressed()) {
+                overlayManager.hideOverlay(true)
+            }
             return
         }
         super.onBackPressed()

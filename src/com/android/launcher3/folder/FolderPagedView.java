@@ -327,6 +327,12 @@ public class FolderPagedView extends PagedView<PageIndicatorDots> implements Cli
         page.getShortcutsAndWidgets().setMotionEventSplittingEnabled(false);
         page.setInvertIfRtl(true);
         page.setGridSize(mGridCountX, mGridCountY);
+        // ColorOS OplusFolderPagedView: empty-cell tap closes; icons keep their own click targets.
+        page.setOnClickListener(v -> {
+            if (mFolder != null && !mFolder.hasEmptyLongPressOccurred()) {
+                mFolder.close(true);
+            }
+        });
         // Oppo OplusFolderPagedView: empty-cell long-press → ToggleBar / EDIT_MODE.
         page.setOnLongClickListener(v -> mFolder.handleEmptyLongPressToEditMode());
 

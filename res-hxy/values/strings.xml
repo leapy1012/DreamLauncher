@@ -109,6 +109,10 @@
     <string name="home_swipe_down_notification">Notification shade</string>
     <string name="home_swipe_right_none">None</string>
     <string name="home_swipe_right_quick_glance">Quick Glance</string>
+    <string name="launcher_icon_fallen_title">Icon pull-down gesture</string>
+    <string name="launcher_icon_fallen_sub_title">Open apps on the Home screen with one hand.</string>
+    <string name="launcher_icon_fallen_tip">Swipe upward on the left or right side of the screen to pull down app icons. Without lifting your finger, continue swiping to an icon and release to open the app.</string>
+    <string name="launcher_icon_fallen_toast">No app icons to pull down</string>
     <string name="home_screen_wallpaper_set">Switch wallpaper</string>
     <string name="home_screen_wallpaper_set_summary">Show the Switch wallpaper icon on the Home screen</string>
     <string name="home_screen_icon_shape">Icon Shape</string>

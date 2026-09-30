@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Icon pull-down (Icon Fallen) — ColorOS parity distances -->
+    <dimen name="icon_fallen_tric_distance">60dp</dimen>
+    <dimen name="icon_fallen_max_distance">80dp</dimen>
+    <dimen name="icon_fallen_padding_left_right">28dp</dimen>
+    <dimen name="icon_fallen_padding_bottom">80dp</dimen>
+    <dimen name="icon_fallen_padding_top">78dp</dimen>
+    <dimen name="icon_fallen_offset_have_navigation_bar_padding_bottom">30dp</dimen>
+    <dimen name="icon_fallen_hotseat_translation_y">80dp</dimen>
+    <dimen name="icon_fallen_workspace_translation_y">165dp</dimen>
+    <dimen name="icon_fallen_workspace_max_y_offset">230dp</dimen>
+    <dimen name="icon_fallen_workspace_min_y_offset">370dp</dimen>
+    <dimen name="icon_fallen_item_default_gap">8dp</dimen>
+    <dimen name="icon_fallen_scaley_center">37dp</dimen>
+    <dimen name="icon_fallen_scaley_center_row_grid_4">52dp</dimen>
+</resources>

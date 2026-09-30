@@ -74,6 +74,12 @@
             android:title="@string/home_screen_double_tap_to_off"
             android:defaultValue="false"
             android:persistent="true"/>
+        <com.coui.appcompat.preference.COUISwitchPreference
+            android:key="pref_icon_fallen"
+            android:title="@string/launcher_icon_fallen_title"
+            android:summary="@string/launcher_icon_fallen_sub_title"
+            android:defaultValue="false"
+            android:persistent="true"/>
     </com.coui.appcompat.preference.COUIPreferenceCategory>
 
     <com.coui.appcompat.preference.COUIPreferenceCategory

@@ -35,6 +35,8 @@ public final class HomeScreenGestures {
 
     public static final String PREF_SWIPE_DOWN = "pref_swipe_down";
     public static final String PREF_SWIPE_RIGHT = "pref_swipe_right";
+    /** Icon pull-down (Icon Fallen) gesture toggle. Default off (ColorOS parity). */
+    public static final String PREF_ICON_FALLEN = "pref_icon_fallen";
 
     public static final String SWIPE_DOWN_GLOBAL_SEARCH = "global_search";
     public static final String SWIPE_DOWN_NOTIFICATION = "notification";
@@ -71,6 +73,11 @@ public final class HomeScreenGestures {
 
     public static boolean isSwipeRightQuickGlance(Context context) {
         return SWIPE_RIGHT_QUICK_GLANCE.equals(getSwipeRightAction(context));
+    }
+
+    /** Whether the Icon pull-down (Icon Fallen) gesture is enabled. */
+    public static boolean isIconFallenEnabled(Context context) {
+        return prefs(context).getBoolean(PREF_ICON_FALLEN, false);
     }
 
     /**

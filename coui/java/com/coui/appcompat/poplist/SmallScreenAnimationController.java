@@ -88,7 +88,12 @@ class SmallScreenAnimationController extends BasePopupMenuAnimationController {
 
     private void configMainMenuAnimationPropertiesForSubMenuEnter() {
         this.mMainMenuAlphaPercent = DEFAULT_MAIN_MENU_ALPHA_PERCENT;
-        float fWidth = this.mDomain.mMainMenuRelocated.width() / this.mDomain.mMainMenu.width();
+        // Must use float division: int/int truncates (e.g. 184/200 → 0) and scales
+        // the parent card to nothing so Select disappears behind Sort (Oppo keeps ~0.9).
+        float mainW = this.mDomain.mMainMenu.width();
+        float fWidth = mainW > 0f
+                ? this.mDomain.mMainMenuRelocated.width() / mainW
+                : 1f;
         this.mMainMenuScalePercentX = fWidth;
         this.mMainMenuScalePercentY = fWidth;
         PopupMenuDomain popupMenuDomain = this.mDomain;

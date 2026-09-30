@@ -33,6 +33,11 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
     private var scrollInteractionBegan = false
     /** True if this finger gesture actually dispatched overlay progress. */
     private var dispatchedOverlayThisGesture = false
+    /**
+     * Same as [dispatchedOverlayThisGesture] but survives until the next DOWN —
+     * [endOverlayScrollIfNeeded] clears the former before PagedView evaluates the fling.
+     */
+    private var overlayDrivenThisGesture = false
     private var lastOverlayProgress = 0f
     private var overlayRtl = false
     private var velocityTracker: VelocityTracker? = null
@@ -77,6 +82,15 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
 
     override fun shouldPullEdgeGlow(): Boolean = false
 
+    /**
+     * Oppo WorkspaceOplusImpl.onInterceptShouldFlingForVelocity (phone): page flings
+     * are allowed while the overlay is under 1/3 open. Progress left over from a
+     * remote close settle (async AIDL) must not eat the next home swipe; a finger
+     * that is itself driving the overlay still defers to the overlay.
+     */
+    override fun canFlingWithOverlayProgress(overlayProgress: Float): Boolean =
+        !overlayDrivenThisGesture && abs(overlayProgress) < RESIDUAL_OVERLAY_FLING_MAX
+
     override fun scrollTo(x: Int, y: Int) {
         super.scrollTo(x, y)
         driveOverlayFromOverscroll()
@@ -90,6 +104,7 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
                 // Oppo onScrollInteractionBegin sets mScrollInteractionBegan.
                 scrollInteractionBegan = true
                 dispatchedOverlayThisGesture = false
+                overlayDrivenThisGesture = false
             }
             MotionEvent.ACTION_MOVE -> velocityTracker?.addMovement(ev)
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -197,6 +212,7 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
         overlayRtl = rtl
         lastOverlayProgress = progress
         dispatchedOverlayThisGesture = true
+        overlayDrivenThisGesture = true
         // Oppo 5112-5113: every eligible frame → onScrollChange (session optional).
         edge.launcherOverlay.onScrollChange(progress, rtl)
         // Drive home frost immediately (Oppo OverlayAnimManager). Frost uses [0,1].
@@ -248,6 +264,7 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
     companion object {
         private const val TAG = "CustomizeWorkspace"
         private const val SHOWING_EPSILON = 0.02f
+        private const val RESIDUAL_OVERLAY_FLING_MAX = 1f / 3f
     }
 }
 

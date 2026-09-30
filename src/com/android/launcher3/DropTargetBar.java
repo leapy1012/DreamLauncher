@@ -17,7 +17,6 @@
 package com.android.launcher3;
 
 import static com.android.launcher3.ButtonDropTarget.TOOLTIP_DEFAULT;
-import static com.android.launcher3.LauncherState.ALL_APPS;
 import static com.android.launcher3.anim.AlphaUpdateListener.updateVisibility;
 
 import android.animation.TimeInterpolator;
@@ -35,7 +34,6 @@ import com.android.launcher3.anim.Interpolators;
 import com.android.launcher3.dragndrop.DragController;
 import com.android.launcher3.dragndrop.DragController.DragListener;
 import com.android.launcher3.dragndrop.DragOptions;
-import com.android.launcher3.editselection.EditSelectionManager;
 
 /*
  * The top bar containing various drop targets: Delete/App Info/Uninstall.
@@ -309,25 +307,33 @@ public class DropTargetBar extends FrameLayout
         return visibleCount;
     }
 
+    /**
+     * Show requests are ignored — Dream never surfaces the Cancel/Remove strip
+     * (broken chrome for All Apps / widget / batch drags). Hide still works.
+     */
     public void animateToVisibility(boolean isVisible) {
-        if (mVisible != isVisible) {
-            mVisible = isVisible;
+        if (isVisible) {
+            return;
+        }
+        if (!mVisible && Float.compare(getAlpha(), 0f) == 0) {
+            updateVisibility(this);
+            return;
+        }
+        mVisible = false;
 
-            // Cancel any existing animation
-            if (mCurrentAnimation != null) {
-                mCurrentAnimation.cancel();
-                mCurrentAnimation = null;
-            }
+        if (mCurrentAnimation != null) {
+            mCurrentAnimation.cancel();
+            mCurrentAnimation = null;
+        }
 
-            float finalAlpha = mVisible ? 1 : 0;
-            if (Float.compare(getAlpha(), finalAlpha) != 0) {
-                setVisibility(View.VISIBLE);
-                mCurrentAnimation = animate().alpha(finalAlpha)
-                        .setInterpolator(DEFAULT_INTERPOLATOR)
-                        .setDuration(DEFAULT_DRAG_FADE_DURATION)
-                        .withEndAction(mFadeAnimationEndRunnable);
-            }
-
+        if (Float.compare(getAlpha(), 0f) != 0) {
+            setVisibility(View.VISIBLE);
+            mCurrentAnimation = animate().alpha(0f)
+                    .setInterpolator(DEFAULT_INTERPOLATOR)
+                    .setDuration(DEFAULT_DRAG_FADE_DURATION)
+                    .withEndAction(mFadeAnimationEndRunnable);
+        } else {
+            updateVisibility(this);
         }
     }
 
@@ -336,23 +342,9 @@ public class DropTargetBar extends FrameLayout
      */
     @Override
     public void onDragStart(DropTarget.DragObject dragObject, DragOptions options) {
-        // Oppo: cancel strip only for All Apps / batch — not popup shortcut → Home.
-        if (shouldShowCancelStrip(dragObject)) {
-            animateToVisibility(true);
-        }
-    }
-
-    /**
-     * Mirrors Oppo {@code OplusDropTargetBar.animateToVisibility(true)}:
-     * show only for All Apps or batch/edit-selection drag — not workspace reorder,
-     * folder reorder, or long-press popup shortcut drops onto Home.
-     */
-    private boolean shouldShowCancelStrip(DropTarget.DragObject dragObject) {
-        if (mLauncher.isInState(ALL_APPS)) {
-            return true;
-        }
-        EditSelectionManager selection = mLauncher.getEditSelectionManager();
-        return selection != null && selection.isActive();
+        // Never show the top Cancel strip. Drawer/widget cancel by releasing outside
+        // a valid drop; workspace remove/uninstall uses other UI.
+        animateToVisibility(false);
     }
 
     /**
@@ -374,5 +366,10 @@ public class DropTargetBar extends FrameLayout
 
     public ButtonDropTarget[] getDropTargets() {
         return getVisibility() == View.VISIBLE ? mDropTargets : new ButtonDropTarget[0];
+    }
+
+    /** Whether the cancel/remove strip is visible for the current drag. Always false in Dream. */
+    public boolean isDragStripActive() {
+        return mVisible;
     }
 }

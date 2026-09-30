@@ -1035,6 +1035,55 @@ public class LargeFolderIcon extends FolderIcon implements ISwitchFolderAnimatio
         }
     }
 
+    /**
+     * Oppo {@code FlexibleFolderIcon.inFallenIconsRectArea} +
+     * {@code OplusIconFallenAnimationManager.clickBigFolderItemIcon}: while Icon Fallen is
+     * active, map a window-space point onto the closed large-folder preview.
+     * <ul>
+     *   <li>App preview cell → {@link LargeFolderIconItem} (launch via ItemClickHandler)</li>
+     *   <li>Overflow / stacked count-out cell → this folder (open)</li>
+     *   <li>Plate hit but no cell → this folder (open)</li>
+     *   <li>Outside plate → {@code null}</li>
+     * </ul>
+     */
+    @Nullable
+    public View resolveFallenPreviewTarget(float windowX, float windowY) {
+        if (!isLargeFolder() || mListView == null) {
+            return null;
+        }
+        int[] loc = new int[2];
+        getLocationInWindow(loc);
+        float folderScaleX = getScaleX();
+        float folderScaleY = getScaleY();
+        float plateW = getWidth() * folderScaleX;
+        float plateH = getHeight() * folderScaleY;
+        if (windowX < loc[0] || windowX > loc[0] + plateW
+                || windowY < loc[1] || windowY > loc[1] + plateH) {
+            return null;
+        }
+        int count = mListView.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View child = mListView.getChildAt(i);
+            if (!(child instanceof LargeFolderIconItem) || child.getVisibility() != VISIBLE) {
+                continue;
+            }
+            child.getLocationInWindow(loc);
+            float w = child.getWidth() * child.getScaleX() * folderScaleX;
+            float h = child.getHeight() * child.getScaleY() * folderScaleY;
+            if (windowX >= loc[0] && windowX <= loc[0] + w
+                    && windowY >= loc[1] && windowY <= loc[1] + h) {
+                LargeFolderIconItem item = (LargeFolderIconItem) child;
+                // Oppo stacked / calculateIconClickableSize index → return FlexibleFolderIcon.
+                if (item.isCountOut()) {
+                    return this;
+                }
+                return item;
+            }
+        }
+        // Hit the plate chrome / gaps between cells → open folder (workspace parity).
+        return this;
+    }
+
     private boolean isSupportSwitchFolderSize() {
         return !isHotseatLayout();
     }

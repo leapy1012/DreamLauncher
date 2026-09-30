@@ -341,8 +341,14 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
         if (vibrator != null) {
             vibrator.vibrate(20);
         }
+        mEmptyLongPressOccurred = true;
         mLauncher.getStateManager().goToState(EDIT_MODE);
         return true;
+    }
+
+    /** True after empty-area long-press entered edit mode (suppresses empty-cell click dismiss). */
+    boolean hasEmptyLongPressOccurred() {
+        return mEmptyLongPressOccurred;
     }
 
     @Override

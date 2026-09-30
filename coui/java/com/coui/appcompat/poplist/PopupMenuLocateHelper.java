@@ -438,7 +438,14 @@ final class PopupMenuLocateHelper {
                 }
                 Rect rect = popupMenuDomain.mMainMenuRelocated;
                 Rect rect_2 = popupMenuDomain.mMainMenu;
-                rect.set(rect_2.left, rect_2.top, rect_2.right - PopupMenuLocateHelper.this.mMainMenuShrinkWidth, popupMenuDomain.mMainMenu.bottom - ((int) ((PopupMenuLocateHelper.this.mMainMenuShrinkWidth / popupMenuDomain.mMainMenu.width()) * popupMenuDomain.mMainMenu.height())));
+                // Float division so height shrink matches width shrink (int/int was 0).
+                int mainW = Math.max(1, rect_2.width());
+                int heightShrink = Math.round(
+                        (PopupMenuLocateHelper.this.mMainMenuShrinkWidth / (float) mainW)
+                                * rect_2.height());
+                rect.set(rect_2.left, rect_2.top,
+                        rect_2.right - PopupMenuLocateHelper.this.mMainMenuShrinkWidth,
+                        rect_2.bottom - heightShrink);
                 popupMenuDomain.mMainMenuRelocated.offset(getOffsetX(popupMenuDomain), getOffsetY(popupMenuDomain));
             }
         };
@@ -512,7 +519,12 @@ final class PopupMenuLocateHelper {
 
             private int getSubMenuAnchorTopAfterMainMenuRelocated(PopupMenuDomain popupMenuDomain) {
                 int index = PopupMenuLocateHelper.this.mSubmenuAnchorBounds.top;
-                return (int) (popupMenuDomain.mMainMenuRelocated.top + ((popupMenuDomain.mMainMenu.height() > 0 ? popupMenuDomain.mMainMenuRelocated.height() / popupMenuDomain.mMainMenu.height() : 1.0f) * (index - popupMenuDomain.mMainMenu.top)));
+                float heightScale = popupMenuDomain.mMainMenu.height() > 0
+                        ? (float) popupMenuDomain.mMainMenuRelocated.height()
+                                / popupMenuDomain.mMainMenu.height()
+                        : 1.0f;
+                return (int) (popupMenuDomain.mMainMenuRelocated.top
+                        + heightScale * (index - popupMenuDomain.mMainMenu.top));
             }
 
             @Override

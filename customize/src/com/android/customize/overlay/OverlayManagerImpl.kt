@@ -108,4 +108,10 @@ class OverlayManagerImpl(val launcher: CustomizeLauncher) : OverlayManagerLifecy
     override fun hideOverlay(duration: Int) {
         quickGlance()?.closeOverlay()
     }
+
+    /**
+     * Oppo: forward Back into Assist/Quick Glance before dismissing the overlay.
+     * @return true if nested UI (Add widgets / detail) consumed it.
+     */
+    fun onOverlayBackPressed(): Boolean = quickGlance()?.onBackPressed() == true
 }

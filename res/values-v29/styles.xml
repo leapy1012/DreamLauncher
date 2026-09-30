@@ -18,8 +18,8 @@
 -->
 
 <resources>
-    <!-- Launcher theme -->
-    <style name="BaseLauncherTheme" parent="@android:style/Theme.DeviceDefault.DayNight">
+    <!-- Oppo: BaseLauncherTheme → OplusSupportBaseTheme (COUI). Keep API 29 cutout/contrast. -->
+    <style name="BaseLauncherTheme" parent="@style/OplusSupportBaseTheme">
         <item name="android:colorBackgroundCacheHint">@null</item>
         <item name="android:colorEdgeEffect">#FF757575</item>
         <item name="android:windowActionBar">false</item>

@@ -57,6 +57,10 @@ public interface ILauncherOverlay extends android.os.IInterface
     {
       return false;
     }
+    @Override public boolean onBackPressed() throws android.os.RemoteException
+    {
+      return false;
+    }
     @Override
     public android.os.IBinder asBinder() {
       return null;
@@ -193,6 +197,13 @@ public interface ILauncherOverlay extends android.os.IInterface
         case TRANSACTION_hasOverlayContent:
         {
           boolean _result = this.hasOverlayContent();
+          reply.writeNoException();
+          reply.writeInt(((_result)?(1):(0)));
+          break;
+        }
+        case TRANSACTION_onBackPressed:
+        {
+          boolean _result = this.onBackPressed();
           reply.writeNoException();
           reply.writeInt(((_result)?(1):(0)));
           break;
@@ -413,6 +424,23 @@ public interface ILauncherOverlay extends android.os.IInterface
         }
         return _result;
       }
+      @Override public boolean onBackPressed() throws android.os.RemoteException
+      {
+        android.os.Parcel _data = android.os.Parcel.obtain();
+        android.os.Parcel _reply = android.os.Parcel.obtain();
+        boolean _result;
+        try {
+          _data.writeInterfaceToken(DESCRIPTOR);
+          boolean _status = mRemote.transact(Stub.TRANSACTION_onBackPressed, _data, _reply, 0);
+          _reply.readException();
+          _result = (0!=_reply.readInt());
+        }
+        finally {
+          _reply.recycle();
+          _data.recycle();
+        }
+        return _result;
+      }
     }
     static final int TRANSACTION_startScroll = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
     static final int TRANSACTION_onScroll = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
@@ -428,6 +456,7 @@ public interface ILauncherOverlay extends android.os.IInterface
     static final int TRANSACTION_windowAttached2 = (android.os.IBinder.FIRST_CALL_TRANSACTION + 11);
     static final int TRANSACTION_endScrollWithVelocity = (android.os.IBinder.FIRST_CALL_TRANSACTION + 12);
     static final int TRANSACTION_hasOverlayContent = (android.os.IBinder.FIRST_CALL_TRANSACTION + 13);
+    static final int TRANSACTION_onBackPressed = (android.os.IBinder.FIRST_CALL_TRANSACTION + 14);
   }
   /** @hide */
   public static final java.lang.String DESCRIPTOR = "gd.app.hiboard.overlay.ILauncherOverlay";
@@ -445,6 +474,7 @@ public interface ILauncherOverlay extends android.os.IInterface
   public void windowAttached2(android.os.Bundle bundle, gd.app.hiboard.overlay.ILauncherOverlayCallback callback) throws android.os.RemoteException;
   public void endScrollWithVelocity(float velocity) throws android.os.RemoteException;
   public boolean hasOverlayContent() throws android.os.RemoteException;
+  public boolean onBackPressed() throws android.os.RemoteException;
   /** @hide */
   static class _Parcel {
     static private <T> T readTypedObject(

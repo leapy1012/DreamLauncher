@@ -3,10 +3,8 @@ package com.android.launcher3.allapps.coloros;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
-import android.content.res.Configuration;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -159,7 +157,10 @@ public final class ColorOsDrawerChrome {
         if (mTabHeader == null) {
             return;
         }
-        boolean hide = isDrawerSelectActive() || mSearchUiActive;
+        // While letter-cluster is up, chrome stays hidden with the apps grid.
+        // Never restore tabs alone — that yields empty-looking drawer + visible chrome.
+        boolean hide = isDrawerSelectActive() || mSearchUiActive
+                || (mLetterCluster != null && mLetterCluster.isShowing());
         mTabHeader.animate().cancel();
         mTabHeader.setAlpha(hide ? 0f : 1f);
         mTabHeader.setEnabled(!hide);
@@ -909,6 +910,35 @@ public final class ColorOsDrawerChrome {
     }
 
     /**
+     * Force the All-apps grid visible. Letter-cluster mode hides it with alpha=0;
+     * if dismiss races with tab/search chrome restore, the list can stay blank while
+     * tabs/search/rail remain on screen.
+     */
+    public void restoreAppsListContentVisible() {
+        View apps = resolveAppsContentView();
+        View appsContainer = mContainer.getAppsRecyclerViewContainer();
+        if (apps != null) {
+            apps.animate().cancel();
+            apps.setAlpha(1f);
+            apps.setEnabled(true);
+            apps.setVisibility(View.VISIBLE);
+        }
+        if (appsContainer != null) {
+            appsContainer.animate().cancel();
+            appsContainer.setAlpha(1f);
+            appsContainer.setEnabled(true);
+            appsContainer.setVisibility(View.VISIBLE);
+        }
+        View appsList = mContainer.findViewById(R.id.apps_list_view);
+        if (appsList != null && appsList != apps && appsList != appsContainer) {
+            appsList.animate().cancel();
+            appsList.setAlpha(1f);
+            appsList.setEnabled(true);
+            appsList.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
      * Oppo: after leaving cluster, drop scrub (blue) styling. Prefer the filtered
      * section as the follow highlight — with few apps the list often cannot scroll
      * that section to row 0, so syncing from first-visible always stuck on B.
@@ -975,10 +1005,8 @@ public final class ColorOsDrawerChrome {
             return;
         }
         ensurePopupWindow();
-        // Oppo ignores re-click while showing; we force-dismiss so a dimmed
-        // in-flight exit cannot leave a stuck floating window.
+        // Oppo handleManagerClick: ignore re-click while the popup is showing.
         if (mPopupWindow.isShowing()) {
-            mPopupWindow.forceDismiss();
             return;
         }
         rebuildPopupItems();
@@ -990,23 +1018,13 @@ public final class ColorOsDrawerChrome {
         if (mPopupWindow != null) {
             return;
         }
-        // Force light UI mode so System Dark Mode cannot invert the Oppo-style
-        // white panel / black labels (Select was unreadable on a force-darkened panel).
-        Context couiContext = createLightCouiPopupContext();
-        mPopupWindow = new COUIPopupListWindow(couiContext);
-        mPopupWindow.setUseBackgroundBlur(false);
+        // Oppo initColorPopListWindowCreate: activity context already carries COUI
+        // via BaseLauncherTheme → OplusSupportBaseTheme → Theme.COUI.Main.*.
+        mPopupWindow = new COUIPopupListWindow(mContainer.getContext());
+        mPopupWindow.setUseBackgroundBlur(true);
         mPopupWindow.setDismissTouchOutside(true);
         mPopupWindow.setOnItemClickListener(this::onPopupMainItemClick);
         mPopupWindow.setSubMenuClickListener(this::onPopupSubMenuItemClick);
-    }
-
-    private Context createLightCouiPopupContext() {
-        Context base = mContainer.getContext();
-        Configuration cfg = new Configuration(base.getResources().getConfiguration());
-        cfg.uiMode = (cfg.uiMode & ~Configuration.UI_MODE_NIGHT_MASK)
-                | Configuration.UI_MODE_NIGHT_NO;
-        Context light = base.createConfigurationContext(cfg);
-        return new ContextThemeWrapper(light, com.coui.appcompat.R.style.Theme_COUI_Blue);
     }
 
     private void rebuildPopupItems() {
@@ -1070,11 +1088,13 @@ public final class ColorOsDrawerChrome {
         }
         int itemId = mPopupItems.get(position).getId();
         if (itemId == MENU_ID_SELECT) {
-            mPopupWindow.forceDismiss();
+            // Oppo: dismiss() then enter multi-select.
+            mPopupWindow.dismiss();
             getSelectController().enter();
             return;
         }
         if (itemId == MENU_ID_SETTINGS) {
+            // Oppo drawer settings path uses forceDismiss before leaving All Apps.
             mPopupWindow.forceDismiss();
             // Leave All Apps first: Home from Settings resumes this task, and
             // without a NORMAL transition the drawer scrim stays on the workspace.
@@ -1088,8 +1108,8 @@ public final class ColorOsDrawerChrome {
 
     private void onPopupSubMenuItemClick(AdapterView<?> parent, View view, int position, long id) {
         applySortRule(position);
-        // forceDismiss clears submenu ListView alpha; animated dismiss can leave it.
-        mPopupWindow.forceDismiss();
+        // Oppo sort pick: animated dismiss (keeps parent/submenu shell consistent).
+        mPopupWindow.dismiss();
     }
 
     private void applySortRule(int rule) {
@@ -1366,18 +1386,14 @@ public final class ColorOsDrawerChrome {
             layoutCategoryListUnderTabs();
             applyListFadePadding();
         } else {
+            // Cluster hides apps via alpha; always tear it down before restoring the
+            // All list so chrome cannot reappear while the grid stays at alpha 0.
+            dismissLetterCluster();
             if (cats != null) {
                 cats.setAlpha(1f);
                 cats.setVisibility(View.GONE);
             }
-            if (apps != null) {
-                apps.setAlpha(1f);
-                apps.setVisibility(View.VISIBLE);
-            }
-            if (appsContainer != null && appsContainer != apps) {
-                appsContainer.setAlpha(1f);
-                appsContainer.setVisibility(View.VISIBLE);
-            }
+            restoreAppsListContentVisible();
             updateLetterRailVisibility();
             applyListFadePadding();
         }

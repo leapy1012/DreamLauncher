@@ -304,6 +304,18 @@ class QuickGlanceLauncherClient(
         }
     }
 
+    /**
+     * @return true if Quick Glance nested UI consumed Back (e.g. closed Add widgets).
+     */
+    fun onBackPressed(): Boolean {
+        return try {
+            overlay?.onBackPressed() == true
+        } catch (e: RemoteException) {
+            Log.w(TAG, "onBackPressed", e)
+            false
+        }
+    }
+
     private fun scheduleReconnect() {
         if (destroyed || bound) return
         mainHandler.removeCallbacks(reconnectRunnable)

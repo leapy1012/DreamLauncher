@@ -1523,8 +1523,14 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
     @Override
     protected boolean shouldFlingForVelocity(int velocityX) {
         // When the overlay is moving, the fling or settle transition is controlled by the overlay.
-        return Float.compare(Math.abs(mOverlayProgress), 0) == 0
+        return (Float.compare(Math.abs(mOverlayProgress), 0) == 0
+                || canFlingWithOverlayProgress(mOverlayProgress))
                 && super.shouldFlingForVelocity(velocityX);
+    }
+
+    /** Whether a page fling may run while overlay progress is still non-zero. */
+    protected boolean canFlingWithOverlayProgress(float overlayProgress) {
+        return false;
     }
 
     /**
