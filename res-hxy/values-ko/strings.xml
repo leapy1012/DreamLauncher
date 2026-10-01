@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Korean translations for ColorOS / Icon Fallen launcher strings. -->
+<resources>
+    <string name="coloros_add_app_to_home">새 앱을 홈 화면에 추가</string>
+    <string name="coloros_show_app_suggestions">앱 추천 표시</string>
+    <string name="coloros_drawer_default_view">기본 보기</string>
+    <string name="coloros_drawer_layout">서랍 레이아웃</string>
+    <string name="coloros_drawer_show_app_names">앱 이름 표시</string>
+    <string name="coloros_home_screen_in_use">사용 중</string>
+    <string name="coloros_switch_home_screen_mode_message">홈 화면 모드를 전환하면 아이콘 배열이 바뀔 수 있습니다. 전환할까요?</string>
+    <string name="coloros_layout_hide_icon_names">아이콘 이름 숨기기</string>
+    <string name="coloros_layout_hide_icon_names_summary">홈 화면 레이아웃이 변경됩니다.</string>
+    <string name="launcher_icon_fallen_title">아이콘 끌어내리기 제스처</string>
+    <string name="launcher_icon_fallen_sub_title">한 손으로 홈 화면 앱을 엽니다.</string>
+    <string name="launcher_icon_fallen_tip">화면 왼쪽 또는 오른쪽에서 위로 밀어 앱 아이콘을 끌어내리세요. 손가락을 떼지 말고 원하는 아이콘까지 계속 민 다음 손을 떼면 앱이 열립니다.</string>
+    <string name="launcher_icon_fallen_toast">끌어내릴 앱 아이콘이 없습니다</string>
+    <string name="coloros_floating_tab_all">전체</string>
+    <string name="coloros_floating_tab_category">카테고리</string>
+    <string name="coloros_all_apps_search_hint">앱 검색</string>
+    <string name="coloros_drawer_menu">추가 옵션</string>
+    <string name="coloros_drawer_columns_four">4열</string>
+    <string name="coloros_drawer_columns_five">5열</string>
+    <string name="coloros_drawer_app_sort_select">선택</string>
+    <string name="coloros_drawer_app_sort_sort">정렬</string>
+    <string name="coloros_drawer_category_settings">설정</string>
+    <string name="coloros_drawer_select_cancel">취소</string>
+    <string name="coloros_drawer_add_app_to_launcher">홈 화면에 추가</string>
+    <string name="coloros_drawer_select_uninstall">제거</string>
+    <string name="coloros_drawer_select_max">아이콘은 최대 %1$d개까지 선택할 수 있습니다</string>
+    <string name="coloros_drawer_select_none_uninstallable">선택한 앱은 제거할 수 없습니다</string>
+    <string name="coloros_category_recently_installed">최근 설치됨</string>
+    <string name="coloros_alphabet_sort">이름순</string>
+    <string name="coloros_frequence_sort">사용량순</string>
+    <string name="coloros_time_sort">설치 시간순</string>
+    <plurals name="coloros_drawer_select_count">
+        <item quantity="one">%d개 선택됨</item>
+        <item quantity="other">%d개 선택됨</item>
+    </plurals>
+</resources>

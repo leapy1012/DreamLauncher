@@ -135,4 +135,24 @@
     <string name="oplus_privacy_show_preview">显示内容</string>
     <string name="oplus_privacy_app_preview_closed">此应用内容已隐藏</string>
     <string name="remove_widget_panel_title">移除插件</string>
+
+    <!-- Missing ColorOS / Icon Fallen strings -->
+    <string name="coloros_all_apps_search_hint">搜索应用</string>
+    <string name="coloros_drawer_menu">更多选项</string>
+    <string name="coloros_drawer_app_sort_select">选择</string>
+    <string name="coloros_drawer_app_sort_sort">排序</string>
+    <string name="coloros_drawer_category_settings">设置</string>
+    <string name="coloros_drawer_select_cancel">取消</string>
+    <string name="coloros_drawer_add_app_to_launcher">添加到主屏幕</string>
+    <string name="coloros_drawer_select_uninstall">卸载</string>
+    <string name="coloros_drawer_select_max">最多可选择 %1$d 个图标</string>
+    <string name="coloros_drawer_select_none_uninstallable">所选应用无法卸载</string>
+    <string name="coloros_category_recently_installed">最近安装</string>
+    <string name="coloros_alphabet_sort">按名称</string>
+    <string name="coloros_frequence_sort">按使用频率</string>
+    <string name="coloros_time_sort">按安装时间</string>
+    <plurals name="coloros_drawer_select_count">
+        <item quantity="one">已选择 %d 项</item>
+        <item quantity="other">已选择 %d 项</item>
+    </plurals>
 </resources>

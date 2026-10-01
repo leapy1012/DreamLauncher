@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated COUI zh-rCN strings. Prefer ColorOS dump values when available. -->
+<resources>
+    <string name="coui_year">年</string>
+    <string name="coui_month">月</string>
+    <string name="coui_day">日</string>
+    <string name="coui_time_picker_day">日</string>
+    <string name="red_dot_description">有新通知</string>
+    <string name="coui_accessibility_unselected">未选中</string>
+    <string name="item_view_role_description">标签页</string>
+    <string name="red_dot_more">···</string>
+    <string name="indicator_content_description">轮播图标签</string>
+    <string name="indicator_content_end">页码指示器，双指向右或向左滑动即可切换</string>
+    <string name="minus_content">减少</string>
+    <string name="coui_view_inflater_class">com.coui.appcompat.theme.COUIComponentsViewInflater</string>
+    <string name="bottom_sheet_behavior">com.coui.appcompat.panel.COUIBottomSheetBehavior</string>
+    <string name="coui_toolar_close_button_description">收起标题</string>
+    <string name="coui_toolar_expand_button_description">展开标题</string>
+    <string name="loading_button_dots">...</string>
+    <string name="morning">上午</string>
+    <string name="afternoon">下午</string>
+    <string name="coui_hour_abbreviation">时</string>
+    <string name="coui_minute_abbreviation">分</string>
+    <string name="coui_hour">小时</string>
+    <string name="coui_minute">分钟</string>
+    <string name="ymdw">yyyy年M月d日 EEEE</string>
+    <string name="ymdwhm">yyyy年M月d日 EEEE HH:mm</string>
+    <string name="ymdwshm">yyyy年M月d日 EEE HH:mm</string>
+    <string name="coui_time_picker_today">今天</string>
+    <string name="coui_accessibility_checked">已勾选</string>
+    <string name="coui_accessibility_partchecked">已部分勾选</string>
+    <string name="coui_accessibility_unchecked">未勾选</string>
+    <string name="coui_accessibility_select">选择</string>
+    <string name="coui_accessibility_select_all">全选</string>
+    <string name="coui_accessibility_switch">切换</string>
+    <string name="coui_inputview_show_password_description">显示密码</string>
+    <string name="coui_slide_delete">删除</string>
+    <string name="coui_lunar_leap_string">闰</string>
+    <string name="switch_loading">正在加载</string>
+    <string name="switch_off">关闭</string>
+    <string name="switch_on">开启</string>
+    <string name="coui_install_download_progress_textview">下载</string>
+    <string name="coui_install_load_progress_apostrophe">...</string>
+    <string name="coui_loading_view_access_string">正在加载</string>
+    <string name="coui_seek_bar_role_description">滑动条</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="dialog_ok">确定</string>
+    <string name="coui_lottie_loading_large_dark_json">coui_lottie_loading_large_night.json</string>
+    <string name="coui_lottie_loading_large_json">coui_lottie_loading_large.json</string>
+    <string name="coui_lottie_loading_large_light_json">coui_lottie_loading_large.json</string>
+    <string name="coui_lottie_loading_small_dark_json">coui_lottie_loading_small_night.json</string>
+    <string name="coui_lottie_loading_small_json">coui_lottie_loading_small.json</string>
+    <string name="coui_lottie_loading_small_light_json">coui_lottie_loading_small.json</string>
+    <string name="lunar_april">四月</string>
+    <string name="lunar_august">八月</string>
+    <string name="lunar_december">腊月</string>
+    <string name="lunar_februry">二月</string>
+    <string name="lunar_january">正月</string>
+    <string name="lunar_july">七月</string>
+    <string name="lunar_june">六月</string>
+    <string name="lunar_march">三月</string>
+    <string name="lunar_may">五月</string>
+    <string name="lunar_november">冬月</string>
+    <string name="lunar_october">十月</string>
+    <string name="lunar_september">九月</string>
+    <string name="coui_search_clear_button_description">清除文本</string>
+    <string name="coui_search_edit_box_description">搜索编辑框</string>
+    <string name="coui_search_share_button_description">分享</string>
+    <string name="coui_search_view_cancel">取消</string>
+    <string name="coui_search_view_text">取消</string>
+    <string name="bottom_recommended_header_title">你可能想找：</string>
+    <string name="support_abc_searchview_description_clear">清除查询</string>
+    <string name="support_abc_searchview_description_search">搜索</string>
+    <string name="support_abc_searchview_description_submit">提交查询</string>
+    <string name="support_abc_searchview_description_voice">语音搜索</string>
+    <string name="coui_loading_rotating_json">coui_rotating_loading.json</string>
+    <string name="abc_capital_on">开启</string>
+    <string name="abc_capital_off">关闭</string>
+    <string name="abc_action_menu_overflow_description">更多选项</string>
+    <string name="coui_toolbar_navigation_back">返回</string>
+    <string name="coui_tool_tips_delete_icon_description">关闭提示</string>
+    <string name="coui_allow_text">同意并使用</string>
+    <string name="coui_loading_rotating_json_dark">coui_rotating_loading_night.json</string>
+    <string name="coui_loading_rotating_json_light">coui_rotating_loading.json</string>
+    <string name="coui_lock_screen_next_button_description">下一步</string>
+    <string name="coui_notification_close_button_description">关闭通知</string>
+    <string name="coui_panel_please_input_text">请输入文字</string>
+    <string name="coui_reject_text">退出</string>
+    <string name="coui_security_alertdialog_checkbox_msg">不再提醒</string>
+    <string name="coui_security_alertdailog_privacy">《隐私政策》</string>
+    <string name="coui_security_alertdailog_statement">其他相关信息可点击查看%1$s。</string>
+    <string name="coui_guide_dialog_known_text">知道了</string>
+    <string name="coui_guide_dialog_next_text">下一页</string>
+    <string name="coui_guide_dialog_skip_text">跳过</string>
+    <string name="support_abc_toolbar_collapse_description">收起</string>
+    <string name="byteShort"> B</string>
+    <string name="byteSpeed"> B/s</string>
+    <string name="gigaByteSpeed"> GB/s</string>
+    <string name="gigabyteShort"> GB</string>
+    <string name="kiloByteSpeed"> KB/s</string>
+    <string name="kilobyteShort"> KB</string>
+    <string name="megaByteSpeed"> MB/s</string>
+    <string name="megabyteShort"> MB</string>
+    <string name="more_time_download">&#160;千</string>
+    <string name="most_time_download">&#160;万</string>
+    <string name="petaByteSpeed"> PB/s</string>
+    <string name="petabyteShort"> PB</string>
+    <string name="teraByteSpeed"> TB/s</string>
+    <string name="terabyteShort"> TB</string>
+    <string name="fast_scroller_dots">...</string>
+    <plurals name="coui_page_indicator_description">
+        <item quantity="one">第 %1$d 页，共 %2$d 页</item>
+        <item quantity="other">第 %1$d 页，共 %2$d 页</item>
+    </plurals>
+    <plurals name="red_dot_with_number_description">
+        <item quantity="one">%d 条新通知</item>
+        <item quantity="other">%d 条新通知</item>
+    </plurals>
+    <string-array name="coui_time_picker_ampm">
+        <item>@string/morning</item>
+        <item>@string/afternoon</item>
+    </string-array>
+    <string-array name="coui_solor_mounth">
+        <item>1月</item>
+        <item>2月</item>
+        <item>3月</item>
+        <item>4月</item>
+        <item>5月</item>
+        <item>6月</item>
+        <item>7月</item>
+        <item>8月</item>
+        <item>9月</item>
+        <item>10月</item>
+        <item>11月</item>
+        <item>12月</item>
+    </string-array>
+    <string-array name="coui_lunar_month">
+        <item>@string/lunar_january</item>
+        <item>@string/lunar_februry</item>
+        <item>@string/lunar_march</item>
+        <item>@string/lunar_april</item>
+        <item>@string/lunar_may</item>
+        <item>@string/lunar_june</item>
+        <item>@string/lunar_july</item>
+        <item>@string/lunar_august</item>
+        <item>@string/lunar_september</item>
+        <item>@string/lunar_october</item>
+        <item>@string/lunar_november</item>
+        <item>@string/lunar_december</item>
+    </string-array>
+    <string name="abc">ABC</string>
+    <string name="def">DEF</string>
+    <string name="ghi">GHI</string>
+    <string name="jkl">JKL</string>
+    <string name="mno">MNO</string>
+    <string name="pqrs">PQRS</string>
+    <string name="tuv">TUV</string>
+    <string name="wxyz">WXYZ</string>
+    <string name="coui_number_keyboard_delete">删除</string>
+    <string name="coui_numeric_keyboard_sure">完成</string>
+    <string name="coui_simple_lock_access_description">密码栏，已输入 x 个值，共 y 个值</string>
+    <string name="lockscreen_access_pattern_area">图案区域。</string>
+    <string name="lockscreen_access_pattern_cell_added_verbose">已添加圆点 %1$s</string>
+    <string name="lockscreen_access_pattern_cleared">图案已清除</string>
+    <string name="lockscreen_access_pattern_detected">图案绘制完成</string>
+    <string name="lockscreen_access_pattern_start">开始绘制图案</string>
+    <string name="ttf_path">/system/fonts/SysSans-En-Regular.ttf</string>
+    <string name="coui_touchsearch_character_a">A</string>
+    <string name="coui_touchsearch_character_b">B</string>
+    <string name="coui_touchsearch_character_c">C</string>
+    <string name="coui_touchsearch_character_d">D</string>
+    <string name="coui_touchsearch_character_e">E</string>
+    <string name="coui_touchsearch_character_f">F</string>
+    <string name="coui_touchsearch_character_g">G</string>
+    <string name="coui_touchsearch_character_h">H</string>
+    <string name="coui_touchsearch_character_i">I</string>
+    <string name="coui_touchsearch_character_j">J</string>
+    <string name="coui_touchsearch_character_k">K</string>
+    <string name="coui_touchsearch_character_l">L</string>
+    <string name="coui_touchsearch_character_m">M</string>
+    <string name="coui_touchsearch_character_n">N</string>
+    <string name="coui_touchsearch_character_o">O</string>
+    <string name="coui_touchsearch_character_p">P</string>
+    <string name="coui_touchsearch_character_q">Q</string>
+    <string name="coui_touchsearch_character_r">R</string>
+    <string name="coui_touchsearch_character_s">S</string>
+    <string name="coui_touchsearch_character_t">T</string>
+    <string name="coui_touchsearch_character_u">U</string>
+    <string name="coui_touchsearch_character_v">V</string>
+    <string name="coui_touchsearch_character_w">W</string>
+    <string name="coui_touchsearch_character_x">X</string>
+    <string name="coui_touchsearch_character_y">Y</string>
+    <string name="coui_touchsearch_character_z">Z</string>
+    <string name="coui_touchsearch_description">字符 %s, 已选定</string>
+    <string name="coui_touchsearch_dot">·</string>
+    <string name="well_character">#</string>
+</resources>
