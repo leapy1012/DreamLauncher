@@ -53,8 +53,12 @@ public class COUIPopupWindow extends PopupWindow {
         initPopupWindowBackground(context, a);
         a.recycle();
         setClippingEnabled(false);
-        // Oppo: window elevation stays 0; card/content owns the shadow.
-        setElevation(0f);
+        // Oppo: window elevation stays 0; card owns the shadow via OPlus light-source.
+        // MTK AOSP: keep style android:popupElevation — zeroing it breaks TYPE_APPLICATION_SUB_PANEL
+        // menus on launcher overlay panels (Quick Glance), where the window needs Z to composite.
+        if (ShadowUtils.checkOPlusViewElevationSDK()) {
+            setElevation(0f);
+        }
         setExitTransition(null);
         setEnterTransition(null);
         setAnimationStyle(R.style.Animation_COUI_PopupListWindow);

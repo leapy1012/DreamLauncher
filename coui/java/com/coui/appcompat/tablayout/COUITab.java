@@ -129,6 +129,7 @@ public class COUITab {
 
     public COUITab setCustomView(View view) {
         this.mCustomView = view;
+        updateView();
         return this;
     }
 
@@ -189,6 +190,7 @@ public class COUITab {
             throw new IllegalArgumentException("Tab not attached to a COUITabLayout");
         }
         this.mCustomView = LayoutInflater.from(cOUITabLayout.getContext()).inflate(customView, (ViewGroup) this.mParent, false);
+        updateView();
         return this;
     }
 

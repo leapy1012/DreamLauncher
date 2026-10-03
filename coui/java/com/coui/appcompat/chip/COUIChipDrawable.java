@@ -167,42 +167,53 @@ public class COUIChipDrawable extends Drawable implements Drawable.Callback,
     private int mMaxWidth = Integer.MAX_VALUE;
 
     private final class TintAnimation extends ChipAnimation {
-        private int mStartBackground;
-        private int mEndBackground;
-        private int mStartText;
-        private int mEndText;
-        private int mStartIcon;
-        private int mEndIcon;
-
         TintAnimation() {
             super("TintAnimation");
         }
 
-        void start(int background, int text, int icon) {
-            mStartBackground = mCurrentBackgroundColor;
-            mEndBackground = background;
-            mStartText = mCurrentTextColor;
-            mEndText = text;
-            mStartIcon = mCurrentIconTint;
-            mEndIcon = icon;
-            mCurrentProgress = 0;
-            mAnimation.animateToFinalPosition(ANIMATION_RANGE);
+        /** Animate spring progress toward checked (ANIMATION_RANGE) or unchecked (0). */
+        void animateToChecked(boolean checked) {
+            float target = checked ? ANIMATION_RANGE : 0.0f;
+            if (!mAnimation.isRunning()
+                    && Math.abs(mCurrentProgress - target) < 1.0f) {
+                applyFraction(checked ? 1.0f : 0.0f);
+                return;
+            }
+            // Ensure the spring restarts from the current visual progress (OPPO B(F)).
+            mAnimation.cancel();
+            mAnimation.setStartValue(mCurrentProgress);
+            mAnimation.setStartVelocity(0.0f);
+            mAnimation.animateToFinalPosition(target);
         }
 
         @Override
         void onProgressChanged(float fraction) {
+            applyFraction(fraction);
+        }
+
+        void applyFraction(float fraction) {
+            // Progress 0 = unchecked palette, 1 = checked palette (OPPO TintAnimation).
+            boolean enabled = containsState(getState(), android.R.attr.state_enabled);
+            int uncheckedBg = resolveBackgroundColor(enabled, false);
+            int checkedBg = resolveBackgroundColor(enabled, true);
+            int uncheckedText = resolveTextColor(enabled, false);
+            int checkedText = resolveTextColor(enabled, true);
+            int uncheckedIcon = resolveIconTint(enabled, false);
+            int checkedIcon = resolveIconTint(enabled, true);
             mCurrentBackgroundColor =
-                    (Integer) ARGB_EVALUATOR.evaluate(fraction, mStartBackground, mEndBackground);
+                    (Integer) ARGB_EVALUATOR.evaluate(fraction, uncheckedBg, checkedBg);
             mCurrentTextColor =
-                    (Integer) ARGB_EVALUATOR.evaluate(fraction, mStartText, mEndText);
+                    (Integer) ARGB_EVALUATOR.evaluate(fraction, uncheckedText, checkedText);
             mCurrentIconTint =
-                    (Integer) ARGB_EVALUATOR.evaluate(fraction, mStartIcon, mEndIcon);
+                    (Integer) ARGB_EVALUATOR.evaluate(fraction, uncheckedIcon, checkedIcon);
             onChipTextColorChange(mCurrentTextColor);
             invalidateSelf();
         }
     }
 
     private final TintAnimation mTintAnimation = new TintAnimation();
+    /** When false, checked/unchecked snaps with no TintAnimation (pager swipe path). */
+    private boolean mAnimateStateChanges = true;
 
     private final ChipAnimation mCloseIconAnimation = new ChipAnimation("CloseIconAnimation") {
         @Override
@@ -382,19 +393,32 @@ public class COUIChipDrawable extends Drawable implements Drawable.Callback,
 
     private void updateStateColors(boolean animate) {
         boolean enabled = containsState(getState(), android.R.attr.state_enabled);
-        boolean checked = mCheckable && containsState(getState(), android.R.attr.state_checked);
-        int background = resolveBackgroundColor(enabled, checked);
-        int text = resolveTextColor(enabled, checked);
-        int icon = resolveIconTint(enabled, checked);
+        // Match OPPO: checked look follows state_checked (not mCheckable).
+        boolean checked = containsState(getState(), android.R.attr.state_checked);
+        if (mChecked == checked) {
+            // Palette refresh only. Never cancel a running spring — that was the
+            // swipe blink / dead TintAnimation (color setters → animate=false).
+            if (!animate && !mTintAnimation.mAnimation.isRunning()) {
+                mTintAnimation.mCurrentProgress = checked ? ANIMATION_RANGE : 0.0f;
+                mCurrentBackgroundColor = resolveBackgroundColor(enabled, checked);
+                mCurrentTextColor = resolveTextColor(enabled, checked);
+                mCurrentIconTint = resolveIconTint(enabled, checked);
+                onChipTextColorChange(mCurrentTextColor);
+                invalidateSelf();
+            }
+            return;
+        }
         mChecked = checked;
         if (animate && mCurrentBackgroundColor != 0) {
-            mTintAnimation.mAnimation.cancel();
-            mTintAnimation.start(background, text, icon);
+            // OPPO: spring progress 0=unchecked, ANIMATION_RANGE=checked.
+            mTintAnimation.animateToChecked(checked);
         } else {
-            mCurrentBackgroundColor = background;
-            mCurrentTextColor = text;
-            mCurrentIconTint = icon;
-            onChipTextColorChange(text);
+            mTintAnimation.mAnimation.cancel();
+            mTintAnimation.mCurrentProgress = checked ? ANIMATION_RANGE : 0.0f;
+            mCurrentBackgroundColor = resolveBackgroundColor(enabled, checked);
+            mCurrentTextColor = resolveTextColor(enabled, checked);
+            mCurrentIconTint = resolveIconTint(enabled, checked);
+            onChipTextColorChange(mCurrentTextColor);
             invalidateSelf();
         }
     }
@@ -610,15 +634,30 @@ public class COUIChipDrawable extends Drawable implements Drawable.Callback,
 
     @Override
     protected boolean onStateChange(int[] state) {
+        int oldWidth = getIntrinsicWidth();
+        int oldHeight = getIntrinsicHeight();
         boolean oldChecked = mChecked;
-        updateStateColors(true);
+        updateStateColors(mAnimateStateChanges);
         if (mChipIcon != null && mChipIcon.isStateful()) {
             mChipIcon.setState(state);
         }
         if (mCloseIcon != null && mCloseIcon.isStateful()) {
             mCloseIcon.setState(mCloseIconStateSet);
         }
-        if (oldChecked != mChecked) {
+        // OPPO forwards view state to mask/stroke so press/hover overlays animate.
+        if (mMaskEffectDrawable != null) {
+            mMaskEffectDrawable.setState(state);
+        }
+        if (mStrokeDrawable != null) {
+            mStrokeDrawable.setState(state);
+        }
+        if (mCloseIconEffectDrawable != null) {
+            mCloseIconEffectDrawable.setState(state);
+        }
+        // Relayout only when checked style actually changes size. Always requesting
+        // layout on check flips reflows the tab strip mid-swipe (Fonts→Widgets blink).
+        if (oldChecked != mChecked
+                && (oldWidth != getIntrinsicWidth() || oldHeight != getIntrinsicHeight())) {
             onSizeChange();
         }
         return true;
@@ -726,9 +765,25 @@ public class COUIChipDrawable extends Drawable implements Drawable.Callback,
         return mCheckable;
     }
 
+    /** True while the checked/unchecked spring tint is in flight. */
+    public boolean isTintAnimationRunning() {
+        return mTintAnimation.mAnimation.isRunning();
+    }
+
+    /**
+     * Controls whether the next checked-state change runs TintAnimation.
+     * ThemeStore disables this while the ViewPager is dragging/settling so chip
+     * tint does not spring while the tab strip scrolls (Fonts→Widgets blink).
+     */
+    public void setAnimateStateChanges(boolean animate) {
+        mAnimateStateChanges = animate;
+    }
+
     public void setCheckable(boolean value) {
+        // Match OPPO U0(Z): update flag only; do not re-resolve tint colors here.
+        // Do not clear mChecked — that desyncs from state_checked and can re-trigger
+        // TintAnimation (blink) on the next state pass.
         mCheckable = value;
-        invalidateSelf();
     }
 
     public boolean isChipIconVisible() {
@@ -1083,61 +1138,97 @@ public class COUIChipDrawable extends Drawable implements Drawable.Callback,
     }
 
     public void setCheckedBackgroundColor(@ColorInt int value) {
+        if (mCheckedBackgroundColor == value) {
+            return;
+        }
         mCheckedBackgroundColor = value;
         updateStateColors(false);
     }
 
     public void setUncheckedBackgroundColor(@ColorInt int value) {
+        if (mUncheckedBackgroundColor == value) {
+            return;
+        }
         mUncheckedBackgroundColor = value;
         updateStateColors(false);
     }
 
     public void setCheckedDisabledBackgroundColor(@ColorInt int value) {
+        if (mCheckedDisabledBackgroundColor == value) {
+            return;
+        }
         mCheckedDisabledBackgroundColor = value;
         updateStateColors(false);
     }
 
     public void setUncheckedDisabledBackgroundColor(@ColorInt int value) {
+        if (mUncheckedDisabledBackgroundColor == value) {
+            return;
+        }
         mUncheckedDisabledBackgroundColor = value;
         updateStateColors(false);
     }
 
     public void setCheckedTextColor(@ColorInt int value) {
+        if (mCheckedTextColor == value) {
+            return;
+        }
         mCheckedTextColor = value;
         updateStateColors(false);
     }
 
     public void setUncheckedTextColor(@ColorInt int value) {
+        if (mUncheckedTextColor == value) {
+            return;
+        }
         mUncheckedTextColor = value;
         updateStateColors(false);
     }
 
     public void setCheckedDisabledTextColor(@ColorInt int value) {
+        if (mCheckedDisabledTextColor == value) {
+            return;
+        }
         mCheckedDisabledTextColor = value;
         updateStateColors(false);
     }
 
     public void setUncheckedDisabledTextColor(@ColorInt int value) {
+        if (mUncheckedDisabledTextColor == value) {
+            return;
+        }
         mUncheckedDisabledTextColor = value;
         updateStateColors(false);
     }
 
     public void setCheckedChipIconTint(@ColorInt int value) {
+        if (mCheckedChipIconTint == value) {
+            return;
+        }
         mCheckedChipIconTint = value;
         updateStateColors(false);
     }
 
     public void setUncheckedChipIconTint(@ColorInt int value) {
+        if (mUncheckedChipIconTint == value) {
+            return;
+        }
         mUncheckedChipIconTint = value;
         updateStateColors(false);
     }
 
     public void setCheckedDisabledChipIconTint(@ColorInt int value) {
+        if (mCheckedDisabledChipIconTint == value) {
+            return;
+        }
         mCheckedDisabledChipIconTint = value;
         updateStateColors(false);
     }
 
     public void setUncheckedDisabledChipIconTint(@ColorInt int value) {
+        if (mUncheckedDisabledChipIconTint == value) {
+            return;
+        }
         mUncheckedDisabledChipIconTint = value;
         updateStateColors(false);
     }

@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 
 import com.coui.appcompat.R;
+import com.coui.appcompat.pressfeedback.COUIPressFeedbackHelper;
 import com.coui.appcompat.state.COUIMaskEffectDrawable;
 
 /**
@@ -65,6 +66,8 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
     private int mUncheckedDisabledIconTint;
     private final COUIMaskEffectDrawable mMaskEffectDrawable;
     private final COUIChipDrawable mChipDrawable;
+    private final COUIChipDrawable.COUIChipDrawableDelegate mChipDrawableDelegate;
+    private final COUIPressFeedbackHelper mPressFeedbackHelper;
 
     public COUIChip(@NonNull Context context) {
         this(context, null);
@@ -85,11 +88,10 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
                 context, COUIMaskEffectDrawable.MASK_EFFECT_TYPE_WIDGET_WITH_BACKGROUND);
         mChipDrawable = COUIChipDrawable.createFromAttributes(
                 context, attrs, defStyleAttr, defStyleRes);
-        // COUIChip's TextView owns text layout; the shared drawable owns the chip surface and
-        // icons, exactly as in the decoded implementation.
-        mChipDrawable.setShouldDrawText(false);
-        mChipDrawable.setCallback(this);
-        mChipDrawable.setDelegate(new COUIChipDrawable.COUIChipDrawableDelegate() {
+        // Keep a strong ref: drawable only stores a WeakReference to the delegate.
+        // Without this field, the anonymous delegate is GC'd and TintAnimation
+        // updates fill but never TextView text (selected chip stays dark-on-dark).
+        mChipDrawableDelegate = new COUIChipDrawable.COUIChipDrawableDelegate() {
             @Override
             public void onChipDrawableSizeChange() {
                 requestLayout();
@@ -110,7 +112,12 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
             public void onChipTextOffsetChanged(float x, float y) {
                 invalidate();
             }
-        });
+        };
+        mChipDrawable.setShouldDrawText(false);
+        mChipDrawable.setCallback(this);
+        mChipDrawable.setDelegate(mChipDrawableDelegate);
+        // OPPO COUIChip holds COUIPressFeedbackHelper and drives scale on press.
+        mPressFeedbackHelper = new COUIPressFeedbackHelper(this);
         super.setBackground(mChipDrawable);
         setForeground(null);
         setButtonDrawable((Drawable) null);
@@ -183,7 +190,9 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
             super.setChecked(initiallyChecked);
         }
         super.setOnCheckedChangeListener((button, checked) -> {
-            updateVisualState();
+            // Do NOT call updateVisualState() here. It re-pushes color setters with
+            // animate=false and immediately cancels TintAnimation (swipe blink +
+            // dead spring). Drawable onStateChange owns the checked tint spring.
             if (!mBroadcasting && mInternalListener != null) {
                 mBroadcasting = true;
                 mInternalListener.onCheckedChanged(this, checked);
@@ -196,7 +205,8 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
     @Override
     protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
         super.onSizeChanged(width, height, oldWidth, oldHeight);
-        updateVisualState();
+        // Padding/icon layout only — avoid color-setter path that snaps tint.
+        syncChipPadding();
     }
 
     @Override
@@ -208,11 +218,17 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
 
     @Override
     public void setChecked(boolean checked) {
-        if (mCheckable || !checked) {
+        // Match OPPO COUIChip.setChecked: only super.setChecked when checkable.
+        // Do NOT push drawable state here — CheckBox already triggers
+        // drawableStateChanged → setState once. A second setState cancels and
+        // restarts TintAnimation mid-frame (swipe blink).
+        if (mChipDrawable == null) {
+            // Drawable not ready yet (constructor path); remember the flag.
             super.setChecked(checked);
-            if (mChipDrawable != null) {
-                mChipDrawable.setState(getDrawableState());
-            }
+            return;
+        }
+        if (mCheckable) {
+            super.setChecked(checked);
         }
     }
 
@@ -220,13 +236,26 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
         return mCheckable;
     }
 
+    /**
+     * When false, checked/unchecked color changes snap with no TintAnimation.
+     * Used while the category pager is scrolling so chip tint does not fight
+     * tab-strip scrolling.
+     */
+    public void setAnimateStateChanges(boolean animate) {
+        if (mChipDrawable != null) {
+            mChipDrawable.setAnimateStateChanges(animate);
+        }
+    }
+
     public void setCheckable(boolean checkable) {
+        // Match OPPO COUIChip.setCheckable: only update the drawable flag.
+        // Do NOT refreshDrawableState() — TabPagerFragment.p3() does
+        // setChecked(true) then setCheckable(false); refreshing would re-resolve
+        // colors with checkable=false and wipe the dark selected fill.
         mCheckable = checkable;
         if (mChipDrawable != null) {
             mChipDrawable.setCheckable(checkable);
         }
-        setClickable(isClickable() || checkable);
-        refreshDrawableState();
     }
 
     @Override
@@ -305,6 +334,10 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
                 && isInCloseIconTouchBounds(event.getX(), event.getY());
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
+                if (!inCloseIcon) {
+                    // OPPO: COUIPressFeedbackHelper.e(true) scales the chip on press.
+                    mPressFeedbackHelper.executeFeedbackAnimator(true);
+                }
                 mChipDrawable.setTouched(true);
                 mChipDrawable.setCloseIconTouched(inCloseIcon);
                 break;
@@ -312,6 +345,7 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
                 mChipDrawable.setCloseIconTouched(inCloseIcon);
                 break;
             case MotionEvent.ACTION_UP:
+                mPressFeedbackHelper.executeFeedbackAnimator(false);
                 mChipDrawable.setTouched(false);
                 mChipDrawable.setCloseIconTouched(false);
                 if (inCloseIcon) {
@@ -319,6 +353,7 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
                 }
                 break;
             case MotionEvent.ACTION_CANCEL:
+                mPressFeedbackHelper.executeFeedbackAnimator(false);
                 mChipDrawable.setTouched(false);
                 mChipDrawable.setCloseIconTouched(false);
                 break;
@@ -331,19 +366,16 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
     public void setCheckedBackgroundColor(@ColorInt int color) {
         mCheckedBackgroundColor = color;
         mChipDrawable.setCheckedBackgroundColor(color);
-        updateVisualState();
     }
 
     public void setUncheckedBackgroundColor(@ColorInt int color) {
         mUncheckedBackgroundColor = color;
         mChipDrawable.setUncheckedBackgroundColor(color);
-        updateVisualState();
     }
 
     public void setCheckedChipIconTint(@ColorInt int color) {
         mCheckedIconTint = color;
         mChipDrawable.setCheckedChipIconTint(color);
-        updateVisualState();
     }
 
     public void setUncheckedChipIconTint(@ColorInt int color) {
@@ -466,37 +498,31 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
     public void setCheckedDisabledBackgroundColor(@ColorInt int color) {
         mCheckedDisabledBackgroundColor = color;
         mChipDrawable.setCheckedDisabledBackgroundColor(color);
-        updateVisualState();
     }
 
     public void setUncheckedDisabledBackgroundColor(@ColorInt int color) {
         mUncheckedDisabledBackgroundColor = color;
         mChipDrawable.setUncheckedDisabledBackgroundColor(color);
-        updateVisualState();
     }
 
     public void setCheckedTextColor(@ColorInt int color) {
         mCheckedTextColor = color;
         mChipDrawable.setCheckedTextColor(color);
-        updateVisualState();
     }
 
     public void setUncheckedTextColor(@ColorInt int color) {
         mUncheckedTextColor = color;
         mChipDrawable.setUncheckedTextColor(color);
-        updateVisualState();
     }
 
     public void setCheckedDisabledTextColor(@ColorInt int color) {
         mCheckedDisabledTextColor = color;
         mChipDrawable.setCheckedDisabledTextColor(color);
-        updateVisualState();
     }
 
     public void setUncheckedDisabledTextColor(@ColorInt int color) {
         mUncheckedDisabledTextColor = color;
         mChipDrawable.setUncheckedDisabledTextColor(color);
-        updateVisualState();
     }
 
     public int getCheckedBackgroundColor() {
@@ -560,9 +586,10 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
     protected void drawableStateChanged() {
         super.drawableStateChanged();
         if (mChipDrawable != null) {
+            // Only push state — updateVisualState() re-applies color setters with
+            // animate=false and kills OPPO TintAnimation / press-mask springs.
             mChipDrawable.setState(getDrawableState());
         }
-        updateVisualState();
     }
 
     @NonNull
@@ -578,23 +605,30 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
                 && (rtl ? x <= touchWidth : x >= getWidth() - touchWidth);
     }
 
+    private void syncChipPadding() {
+        if (mChipDrawable == null) {
+            return;
+        }
+        setCompoundDrawablesRelative(null, null, null, null);
+        setCompoundDrawablePadding(0);
+        setPaddingRelative(
+                mChipIconVisible && mChipIcon != null
+                        ? mChipIconStartPadding + mChipIconSize + mChipIconEndPadding
+                        : mChipStartPadding,
+                getPaddingTop(),
+                isCloseIconVisible()
+                        ? mCloseIconStartPadding + mCloseIconSize + mCloseIconEndPadding
+                        : mChipEndPadding,
+                getPaddingBottom());
+    }
+
     private void updateVisualState() {
         if (mChipDrawable == null
                 || (mCheckedTextColor == 0 && mUncheckedTextColor == 0)) {
             return;
         }
-        boolean checked = isChecked();
-        boolean enabled = isEnabled();
-        int backgroundColor = enabled
-                ? (checked ? mCheckedBackgroundColor : mUncheckedBackgroundColor)
-                : (checked ? mCheckedDisabledBackgroundColor : mUncheckedDisabledBackgroundColor);
-        int textColor = enabled
-                ? (checked ? mCheckedTextColor : mUncheckedTextColor)
-                : (checked ? mCheckedDisabledTextColor : mUncheckedDisabledTextColor);
-        int iconTint = enabled
-                ? (checked ? mCheckedIconTint : mUncheckedIconTint)
-                : (checked ? mCheckedDisabledIconTint : mUncheckedDisabledIconTint);
-
+        // Push palette / icon config only. Do not force text to the final checked
+        // color here when TintAnimation is running — onChipTextColorChange owns that.
         mChipDrawable.setCheckedBackgroundColor(mCheckedBackgroundColor);
         mChipDrawable.setUncheckedBackgroundColor(mUncheckedBackgroundColor);
         mChipDrawable.setCheckedDisabledBackgroundColor(mCheckedDisabledBackgroundColor);
@@ -617,19 +651,16 @@ public class COUIChip extends AppCompatCheckBox implements COUICheckable<COUIChi
         if (getBackground() != mChipDrawable) {
             super.setBackground(mChipDrawable);
         }
-        setTextColor(textColor);
-
-        setCompoundDrawablesRelative(null, null, null, null);
-        setCompoundDrawablePadding(0);
-        setPaddingRelative(
-                mChipIconVisible && mChipIcon != null
-                        ? mChipIconStartPadding + mChipIconSize + mChipIconEndPadding
-                        : mChipStartPadding,
-                getPaddingTop(),
-                isCloseIconVisible()
-                        ? mCloseIconStartPadding + mCloseIconSize + mCloseIconEndPadding
-                        : mChipEndPadding,
-                getPaddingBottom());
+        // Setup/config path only (not on checked-change). Safe to sync final text
+        // when TintAnimation is idle; while springing, onChipTextColorChange owns it.
+        if (!mChipDrawable.isTintAnimationRunning()) {
+            boolean checked = isChecked();
+            boolean enabled = isEnabled();
+            setTextColor(enabled
+                    ? (checked ? mCheckedTextColor : mUncheckedTextColor)
+                    : (checked ? mCheckedDisabledTextColor : mUncheckedDisabledTextColor));
+        }
+        syncChipPadding();
     }
 
     @Nullable

@@ -65,13 +65,15 @@ public class COUIViewPager2 extends ViewGroup {
 
     public COUIViewPager2(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        initialize(context);
+        initialize(context, attrs);
     }
 
-    private void initialize(Context context) {
+    private void initialize(Context context, AttributeSet attrs) {
         mRecyclerView = new RecyclerViewImpl(context);
         mRecyclerView.setId(ViewCompat.generateViewId());
         mRecyclerView.setDescendantFocusability(FOCUS_BEFORE_DESCENDANTS);
+        // Match AndroidX ViewPager2 / OPPO COUIViewPager2: LM defaults to VERTICAL via
+        // LinearLayoutManager(Context), so orientation must be applied explicitly.
         mLayoutManager = new LinearLayoutManagerImpl(context);
         mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setScrollingTouchSlop(RecyclerView.TOUCH_SLOP_PAGING);
@@ -105,6 +107,22 @@ public class COUIViewPager2 extends ViewGroup {
             }
         };
         addView(mRecyclerView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        applyOrientationFromAttrs(context, attrs);
+    }
+
+    /**
+     * Same contract as androidx ViewPager2: read {@code android:orientation}, default
+     * {@link #ORIENTATION_HORIZONTAL} (0). OPPO's COUIViewPager2 does this with
+     * {@code R.styleable.ViewPager2_android_orientation}.
+     */
+    private void applyOrientationFromAttrs(Context context, AttributeSet attrs) {
+        final int[] orientationAttr = new int[] { android.R.attr.orientation };
+        final android.content.res.TypedArray a = context.obtainStyledAttributes(attrs, orientationAttr);
+        try {
+            setOrientation(a.getInt(0, ORIENTATION_HORIZONTAL));
+        } finally {
+            a.recycle();
+        }
     }
 
     private final ViewPager2.OnPageChangeCallback mScrollSelectedUpdater =
@@ -277,8 +295,22 @@ public class COUIViewPager2 extends ViewGroup {
         setCurrentItemInternal(item, smoothScroll);
     }
 
+    /**
+     * OPPO COUI: only updates {@link #mCurrentItem}; does <b>not</b> scroll the RecyclerView.
+     * Tab click animation then uses beginFakeDrag + smoothScrollBy for the visual move.
+     * Calling {@link #setCurrentItem}(item, false) here would jump first and cause a one-page overshoot.
+     */
     public void setCurrentItemWithoutAnimation(int item) {
-        setCurrentItem(item, false);
+        RecyclerView.Adapter<?> adapter = getAdapter();
+        if (adapter == null) {
+            mCurrentItem = Math.max(item, 0);
+            return;
+        }
+        int itemCount = adapter.getItemCount();
+        if (itemCount <= 0) {
+            return;
+        }
+        mCurrentItem = Math.max(0, Math.min(item, itemCount - 1));
     }
 
     public void setOffscreenPageLimit(@OffscreenPageLimit int limit) {

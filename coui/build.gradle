@@ -82,9 +82,11 @@ tasks.register("exportCouiAar") {
     dependsOn("assembleRelease")
     def outDir = layout.projectDirectory.dir("dist")
     def outFile = outDir.file("coui-${couiVersion}.aar")
+    def builtAar = layout.buildDirectory.file("outputs/aar/coui-release.aar")
+    inputs.file(builtAar)
     outputs.file(outFile)
     doLast {
-        def built = file("${layout.buildDirectory.get()}/outputs/aar/coui-release.aar")
+        def built = builtAar.get().asFile
         if (!built.exists()) {
             throw new GradleException("Missing ${built}. Run assembleRelease first.")
         }

@@ -278,6 +278,17 @@ public class COUITabView extends LinearLayout {
         setSelected(false);
     }
 
+    /**
+     * Chip custom tabs own their chrome via COUIChip. Drop the TabView press/hover
+     * LayerDrawable so its mask cannot paint a tall/wide grey rect behind the chip
+     * (especially when the tab strip is measured taller than 32dp).
+     */
+    public void clearStateEffectBackground() {
+        this.mStateEffectBackground = null;
+        this.mMaskEffectDrawable = null;
+        super.setBackground(new ColorDrawable(0));
+    }
+
     @Override
     public void setBackground(Drawable drawable) {
         COUIStateEffectDrawable cOUIStateEffectDrawable = this.mStateEffectBackground;

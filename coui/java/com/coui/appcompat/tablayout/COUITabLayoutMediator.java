@@ -113,14 +113,22 @@ public final class COUITabLayoutMediator {
             }
             if (index == 0 && this.mPreviousScrollState == 0 && positionOffset != 0.0f) {
                 ((RecyclerView) cOUIViewPager2.getChildAt(0)).scrollBy(positionOffsetPixels, 0);
-                cOUITabLayout.selectTab(cOUITabLayout.getTabAt(position));
+                // updateIndicator=false: strip scroll is already driven by the pager;
+                // animateToTab would fight setScrollPosition and blink chip tabs when
+                // the bar must scroll (e.g. Fonts → Widgets).
+                COUITabLayoutMediator.selectTab(cOUITabLayout, cOUITabLayout.getTabAt(position), false);
             } else {
-                COUITabLayoutMediator.setScrollPosition(cOUITabLayout, position, positionOffset, flag_2, flag);
+                // Chip custom tabs own selection chrome via COUIChip checked state.
+                // Updating TabView.setSelected during scroll adds state_selected and
+                // flashes mask/stroke overlays while the strip moves.
+                boolean updateSelectedText = flag && !hasChipCustomTabs(cOUITabLayout);
+                COUITabLayoutMediator.setScrollPosition(
+                        cOUITabLayout, position, positionOffset, updateSelectedText, flag_2);
             }
             if (positionOffset != 0.0f || position == cOUITabLayout.getSelectedTabPosition()) {
                 return;
             }
-            cOUITabLayout.selectTab(cOUITabLayout.getTabAt(position));
+            COUITabLayoutMediator.selectTab(cOUITabLayout, cOUITabLayout.getTabAt(position), false);
         }
 
         @Override
@@ -194,22 +202,30 @@ public final class COUITabLayoutMediator {
 
         @Override
         public void onTabSelected(COUITab cOUITab) {
-            RecyclerView.Adapter adapter;
-            if (cOUITab.mView.getSelectedByClick() && (adapter = this.mViewPager.getAdapter()) != null && adapter.getItemCount() > 0) {
-                int iMin = Math.min(Math.max(cOUITab.getPosition(), 0), adapter.getItemCount() - 1);
-                if (this.mViewPager.getChildAt(0) instanceof RecyclerView) {
-                    this.mViewPager.setCurrentItemWithoutAnimation(iMin);
-                    RecyclerView recyclerView = (RecyclerView) this.mViewPager.getChildAt(0);
-                    LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                    if (linearLayoutManager == null) {
-                        return;
-                    }
-                    getScrollDistanceAndDuration(linearLayoutManager, recyclerView, iMin);
-                    this.mViewPager.beginFakeDrag();
-                    int[] iArr = this.mScrollDistanceAndDuration;
-                    recyclerView.smoothScrollBy(iArr[0], 0, this.mScrollPathInterpolator, iArr[1]);
-                }
+            // Match OPPO b$d: only page when TabView.performClick set selectedByClick.
+            if (cOUITab.mView == null || !cOUITab.mView.getSelectedByClick()) {
+                return;
             }
+            RecyclerView.Adapter adapter = this.mViewPager.getAdapter();
+            if (adapter == null || adapter.getItemCount() <= 0) {
+                return;
+            }
+            int target = Math.min(Math.max(cOUITab.getPosition(), 0), adapter.getItemCount() - 1);
+            if (!(this.mViewPager.getChildAt(0) instanceof RecyclerView)) {
+                return;
+            }
+            // OPPO: update mCurrentItem only (no RV jump), then animate via fake-drag + smoothScrollBy.
+            this.mViewPager.setCurrentItemWithoutAnimation(target);
+            RecyclerView recyclerView = (RecyclerView) this.mViewPager.getChildAt(0);
+            LinearLayoutManager linearLayoutManager =
+                    (LinearLayoutManager) recyclerView.getLayoutManager();
+            if (linearLayoutManager == null) {
+                return;
+            }
+            getScrollDistanceAndDuration(linearLayoutManager, recyclerView, target);
+            this.mViewPager.beginFakeDrag();
+            int[] iArr = this.mScrollDistanceAndDuration;
+            recyclerView.smoothScrollBy(iArr[0], 0, this.mScrollPathInterpolator, iArr[1]);
         }
 
         @Override
@@ -259,6 +275,15 @@ public final class COUITabLayoutMediator {
         } catch (Exception unused) {
             throwInvokeFailed(SET_SCROLL_POSITION_NAME);
         }
+    }
+
+    /** True when tabs use chip custom views (ThemeStore-style) instead of text labels. */
+    private static boolean hasChipCustomTabs(COUITabLayout tabLayout) {
+        if (tabLayout.getTabCount() <= 0) {
+            return false;
+        }
+        COUITab tab = tabLayout.getTabAt(0);
+        return tab != null && tab.getCustomView() != null;
     }
 
     private static void throwInvokeFailed(String str) {

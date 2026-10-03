@@ -20,6 +20,7 @@ apktool_oplus_tmp
 
 # Device / agent test screenshots & captures (repo root only — not res/coui assets)
 /*.png
+!/mtk.png
 /*.jpg
 /*.jpeg
 /*.webp
@@ -54,4 +55,10 @@ coui/dist/
 /tools/*.zip
 /tools/*_apk/
 /tools/oplus_apk/
+/tools/__pycache__/
 /hotseat_compare/
+/ref
+
+# Python bytecode
+**/__pycache__/
+*.pyc
