@@ -508,6 +508,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 	@Nullable
 	private Animator mBottomUiAnimator;
 	private boolean mBottomUiEntered;
+	@Nullable
+	private Runnable mPendingBottomUiEnter;
+	private int mBottomUiEnterRetries;
 	///&&}}
     private final Rect mClearAllButtonDeadZoneRect = new Rect();
     private final Rect mTaskViewDeadZoneRect = new Rect();
@@ -2017,6 +2020,10 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         // Lazily update the empty message only when the task stack is reapplied
         updateEmptyMessage();
         syncDockFromRecents();
+        if (!mGestureActive && mFullscreenProgress <= 0.05f && !mBottomUiEntered
+                && mContentAlpha > 0f) {
+            playBottomUiEnter();
+        }
     }
 
     public void resetTaskVisuals() {
@@ -2591,6 +2598,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             remoteTargetHandle.getTaskViewSimulator().setDrawsBelowRecents(false);
         });
         resetFromSplitSelectionState();
+        cancelPendingBottomUiEnter();
         hideBottomUiImmediate();
 
         // These are relatively expensive and don't need to be done this frame (RecentsView isn't
@@ -2731,6 +2739,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     public void onSwipeUpAnimationSuccess() {
         animateUpTaskIconScale();
         setSwipeDownShouldLaunchApp(true);
+        playBottomUiEnter();
     }
 
     private void animateRecentsRotationInPlace(int newRotation) {
@@ -2831,13 +2840,17 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             updateOrientationHandler(/* forceRecreateDragLayerControllers = */ false);
         }
 
+        boolean toRecents = mCurrentGestureEndTarget == GestureState.GestureEndTarget.RECENTS;
         setEnableFreeScroll(true);
-        setEnableDrawingLiveTile(mCurrentGestureEndTarget == GestureState.GestureEndTarget.RECENTS);
+        setEnableDrawingLiveTile(toRecents);
         setRunningTaskHidden(false);
         animateUpTaskIconScale();
         animateActionsViewIn();
 
         mCurrentGestureEndTarget = null;
+        if (toRecents) {
+            playBottomUiEnter();
+        }
     }
 
     /**
@@ -4556,6 +4569,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             hideBottomUiImmediate();
         } else {
             updateBottomUiOverviewVisibility();
+            if (!mGestureActive && mFullscreenProgress <= 0.05f && !mBottomUiEntered) {
+                playBottomUiEnter();
+            }
         }
     }
 
@@ -4567,18 +4583,30 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         if (!getResources().getBoolean(R.bool.config_clearall_center)) {
             return;
         }
+        cancelPendingBottomUiEnter();
         if (mOrientationState.getTouchRotation() != ROTATION_0) {
             hideBottomUiImmediate();
+            return;
+        }
+        // Still in the app-to-recents swipe (BACKGROUND_APP): keep footer hidden.
+        if (mGestureActive || mFullscreenProgress > 0.05f) {
             return;
         }
         // Icons bind after the gesture; sync first so the dock is VISIBLE for this fade.
         syncDockFromRecents();
         if (!shouldShowBottomUi()) {
-            hideBottomUiImmediate();
+            // RecentsView can still be frozen/INVISIBLE or task views not rebound yet.
+            if (mContentAlpha > 0f && getVisibility() == VISIBLE && mBottomUiEnterRetries < 8) {
+                scheduleBottomUiEnterRetry();
+            }
             return;
         }
+        mBottomUiEnterRetries = 0;
         if (mBottomUiEntered && getBottomUiAlpha() > 0.99f) {
             applySettledBottomUiAlpha(mOverviewDockView);
+            return;
+        }
+        if (mBottomUiAnimator != null && mBottomUiAnimator.isRunning()) {
             return;
         }
         cancelBottomUiAnim();
@@ -4599,6 +4627,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             hasTarget = true;
         }
         if (!hasTarget) {
+            if (mBottomUiEnterRetries < 8) {
+                scheduleBottomUiEnterRetry();
+            }
             return;
         }
         anim.setDuration(600);
@@ -4614,6 +4645,25 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         });
         mBottomUiAnimator = anim;
         anim.start();
+    }
+
+    private void scheduleBottomUiEnterRetry() {
+        if (mPendingBottomUiEnter != null) {
+            return;
+        }
+        mBottomUiEnterRetries++;
+        mPendingBottomUiEnter = () -> {
+            mPendingBottomUiEnter = null;
+            playBottomUiEnter();
+        };
+        post(mPendingBottomUiEnter);
+    }
+
+    private void cancelPendingBottomUiEnter() {
+        if (mPendingBottomUiEnter != null) {
+            removeCallbacks(mPendingBottomUiEnter);
+            mPendingBottomUiEnter = null;
+        }
     }
 
     private void applySettledBottomUiAlpha(View view) {
@@ -4632,6 +4682,8 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         if (!getResources().getBoolean(R.bool.config_clearall_center)) {
             return;
         }
+        cancelPendingBottomUiEnter();
+        mBottomUiEnterRetries = 0;
         cancelBottomUiAnim();
         mBottomUiEntered = false;
         if (getBottomUiAlpha() <= 0.01f) {
@@ -4658,6 +4710,8 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     }
 
     public void hideBottomUiImmediate() {
+        cancelPendingBottomUiEnter();
+        mBottomUiEnterRetries = 0;
         cancelBottomUiAnim();
         mBottomUiEntered = false;
         if (mClearAllPanel != null) {

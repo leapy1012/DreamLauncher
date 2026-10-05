@@ -18,6 +18,7 @@ package com.android.quickstep.views;
 import static android.app.ActivityTaskManager.INVALID_TASK_ID;
 
 import static com.android.launcher3.LauncherState.ALL_APPS;
+import static com.android.launcher3.LauncherState.BACKGROUND_APP;
 import static com.android.launcher3.LauncherState.CLEAR_ALL_BUTTON;
 import static com.android.launcher3.LauncherState.EDIT_MODE;
 import static com.android.launcher3.LauncherState.NORMAL;
@@ -186,6 +187,15 @@ public class LauncherRecentsView extends RecentsView<QuickstepLauncher, Launcher
                     remoteTargetHandle.getTaskViewSimulator().setDrawsBelowRecents(true));
             playBottomUiEnter();
         }
+    }
+
+    @Override
+    public void onSwipeUpAnimationSuccess() {
+        // Pause-to-recents can leave Launcher in BACKGROUND_APP: live task card, no dock.
+        if (mActivity.getStateManager().getState() == BACKGROUND_APP) {
+            mActivity.getStateManager().goToState(OVERVIEW, false /* animate */);
+        }
+        super.onSwipeUpAnimationSuccess();
     }
 
     @Override

@@ -18,6 +18,7 @@ package com.android.quickstep.fallback;
 import static android.app.ActivityTaskManager.INVALID_TASK_ID;
 
 import static com.android.quickstep.GestureState.GestureEndTarget.RECENTS;
+import static com.android.quickstep.fallback.RecentsState.BACKGROUND_APP;
 import static com.android.quickstep.fallback.RecentsState.DEFAULT;
 import static com.android.quickstep.fallback.RecentsState.HOME;
 import static com.android.quickstep.fallback.RecentsState.MODAL_TASK;
@@ -259,6 +260,14 @@ public class FallbackRecentsView extends RecentsView<RecentsActivity, RecentsSta
                     remoteTargetHandle.getTaskViewSimulator().setDrawsBelowRecents(true));
             playBottomUiEnter();
         }
+    }
+
+    @Override
+    public void onSwipeUpAnimationSuccess() {
+        if (mActivity.getStateManager().getState() == BACKGROUND_APP) {
+            mActivity.getStateManager().goToState(DEFAULT, false /* animate */);
+        }
+        super.onSwipeUpAnimationSuccess();
     }
 
     @Override
