@@ -29,6 +29,16 @@
     <dimen name="coui_appbar_title_expanded_margin_top">54.0dp</dimen>
     <dimen name="coui_appbar_title_expanded_text_size">32.0dp</dimen>
     <dimen name="coui_appbar_title_toolbar_height">52.0dp</dimen>
+    <!-- Required by COUICollapsableAppBarLayout / COUICollapsingToolbarLayout (OPPO). -->
+    <dimen name="coui_appbar_start_padding_bottom">12dp</dimen>
+    <dimen name="coui_appbar_end_padding_bottom">0dp</dimen>
+    <dimen name="coui_appbar_subtitle_collapsed_margin_top">3.5dp</dimen>
+    <dimen name="coui_appbar_title_expanded_margin_start_compat">16dp</dimen>
+    <dimen name="coui_appbar_title_expanded_margin_end_compat">16dp</dimen>
+    <dimen name="coui_appbar_title_expanded_margin_start_medium">24dp</dimen>
+    <dimen name="coui_appbar_title_expanded_margin_end_medium">24dp</dimen>
+    <dimen name="coui_appbar_title_expanded_margin_start_expanded">40dp</dimen>
+    <dimen name="coui_appbar_title_expanded_margin_end_expanded">40dp</dimen>
     <dimen name="coui_action_bar_text_menu_item_max_width">120.0dp</dimen>
     <dimen name="coui_actionbar_menuitemview_item_spacing">0.0dp</dimen>
     <dimen name="coui_toolbar_menu_bg_padding_horizontal">0.0dp</dimen>

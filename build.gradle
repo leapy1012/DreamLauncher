@@ -183,6 +183,40 @@ androidComponents {
 //    }
 }
 
+// After assembleAospWithQuickstepRelease, overwrite the AOSP prebuilt used by vendor/greendream.
+def d960PatchLauncherDir = rootProject.file(
+        "../D960_Patch/alps/u0_sys/vendor/greendream/apps/DreamLauncher")
+def releaseLauncherApk = layout.buildDirectory.file(
+        "outputs/apk/aospWithQuickstep/release/MtkLauncher3QuickStep.apk")
+
+tasks.register("copyReleaseApkToD960Patch", Copy) {
+    group = "distribution"
+    description = "Copy aospWithQuickstep release APK to D960_Patch/.../DreamLauncher.apk"
+    from(releaseLauncherApk)
+    into(d960PatchLauncherDir)
+    rename { "DreamLauncher.apk" }
+    doFirst {
+        def apk = releaseLauncherApk.get().asFile
+        if (!apk.isFile()) {
+            throw new GradleException("Missing release APK: ${apk}")
+        }
+        if (!d960PatchLauncherDir.isDirectory()) {
+            throw new GradleException(
+                    "D960_Patch DreamLauncher dir missing: ${d960PatchLauncherDir}")
+        }
+    }
+    doLast {
+        logger.lifecycle(
+                "Updated ${new File(d960PatchLauncherDir, "DreamLauncher.apk").absolutePath}")
+    }
+}
+
+afterEvaluate {
+    tasks.named("assembleAospWithQuickstepRelease").configure {
+        finalizedBy("copyReleaseApkToD960Patch")
+    }
+}
+
 dependencies {
     compileOnly files('libs/framework.jar')
     compileOnly files('libs/core-all.jar')

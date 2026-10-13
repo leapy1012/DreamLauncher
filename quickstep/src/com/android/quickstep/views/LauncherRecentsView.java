@@ -191,9 +191,13 @@ public class LauncherRecentsView extends RecentsView<QuickstepLauncher, Launcher
 
     @Override
     public void onSwipeUpAnimationSuccess() {
-        // Pause-to-recents can leave Launcher in BACKGROUND_APP: live task card, no dock.
-        if (mActivity.getStateManager().getState() == BACKGROUND_APP) {
-            mActivity.getStateManager().goToState(OVERVIEW, false /* animate */);
+        // Match OplusBaseActivityInterface.onSwipeUpToRecentsComplete: the logical state
+        // may already be OVERVIEW while gesture-controlled properties are still intermediate.
+        StateManager<LauncherState> stateManager = mActivity.getStateManager();
+        if (stateManager.getState() == BACKGROUND_APP) {
+            stateManager.goToState(OVERVIEW, false /* animate */);
+        } else {
+            stateManager.reapplyState();
         }
         super.onSwipeUpAnimationSuccess();
     }

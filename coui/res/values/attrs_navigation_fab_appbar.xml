@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Bottom navigation / COUINavigationView -->
+    <attr name="couiBottomToolNavigationItemBg" format="reference" />
+    <attr name="couiBottomToolNavigationItemSelector" format="reference|color" />
+    <attr name="couiEnlargeNavigationViewBg" format="reference" />
+    <attr name="couiItemLayoutType" format="integer" />
+    <attr name="couiNaviBackground" format="reference" />
+    <attr name="couiNaviIconTint" format="color" />
+    <attr name="couiNaviMenu" format="reference" />
+    <attr name="couiNaviTextColor" format="color" />
+    <attr name="couiNaviTextSize" format="dimension" />
+    <attr name="couiNaviTipsNumber" format="integer" />
+    <attr name="couiNaviTipsType" format="integer" />
+    <attr name="couiTabNavigationViewBg" format="reference" />
+    <attr name="couiToolNavigationViewBg" format="reference" />
+    <attr name="navigationType" format="integer">
+        <enum name="tool" value="0" />
+        <enum name="tab" value="1" />
+        <enum name="enlarge" value="2" />
+    </attr>
+    <attr name="couiNavigationViewStyle" format="reference" />
+    <attr name="COUINavigationViewStyle" format="reference" />
+    <attr name="COUINavigationViewItemStyle" format="reference" />
+    <attr name="couiNavigationToolColorDisabled" format="color" />
+    <attr name="couiNavigationToolColorNormal" format="color" />
+    <attr name="couiNavigationRailViewStyle" format="reference" />
+    <attr name="navigationRailType" format="integer">
+        <enum name="tool" value="0" />
+        <enum name="tab" value="1" />
+    </attr>
+    <declare-styleable name="COUINavigationRailView">
+        <attr name="navigationRailType" />
+    </declare-styleable>
+    <declare-styleable name="COUINavigationView">
+        <attr name="couiBottomToolNavigationItemBg" />
+        <attr name="couiBottomToolNavigationItemSelector" />
+        <attr name="couiEnlargeNavigationViewBg" />
+        <attr name="couiItemLayoutType" />
+        <attr name="couiNaviBackground" />
+        <attr name="couiNaviIconTint" />
+        <attr name="couiNaviMenu" />
+        <attr name="couiNaviTextColor" />
+        <attr name="couiNaviTextSize" />
+        <attr name="couiNaviTipsNumber" />
+        <attr name="couiNaviTipsType" />
+        <attr name="couiTabNavigationViewBg" />
+        <attr name="couiToolNavigationViewBg" />
+        <attr name="navigationType" />
+    </declare-styleable>
+
+    <declare-styleable name="COUINavigationMenuView">
+        <attr name="couiBottomToolNavigationItemBg" />
+        <attr name="couiBottomToolNavigationItemSelector" />
+        <attr name="couiEnlargeNavigationViewBg" />
+        <attr name="couiItemLayoutType" />
+        <attr name="couiNaviBackground" />
+        <attr name="couiNaviIconTint" />
+        <attr name="couiNaviMenu" />
+        <attr name="couiNaviTextColor" />
+        <attr name="couiNaviTextSize" />
+        <attr name="couiNaviTipsNumber" />
+        <attr name="couiNaviTipsType" />
+        <attr name="couiTabNavigationViewBg" />
+        <attr name="couiToolNavigationViewBg" />
+        <attr name="navigationType" />
+    </declare-styleable>
+
+    <!-- Floating action button -->
+    <attr name="fabButtonSize" format="dimension" />
+    <attr name="fabExpandAnimationEnable" format="boolean" />
+    <attr name="fabNeedElevation" format="boolean" />
+    <attr name="fabNeedVibrate" format="boolean" />
+    <attr name="fabScaleAnimation" format="boolean" />
+    <attr name="fabTranslateEnhancementRatio" format="float" />
+    <attr name="mainFloatingButtonBackgroundColor" format="color|reference" />
+    <attr name="mainFloatingButtonSrc" format="reference" />
+    <attr name="fabBackgroundColor" format="color|reference" />
+    <attr name="fabLabel" format="string" />
+    <attr name="fabLabelBackgroundColor" format="color|reference" />
+    <attr name="fabLabelColor" format="color|reference" />
+    <attr name="fabLabelNeedVibrate" format="boolean" />
+    <attr name="srcCompat" format="reference" />
+
+    <declare-styleable name="COUIFloatingButton">
+        <attr name="android:enabled" />
+        <attr name="fabButtonSize" />
+        <attr name="fabExpandAnimationEnable" />
+        <attr name="fabNeedElevation" />
+        <attr name="fabNeedVibrate" />
+        <attr name="fabScaleAnimation" />
+        <attr name="fabTranslateEnhancementRatio" />
+        <attr name="mainFloatingButtonBackgroundColor" />
+        <attr name="mainFloatingButtonSrc" />
+    </declare-styleable>
+
+    <declare-styleable name="COUIFloatingButtonLabel">
+        <attr name="android:src" />
+        <attr name="fabBackgroundColor" />
+        <attr name="fabLabel" />
+        <attr name="fabLabelBackgroundColor" />
+        <attr name="fabLabelColor" />
+        <attr name="fabLabelNeedVibrate" />
+        <attr name="srcCompat" />
+    </declare-styleable>
+
+    <!-- Collapsing / collapsable app bar (Divider styleable already exists) -->
+    <attr name="endPaddingBottom" format="dimension" />
+    <attr name="startPaddingBottom" format="dimension" />
+    <attr name="subtitleHideEnable" format="boolean" />
+    <attr name="mode" format="integer" />
+    <attr name="iconView" format="reference" />
+
+    <declare-styleable name="COUICollapsableAppBarLayout">
+        <attr name="endPaddingBottom" />
+        <attr name="mode" />
+        <attr name="startPaddingBottom" />
+        <attr name="subtitleHideEnable" />
+    </declare-styleable>
+
+    <declare-styleable name="COUICollapsingToolbarLayout">
+        <attr name="iconView" />
+    </declare-styleable>
+</resources>

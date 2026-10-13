@@ -79,6 +79,11 @@ public class COUIChangeTextUtil {
         return fontScale <= 1.0f ? size : base * 1.15f;
     }
 
+    /** Decompiled APK alias. */
+    public static float d(float size, float fontScale, int scaleLevel) {
+        return getSuitableFontSize(size, fontScale, scaleLevel);
+    }
+
     public static float getSuitableFontSize(float size, float fontScale, int scaleLevel) {
         if (scaleLevel < 2) {
             return size;

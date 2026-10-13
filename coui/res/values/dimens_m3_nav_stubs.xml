@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="m3_comp_navigation_drawer_focus_state_layer_opacity">0.12</dimen>
+    <dimen name="m3_comp_navigation_drawer_hover_state_layer_opacity">0.08</dimen>
+    <dimen name="m3_comp_navigation_drawer_pressed_state_layer_opacity">0.12</dimen>
+    <dimen name="m3_comp_navigation_rail_pressed_state_layer_opacity">0.12</dimen>
+    <dimen name="m3_comp_navigation_rail_focus_state_layer_opacity">0.12</dimen>
+    <dimen name="m3_comp_navigation_rail_hover_state_layer_opacity">0.08</dimen>
+<dimen name="coui_floating_toolbar_item_height">44.0dp</dimen>
+<dimen name="coui_floating_toolbar_item_icon_height">24.0dp</dimen>
+<dimen name="m3_comp_navigation_bar_focus_state_layer_opacity">0.12</dimen>
+<dimen name="m3_comp_navigation_bar_hover_state_layer_opacity">0.12</dimen>
+<dimen name="m3_comp_navigation_bar_pressed_state_layer_opacity">0.12</dimen>
+<dimen name="support_shadow_size_level_two">4.0dp</dimen>
+</resources>
+
+

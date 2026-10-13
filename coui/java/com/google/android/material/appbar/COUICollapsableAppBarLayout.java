@@ -1,0 +1,541 @@
+package com.google.android.material.appbar;
+
+import android.content.Context;
+import android.content.res.Configuration;
+import android.content.res.TypedArray;
+import android.os.Bundle;
+import android.os.Parcelable;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.recyclerview.widget.COUIRecyclerView;
+import com.coui.appcompat.grid.COUIResponsiveUtils;
+import com.coui.appcompat.uiutil.UIUtil;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+/* JADX INFO: loaded from: classes5.dex */
+public class COUICollapsableAppBarLayout extends COUIDividerAppBarLayout {
+    private static boolean DEBUG = false;
+    public static final int DEFAULT_SCROLL_FLAG = 19;
+    public static final int MODE_COLLAPSABLE = 0;
+    public static final int MODE_FIXED_COLLAPSED = 1;
+    public static final int MODE_FIXED_EXPANDED = 2;
+    private static final String MODE_STATE_KEY = "MODE_STATE_KEY";
+    private static final String OFFSET_STATE_KEY = "OFFSET_STATE_KEY";
+    private static final String SUPER_STATE_KEY = "SUPER_STATE_KEY";
+    private static final String TAG = "COUICollapsableAppBarLayout";
+    private static final String TITLE_FRACTION_STATE_KEY = "TITLE_FRACTION_STATE_KEY";
+    private boolean mAutoExpand;
+    private int mCollapsingToolbarHeight;
+    private int mEndPaddingBottom;
+    private int mMode;
+    private boolean mNeedUpdateModeAfterOffsetChanged;
+    private int mOffset;
+    private int mStartPaddingBottom;
+    private boolean mSubtitleHideEnable;
+    private int mSubtitleViewHeight;
+    private boolean mUpdateOffset;
+
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface Mode {
+    }
+
+    public static class ScrollBehavior extends AppBarLayout.Behavior {
+        private int mLastStartedType;
+        private boolean mShouldSnapToBottom;
+
+        private ScrollBehavior() {
+        }
+
+        public boolean contentInScreen(View view) {
+            return (view.canScrollVertically(1) || view.canScrollVertically(-1)) ? false : true;
+        }
+
+        @Override // com.google.android.material.appbar.AppBarLayout.BaseBehavior, com.google.android.material.appbar.HeaderBehavior
+        public int getTopBottomOffsetForScrollingSibling() {
+            if (!this.mShouldSnapToBottom) {
+                return super.getTopBottomOffsetForScrollingSibling();
+            }
+            this.mShouldSnapToBottom = false;
+            return 0;
+        }
+
+        @Override // com.google.android.material.appbar.AppBarLayout.BaseBehavior, com.google.android.material.appbar.HeaderBehavior
+        public boolean canDragView(AppBarLayout appBarLayout) {
+            return super.canDragView(appBarLayout) && (!(appBarLayout instanceof COUICollapsableAppBarLayout) || ((COUICollapsableAppBarLayout) appBarLayout).getMode() == 0);
+        }
+
+        @Override // com.google.android.material.appbar.AppBarLayout.BaseBehavior, com.google.android.material.appbar.ViewOffsetBehavior, androidx.coordinatorlayout.widget.CoordinatorLayout.Behavior
+        public boolean onLayoutChild(@NonNull CoordinatorLayout coordinatorLayout, @NonNull AppBarLayout appBarLayout, int i3) {
+            if (appBarLayout instanceof COUICollapsableAppBarLayout) {
+                COUICollapsableAppBarLayout cOUICollapsableAppBarLayout = (COUICollapsableAppBarLayout) appBarLayout;
+                if (cOUICollapsableAppBarLayout.getUpdateOffset()) {
+                    setHeaderTopBottomOffset(coordinatorLayout, appBarLayout, -appBarLayout.getTotalScrollRange());
+                    cOUICollapsableAppBarLayout.setUpdateOffset(false);
+                }
+            }
+            return super.onLayoutChild(coordinatorLayout, appBarLayout, i3);
+        }
+
+        @Override // com.google.android.material.appbar.AppBarLayout.BaseBehavior, androidx.coordinatorlayout.widget.CoordinatorLayout.Behavior
+        public void onNestedPreScroll(CoordinatorLayout coordinatorLayout, @NonNull AppBarLayout appBarLayout, View view, int i3, int i10, int[] iArr, int i11) {
+            if ((view instanceof COUIRecyclerView) && view.getScrollY() < 0) {
+                i10 = 0;
+            }
+            super.onNestedPreScroll(coordinatorLayout, appBarLayout, view, i3, i10, iArr, i11);
+        }
+
+        @Override // com.google.android.material.appbar.COUIDividerAppBarLayout.DividerBehavior, com.google.android.material.appbar.AppBarLayout.BaseBehavior, androidx.coordinatorlayout.widget.CoordinatorLayout.Behavior
+        public void onNestedScroll(CoordinatorLayout coordinatorLayout, @NonNull AppBarLayout appBarLayout, View view, int i3, int i10, int i11, int i12, int i13, int[] iArr) {
+            super.onNestedScroll(coordinatorLayout, appBarLayout, view, i3, i10, i11, ((appBarLayout instanceof COUICollapsableAppBarLayout) && ((COUICollapsableAppBarLayout) appBarLayout).mMode == 1) ? 0 : i12, i13, iArr);
+        }
+
+        @Override // com.google.android.material.appbar.COUIDividerAppBarLayout.DividerBehavior, com.google.android.material.appbar.AppBarLayout.BaseBehavior, androidx.coordinatorlayout.widget.CoordinatorLayout.Behavior
+        public boolean onStartNestedScroll(@NonNull CoordinatorLayout coordinatorLayout, @NonNull AppBarLayout appBarLayout, @NonNull View view, View view2, int i3, int i10) {
+            this.mLastStartedType = i10;
+            return super.onStartNestedScroll(coordinatorLayout, appBarLayout, view, view2, i3, i10);
+        }
+
+        @Override // com.google.android.material.appbar.COUIDividerAppBarLayout.DividerBehavior, com.google.android.material.appbar.AppBarLayout.BaseBehavior, androidx.coordinatorlayout.widget.CoordinatorLayout.Behavior
+        public void onStopNestedScroll(CoordinatorLayout coordinatorLayout, @NonNull AppBarLayout appBarLayout, View view, int i3) {
+            if (appBarLayout.getChildCount() > 0) {
+                if (appBarLayout.getChildAt(0) instanceof COUICollapsingToolbarLayout) {
+                    int scrollFlags = ((AppBarLayout.LayoutParams) appBarLayout.getChildAt(0).getLayoutParams()).getScrollFlags() & 17;
+                    boolean z6 = scrollFlags == 17 && contentInScreen(view) && ((COUICollapsableAppBarLayout) appBarLayout).mCollapsable;
+                    this.mShouldSnapToBottom = z6;
+                    this.mShouldSnapToBottom = z6 && ((COUICollapsableAppBarLayout) appBarLayout).mAutoExpand;
+                    if (COUICollapsableAppBarLayout.DEBUG) {
+                        StringBuilder sb = new StringBuilder("((mLastStartedType == ViewCompat.TYPE_TOUCH) || (type == ViewCompat.TYPE_NON_TOUCH)) = ");
+                        sb.append(this.mLastStartedType == 0 || i3 == 1);
+                        sb.append("\n((snapFlag & LayoutParams.FLAG_SNAP) == LayoutParams.FLAG_SNAP) = ");
+                        sb.append(scrollFlags == 17);
+                        sb.append("\n(contentInScreen(target)) = ");
+                        sb.append(contentInScreen(view));
+                        sb.append("\n(((COUICollapsableAppBarLayout) abl).mCollapsable = ");
+                        Log.d(COUICollapsableAppBarLayout.TAG, sb.toString() + ((COUICollapsableAppBarLayout) appBarLayout).mCollapsable);
+                    }
+                }
+            }
+            super.onStopNestedScroll(coordinatorLayout, appBarLayout, view, i3);
+        }
+    }
+
+    public COUICollapsableAppBarLayout(@NonNull Context context) {
+        this(context, null);
+    }
+
+    private void adjustPaddingBottom(int i3, boolean z6) {
+        float totalScrollRange = getTotalScrollRange();
+        if (z6 || !(totalScrollRange == 0.0f || this.mStartPaddingBottom == this.mEndPaddingBottom)) {
+            float fAbs = Math.abs(i3) / totalScrollRange;
+            int i10 = this.mStartPaddingBottom;
+            translateDivider(-(i10 + ((int) ((this.mEndPaddingBottom - i10) * fAbs))));
+        }
+    }
+
+    private void adjustSubtitleIfNeed(int i3) {
+        View viewFindSubtitleContentView = findSubtitleContentView();
+        int dimensionPixelOffset = 0;
+        boolean z6 = viewFindSubtitleContentView != null && viewFindSubtitleContentView.getVisibility() == 0;
+        if (findCollapsingToolbarLayout() == null || !z6) {
+            return;
+        }
+        float fAbs = Math.abs(i3) / getTotalScrollRange();
+        float f3 = this.mSubtitleHideEnable ? 1.0f - fAbs : 1.0f;
+        ViewGroup.LayoutParams layoutParams = viewFindSubtitleContentView.getLayoutParams();
+        if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
+            if (COUIResponsiveUtils.isSmallScreen(getContext(), getMeasuredWidth())) {
+                dimensionPixelOffset = getContext().getResources().getDimensionPixelOffset(com.coui.appcompat.R.dimen.toolbar_normal_padding_left_compat);
+            } else if (COUIResponsiveUtils.isMediumScreen(getContext(), getMeasuredWidth(), UIUtil.getScreenHeightRealSize(getContext()))) {
+                dimensionPixelOffset = getContext().getResources().getDimensionPixelOffset(com.coui.appcompat.R.dimen.toolbar_normal_padding_left_medium);
+            } else if (COUIResponsiveUtils.isLargeScreen(getContext(), getMeasuredWidth(), UIUtil.getScreenHeightRealSize(getContext()))) {
+                dimensionPixelOffset = getContext().getResources().getDimensionPixelOffset(com.coui.appcompat.R.dimen.toolbar_normal_padding_left_expanded);
+            }
+            ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
+            if (marginLayoutParams.getMarginStart() != dimensionPixelOffset) {
+                marginLayoutParams.setMarginStart(dimensionPixelOffset);
+                viewFindSubtitleContentView.setLayoutParams(layoutParams);
+            }
+        }
+        if (Float.isNaN(fAbs)) {
+            return;
+        }
+        viewFindSubtitleContentView.setTranslationY((1.0f - fAbs) * (this.mEndPaddingBottom - this.mStartPaddingBottom));
+        viewFindSubtitleContentView.setAlpha(f3);
+    }
+
+    private View findCollapsingToolbarLayout() {
+        int childCount = getChildCount();
+        for (int i3 = 0; i3 < childCount; i3++) {
+            View childAt = getChildAt(i3);
+            if (childAt instanceof CollapsingToolbarLayout) {
+                return childAt;
+            }
+        }
+        return null;
+    }
+
+    private float getExpansionFraction() {
+        View viewFindCollapsingToolbarLayout = findCollapsingToolbarLayout();
+        if (viewFindCollapsingToolbarLayout instanceof COUICollapsingToolbarLayout) {
+            return ((COUICollapsingToolbarLayout) viewFindCollapsingToolbarLayout).collapsingTextHelper.getExpansionFraction();
+        }
+        return 0.0f;
+    }
+
+    /* JADX INFO: Access modifiers changed from: private */
+    public boolean getUpdateOffset() {
+        return this.mUpdateOffset;
+    }
+
+    private void init(AttributeSet attributeSet) {
+        TypedArray typedArrayObtainStyledAttributes = getContext().obtainStyledAttributes(attributeSet, com.coui.appcompat.R.styleable.COUICollapsableAppBarLayout);
+        this.mMode = typedArrayObtainStyledAttributes.getInt(com.coui.appcompat.R.styleable.COUICollapsableAppBarLayout_mode, 0);
+        this.mSubtitleHideEnable = typedArrayObtainStyledAttributes.getBoolean(com.coui.appcompat.R.styleable.COUICollapsableAppBarLayout_subtitleHideEnable, true);
+        this.mStartPaddingBottom = typedArrayObtainStyledAttributes.getDimensionPixelOffset(com.coui.appcompat.R.styleable.COUICollapsableAppBarLayout_startPaddingBottom, getContext().getResources().getDimensionPixelOffset(com.coui.appcompat.R.dimen.coui_appbar_start_padding_bottom));
+        this.mEndPaddingBottom = typedArrayObtainStyledAttributes.getDimensionPixelOffset(com.coui.appcompat.R.styleable.COUICollapsableAppBarLayout_endPaddingBottom, getContext().getResources().getDimensionPixelOffset(com.coui.appcompat.R.dimen.coui_appbar_end_padding_bottom));
+        if (this.mMode == 0) {
+            this.mCollapsable = true;
+        }
+        typedArrayObtainStyledAttributes.recycle();
+    }
+
+    private boolean isCollapsed() {
+        View viewFindCollapsingToolbarLayout = findCollapsingToolbarLayout();
+        if (viewFindCollapsingToolbarLayout instanceof COUICollapsingToolbarLayout) {
+            return ((COUICollapsingToolbarLayout) viewFindCollapsingToolbarLayout).isCollapsed();
+        }
+        return false;
+    }
+
+    private boolean isExpanded() {
+        View viewFindCollapsingToolbarLayout = findCollapsingToolbarLayout();
+        if (viewFindCollapsingToolbarLayout instanceof COUICollapsingToolbarLayout) {
+            return ((COUICollapsingToolbarLayout) viewFindCollapsingToolbarLayout).isExpanded();
+        }
+        return false;
+    }
+
+    private void setScrollFlags(int i3) {
+        int childCount = getChildCount();
+        for (int i10 = 0; i10 < childCount; i10++) {
+            View childAt = getChildAt(i10);
+            AppBarLayout.LayoutParams layoutParams = (AppBarLayout.LayoutParams) childAt.getLayoutParams();
+            layoutParams.setScrollFlags(i3);
+            childAt.setLayoutParams(layoutParams);
+        }
+    }
+
+    /* JADX INFO: Access modifiers changed from: private */
+    public void setUpdateOffset(boolean z6) {
+        this.mUpdateOffset = z6;
+    }
+
+    private void updateIconViewLocationIfNeed(float f3) {
+        View viewFindCollapsingToolbarLayout = findCollapsingToolbarLayout();
+        if (viewFindCollapsingToolbarLayout instanceof COUICollapsingToolbarLayout) {
+            COUICollapsingToolbarLayout cOUICollapsingToolbarLayout = (COUICollapsingToolbarLayout) viewFindCollapsingToolbarLayout;
+            cOUICollapsingToolbarLayout.collapsingTextHelper.setExpansionFraction(f3);
+            cOUICollapsingToolbarLayout.updateIconViewLocationIfNeed();
+        }
+    }
+
+    public void enableAutoExpand(boolean z6) {
+        this.mAutoExpand = z6;
+    }
+
+    public View findSubtitleContentView() {
+        return findViewById(com.coui.appcompat.R.id.coui_appbar_subtitle_content);
+    }
+
+    @Override // com.google.android.material.appbar.COUIDividerAppBarLayout, com.google.android.material.appbar.AppBarLayout, androidx.coordinatorlayout.widget.CoordinatorLayout.AttachedBehavior
+    @NonNull
+    public CoordinatorLayout.Behavior<AppBarLayout> getBehavior() {
+        return new ScrollBehavior();
+    }
+
+    @Override // com.google.android.material.appbar.COUIDividerAppBarLayout
+    public int getDividerScrollRange() {
+        View viewFindCollapsingToolbarLayout = findCollapsingToolbarLayout();
+        if (viewFindCollapsingToolbarLayout != null) {
+            int i3 = this.mMode;
+            if (i3 == 0) {
+                return getTotalScrollRange();
+            }
+            if (i3 == 1) {
+                return viewFindCollapsingToolbarLayout.getMinimumHeight();
+            }
+        }
+        return getMeasuredHeight();
+    }
+
+    public int getEndPaddingBottom() {
+        return this.mEndPaddingBottom;
+    }
+
+    public int getMode() {
+        return this.mMode;
+    }
+
+    public int getStartPaddingBottom() {
+        return this.mStartPaddingBottom;
+    }
+
+    public boolean isSubtitleHideEnable() {
+        return this.mSubtitleHideEnable;
+    }
+
+    @Override // com.google.android.material.appbar.COUIDividerAppBarLayout, com.google.android.material.appbar.AppBarLayout, android.view.ViewGroup, android.view.View
+    public void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        setMode(this.mMode);
+    }
+
+    @Override // android.view.View
+    public void onConfigurationChanged(Configuration configuration) {
+        super.onConfigurationChanged(configuration);
+        post(new Runnable() {
+            @Override
+            public void run() {
+                updateSubtitle();
+            }
+        });
+    }
+
+    @Override // android.view.View
+    public void onFinishInflate() {
+        super.onFinishInflate();
+        if (findSubtitleContentView() != null) {
+            findSubtitleContentView().setTranslationY(-this.mStartPaddingBottom);
+        }
+    }
+
+    @Override // com.google.android.material.appbar.AppBarLayout, android.widget.LinearLayout, android.view.View
+    public void onMeasure(int i3, int i10) {
+        View viewFindSubtitleContentView = findSubtitleContentView();
+        View viewFindCollapsingToolbarLayout = findCollapsingToolbarLayout();
+        boolean z6 = false;
+        setUpdateOffset(this.mSubtitleHideEnable && isCollapsed());
+        boolean z10 = viewFindSubtitleContentView != null && viewFindSubtitleContentView.getVisibility() == 0;
+        if (viewFindCollapsingToolbarLayout != null) {
+            ViewGroup.LayoutParams layoutParams = viewFindCollapsingToolbarLayout.getLayoutParams();
+            if (this.mCollapsingToolbarHeight == 0) {
+                this.mCollapsingToolbarHeight = layoutParams.height;
+            }
+            int i11 = this.mCollapsingToolbarHeight;
+            if (i11 != 0) {
+                if (z10) {
+                    viewFindSubtitleContentView.measure(i3, i10);
+                    ViewGroup.LayoutParams layoutParams2 = viewFindSubtitleContentView.getLayoutParams();
+                    int i12 = this.mSubtitleViewHeight;
+                    boolean z11 = (i12 == 0 || i12 == viewFindSubtitleContentView.getMeasuredHeight()) ? false : true;
+                    if (this.mUpdateOffset || (z11 && isCollapsed())) {
+                        z6 = true;
+                    }
+                    setUpdateOffset(z6);
+                    if (layoutParams.height == this.mCollapsingToolbarHeight || z11) {
+                        if (layoutParams2 instanceof ViewGroup.MarginLayoutParams) {
+                            int measuredHeight = viewFindSubtitleContentView.getMeasuredHeight();
+                            this.mSubtitleViewHeight = measuredHeight;
+                            ((ViewGroup.MarginLayoutParams) layoutParams2).topMargin = -measuredHeight;
+                            viewFindSubtitleContentView.setLayoutParams(layoutParams2);
+                        }
+                        layoutParams.height = this.mCollapsingToolbarHeight + this.mSubtitleViewHeight;
+                        viewFindCollapsingToolbarLayout.setLayoutParams(layoutParams);
+                    }
+                } else {
+                    layoutParams.height = i11;
+                    viewFindCollapsingToolbarLayout.setLayoutParams(layoutParams);
+                }
+            }
+        }
+        super.onMeasure(i3, i10);
+    }
+
+    @Override // com.google.android.material.appbar.AppBarLayout
+    public void onOffsetChanged(int i3) {
+        super.onOffsetChanged(i3);
+        if (i3 == this.mOffset) {
+            return;
+        }
+        if (this.mMode == 0) {
+            this.mScrollDyByOffset = Math.max(0, -i3);
+        }
+        this.mOffset = i3;
+        onDividerChanged();
+        adjustPaddingBottom(i3, false);
+        adjustSubtitleIfNeed(i3);
+        View viewFindCollapsingToolbarLayout = findCollapsingToolbarLayout();
+        if (viewFindCollapsingToolbarLayout instanceof COUICollapsingToolbarLayout) {
+            ((COUICollapsingToolbarLayout) viewFindCollapsingToolbarLayout).updateIconViewLocationIfNeed();
+            viewFindCollapsingToolbarLayout.invalidate();
+        }
+        if (this.mNeedUpdateModeAfterOffsetChanged) {
+            int i10 = this.mMode;
+            if (i10 == 0) {
+                this.mNeedUpdateModeAfterOffsetChanged = false;
+            } else if (i10 == 1 && this.mOffset == (-getDividerScrollRange())) {
+                updateIconViewLocationIfNeed(1.0f);
+                this.mNeedUpdateModeAfterOffsetChanged = false;
+            } else if (this.mMode == 2 && this.mOffset == 0) {
+                setScrollFlags(0);
+                updateIconViewLocationIfNeed(0.0f);
+                this.mNeedUpdateModeAfterOffsetChanged = false;
+            }
+        }
+        if (this.mTargetViewState == 2 && this.mOffset == (-getDividerScrollRange()) && !this.mTargetView.canScrollVertically(1) && !this.mTargetView.canScrollVertically(-1) && this.mMode == 0) {
+            setExpanded(true);
+        }
+    }
+
+    @Override // com.google.android.material.appbar.COUIDividerAppBarLayout, android.view.View
+    public void onRestoreInstanceState(Parcelable parcelable) {
+        if (parcelable instanceof Bundle) {
+            Bundle bundle = (Bundle) parcelable;
+            this.mOffset = bundle.getInt(OFFSET_STATE_KEY);
+            this.mMode = bundle.getInt(MODE_STATE_KEY);
+            updateIconViewLocationIfNeed(bundle.getFloat(TITLE_FRACTION_STATE_KEY, 0.0f));
+            parcelable = bundle.getParcelable(SUPER_STATE_KEY);
+        }
+        super.onRestoreInstanceState(parcelable);
+    }
+
+    @Override // com.google.android.material.appbar.COUIDividerAppBarLayout, android.view.View
+    @Nullable
+    public Parcelable onSaveInstanceState() {
+        Bundle bundle = new Bundle();
+        bundle.putParcelable(SUPER_STATE_KEY, super.onSaveInstanceState());
+        bundle.putInt(OFFSET_STATE_KEY, this.mOffset);
+        bundle.putInt(MODE_STATE_KEY, this.mMode);
+        bundle.putFloat(TITLE_FRACTION_STATE_KEY, getExpansionFraction());
+        return bundle;
+    }
+
+    @Override // com.google.android.material.appbar.COUIDividerAppBarLayout
+    public boolean refreshAppBar(View view) {
+        boolean z6;
+        boolean zRefreshAppBar = super.refreshAppBar(view);
+        if (!view.canScrollVertically(1) && !view.canScrollVertically(-1) && this.mMode == 0 && isCollapsed() && this.mTargetViewState == 2) {
+            setExpanded(true);
+            z6 = true;
+        } else {
+            z6 = false;
+        }
+        return zRefreshAppBar || z6;
+    }
+
+    @Deprecated
+    public void refreshExpand(View view) {
+        if (view.canScrollVertically(1) || view.canScrollVertically(-1) || this.mMode != 0 || !isCollapsed()) {
+            return;
+        }
+        setExpanded(true);
+    }
+
+    @Override // com.google.android.material.appbar.COUIDividerAppBarLayout
+    public void reset() {
+        super.reset();
+        this.mCollapsable = true;
+        setMode(0);
+        setExpanded(true);
+    }
+
+    @Override // com.google.android.material.appbar.COUIDividerAppBarLayout
+    public void setDebug(boolean z6) {
+        super.setDebug(z6);
+        DEBUG = z6;
+    }
+
+    public void setEndPaddingBottom(int i3) {
+        this.mEndPaddingBottom = i3;
+        adjustPaddingBottom(this.mOffset, true);
+    }
+
+    public void setMode(int i3) {
+        if (this.mMode == i3) {
+            return;
+        }
+        if (i3 == 0) {
+            this.mCollapsable = true;
+            setScrollFlags(19);
+            if (this.mMode == 1) {
+                if (this.mScrollDyByScroll > 0) {
+                    this.mScrollDyByOffset -= this.mOffset;
+                    onDividerChanged();
+                } else {
+                    setExpanded(true);
+                }
+            }
+            if (this.mMode == 2 && this.mScrollDyByScroll > 0) {
+                this.mScrollDyByOffset -= this.mOffset;
+                setExpanded(false);
+            }
+        } else if (i3 == 1) {
+            this.mCollapsable = false;
+            setExpanded(false);
+            setScrollFlags(19);
+            this.mScrollDyByOffset = 0;
+            if (isCollapsed()) {
+                updateIconViewLocationIfNeed(1.0f);
+            } else {
+                this.mNeedUpdateModeAfterOffsetChanged = true;
+            }
+            onDividerChanged();
+        } else if (i3 == 2) {
+            this.mCollapsable = false;
+            setExpanded(true);
+            this.mScrollDyByOffset = 0;
+            if (isExpanded()) {
+                setScrollFlags(0);
+                updateIconViewLocationIfNeed(0.0f);
+            } else {
+                this.mNeedUpdateModeAfterOffsetChanged = true;
+            }
+            onDividerChanged();
+        }
+        this.mMode = i3;
+    }
+
+    public void setStartPaddingBottom(int i3) {
+        this.mStartPaddingBottom = i3;
+        adjustPaddingBottom(this.mOffset, true);
+    }
+
+    public void setSubtitleHideEnable(boolean z6) {
+        if (this.mSubtitleHideEnable != z6) {
+            this.mSubtitleHideEnable = z6;
+            updateSubtitle();
+        }
+    }
+
+    public void updateSubtitle() {
+        adjustSubtitleIfNeed(this.mOffset);
+    }
+
+    public COUICollapsableAppBarLayout(@NonNull Context context, @Nullable AttributeSet attributeSet) {
+        super(context, attributeSet);
+        this.mMode = 0;
+        this.mCollapsingToolbarHeight = 0;
+        this.mSubtitleViewHeight = 0;
+        this.mAutoExpand = true;
+        this.mUpdateOffset = false;
+        this.mNeedUpdateModeAfterOffsetChanged = false;
+        init(attributeSet);
+    }
+
+    public COUICollapsableAppBarLayout(@NonNull Context context, @Nullable AttributeSet attributeSet, int i3) {
+        super(context, attributeSet, i3);
+        this.mMode = 0;
+        this.mCollapsingToolbarHeight = 0;
+        this.mSubtitleViewHeight = 0;
+        this.mAutoExpand = true;
+        this.mUpdateOffset = false;
+        this.mNeedUpdateModeAfterOffsetChanged = false;
+        init(attributeSet);
+    }
+}

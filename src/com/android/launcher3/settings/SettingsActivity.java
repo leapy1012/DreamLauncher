@@ -187,6 +187,17 @@ public class SettingsActivity extends AppCompatActivity
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
     }
 
+    /**
+     * Opens DreamUXDesign personalization hub (Home/Lock/AOD). Prefer this for
+     * Wallpapers &amp; style entry points.
+     */
+    public static void startPersonalizationHub(Context context) {
+        Intent intent = new Intent("gd.app.uxdesign.action.LAUNCH_PERSONAL")
+                .setPackage("gd.app.uxdesign")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startWithoutIconSplash(context, intent);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

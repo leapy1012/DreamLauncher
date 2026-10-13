@@ -19,6 +19,11 @@ public class COUIContextUtil {
         mContext = context;
     }
 
+    /** Decompiled APK aliases. */
+    public static int a(Context context, int attr) { return getAttrColor(context, attr); }
+    public static int c(int attr, Context context) { return getAttrDimens(context, attr); }
+    public static int b(Context context, int attr, int defValue) { return getAttrColor(context, attr, defValue); }
+
     public static int getAttrColor(Context context, int attr) {
         if (attr == R.attr.couiColorFocus || attr == R.attr.couiColorDisable) {
             return makeColorAlpha(getAttrColor(context, attr, 0), getAttrColor(context, R.attr.couiColorContainerTheme, 0));

@@ -28,6 +28,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.animation.Interpolator;
 import android.view.animation.PathInterpolator;
 import android.widget.HorizontalScrollView;
@@ -92,6 +93,17 @@ public class OverviewDockView extends HorizontalScrollView {
     private int mCenteredChildIndex = -1;
     /** When true, Recents child index 0 is on the right — dock must reverse-bind. */
     private boolean mRecentsRtl;
+    private boolean mBoundRecentsRtl;
+    private boolean mRecenterPending;
+    private boolean mApplyingLayout;
+    private final ViewTreeObserver.OnPreDrawListener mRecenterOnPreDraw = () -> {
+        if (!isScrollLinkReady()) {
+            return true;
+        }
+        cancelPendingRecenter();
+        recenterOnCurrentRecentsPage();
+        return true;
+    };
     /**
      * ColorOS {@code LinkScrollState.mState}. While {@link #LINK_DOCK}, Recents must not
      * push scroll back into the dock (avoids feedback loop).
@@ -117,6 +129,8 @@ public class OverviewDockView extends HorizontalScrollView {
 
     public OverviewDockView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        // Children are bound in physical left-to-right order; Recents RTL is handled explicitly.
+        setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         setHorizontalScrollBarEnabled(false);
         setClipToPadding(false);
         setClipChildren(false);
@@ -204,13 +218,16 @@ public class OverviewDockView extends HorizontalScrollView {
         if (mDismissAnimating) {
             return;
         }
-        if (Arrays.equals(ids, mBoundTaskIds) && mContainer.getChildCount() == count) {
+        if (Arrays.equals(ids, mBoundTaskIds) && mContainer.getChildCount() == count
+                && mBoundRecentsRtl == mRecentsRtl) {
             // Task set unchanged (e.g. post-dismiss re-sync after setCurrentPage) —
             // still re-center active highlight onto the current Recents page.
             recenterOnCurrentRecentsPage();
             return;
         }
         mBoundTaskIds = ids;
+        mBoundRecentsRtl = mRecentsRtl;
+        mLinkScrollState = LINK_UNLINK;
         rebuildIcons(recentsView, count);
     }
 
@@ -256,9 +273,8 @@ public class OverviewDockView extends HorizontalScrollView {
             return;
         }
         View child = mContainer.getChildAt(dockIndex);
-        if (child == null || getWidth() == 0 || child.getWidth() == 0) {
-            mCenteredChildIndex = dockIndex;
-            post(() -> centerOnDockIndex(dockIndex));
+        if (child == null || !isScrollLinkReady()) {
+            scheduleRecenterAfterLayout();
             return;
         }
         mCenteredChildIndex = dockIndex;
@@ -271,10 +287,17 @@ public class OverviewDockView extends HorizontalScrollView {
      * {@code scrollX} via {@code mScrollScale}. Called every Recents scroll frame.
      */
     public void onRecentsScrollTo(int recentsPrimaryScroll) {
-        if (mLinkScrollState == LINK_DOCK) {
+        if (mLinkScrollState == LINK_DOCK || mDismissAnimating) {
             return;
         }
-        if (mRecentsView == null || mContainer.getChildCount() == 0 || getWidth() == 0) {
+        if (!isScrollLinkReady()) {
+            scheduleRecenterAfterLayout();
+            return;
+        }
+        // Like Oppo's updateCurrentPage: a settled task identity wins over raw coordinates.
+        // Do not overwrite its icon position with an old entry/rebind scroll origin.
+        if (!mRecentsView.isRecentsScrollInProgress()) {
+            recenterOnCurrentRecentsPage();
             return;
         }
         computeScrollScale(0);
@@ -363,10 +386,12 @@ public class OverviewDockView extends HorizontalScrollView {
         if (mLinkScrollState != LINK_DOCK) {
             return;
         }
-        syncRecentsToDockScroll(true /* snap */);
-        // ColorOS sets UNLINK after dock-driven page end; Recents snap then re-enters
-        // LINK_RECENTS via onRecentsScrollTo / onParentScrollInteractionBegin.
+        // Release ownership before snap callbacks, including an immediate page-end callback.
         mLinkScrollState = LINK_UNLINK;
+        syncRecentsToDockScroll(true /* snap */);
+        if (mRecentsView != null && !mRecentsView.isRecentsScrollInProgress()) {
+            recenterOnCurrentRecentsPage();
+        }
     }
 
     private int findNearestDockIndexToCenter() {
@@ -397,7 +422,7 @@ public class OverviewDockView extends HorizontalScrollView {
      * {@code snap} settles to the nearest page; otherwise scrolls proportionally.
      */
     private void syncRecentsToDockScroll(boolean snap) {
-        if (mRecentsView == null || getWidth() == 0 || mIconSize == 0) {
+        if (!isScrollLinkReady() || mDismissAnimating || mIconSize == 0) {
             return;
         }
         int count = mContainer.getChildCount();
@@ -618,7 +643,7 @@ public class OverviewDockView extends HorizontalScrollView {
     protected void onScrollChanged(int l, int t, int oldl, int oldt) {
         super.onScrollChanged(l, t, oldl, oldt);
         updateCurveProperties();
-        if (mLinkScrollState == LINK_DOCK) {
+        if (mLinkScrollState == LINK_DOCK && !mApplyingLayout) {
             syncRecentsToDockScroll(false /* snap */);
         }
     }
@@ -627,11 +652,66 @@ public class OverviewDockView extends HorizontalScrollView {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         updateSidePadding(w);
-        if (mCenteredChildIndex >= 0) {
-            final int dockIndex = mCenteredChildIndex;
-            post(() -> centerOnDockIndex(dockIndex));
-        } else {
-            updateCurveProperties();
+        scheduleRecenterAfterLayout();
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        mApplyingLayout = true;
+        try {
+            super.onLayout(changed, left, top, right, bottom);
+        } finally {
+            mApplyingLayout = false;
+        }
+        // Rebuilds can change child positions without changing this view's size.
+        scheduleRecenterAfterLayout();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        scheduleRecenterAfterLayout();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        cancelPendingRecenter();
+        mLinkScrollState = LINK_UNLINK;
+        super.onDetachedFromWindow();
+    }
+
+    private boolean isScrollLinkReady() {
+        int count = mContainer.getChildCount();
+        if (mRecentsView == null || !mRecentsView.isDockScrollReady()
+                || count == 0 || getWidth() == 0 || !isLaidOut() || isLayoutRequested()
+                || !mContainer.isLaidOut() || mContainer.isLayoutRequested()) {
+            return false;
+        }
+        for (int i = 0; i < count; i++) {
+            if (mContainer.getChildAt(i).getWidth() == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void scheduleRecenterAfterLayout() {
+        if (mRecenterPending || mRecentsView == null || mContainer.getChildCount() == 0) {
+            return;
+        }
+        // One callback, resolved by task ID after both view trees have completed layout.
+        // Never queue a captured child index: a load plan can reorder/remove that child.
+        mRecenterPending = true;
+        getViewTreeObserver().addOnPreDrawListener(mRecenterOnPreDraw);
+    }
+
+    private void cancelPendingRecenter() {
+        if (mRecenterPending) {
+            ViewTreeObserver observer = getViewTreeObserver();
+            if (observer.isAlive()) {
+                observer.removeOnPreDrawListener(mRecenterOnPreDraw);
+            }
+            mRecenterPending = false;
         }
     }
 
@@ -646,6 +726,7 @@ public class OverviewDockView extends HorizontalScrollView {
     }
 
     private void rebuildIcons(RecentsView<?, ?> recentsView, int count) {
+        cancelPendingRecenter();
         mContainer.removeAllViews();
         mCenteredChildIndex = -1;
         if (count == 0) {
@@ -692,9 +773,8 @@ public class OverviewDockView extends HorizontalScrollView {
             }
             applyIconVisuals(icon, 1f - EDGE_SCALE_DOWN_FACTOR, MAX_PAGE_SCRIM_ALPHA);
         }
-        // Resolve the focused task after layout/page settle — capturing nearest during
-        // dismiss removeViewInLayout is too early (current page not updated yet).
-        post(this::recenterOnCurrentRecentsPage);
+        // Unlink while rebinding; task identity is resolved after layout, before drawing.
+        scheduleRecenterAfterLayout();
     }
 
     /**
@@ -702,7 +782,17 @@ public class OverviewDockView extends HorizontalScrollView {
      * Called after rebuild and after dismiss snap so active state stays in sync.
      */
     public void recenterOnCurrentRecentsPage() {
-        if (mRecentsView == null || mContainer.getChildCount() == 0) {
+        if (mRecentsView == null || mContainer.getChildCount() == 0
+                || mLinkScrollState == LINK_DOCK || mDismissAnimating) {
+            return;
+        }
+        if (!isScrollLinkReady()) {
+            scheduleRecenterAfterLayout();
+            return;
+        }
+        mLinkScrollState = LINK_RECENTS;
+        if (mRecentsView.isRecentsScrollInProgress()) {
+            onRecentsScrollTo(mRecentsView.mOrientationHandler.getPrimaryScroll(mRecentsView));
             return;
         }
         TaskView focus = mRecentsView.getCurrentPageTaskView();
@@ -712,10 +802,8 @@ public class OverviewDockView extends HorizontalScrollView {
         if (focus != null) {
             onRecentsPageCentered(focus);
         }
-        // Link-scroll so scrollX + curve dim match the centered card even if page
-        // centering missed (e.g. Clear All page / missing task id).
-        mLinkScrollState = LINK_RECENTS;
-        onRecentsScrollTo(mRecentsView.mOrientationHandler.getPrimaryScroll(mRecentsView));
+        // A settled task is authoritative. Continuous coordinate tracking resumes only
+        // while Recents actually moves, rather than overwriting this task-based snap.
     }
 
     /**
@@ -768,6 +856,8 @@ public class OverviewDockView extends HorizontalScrollView {
     }
 
     private void clearIcons() {
+        cancelPendingRecenter();
+        mLinkScrollState = LINK_UNLINK;
         mBoundTaskIds = new int[0];
         mContainer.removeAllViews();
         mCenteredChildIndex = -1;

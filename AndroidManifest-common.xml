@@ -165,6 +165,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
 	<!-- hxy-feature: desktop theme 202312-   -->
         <activity
             android:name="com.android.launcher3.settings.ThemeActivity"

@@ -268,4 +268,6 @@
     <item name="txt_title_tiny" type="id" />
     <item name="unSelectText" type="id" />
     <item name="year" type="id" />
+    <item name="coui_appbar_subtitle_content" type="id" />
 </resources>
+

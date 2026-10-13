@@ -125,6 +125,10 @@ public class COUIStrokeDrawable extends StatefulDrawable {
         }
     }
 
+    /** Decompiled APK aliases for focus enter/exit. */
+    public void j() { setFocusStateLocked(false, true, true); }
+    public void c() { setFocusStateLocked(false, false, true); }
+
     public void setFocusStateLocked(boolean locked, boolean entered, boolean animated) {
         setStateLocked(STATE_FOCUSED, locked, entered, animated);
     }

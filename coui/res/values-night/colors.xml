@@ -43,4 +43,19 @@
     <color name="coui_color_press">#33ffffff</color>
     <color name="coui_color_press_background">#26ffffff</color>
     <color name="coui_color_primary_on_popup_blue">#5c9dff</color>
+
+    <!-- DreamCalculator / OPPO calculator: Theme.COUI.Orange + system night.
+         Popup DefaultAdapter tints via ?attr/couiColorLabelPrimary; forceDark off. -->
+    <color name="coui_color_secondary_neutral">#8affffff</color>
+    <color name="coui_color_hint_neutral">#4dffffff</color>
+    <color name="coui_color_disabled_neutral">#4dffffff</color>
+    <color name="coui_color_label_primary">#e6ffffff</color>
+    <color name="coui_color_label_secondary">#8affffff</color>
+    <color name="coui_color_label_secondary_variant">#66ffffff</color>
+    <color name="coui_color_label_tertiary">#4dffffff</color>
+    <color name="coui_popup_list_background_color">#242424</color>
+    <color name="coui_popup_list_selector_color_pressed">#0dffffff</color>
+    <color name="coui_popup_list_window_text_color_disabled">#4dffffff</color>
+    <color name="coui_popup_list_window_text_color_normal">#ffffff</color>
+    <color name="coui_popup_list_window_text_pressed_color">#33ffffff</color>
 </resources>

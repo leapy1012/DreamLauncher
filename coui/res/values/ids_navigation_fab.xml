@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="design_menu_item_action_area" type="id" />
+    <item name="design_menu_item_action_area_stub" type="id" />
+    <item name="design_menu_item_text" type="id" />
+    <item name="fl_root" type="id" />
+    <item name="navigation_bar_item_active_indicator_view" type="id" />
+    <item name="navigation_bar_item_icon_container" type="id" />
+    <item name="navigation_bar_item_icon_view" type="id" />
+    <item name="navigation_bar_item_labels_group" type="id" />
+    <item name="navigation_bar_item_labels_group_self" type="id" />
+    <item name="navigation_bar_item_large_label_view" type="id" />
+    <item name="navigation_bar_item_small_label_view" type="id" />
+    <item name="navigation_rail_tab_left" type="id" />
+    <item name="red_dot" type="id" />
+    <item name="fl_root_rail" type="id" />
+    <item name="coui_floating_button_label" type="id" />
+    <item name="coui_floating_button_label_container" type="id" />
+    <item name="coui_floating_button_main_fab" type="id" />
+    <item name="coui_floating_button_child_fab" type="id" />
+    <item name="popup_item_imageView" type="id" />
+    <item name="popup_item_textView" type="id" />
+</resources>
+
+

@@ -42,6 +42,11 @@ public class ShadowUtils {
         setElevationToView(view, elevationToView, 0, 0, 0);
     }
 
+    /** Decompiled APK alias. */
+    public static void c(int elevationPx, int spotShadowColor, int unused, View view) {
+        setElevationToViewFromLower(view, elevationPx, spotShadowColor, unused);
+    }
+
     public static void setElevationToViewFromLower(View view, int elevationPx, int spotShadowColor, int unused) {
         if (view == null) {
             return;

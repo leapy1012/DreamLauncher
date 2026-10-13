@@ -233,6 +233,7 @@ public class COUITabView extends LinearLayout {
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
         if (isEnabled()) {
+            COUIStateEffectDrawable stateEffect = this.mStateEffectBackground;
             if (motionEvent.getAction() == 0) {
                 COUITabLayout cOUITabLayout = this.mCOUITabLayout;
                 if (cOUITabLayout.mEnableVibrator) {
@@ -240,11 +241,14 @@ public class COUITabView extends LinearLayout {
                     if (cOUITab != null && cOUITab.mView != this) {
                         performHapticFeedback(COUIHapticFeedbackConstants.GRANULAR_SHORT_VIBRATE);
                     }
-                    this.mStateEffectBackground.setTouched(true);
+                    if (stateEffect != null) {
+                        stateEffect.setTouched(true);
+                    }
                 }
             }
-            if (motionEvent.getAction() == 1 || motionEvent.getAction() == 3) {
-                this.mStateEffectBackground.setTouched(false);
+            if ((motionEvent.getAction() == 1 || motionEvent.getAction() == 3)
+                    && stateEffect != null) {
+                stateEffect.setTouched(false);
             }
         }
         return super.onTouchEvent(motionEvent);

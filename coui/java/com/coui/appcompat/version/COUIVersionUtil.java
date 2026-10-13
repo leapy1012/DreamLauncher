@@ -53,6 +53,8 @@ public class COUIVersionUtil {
         return checkOPlusViewSubSDK(OPLUS_OUTLINE_MAJOR_VERSION_33, OPLUS_OUTLINE_SUB_VERSION_34);
     }
 
+    public static boolean a(int sdk, int subSdk) { return checkOPlusViewSubSDK(sdk, subSdk); }
+
     public static boolean checkOPlusViewSubSDK(int sdk, int subSdk) {
         if (Build.VERSION.SDK_INT <= 31) {
             return false;

@@ -40,6 +40,7 @@ import androidx.annotation.Nullable;
 
 import com.android.launcher3.config.FeatureFlags;
 import com.android.launcher3.graphics.IconShape;
+import com.android.launcher3.icons.DataThemeIconLoader;
 import com.android.launcher3.icons.IconCache;
 import com.android.launcher3.icons.IconProvider;
 import com.android.launcher3.icons.LauncherIconProvider;
@@ -62,12 +63,21 @@ import android.database.ContentObserver;
 import android.net.Uri;
 import android.provider.Settings;
 import android.os.Handler;
+import android.os.Looper;
 //hxy-feature: add launcher style function  202312
 
 public class LauncherAppState implements SafeCloseable {
 
     public static final String ACTION_FORCE_ROLOAD = "force-reload-launcher";
     public static final String KEY_ICON_STATE = "pref_icon_shape_path";
+    /** UXDesign ThemeApplyEngine broadcast after installing /data/theme. */
+    public static final String ACTION_DATA_THEME_APPLIED = "gd.app.uxdesign.action.THEME_APPLIED";
+
+    /**
+     * Debounce Settings.Global + THEME_APPLIED (both fire on apply) before OPPO-style
+     * {@link Launcher#recreate()}.
+     */
+    private static final long DATA_THEME_RECREATE_DEBOUNCE_MS = 350L;
 
     // We do not need any synchronization for this variable as its only written on UI thread.
     public static final MainThreadInitializedObject<LauncherAppState> INSTANCE =
@@ -79,6 +89,8 @@ public class LauncherAppState implements SafeCloseable {
     private final IconCache mIconCache;
     private final InvariantDeviceProfile mInvariantDeviceProfile;
     private final RunnableList mOnTerminateCallback = new RunnableList();
+    private final Handler mUiHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mDataThemeRecreateRunnable = this::recreateLauncherForDataTheme;
     //hxy-feature: add launcher style function  202312
     private ContentObserver mLauncherStyleChangedObserver = new ContentObserver(new Handler()) {
         @Override
@@ -123,6 +135,19 @@ public class LauncherAppState implements SafeCloseable {
         //hxy-feature: desktop theme 202312
         mIconProvider.registerThemechange(mContext);
         //hxy-feature: desktop theme 202312
+        // Dream: OPPO-style recreate when ThemeStore/UXDesign applies /data/theme.
+        SimpleBroadcastReceiver dataThemeReceiver = new SimpleBroadcastReceiver(intent -> {
+            if (ACTION_DATA_THEME_APPLIED.equals(intent.getAction())) {
+                Log.i(Launcher.TAG, "THEME_APPLIED → schedule data-theme recreate");
+                scheduleDataThemeRecreate();
+            }
+        });
+        dataThemeReceiver.register(mContext, ACTION_DATA_THEME_APPLIED);
+        mOnTerminateCallback.add(() -> {
+            mUiHandler.removeCallbacks(mDataThemeRecreateRunnable);
+            mContext.unregisterReceiver(dataThemeReceiver);
+        });
+
         SimpleBroadcastReceiver modelChangeReceiver =
                 new SimpleBroadcastReceiver(mModel::onBroadcastIntent);
         modelChangeReceiver.register(mContext, Intent.ACTION_LOCALE_CHANGED,
@@ -195,6 +220,33 @@ public class LauncherAppState implements SafeCloseable {
         mIconCache.updateIconParams(
                 mInvariantDeviceProfile.fillResIconDpi, mInvariantDeviceProfile.iconBitmapSize);
         mModel.forceReload();
+    }
+
+    /**
+     * OPPO {@code UxConfigUtils.refreshViewWhenIconStyleOrThemeChanged} →
+     * {@code launcher.recreate()}. Coalesces dream_data_theme ContentObserver +
+     * {@link #ACTION_DATA_THEME_APPLIED} so All Apps / search are not left blank
+     * by a mid-session {@link #refreshAndReloadLauncher()}.
+     */
+    public void scheduleDataThemeRecreate() {
+        mUiHandler.removeCallbacks(mDataThemeRecreateRunnable);
+        mUiHandler.postDelayed(mDataThemeRecreateRunnable, DATA_THEME_RECREATE_DEBOUNCE_MS);
+    }
+
+    private void recreateLauncherForDataTheme() {
+        Log.i(Launcher.TAG, "data theme → OPPO-style Launcher.recreate()");
+        mIconProvider.reloadDataThemeIcons(true);
+        LauncherIcons.clearPool();
+        mIconCache.updateIconParams(
+                mInvariantDeviceProfile.fillResIconDpi, mInvariantDeviceProfile.iconBitmapSize);
+        Launcher launcher = Launcher.ACTIVITY_TRACKER.getCreatedActivity();
+        if (launcher != null && !launcher.isDestroyed() && !launcher.isFinishing()) {
+            // Fresh activity rebuilds All Apps + search chrome cleanly (OPPO path).
+            launcher.recreate();
+        } else {
+            // No live activity (e.g. process only holding AppState) — model reload is enough.
+            mModel.forceReload();
+        }
     }
 
     /**

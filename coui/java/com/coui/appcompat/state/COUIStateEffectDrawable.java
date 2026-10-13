@@ -70,6 +70,11 @@ public class COUIStateEffectDrawable extends LayerDrawable implements IStateEffe
         return super.onStateChange(stateSet);
     }
 
+    /** Decompiled APK aliases. */
+    public void e(boolean touched) { setTouched(touched); }
+    public void f(Drawable drawable) { setViewBackground(drawable); }
+    public void b(View view, int viewType) { enableScaleEffect(view, viewType); }
+
     public void setTouched(boolean touched) {
         for (int i = 0; i < getNumberOfLayers(); i++) {
             Drawable drawable = getDrawable(i);

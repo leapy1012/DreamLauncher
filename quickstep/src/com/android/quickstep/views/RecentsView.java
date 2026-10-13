@@ -510,7 +510,8 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 	private boolean mBottomUiEntered;
 	@Nullable
 	private Runnable mPendingBottomUiEnter;
-	private int mBottomUiEnterRetries;
+	private boolean mBottomUiEnterRequested;
+	private boolean mBottomUiAnimationEntering;
 	///&&}}
     private final Rect mClearAllButtonDeadZoneRect = new Rect();
     private final Rect mTaskViewDeadZoneRect = new Rect();
@@ -1540,6 +1541,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             setSwipeDownShouldLaunchApp(true);
         }
         InteractionJankMonitorWrapper.end(InteractionJankMonitorWrapper.CUJ_RECENTS_SCROLLING);
+        if (mOverviewDockView != null) {
+            mOverviewDockView.recenterOnCurrentRecentsPage();
+        }
     }
 
     @Override
@@ -1747,6 +1751,16 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     @Override
     protected boolean isPageScrollsInitialized() {
         return super.isPageScrollsInitialized() && mLoadPlanEverApplied;
+    }
+
+    /** Whether dock linking can safely use this task list's page coordinates. */
+    public boolean isDockScrollReady() {
+        return isPageScrollsInitialized() && isLaidOut() && !isLayoutRequested();
+    }
+
+    /** Coordinate linking is for movement; a settled dock follows the selected task ID. */
+    public boolean isRecentsScrollInProgress() {
+        return mGestureActive || isPageInTransition();
     }
 
     protected void applyLoadPlan(ArrayList<GroupTask> taskGroups) {
@@ -2075,6 +2089,10 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         // Fade out the actions view quickly (0.1 range)
         mActionsView.getFullscreenAlpha().setValue(
                 mapToRange(fullscreenProgress, 0, 0.1f, 1f, 0f, LINEAR));
+        // An enter request can arrive before the final fullscreen-progress update.
+        if (mBottomUiEnterRequested && fullscreenProgress <= 0.05f) {
+            scheduleBottomUiEnter();
+        }
     }
 
     private void updateTaskStackListenerState() {
@@ -4531,11 +4549,15 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         }
         // Dock + Clear All are siblings — hide them whenever overview itself is not shown.
         updateBottomUiOverviewVisibility();
+        if (visibility == VISIBLE && mBottomUiEnterRequested) {
+            scheduleBottomUiEnter();
+        }
     }
 
     /** True when Clear All / dock icons should be on screen (overview only). */
     public boolean shouldShowBottomUi() {
-        return getVisibility() == VISIBLE && mContentAlpha > 0f && getTaskViewCount() > 0;
+        return mOverviewStateEnabled && !mOverviewFullscreenEnabled
+                && getVisibility() == VISIBLE && mContentAlpha > 0f && getTaskViewCount() > 0;
     }
 
     private void updateBottomUiOverviewVisibility() {
@@ -4546,7 +4568,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         if (mClearAllPanel != null) {
             mClearAllPanel.setVisibility(show ? VISIBLE : GONE);
             if (show) {
-                mClearAllPanel.updateMemoryInfoDisplay();
                 applySettledBottomUiAlpha(mClearAllPanel);
             }
         }
@@ -4584,31 +4605,33 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             return;
         }
         cancelPendingBottomUiEnter();
+        mBottomUiEnterRequested = true;
         if (mOrientationState.getTouchRotation() != ROTATION_0) {
             hideBottomUiImmediate();
             return;
         }
         // Still in the app-to-recents swipe (BACKGROUND_APP): keep footer hidden.
-        if (mGestureActive || mFullscreenProgress > 0.05f) {
+        if (!mOverviewStateEnabled || mOverviewFullscreenEnabled
+                || mGestureActive || mFullscreenProgress > 0.05f) {
+            // Keep the request until gesture end, fullscreen progress, or task binding changes.
             return;
         }
         // Icons bind after the gesture; sync first so the dock is VISIBLE for this fade.
         syncDockFromRecents();
         if (!shouldShowBottomUi()) {
-            // RecentsView can still be frozen/INVISIBLE or task views not rebound yet.
-            if (mContentAlpha > 0f && getVisibility() == VISIBLE && mBottomUiEnterRetries < 8) {
-                scheduleBottomUiEnterRetry();
-            }
+            // Task binding/content visibility will retry the retained request.
             return;
         }
-        mBottomUiEnterRetries = 0;
         if (mBottomUiEntered && getBottomUiAlpha() > 0.99f) {
+            mBottomUiEnterRequested = false;
             applySettledBottomUiAlpha(mOverviewDockView);
             return;
         }
-        if (mBottomUiAnimator != null && mBottomUiAnimator.isRunning()) {
+        if (mBottomUiAnimator != null && mBottomUiAnimator.isRunning()
+                && mBottomUiAnimationEntering) {
             return;
         }
+        // An old exit must not prevent a new enter.
         cancelBottomUiAnim();
         float shift = getResources().getDimension(R.dimen.hxy_overview_bottom_ui_enter_shift);
         AnimatorSet anim = new AnimatorSet();
@@ -4627,36 +4650,50 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             hasTarget = true;
         }
         if (!hasTarget) {
-            if (mBottomUiEnterRetries < 8) {
-                scheduleBottomUiEnterRetry();
-            }
             return;
+        }
+        if (mClearAllPanel != null) {
+            mClearAllPanel.updateMemoryInfoDisplay();
         }
         anim.setDuration(600);
         anim.setInterpolator(EMPHASIZED_DECELERATE);
         anim.addListener(new AnimatorListenerAdapter() {
+            private boolean mCancelled;
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                mCancelled = true;
+            }
+
             @Override
             public void onAnimationEnd(Animator animation) {
-                mBottomUiEntered = true;
+                if (mBottomUiAnimator != animation) {
+                    return;
+                }
                 mBottomUiAnimator = null;
+                if (mCancelled || !mBottomUiEnterRequested || !shouldShowBottomUi()) {
+                    return;
+                }
+                mBottomUiEntered = true;
+                mBottomUiEnterRequested = false;
                 // Dock may bind after this fade; reveal it if it appeared late.
                 updateBottomUiOverviewVisibility();
             }
         });
+        mBottomUiAnimationEntering = true;
         mBottomUiAnimator = anim;
         anim.start();
     }
 
-    private void scheduleBottomUiEnterRetry() {
-        if (mPendingBottomUiEnter != null) {
+    private void scheduleBottomUiEnter() {
+        if (!mBottomUiEnterRequested || mPendingBottomUiEnter != null) {
             return;
         }
-        mBottomUiEnterRetries++;
         mPendingBottomUiEnter = () -> {
             mPendingBottomUiEnter = null;
             playBottomUiEnter();
         };
-        post(mPendingBottomUiEnter);
+        postOnAnimation(mPendingBottomUiEnter);
     }
 
     private void cancelPendingBottomUiEnter() {
@@ -4683,7 +4720,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             return;
         }
         cancelPendingBottomUiEnter();
-        mBottomUiEnterRetries = 0;
+        mBottomUiEnterRequested = false;
         cancelBottomUiAnim();
         mBottomUiEntered = false;
         if (getBottomUiAlpha() <= 0.01f) {
@@ -4700,18 +4737,32 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         anim.setDuration(240);
         anim.setInterpolator(ACCEL);
         anim.addListener(new AnimatorListenerAdapter() {
+            private boolean mCancelled;
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                mCancelled = true;
+            }
+
             @Override
             public void onAnimationEnd(Animator animation) {
-                hideBottomUiImmediate();
+                if (mBottomUiAnimator != animation) {
+                    return;
+                }
+                mBottomUiAnimator = null;
+                if (!mCancelled) {
+                    hideBottomUiImmediate();
+                }
             }
         });
+        mBottomUiAnimationEntering = false;
         mBottomUiAnimator = anim;
         anim.start();
     }
 
     public void hideBottomUiImmediate() {
         cancelPendingBottomUiEnter();
-        mBottomUiEnterRetries = 0;
+        mBottomUiEnterRequested = false;
         cancelBottomUiAnim();
         mBottomUiEntered = false;
         if (mClearAllPanel != null) {
@@ -4728,8 +4779,10 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 
     private void cancelBottomUiAnim() {
         if (mBottomUiAnimator != null) {
-            mBottomUiAnimator.cancel();
+            // Invalidate ownership before cancel() dispatches onAnimationEnd().
+            Animator animator = mBottomUiAnimator;
             mBottomUiAnimator = null;
+            animator.cancel();
         }
     }
 
@@ -4856,6 +4909,10 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                         .setScroll(getScrollOffset()));
         setImportantForAccessibility(isModal() ? IMPORTANT_FOR_ACCESSIBILITY_NO
                 : IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+        if (mOverviewDockView != null) {
+            // Dock may have laid out before Recents, or kept the same size across a load plan.
+            mOverviewDockView.recenterOnCurrentRecentsPage();
+        }
     }
 
     private void updatePivots() {
@@ -6174,6 +6231,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     public void setOverviewFullscreenEnabled(boolean overviewFullscreenEnabled) {
         if (mOverviewFullscreenEnabled != overviewFullscreenEnabled) {
             mOverviewFullscreenEnabled = overviewFullscreenEnabled;
+            if (!overviewFullscreenEnabled && mBottomUiEnterRequested) {
+                scheduleBottomUiEnter();
+            }
             // Request layout to ensure scroll position is recalculated with updated
             // mFullscreenProgress.
             requestLayout();

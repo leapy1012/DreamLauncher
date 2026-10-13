@@ -194,6 +194,9 @@ public class IconProvider {
         //hxy-feature: desktop theme 202312
          if (icon == null &&  td != null) {
              icon = td.loadIcon();
+             if (icon != null) {
+                 icon = customizeLoadedThemeIcon(componentName, icon);
+             }
          }
         //hxy-feature: desktop theme 202312
         if (icon == null) {
@@ -205,6 +208,10 @@ public class IconProvider {
                             aid.getForeground(), td.loadPaddedDrawable());
                 }
             }
+        }
+        // No theme PNG for this package → ColorOS third-party plate + scaled logo.
+        if (td == null && icon != null) {
+            icon = wrapUnthemedIcon(componentName, icon);
         }
         return icon;
     }
@@ -243,8 +250,31 @@ public class IconProvider {
         //hxy-feature: desktop theme 202312
          if (icon == null &&  td != null) {
              icon = td.loadIcon();
+             if (icon != null) {
+                 icon = customizeLoadedThemeIcon(componentName, icon);
+             }
          }
         //hxy-feature: desktop theme 202312
+        if (td == null && icon != null) {
+            icon = wrapUnthemedIcon(componentName, icon);
+        }
+        return icon;
+    }
+
+    /**
+     * Hook for OEM icon themes: wrap apps that have no package-specific theme PNG
+     * (true third-party). Default is a no-op; {@code LauncherIconProvider} composites
+     * the ColorOS plate + scaled original logo.
+     */
+    protected Drawable wrapUnthemedIcon(ComponentName componentName, Drawable icon) {
+        return icon;
+    }
+
+    /**
+     * Hook after a theme PNG was loaded. Used to put a shared plate under sparse
+     * doodle/line-art glyphs. Default is a no-op.
+     */
+    protected Drawable customizeLoadedThemeIcon(ComponentName componentName, Drawable icon) {
         return icon;
     }
 
@@ -301,7 +331,8 @@ public class IconProvider {
             if (id != ID_NULL) {
                 if (DEBUG) Log.d(TAG, "Got icon #" + id);
                 Drawable drawable = resources.getDrawableForDensity(id, iconDpi, null /* theme */);
-                if (ATLEAST_T && drawable instanceof AdaptiveIconDrawable && td != null) {
+                if (ATLEAST_T && drawable instanceof AdaptiveIconDrawable && td != null
+                        && td.mResources != null) {
                     AdaptiveIconDrawable aid = (AdaptiveIconDrawable) drawable;
                     if  (aid.getMonochrome() != null) {
                         return drawable;
@@ -412,18 +443,40 @@ public class IconProvider {
 
         final Resources mResources;
         final int mResID;
+        /** Optional file/bitmap-backed icon (e.g. /data/theme/icons). */
+        @Nullable
+        final Drawable mDrawable;
 
         public ThemeData(Resources resources, int resID) {
             mResources = resources;
             mResID = resID;
+            mDrawable = null;
+        }
+
+        /** File-based theme icon (Dream /data/theme path). */
+        public ThemeData(Drawable drawable) {
+            mResources = null;
+            mResID = ID_NULL;
+            mDrawable = drawable;
         }
         //hxy-feature: desktop theme 202312
         Drawable loadIcon(){
+            if (mDrawable != null) {
+                return mDrawable.getConstantState() != null
+                        ? mDrawable.getConstantState().newDrawable().mutate()
+                        : mDrawable.mutate();
+            }
             return mResources.getDrawable(mResID);
         }
         //hxy-feature: desktop theme 202312
         Drawable loadPaddedDrawable() {
-            if (!"drawable".equals(mResources.getResourceTypeName(mResID))) {
+            if (mDrawable != null) {
+                Drawable d = loadIcon();
+                d = new InsetDrawable(d, .2f);
+                float inset = getExtraInsetFraction() / (1 + 2 * getExtraInsetFraction());
+                return new InsetDrawable(d, inset);
+            }
+            if (mResources == null || !"drawable".equals(mResources.getResourceTypeName(mResID))) {
                 return null;
             }
             Drawable d = mResources.getDrawable(mResID).mutate();

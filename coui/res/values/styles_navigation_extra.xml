@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="COUINavigationView.NoAnimation" parent="@style/Theme.COUI">
+        <item name="motionDurationLong1">@integer/durationLong</item>
+    </style>
+    <style name="Widget.COUI.COUINavigationRailView" parent="@style/Widget.MaterialComponents.NavigationRailView">
+        <item name="android:background">?attr/couiColorBackgroundWithCard</item>
+        <item name="android:fitsSystemWindows">false</item>
+        <item name="android:minWidth">@dimen/coui_navigation_rail_min_width</item>
+        <item name="android:elevation">0dp</item>
+        <item name="labelVisibilityMode">labeled</item>
+        <item name="menuGravity">center</item>
+        <item name="navigationRailType">tab</item>
+    </style>
+</resources>

@@ -100,6 +100,9 @@ public class UIUtil {
         return null;
     }
 
+    /** Decompiled APK alias. */
+    public static int d(Context context, int value) { return dip2px(context, value); }
+
     public static int dip2px(Context context, float value) {
         return Math.round(value * context.getResources().getDisplayMetrics().density);
     }

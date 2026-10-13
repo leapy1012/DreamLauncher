@@ -276,6 +276,13 @@ public class OptionsPopupView extends ArrowPopup<Launcher>
             Toast.makeText(launcher, message, Toast.LENGTH_SHORT).show();
             return false;
         }
+        // Prefer DreamUXDesign hub (Home/Lock/AOD) when installed.
+        Intent uxHub = new Intent("gd.app.uxdesign.action.LAUNCH_PERSONAL")
+                .setPackage("gd.app.uxdesign");
+        if (uxHub.resolveActivity(launcher.getPackageManager()) != null) {
+            SettingsActivity.startPersonalizationHub(launcher);
+            return true;
+        }
         Intent intent = new Intent(Intent.ACTION_SET_WALLPAPER)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 .putExtra(EXTRA_WALLPAPER_OFFSET,

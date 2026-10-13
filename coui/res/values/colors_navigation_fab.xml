@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="coui_navigation_enlarge_default_bg">#00000000</color>
+    <color name="coui_navigation_enlarge_item_color">#FFFFFFFF</color>
+    <color name="coui_floating_button_elevation_color">#8a000000</color>
+    <color name="coui_floating_button_disabled_color">#e6e6e6</color>
+    <color name="coui_floating_button_label_text_color">#E6000000</color>
+</resources>
+

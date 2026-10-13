@@ -8,6 +8,8 @@ public class COUIStateListUtil {
     private COUIStateListUtil() {
     }
 
+    public static ColorStateList a(int normalColor, int disabledColor) { return createColorStateList(normalColor, disabledColor); }
+
     public static ColorStateList createColorStateList(int normalColor, int disabledColor) {
         return new ColorStateList(
                 new int[][]{new int[]{-android.R.attr.state_enabled}, EMPTY_STATE_SET},

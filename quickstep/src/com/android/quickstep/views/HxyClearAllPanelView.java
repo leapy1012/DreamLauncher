@@ -21,6 +21,7 @@ import android.graphics.Rect;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -30,6 +31,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import com.android.launcher3.R;
+import com.android.launcher3.util.Executors;
 import com.android.launcher3.util.DisplayController;
 import com.android.launcher3.util.NavigationMode;
 
@@ -48,6 +50,7 @@ public class HxyClearAllPanelView extends LinearLayout {
     private TextView mMemoryInfo;
     private FrameLayout.LayoutParams mPanelParams;
     private int mBottomMargin;
+    private boolean mMemoryRefreshPending;
 
     public HxyClearAllPanelView(Context context) {
         this(context, null);
@@ -99,39 +102,44 @@ public class HxyClearAllPanelView extends LinearLayout {
         return getResources().getDimensionPixelSize(R.dimen.overview_close_button_height);
     }
 
-    /** Refresh available / total RAM line shown above Clear All. */
+    /** Refresh once on entry, with proc/Binder/settings work off the animation thread. */
     public void updateMemoryInfoDisplay() {
-        if (mMemoryInfo == null) {
+        if (mMemoryInfo == null || mMemoryRefreshPending) {
             return;
         }
-        Float availMemory = SystemMemory.getAvailMemoryFloat(getContext());
-        String totalMemory = SystemMemory.getRealTotalRam(getContext());
-        DecimalFormat df1 = new DecimalFormat("#.0");
-        if (android.os.SystemProperties.get(
-                "persist.sys.hxycustom.memory_expansion_size", "-1").trim().equals("-1")) {
-            mMemoryInfo.setText(df1.format(availMemory) + "GB "
-                    + getResources().getString(R.string.hxy_launcher_available)
-                    + " | " + totalMemory);
-            return;
+        mMemoryRefreshPending = true;
+        Context context = getContext().getApplicationContext();
+        Executors.THREAD_POOL_EXECUTOR.execute(() -> {
+            String memoryText = null;
+            try {
+                memoryText = loadMemoryInfoText(context);
+            } catch (RuntimeException e) {
+                Log.w("HxyClearAllPanelView", "Unable to refresh memory information", e);
+            }
+            final String text = memoryText;
+            Executors.MAIN_EXECUTOR.execute(() -> {
+                mMemoryRefreshPending = false;
+                if (text != null && mMemoryInfo != null) {
+                    mMemoryInfo.setText(text);
+                }
+            });
+        });
+    }
+
+    private static String loadMemoryInfoText(Context context) {
+        float availMemory = SystemMemory.getAvailMemoryFloat(context);
+        String totalMemory = SystemMemory.getRealTotalRam(context);
+        DecimalFormat format = new DecimalFormat("#.0");
+        String expansion = android.os.SystemProperties.get(
+                "persist.sys.hxycustom.memory_expansion_size", "-1").trim();
+        if (!"-1".equals(expansion) && Settings.System.getInt(
+                context.getContentResolver(), "hxy_memory_expansion_enable", 0) == 1) {
+            long expansionGb = TextUtils.isEmpty(expansion) ? 0 : Long.parseLong(expansion);
+            availMemory += expansionGb;
+            totalMemory = totalMemory.replace("GB", " + ") + expansionGb + "GB";
         }
-        int expansionEnabled = Settings.System.getInt(
-                getContext().getContentResolver(), "hxy_memory_expansion_enable", 0);
-        if (expansionEnabled == 1) {
-            String expand = android.os.SystemProperties.get(
-                    "persist.sys.hxycustom.memory_expansion_size", "1");
-            float availSwapAndMemory = TextUtils.isEmpty(expand)
-                    ? availMemory : availMemory + Long.parseLong(expand);
-            mMemoryInfo.setText(df1.format(availSwapAndMemory) + "GB "
-                    + getResources().getString(R.string.hxy_launcher_available) + " | "
-                    + totalMemory.replaceAll("GB", " + ")
-                    + android.os.SystemProperties.get(
-                            "persist.sys.hxycustom.memory_expansion_size", "1")
-                    + "GB");
-        } else {
-            mMemoryInfo.setText(df1.format(availMemory) + "GB "
-                    + getResources().getString(R.string.hxy_launcher_available)
-                    + " | " + totalMemory);
-        }
+        return format.format(availMemory) + "GB "
+                + context.getString(R.string.hxy_launcher_available) + " | " + totalMemory;
     }
 
     /**

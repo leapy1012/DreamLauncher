@@ -203,6 +203,9 @@ public class COUIMaskEffectDrawable extends StatefulDrawable {
         mMaskPath = path;
     }
 
+    /** Decompiled APK alias. */
+    public void l(RectF rect, float radiusX, float radiusY) { setMaskRect(rect, radiusX, radiusY); }
+
     public void setMaskRect(RectF rect, float radiusX, float radiusY) {
         mMaskRect = rect;
         mMaskRadiusX = radiusX;
@@ -219,6 +222,11 @@ public class COUIMaskEffectDrawable extends StatefulDrawable {
         } else {
             COUILog.e("COUIMaskEffectDrawable", "Touch enter min progress should be within range [0, 1]");
         }
+    }
+
+    /** Decompiled APK alias. */
+    public void e(int state, boolean locked, boolean entered, boolean animated) {
+        setStateLocked(state, locked, entered, animated);
     }
 
     @Override
