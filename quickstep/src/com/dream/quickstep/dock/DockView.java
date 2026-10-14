@@ -803,7 +803,9 @@ public class DockView extends HorizontalScrollView {
             onRecentsScrollTo(mRecentsView.mOrientationHandler.getPrimaryScroll(mRecentsView));
             return;
         }
-        TaskView focus = mRecentsView.getCurrentPageTaskView();
+        // PagedView ends the transition from draw() before computeScroll() commits
+        // mCurrentPage, so the current page can still be the one being left.
+        TaskView focus = mRecentsView.getNextPageTaskView();
         if (focus == null) {
             focus = mRecentsView.getTaskViewNearestToCenterOfScreen();
         }

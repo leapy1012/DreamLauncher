@@ -154,12 +154,6 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
     }
 
     @Override
-    public void getTaskSize(Rect outRect) {
-        super.getTaskSize(outRect);
-        updateBottomUiInsets();
-    }
-
-    @Override
     protected void updateTaskSize() {
         super.updateTaskSize();
         updateBottomUiInsets();

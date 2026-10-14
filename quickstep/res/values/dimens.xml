@@ -18,7 +18,10 @@
     <!-- For screens without rounded corners -->
     <dimen name="task_corner_radius_small">2dp</dimen>
     <!-- For Launchers that want to override the default dialog corner radius -->
-    <dimen name="task_corner_radius_override">-1dp</dimen>
+    <dimen name="task_corner_radius_override">@dimen/recent_task_view_radius</dimen>
+    <!-- Oppo phone recent card radius; must not depend on the caller's theme, since the
+         live tile is drawn with the TouchInteractionService context. -->
+    <dimen name="recent_task_view_radius">16dp</dimen>
 
     <!--  Task Menu View (ColorOS COUI popup card)  -->
     <dimen name="task_menu_corner_radius">@dimen/coui_round_corner_m</dimen>
