@@ -22,9 +22,9 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import com.android.quickstep.util.HxyRecentsLayoutManager;
 import com.android.quickstep.views.DreamRecentsViewImpl;
 import com.dream.quickstep.dock.DockView;
+import com.dream.quickstep.utils.RecentsLayoutManager;
 import com.dream.quickstep.views.DreamClearAllPanelView;
 
 /**
@@ -67,7 +67,7 @@ public class RecentContainerView extends InsettableFrameLayout {
         if (mRecentsView == null || mClearAllPanel == null) {
             return;
         }
-        HxyRecentsLayoutManager.layoutBottomUi(mRecentsView, mClearAllPanel, mDockView);
+        RecentsLayoutManager.layoutBottomUi(mRecentsView, mClearAllPanel, mDockView);
     }
 
     @Nullable

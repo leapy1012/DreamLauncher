@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.quickstep.util;
+package com.dream.quickstep.utils;
 
 import android.graphics.Rect;
 import android.view.Gravity;
@@ -30,9 +30,9 @@ import com.dream.quickstep.views.DreamClearAllPanelView;
 /**
  * Positions Oppo-style Clear All pill and dock under the task carousel.
  */
-public final class HxyRecentsLayoutManager {
+public final class RecentsLayoutManager {
 
-    private HxyRecentsLayoutManager() { }
+    private RecentsLayoutManager() { }
 
     public static void layoutBottomUi(DreamRecentsViewImpl<?, ?> rv, DreamClearAllPanelView clearPanel,
             DockView dockView) {
