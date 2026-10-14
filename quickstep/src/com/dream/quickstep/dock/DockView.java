@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.quickstep.views;
+package com.dream.quickstep.dock;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
@@ -44,6 +44,9 @@ import com.android.launcher3.anim.PendingAnimation;
 import com.android.launcher3.anim.SpringProperty;
 import com.android.quickstep.RecentsModel;
 import com.android.quickstep.TaskIconCache;
+import com.android.quickstep.views.DreamRecentsViewImpl;
+import com.android.quickstep.views.RecentsView;
+import com.android.quickstep.views.TaskView;
 import com.android.systemui.shared.recents.model.Task;
 import com.android.systemui.shared.system.ActivityManagerWrapper;
 
@@ -61,7 +64,7 @@ import java.util.Arrays;
  * {@code dockScroll = dockOrigin + (recentsScroll - recentsOrigin) / mScrollScale} and the
  * inverse when the dock drives. No smoothScroll — per-frame {@code scrollTo} like Oppo.
  */
-public class OverviewDockView extends HorizontalScrollView {
+public class DockView extends HorizontalScrollView {
 
     private static final int MAX_ICONS = 20;
 
@@ -119,15 +122,15 @@ public class OverviewDockView extends HorizontalScrollView {
     @Nullable
     private View mDismissingIcon;
 
-    public OverviewDockView(Context context) {
+    public DockView(Context context) {
         this(context, null);
     }
 
-    public OverviewDockView(Context context, @Nullable AttributeSet attrs) {
+    public DockView(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public OverviewDockView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public DockView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         // Children are bound in physical left-to-right order; Recents RTL is handled explicitly.
         setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -203,7 +206,7 @@ public class OverviewDockView extends HorizontalScrollView {
         }
         mRecentsView = recentsView;
         mRecentsRtl = recentsView.isRtl();
-        computeScrollScale(recentsView.mTaskWidth);
+        computeScrollScale(recentsView.getTaskWidth());
         int count = Math.min(recentsView.getTaskViewCount(), MAX_ICONS);
         int[] ids = new int[count];
         for (int i = 0; i < count; i++) {
@@ -248,7 +251,7 @@ public class OverviewDockView extends HorizontalScrollView {
             mScrollScale = 1f;
             return;
         }
-        int taskWidth = mRecentsView.mTaskWidth > 0 ? mRecentsView.mTaskWidth : fallbackTaskWidth;
+        int taskWidth = mRecentsView.getTaskWidth() > 0 ? mRecentsView.getTaskWidth() : fallbackTaskWidth;
         float dockPage = mIconSize + mIconSpacing;
         if (taskWidth <= 0 || dockPage <= 0f) {
             mScrollScale = 1f;

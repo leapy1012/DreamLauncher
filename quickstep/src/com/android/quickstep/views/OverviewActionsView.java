@@ -185,15 +185,6 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
 		///&&}}
     }
 
-    @Nullable
-    public OverviewDockView getDockView() {
-        return null;
-    }
-
-    /** Legacy path only; dock lives in {@link com.android.launcher3.RecentContainerView}. */
-    public void syncDockFromRecents(@Nullable RecentsView<?, ?> recentsView) {
-    }
-
     public void onRecentsPageCentered(@Nullable TaskView centered) {
     }
 	

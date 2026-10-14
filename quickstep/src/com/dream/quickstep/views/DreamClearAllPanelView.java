@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.quickstep.views;
+package com.dream.quickstep.views;
 
 import android.content.Context;
 import android.graphics.Rect;
@@ -34,6 +34,8 @@ import com.android.launcher3.R;
 import com.android.launcher3.util.Executors;
 import com.android.launcher3.util.DisplayController;
 import com.android.launcher3.util.NavigationMode;
+import com.android.quickstep.views.SystemMemory;
+import com.dream.quickstep.dock.DockView;
 
 import java.text.DecimalFormat;
 
@@ -41,7 +43,7 @@ import java.text.DecimalFormat;
  * Oppo-style Clear All pill panel — sibling of {@link RecentsView}, not inside
  * {@link OverviewActionsView}.
  */
-public class HxyClearAllPanelView extends LinearLayout {
+public class DreamClearAllPanelView extends LinearLayout {
 
     /** Oppo {@code OplusClearAllPanelView.DOCK_SPACE_PERCENT}. */
     private static final float DOCK_SPACE_PERCENT = 0.55f;
@@ -52,15 +54,15 @@ public class HxyClearAllPanelView extends LinearLayout {
     private int mBottomMargin;
     private boolean mMemoryRefreshPending;
 
-    public HxyClearAllPanelView(Context context) {
+    public DreamClearAllPanelView(Context context) {
         this(context, null);
     }
 
-    public HxyClearAllPanelView(Context context, @Nullable AttributeSet attrs) {
+    public DreamClearAllPanelView(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public HxyClearAllPanelView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public DreamClearAllPanelView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
     }
 
@@ -114,7 +116,7 @@ public class HxyClearAllPanelView extends LinearLayout {
             try {
                 memoryText = loadMemoryInfoText(context);
             } catch (RuntimeException e) {
-                Log.w("HxyClearAllPanelView", "Unable to refresh memory information", e);
+                Log.w("DreamClearAllPanelView", "Unable to refresh memory information", e);
             }
             final String text = memoryText;
             Executors.MAIN_EXECUTOR.execute(() -> {
@@ -152,7 +154,7 @@ public class HxyClearAllPanelView extends LinearLayout {
      * dropped Clear into the gesture handle.
      */
     public void onInsetsChanged(int heightPx, Rect insets, Rect taskRect, boolean dockHidden,
-            @Nullable OverviewDockView dockView) {
+            @Nullable DockView dockView) {
         int bottomSpace = heightPx - insets.bottom - taskRect.bottom;
         if (bottomSpace < 0) {
             bottomSpace = 0;

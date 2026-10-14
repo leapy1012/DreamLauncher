@@ -48,7 +48,7 @@ import java.util.List;
 
 /**
  * ColorOS-style Recents task ⋮ menu on top of the AOSP {@link TaskMenuView}: a single COUI popup
- * card ({@code COUIForegroundListView} + {@link TaskMenuAdapter}) anchored under the task's menu
+ * card ({@code COUIForegroundListView} + {@link DreamTaskMenuAdapter}) anchored under the task's menu
  * button, with the ColorOS scale/fade animation.
  */
 public class DreamTaskMenuViewImpl extends TaskMenuView {
@@ -182,7 +182,7 @@ public class DreamTaskMenuViewImpl extends TaskMenuView {
         addView(content, new LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        TaskMenuAdapter adapter = new TaskMenuAdapter(couiContext, mPopupItems);
+        DreamTaskMenuAdapter adapter = new DreamTaskMenuAdapter(couiContext, mPopupItems);
         mListView.setVerticalScrollBarEnabled(false);
         mListView.setHorizontalScrollBarEnabled(false);
         mListView.setAdapter(adapter);
@@ -270,7 +270,7 @@ public class DreamTaskMenuViewImpl extends TaskMenuView {
 
     private final AdapterView.OnItemClickListener mItemClickListener =
             (parent, view, position, id) -> {
-                // TaskMenuAdapter is 1:1 with mShortcuts (same as Oppo OplusTaskMenuAdapter).
+                // DreamTaskMenuAdapter is 1:1 with mShortcuts (same as Oppo OplusTaskMenuAdapter).
                 if (position < 0 || position >= mShortcuts.size()) {
                     return;
                 }

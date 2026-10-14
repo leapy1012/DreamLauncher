@@ -23,9 +23,9 @@ import android.widget.FrameLayout;
 
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.R;
-import com.android.quickstep.views.HxyClearAllPanelView;
-import com.android.quickstep.views.OverviewDockView;
 import com.android.quickstep.views.DreamRecentsViewImpl;
+import com.dream.quickstep.dock.DockView;
+import com.dream.quickstep.views.DreamClearAllPanelView;
 
 /**
  * Positions Oppo-style Clear All pill and dock under the task carousel.
@@ -34,8 +34,8 @@ public final class HxyRecentsLayoutManager {
 
     private HxyRecentsLayoutManager() { }
 
-    public static void layoutBottomUi(DreamRecentsViewImpl<?, ?> rv, HxyClearAllPanelView clearPanel,
-            OverviewDockView dockView) {
+    public static void layoutBottomUi(DreamRecentsViewImpl<?, ?> rv, DreamClearAllPanelView clearPanel,
+            DockView dockView) {
         if (rv == null || clearPanel == null) {
             return;
         }

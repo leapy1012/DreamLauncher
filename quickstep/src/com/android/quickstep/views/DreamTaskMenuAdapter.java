@@ -38,7 +38,7 @@ import java.util.List;
  * {@link com.coui.appcompat.poplist.DefaultAdapter}'s item/divider interleaved positions.
  * Rows stay non-clickable so {@link android.widget.ListView}'s item click listener fires.
  */
-class TaskMenuAdapter extends BaseAdapter {
+class DreamTaskMenuAdapter extends BaseAdapter {
 
     private final Context mContext;
     private final List<PopupListItem> mItems;
@@ -50,7 +50,7 @@ class TaskMenuAdapter extends BaseAdapter {
         View divider;
     }
 
-    TaskMenuAdapter(@NonNull Context context, @NonNull List<PopupListItem> items) {
+    DreamTaskMenuAdapter(@NonNull Context context, @NonNull List<PopupListItem> items) {
         mContext = context;
         mItems = items;
         mInflater = LayoutInflater.from(context);

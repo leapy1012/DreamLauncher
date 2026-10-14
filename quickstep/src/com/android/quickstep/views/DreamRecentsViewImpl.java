@@ -45,6 +45,8 @@ import com.android.quickstep.RotationTouchHelper;
 import com.android.quickstep.util.SplitSelectStateController;
 import com.android.systemui.shared.recents.model.Task;
 import com.coui.appcompat.snackbar.COUISnackBar;
+import com.dream.quickstep.dock.DockView;
+import com.dream.quickstep.views.DreamClearAllPanelView;
 
 import java.util.List;
 
@@ -67,9 +69,9 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
     @Nullable
     private View mClearAllButtonNew;
     @Nullable
-    private OverviewDockView mOverviewDockView;
+    private DockView mDockView;
     @Nullable
-    private HxyClearAllPanelView mClearAllPanel;
+    private DreamClearAllPanelView mClearAllPanel;
     @Nullable
     private Animator mBottomUiAnimator;
     private boolean mBottomUiEntered;
@@ -109,19 +111,17 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
         if (mClearAllButtonNew != null) {
             mClearAllButtonNew.setOnClickListener(this::dismissAllTasks);
         }
-        if (mOverviewDockView != null) {
-            mOverviewDockView.setRecentsView(this);
-        } else if (mActionsView.getDockView() != null) {
-            mActionsView.getDockView().setRecentsView(this);
+        if (mDockView != null) {
+            mDockView.setRecentsView(this);
         }
     }
 
     /** Oppo-style bottom UI wired from {@link RecentContainerView}. */
-    public void setBottomUi(@Nullable OverviewDockView dock, @Nullable HxyClearAllPanelView panel) {
-        mOverviewDockView = dock;
+    public void setBottomUi(@Nullable DockView dock, @Nullable DreamClearAllPanelView panel) {
+        mDockView = dock;
         mClearAllPanel = panel;
-        if (mOverviewDockView != null) {
-            mOverviewDockView.setRecentsView(this);
+        if (mDockView != null) {
+            mDockView.setRecentsView(this);
         }
         updateBottomUiInsets();
     }
@@ -142,6 +142,10 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
 
     public Rect getOverviewInsets() {
         return mInsets;
+    }
+
+    public int getTaskWidth() {
+        return mTaskWidth;
     }
 
     /** Computes task bounds without notifying bottom UI (avoids recursion with container). */
@@ -168,18 +172,16 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
     }
 
     private void syncDockFromRecents() {
-        if (mClearAllCenter && mOverviewDockView != null) {
+        if (mClearAllCenter && mDockView != null) {
             DeviceProfile dp = getDeviceProfile();
             if (dp.isTablet || dp.isLandscape) {
-                mOverviewDockView.setVisibility(GONE);
+                mDockView.setVisibility(GONE);
             } else {
                 // Always refresh icon data; visibility is gated separately for overview-only.
-                mOverviewDockView.syncFromRecents(this);
+                mDockView.syncFromRecents(this);
             }
             updateBottomUiOverviewVisibility();
             updateBottomUiInsets();
-        } else if (mActionsView != null) {
-            mActionsView.syncDockFromRecents(this);
         }
     }
 
@@ -221,8 +223,8 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
     @Override
     protected void onPageEndTransition() {
         super.onPageEndTransition();
-        if (mOverviewDockView != null) {
-            mOverviewDockView.recenterOnCurrentRecentsPage();
+        if (mDockView != null) {
+            mDockView.recenterOnCurrentRecentsPage();
         }
     }
 
@@ -231,8 +233,8 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
         boolean wasHandling = isHandlingTouch();
         super.determineScrollingStart(ev, touchSlopScale);
         // ColorOS DockView.onParentScrollInteractionBegin — Recents owns link-scroll.
-        if (!wasHandling && isHandlingTouch() && mOverviewDockView != null && mClearAllCenter) {
-            mOverviewDockView.onParentScrollInteractionBegin();
+        if (!wasHandling && isHandlingTouch() && mDockView != null && mClearAllCenter) {
+            mDockView.onParentScrollInteractionBegin();
         }
     }
 
@@ -268,10 +270,10 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
                     ? getContentAlpha() : 0f;
             mActionsView.getIndexScrollAlpha().setValue(bottomUiAlpha);
         }
-        if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
-            if (!mOverviewDockView.isDockDrivingRecents()) {
+        if (mDockView != null && mDockView.getVisibility() == VISIBLE) {
+            if (!mDockView.isDockDrivingRecents()) {
                 // ColorOS DockView.onRecentsScrollTo — continuous scale-linked scroll.
-                mOverviewDockView.onRecentsScrollTo(scroll);
+                mDockView.onRecentsScrollTo(scroll);
             }
         } else if (mActionsView != null) {
             mActionsView.onRecentsPageCentered(getTaskViewNearestToCenterOfScreen());
@@ -373,8 +375,8 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
             boolean dismissingForSplitSelection) {
         super.createTaskDismissAnimation(anim, dismissedTaskView, animateTaskView,
                 shouldRemoveTask, duration, dismissingForSplitSelection);
-        if (mOverviewDockView != null) {
-            mOverviewDockView.createIconDismissAnimation(dismissedTaskView, anim, animateTaskView);
+        if (mDockView != null) {
+            mDockView.createIconDismissAnimation(dismissedTaskView, anim, animateTaskView);
         }
     }
 
@@ -442,9 +444,9 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         boolean skipped = !mOverviewStateEnabled && !mFirstLayout;
         super.onLayout(changed, left, top, right, bottom);
-        if (!skipped && mOverviewDockView != null) {
+        if (!skipped && mDockView != null) {
             // Dock may have laid out before Recents, or kept the same size across a load plan.
-            mOverviewDockView.recenterOnCurrentRecentsPage();
+            mDockView.recenterOnCurrentRecentsPage();
         }
     }
 
@@ -475,12 +477,12 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
                 applySettledBottomUiAlpha(mClearAllPanel);
             }
         }
-        if (mOverviewDockView != null) {
+        if (mDockView != null) {
             DeviceProfile dp = getDeviceProfile();
             boolean showDock = show && !dp.isTablet && !dp.isLandscape;
-            mOverviewDockView.setVisibility(showDock ? VISIBLE : GONE);
+            mDockView.setVisibility(showDock ? VISIBLE : GONE);
             if (showDock) {
-                applySettledBottomUiAlpha(mOverviewDockView);
+                applySettledBottomUiAlpha(mDockView);
             }
         }
     }
@@ -528,7 +530,7 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
         }
         if (mBottomUiEntered && getBottomUiAlpha() > 0.99f) {
             mBottomUiEnterRequested = false;
-            applySettledBottomUiAlpha(mOverviewDockView);
+            applySettledBottomUiAlpha(mDockView);
             return;
         }
         if (mBottomUiAnimator != null && mBottomUiAnimator.isRunning()
@@ -547,10 +549,10 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
             anim.play(ObjectAnimator.ofFloat(mClearAllPanel, View.TRANSLATION_Y, shift, 0f));
             hasTarget = true;
         }
-        if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
-            // Dock Y is set via OverviewDockView.setY() — do not touch translationY.
-            mOverviewDockView.setAlpha(0f);
-            anim.play(ObjectAnimator.ofFloat(mOverviewDockView, View.ALPHA, 0f, 1f));
+        if (mDockView != null && mDockView.getVisibility() == VISIBLE) {
+            // Dock Y is set via DockView.setY() — do not touch translationY.
+            mDockView.setAlpha(0f);
+            anim.play(ObjectAnimator.ofFloat(mDockView, View.ALPHA, 0f, 1f));
             hasTarget = true;
         }
         if (!hasTarget) {
@@ -636,9 +638,9 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
             anim.play(ObjectAnimator.ofFloat(
                     mClearAllPanel, View.ALPHA, mClearAllPanel.getAlpha(), 0f));
         }
-        if (mOverviewDockView != null) {
+        if (mDockView != null) {
             anim.play(ObjectAnimator.ofFloat(
-                    mOverviewDockView, View.ALPHA, mOverviewDockView.getAlpha(), 0f));
+                    mDockView, View.ALPHA, mDockView.getAlpha(), 0f));
         }
         anim.setDuration(240);
         anim.setInterpolator(ACCEL);
@@ -675,8 +677,8 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
             mClearAllPanel.setAlpha(0f);
             mClearAllPanel.setTranslationY(0f);
         }
-        if (mOverviewDockView != null) {
-            mOverviewDockView.setAlpha(0f);
+        if (mDockView != null) {
+            mDockView.setAlpha(0f);
         }
         if (mClearAllCenter) {
             updateBottomUiOverviewVisibility();
@@ -696,8 +698,8 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
         if (mClearAllPanel != null && mClearAllPanel.getVisibility() == VISIBLE) {
             return mClearAllPanel.getAlpha();
         }
-        if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
-            return mOverviewDockView.getAlpha();
+        if (mDockView != null && mDockView.getVisibility() == VISIBLE) {
+            return mDockView.getAlpha();
         }
         return 0f;
     }

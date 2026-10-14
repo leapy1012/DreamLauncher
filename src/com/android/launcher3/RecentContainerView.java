@@ -23,9 +23,9 @@ import android.view.View;
 import androidx.annotation.Nullable;
 
 import com.android.quickstep.util.HxyRecentsLayoutManager;
-import com.android.quickstep.views.HxyClearAllPanelView;
-import com.android.quickstep.views.OverviewDockView;
 import com.android.quickstep.views.DreamRecentsViewImpl;
+import com.dream.quickstep.dock.DockView;
+import com.dream.quickstep.views.DreamClearAllPanelView;
 
 /**
  * Oppo-style overview shell: {@link DreamRecentsViewImpl} with dock + Close pill as siblings.
@@ -35,9 +35,9 @@ public class RecentContainerView extends InsettableFrameLayout {
     @Nullable
     private DreamRecentsViewImpl<?, ?> mRecentsView;
     @Nullable
-    private OverviewDockView mDockView;
+    private DockView mDockView;
     @Nullable
-    private HxyClearAllPanelView mClearAllPanel;
+    private DreamClearAllPanelView mClearAllPanel;
 
     public RecentContainerView(Context context) {
         this(context, null);
@@ -52,7 +52,7 @@ public class RecentContainerView extends InsettableFrameLayout {
         super.onFinishInflate();
         mRecentsView = findViewById(R.id.overview_panel);
         mDockView = findViewById(R.id.overview_dock);
-        mClearAllPanel = findViewById(R.id.hxy_clear_all_panel);
+        mClearAllPanel = findViewById(R.id.clear_all_panel);
         if (mRecentsView != null) {
             mRecentsView.setBottomUi(mDockView, mClearAllPanel);
         }
@@ -76,12 +76,12 @@ public class RecentContainerView extends InsettableFrameLayout {
     }
 
     @Nullable
-    public OverviewDockView getDockView() {
+    public DockView getDockView() {
         return mDockView;
     }
 
     @Nullable
-    public HxyClearAllPanelView getClearAllPanel() {
+    public DreamClearAllPanelView getClearAllPanel() {
         return mClearAllPanel;
     }
 

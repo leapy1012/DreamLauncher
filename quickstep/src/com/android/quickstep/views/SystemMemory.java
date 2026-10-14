@@ -29,7 +29,7 @@ import android.content.Context;
 import java.text.DecimalFormat;
 
 
-class SystemMemory {
+public class SystemMemory {
 
 	public static String getAvailMemory(Context context) {
 		ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);

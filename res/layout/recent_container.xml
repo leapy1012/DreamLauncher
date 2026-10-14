@@ -20,7 +20,7 @@
         android:visibility="invisible"
         launcher:layout_ignoreInsets="true" />
 
-    <com.android.quickstep.views.OverviewDockView
+    <com.dream.quickstep.dock.DockView
         android:id="@+id/overview_dock"
         android:layout_width="match_parent"
         android:layout_height="@dimen/overview_dock_area_height"
@@ -31,8 +31,8 @@
         launcher:layout_ignoreInsets="true" />
 
     <include
-        android:id="@+id/hxy_clear_all_panel"
-        layout="@layout/hxy_clear_all_panel"
+        android:id="@+id/clear_all_panel"
+        layout="@layout/dream_clear_all_panel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
