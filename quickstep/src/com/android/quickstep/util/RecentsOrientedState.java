@@ -233,6 +233,12 @@ public class RecentsOrientedState implements
         } else {
             mOrientationHandler = PagedOrientationHandler.PORTRAIT;
         }
+        // Oppo: once the display is portrait, never keep the fake-landscape Recents layout
+        // left over from a gesture that started in a landscape app.
+        if (mDisplayRotation == ROTATION_0
+                && (mTouchRotation == ROTATION_90 || mTouchRotation == ROTATION_270)) {
+            mOrientationHandler = PagedOrientationHandler.PORTRAIT;
+        }
         if (DEBUG) {
             Log.d(TAG, "current RecentsOrientedState: " + this);
         }
