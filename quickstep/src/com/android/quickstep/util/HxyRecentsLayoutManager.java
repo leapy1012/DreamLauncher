@@ -25,7 +25,7 @@ import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.R;
 import com.android.quickstep.views.HxyClearAllPanelView;
 import com.android.quickstep.views.OverviewDockView;
-import com.android.quickstep.views.RecentsView;
+import com.android.quickstep.views.DreamRecentsViewImpl;
 
 /**
  * Positions Oppo-style Clear All pill and dock under the task carousel.
@@ -34,7 +34,7 @@ public final class HxyRecentsLayoutManager {
 
     private HxyRecentsLayoutManager() { }
 
-    public static void layoutBottomUi(RecentsView<?, ?> rv, HxyClearAllPanelView clearPanel,
+    public static void layoutBottomUi(DreamRecentsViewImpl<?, ?> rv, HxyClearAllPanelView clearPanel,
             OverviewDockView dockView) {
         if (rv == null || clearPanel == null) {
             return;
@@ -91,7 +91,7 @@ public final class HxyRecentsLayoutManager {
         }
     }
 
-    private static boolean isDockSupported(RecentsView<?, ?> rv) {
+    private static boolean isDockSupported(DreamRecentsViewImpl<?, ?> rv) {
         DeviceProfile dp = rv.getDeviceProfile();
         return !dp.isTablet && !dp.isLandscape;
     }

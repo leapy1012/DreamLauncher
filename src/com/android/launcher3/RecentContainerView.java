@@ -25,15 +25,15 @@ import androidx.annotation.Nullable;
 import com.android.quickstep.util.HxyRecentsLayoutManager;
 import com.android.quickstep.views.HxyClearAllPanelView;
 import com.android.quickstep.views.OverviewDockView;
-import com.android.quickstep.views.RecentsView;
+import com.android.quickstep.views.DreamRecentsViewImpl;
 
 /**
- * Oppo-style overview shell: {@link RecentsView} with dock + Close pill as siblings.
+ * Oppo-style overview shell: {@link DreamRecentsViewImpl} with dock + Close pill as siblings.
  */
 public class RecentContainerView extends InsettableFrameLayout {
 
     @Nullable
-    private RecentsView<?, ?> mRecentsView;
+    private DreamRecentsViewImpl<?, ?> mRecentsView;
     @Nullable
     private OverviewDockView mDockView;
     @Nullable
@@ -71,7 +71,7 @@ public class RecentContainerView extends InsettableFrameLayout {
     }
 
     @Nullable
-    public RecentsView<?, ?> getRecentsView() {
+    public DreamRecentsViewImpl<?, ?> getRecentsView() {
         return mRecentsView;
     }
 

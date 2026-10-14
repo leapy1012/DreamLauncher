@@ -114,7 +114,6 @@ import android.view.RemoteAnimationTarget;
 import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
-import android.view.ViewParent;
 import android.view.ViewTreeObserver.OnScrollChangedListener;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -131,13 +130,11 @@ import androidx.core.graphics.ColorUtils;
 import com.android.launcher.DreamPagedViewImpl;
 import com.android.launcher3.BaseActivity;
 import com.android.launcher3.BaseActivity.MultiWindowModeChangedListener;
-import com.android.launcher3.RecentContainerView;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Insettable;
 import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
-import com.coui.appcompat.snackbar.COUISnackBar;
 import com.android.launcher3.anim.AnimatedFloat;
 import com.android.launcher3.anim.AnimatorListeners;
 import com.android.launcher3.anim.AnimatorPlaybackController;
@@ -220,22 +217,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-///Hxy:add for modify clearallbutton location at 20240102{{&&
-import android.widget.Button;
-import android.widget.LinearLayout.LayoutParams;
-///&&}}
-
-import android.os.Process;
-import android.os.AsyncTask;
-import android.provider.Settings;
-import android.content.pm.ActivityInfo;
-import android.content.pm.ResolveInfo;
-import android.text.format.Formatter;
-import android.app.ActivityManager;
-import android.content.ComponentName;
-import android.content.pm.PackageManager;
-import android.telephony.TelephonyManager;
-import androidx.slice.core.SliceHints;
 
 /**
  * A list of recent tasks.
@@ -442,7 +423,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 
     private static final int DEFAULT_ACTIONS_VIEW_ALPHA_ANIMATION_DURATION = 300;
 
-    private static final int DISMISS_TASK_DURATION = 300;
+    protected static final int DISMISS_TASK_DURATION = 300;
     private static final int ADDITION_TASK_DURATION = 200;
     private static final float INITIAL_DISMISS_TRANSLATION_INTERPOLATION_OFFSET = 0.55f;
     private static final float ADDITIONAL_DISMISS_TRANSLATION_INTERPOLATION_OFFSET = 0.05f;
@@ -496,26 +477,12 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     private final int mSplitPlaceholderSize;
     private final int mSplitPlaceholderInset;
     private final ClearAllButton mClearAllButton;
-	///Hxy:add for modify clearallbutton location at 20240102{{&&
-	private View mClearAllButtonNew;
-	@Nullable
-	private OverviewDockView mOverviewDockView;
-	@Nullable
-	private HxyClearAllPanelView mClearAllPanel;
-	@Nullable
-	private Animator mBottomUiAnimator;
-	private boolean mBottomUiEntered;
-	@Nullable
-	private Runnable mPendingBottomUiEnter;
-	private boolean mBottomUiEnterRequested;
-	private boolean mBottomUiAnimationEntering;
-	///&&}}
     private final Rect mClearAllButtonDeadZoneRect = new Rect();
     private final Rect mTaskViewDeadZoneRect = new Rect();
     /**
      * Reflects if Recents is currently in the middle of a gesture
      */
-    private boolean mGestureActive;
+    protected boolean mGestureActive;
 
     // Keeps track of the previously known visible tasks for purposes of loading/unloading task data
     private final SparseBooleanArray mHasVisibleTaskData = new SparseBooleanArray();
@@ -535,7 +502,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     private boolean mOverlayEnabled;
     protected boolean mFreezeViewVisibility;
     private boolean mOverviewGridEnabled;
-    private boolean mOverviewFullscreenEnabled;
+    protected boolean mOverviewFullscreenEnabled;
     private boolean mOverviewSelectEnabled;
 
     private boolean mShouldClampScrollOffset;
@@ -651,7 +618,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     private boolean mTaskIconScaledDown = false;
     private boolean mRunningTaskShowScreenshot = false;
 
-    private boolean mOverviewStateEnabled;
+    protected boolean mOverviewStateEnabled;
     private boolean mHandleTaskStackChanges;
     private boolean mSwipeDownShouldLaunchApp;
     private boolean mTouchDownToStartHome;
@@ -704,7 +671,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
      * see {@link #onViewRemoved(View)}
      */
     @Nullable
-    private TaskView mSplitHiddenTaskView;
+    protected TaskView mSplitHiddenTaskView;
     @Nullable
     private TaskView mSecondSplitHiddenView;
     @Nullable
@@ -735,9 +702,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
      * The task to be removed and immediately re-added. Should not be added to task pool.
      */
     @Nullable
-    private TaskView mMovingTaskView;
+    protected TaskView mMovingTaskView;
 
-    private OverviewActionsView mActionsView;
+    protected OverviewActionsView mActionsView;
     private ObjectAnimator mActionsViewAlphaAnimator;
     private float mActionsViewAlphaAnimatorFinalValue;
 
@@ -769,11 +736,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 
     // keeps track of the state of the filter for tasks in recents view
     private final RecentsFilterState mFilterState = new RecentsFilterState();
-
-    private boolean mSyncRunning = false;
-    private int mRunningProcListSize = 0;
-    private long mNewFreeMemory;
-    private long mOldFreeMemory;
 
     public RecentsView(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
             BaseActivityInterface sizeStrategy) {
@@ -818,20 +780,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         mEmptyMessage = context.getText(R.string.recents_empty_message);
         mEmptyMessagePaint = new TextPaint();
         mEmptyMessagePaint.setColor(Themes.getAttrColor(context, android.R.attr.textColorPrimary));
-		///Hxy:add for modify clearallbutton location at 20240102{{&&
-        if(getResources().getBoolean(R.bool.config_clearall_center))
-		{
-            mEmptyMessagePaint.setColor(Themes.getAttrColor(context, R.attr.workspaceTextColor));
-			LayoutParams lp=mClearAllButton.getLayoutParams();
-			lp.width=1;
-			lp.height=1;
-			mClearAllButton.setLayoutParams(lp);
-		}
-		else
-		{
-            mEmptyMessagePaint.setColor(Themes.getAttrColor(context, android.R.attr.textColorPrimary));
-		}
-		///&&}}
         mEmptyMessagePaint.setColor(Color.WHITE);
         mEmptyMessagePaint.setTextSize(getResources()
                 .getDimension(R.dimen.recents_empty_message_text_size));
@@ -1085,65 +1033,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         mActionsView = actionsView;
         mActionsView.updateHiddenFlags(HIDDEN_NO_TASKS, getTaskViewCount() == 0);
         mSplitSelectStateController = splitController;
-		///Hxy:add for modify clearallbutton location at 20240102{{&&
-		if (getResources().getBoolean(R.bool.config_clearall_center) && mClearAllPanel != null) {
-		    mClearAllButtonNew = mClearAllPanel.getClearButton();
-		} else {
-		    mClearAllButtonNew = mActionsView.getClearAllView();
-		}
-		if (mClearAllButtonNew != null) {
-		    mClearAllButtonNew.setOnClickListener(this::dismissAllTasks);
-		}
-		///&&}}
-        if (mOverviewDockView != null) {
-            mOverviewDockView.setRecentsView(this);
-        } else if (mActionsView.getDockView() != null) {
-            mActionsView.getDockView().setRecentsView(this);
-        }
-    }
-
-    /** Oppo-style bottom UI wired from {@link RecentContainerView}. */
-    public void setBottomUi(@Nullable OverviewDockView dock, @Nullable HxyClearAllPanelView panel) {
-        mOverviewDockView = dock;
-        mClearAllPanel = panel;
-        if (mOverviewDockView != null) {
-            mOverviewDockView.setRecentsView(this);
-        }
-        updateBottomUiInsets();
-    }
-
-    public void updateBottomUiInsets() {
-        if (!getResources().getBoolean(R.bool.config_clearall_center) || mClearAllPanel == null) {
-            return;
-        }
-        ViewParent parent = getParent();
-        if (parent instanceof RecentContainerView) {
-            ((RecentContainerView) parent).updateBottomUiInsets();
-        }
-    }
-
-    public DeviceProfile getDeviceProfile() {
-        return mActivity.getDeviceProfile();
-    }
-
-    public Rect getOverviewInsets() {
-        return mInsets;
-    }
-
-    private void syncDockFromRecents() {
-        if (getResources().getBoolean(R.bool.config_clearall_center) && mOverviewDockView != null) {
-            DeviceProfile dp = getDeviceProfile();
-            if (dp.isTablet || dp.isLandscape) {
-                mOverviewDockView.setVisibility(GONE);
-            } else {
-                // Always refresh icon data; visibility is gated separately for overview-only.
-                mOverviewDockView.syncFromRecents(this);
-            }
-            updateBottomUiOverviewVisibility();
-            updateBottomUiInsets();
-        } else if (mActionsView != null) {
-            mActionsView.syncDockFromRecents(this);
-        }
     }
 
     public SplitSelectStateController getSplitSelectController() {
@@ -1221,7 +1110,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             }
             taskView.setTaskViewId(-1);
             mActionsView.updateHiddenFlags(HIDDEN_NO_TASKS, getTaskViewCount() == 0);
-            syncDockFromRecents();
         }
     }
 
@@ -1502,16 +1390,12 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
      * button fully visible, center page is Clear All button.
      */
     public boolean isClearAllHidden() {
-		///Hxy:add for modify clearallbutton location at 20240102{{&&
-		if(getResources().getBoolean(R.bool.config_clearall_center))
-		{
-		    return true;
-		}
-		else
-		{
-            return mClearAllButton.getAlpha() != 1f;
-		}		
-		///&&}}
+        return mClearAllButton.getAlpha() != 1f;
+    }
+
+    /** Whether Clear all joins the task list as soon as the running task is shown. */
+    protected boolean shouldAddClearAllButtonWithRunningTask() {
+        return true;
     }
 
     @Override
@@ -1538,9 +1422,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             setSwipeDownShouldLaunchApp(true);
         }
         InteractionJankMonitorWrapper.end(InteractionJankMonitorWrapper.CUJ_RECENTS_SCROLLING);
-        if (mOverviewDockView != null) {
-            mOverviewDockView.recenterOnCurrentRecentsPage();
-        }
     }
 
     @Override
@@ -1643,14 +1524,8 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     @Override
     protected void determineScrollingStart(MotionEvent ev, float touchSlopScale) {
         // Enables swiping to the left or right only if the task overlay is not modal.
-        boolean wasHandling = isHandlingTouch();
         if (!isModal()) {
             super.determineScrollingStart(ev, touchSlopScale);
-        }
-        // ColorOS DockView.onParentScrollInteractionBegin — Recents owns link-scroll.
-        if (!wasHandling && isHandlingTouch() && mOverviewDockView != null
-                && getResources().getBoolean(R.bool.config_clearall_center)) {
-            mOverviewDockView.onParentScrollInteractionBegin();
         }
     }
 
@@ -1695,7 +1570,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         setCurrentPage(frontTaskIndex);
 
         updateTaskSize();
-        updateBottomUiInsets();
     }
 
     @Override
@@ -1707,16 +1581,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     @Override
     protected boolean isPageScrollsInitialized() {
         return super.isPageScrollsInitialized() && mLoadPlanEverApplied;
-    }
-
-    /** Whether dock linking can safely use this task list's page coordinates. */
-    public boolean isDockScrollReady() {
-        return isPageScrollsInitialized() && isLaidOut() && !isLayoutRequested();
-    }
-
-    /** Coordinate linking is for movement; a settled dock follows the selected task ID. */
-    public boolean isRecentsScrollInProgress() {
-        return mGestureActive || isPageInTransition();
     }
 
     protected void applyLoadPlan(ArrayList<GroupTask> taskGroups) {
@@ -1831,14 +1695,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         }
 
         if (!taskGroups.isEmpty()) {
-            ///Hxy:add for modify clearallbutton location at 20240102{{&&
-            if(getResources().getBoolean(R.bool.config_clearall_center)){
-				addView(mClearAllButton);
-				mClearAllButton.setVisibility(View.INVISIBLE);
-			}else{
-				addView(mClearAllButton);
-			}
-			///&&}}
+            addView(mClearAllButton);
             if (DesktopTaskView.DESKTOP_IS_PROTO2_ENABLED) {
                 // Check if we have apps on the desktop
                 if (desktopTask != null && !desktopTask.tasks.isEmpty()) {
@@ -1869,7 +1726,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         mFocusedTaskViewId = newFocusedTaskView != null && !ENABLE_GRID_ONLY_OVERVIEW.get()
                 ? newFocusedTaskView.getTaskViewId() : INVALID_TASK_ID;
         updateTaskSize();
-        updateBottomUiInsets();
         updateChildTaskOrientations();
 
         TaskView newRunningTaskView = null;
@@ -1989,11 +1845,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     protected void onTaskStackUpdated() {
         // Lazily update the empty message only when the task stack is reapplied
         updateEmptyMessage();
-        syncDockFromRecents();
-        if (!mGestureActive && mFullscreenProgress <= 0.05f && !mBottomUiEntered
-                && mContentAlpha > 0f) {
-            playBottomUiEnter();
-        }
     }
 
     public void resetTaskVisuals() {
@@ -2045,10 +1896,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         // Fade out the actions view quickly (0.1 range)
         mActionsView.getFullscreenAlpha().setValue(
                 mapToRange(fullscreenProgress, 0, 0.1f, 1f, 0f, LINEAR));
-        // An enter request can arrive before the final fullscreen-progress update.
-        if (mBottomUiEnterRequested && fullscreenProgress <= 0.05f) {
-            scheduleBottomUiEnter();
-        }
     }
 
     private void updateTaskStackListenerState() {
@@ -2083,7 +1930,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         // Update RecentsView and TaskView's DeviceProfile dependent layout.
         updateOrientationHandler();
         mActionsView.updateDimension(dp, mLastComputedTaskSize);
-        updateBottomUiInsets();
     }
 
     private void updateOrientationHandler() {
@@ -2111,19 +1957,11 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             onOrientationChanged();
             resetTaskVisuals();
         }
-        ///Hxy:add for modify clearallbutton location at 20240102{{&&
-        if(getResources().getBoolean(R.bool.config_clearall_center)){
-            boolean isInLandscape = /*mOrientationState.getTouchRotation() != 0
-                    ||*/ mOrientationState.getRecentsActivityRotation() != ROTATION_0;
-            mActionsView.updateHiddenFlags(HIDDEN_NON_ZERO_ROTATION,
-                    /*!mOrientationState.isRecentsActivityRotationAllowed() &&*/ isInLandscape);
-        }else{
+
         boolean isInLandscape = mOrientationState.getTouchRotation() != ROTATION_0
                 || mOrientationState.getRecentsActivityRotation() != ROTATION_0;
         mActionsView.updateHiddenFlags(HIDDEN_NON_ZERO_ROTATION,
                 !mOrientationState.isRecentsActivityRotationAllowed() && isInLandscape);
-        }
-        ///&&}}
 
         // Update TaskView's DeviceProfile dependent layout.
         updateChildTaskOrientations();
@@ -2173,13 +2011,12 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 
         // Force TaskView to update size from thumbnail
         updateTaskSize();
-        updateBottomUiInsets();
     }
 
     /**
      * Updates TaskView scaling and translation required to support variable width.
      */
-    private void updateTaskSize() {
+    protected void updateTaskSize() {
         updateTaskSize(false);
     }
 
@@ -2211,16 +2048,10 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         updateGridProperties(isTaskDismissal);
     }
 
-    /** Computes task bounds without notifying bottom UI (avoids recursion with container). */
-    public void computeTaskSize(Rect outRect) {
+    public void getTaskSize(Rect outRect) {
         mSizeStrategy.calculateTaskSize(mActivity, mActivity.getDeviceProfile(), outRect,
                 mOrientationHandler);
         mLastComputedTaskSize.set(outRect);
-    }
-
-    public void getTaskSize(Rect outRect) {
-        computeTaskSize(outRect);
-        updateBottomUiInsets();
     }
 
     /**
@@ -2329,76 +2160,8 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         int scroll = mOrientationHandler.getPrimaryScroll(this);
         mClearAllButton.onRecentsViewScroll(scroll, mOverviewGridEnabled);
 
-        // Oppo carousel: fade ⋮ via cosine-eased linearInterpolation (see OplusTaskViewImpl).
-        updateTaskMenuShortcutAlphas(scroll);
-        if (!getResources().getBoolean(R.bool.config_clearall_center) && mActionsView != null) {
-            float bottomUiAlpha = mOrientationState.getTouchRotation() == ROTATION_0
-                    ? mContentAlpha : 0f;
-            mActionsView.getIndexScrollAlpha().setValue(bottomUiAlpha);
-        }
-        if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
-            if (!mOverviewDockView.isDockDrivingRecents()) {
-                // ColorOS DockView.onRecentsScrollTo — continuous scale-linked scroll.
-                mOverviewDockView.onRecentsScrollTo(scroll);
-            }
-        } else if (mActionsView != null) {
-            mActionsView.onRecentsPageCentered(getTaskViewNearestToCenterOfScreen());
-        }
-    }
-
-    /**
-     * Oppo-style menu fade ({@code OplusTaskViewImpl.updateCurveInterpolation} /
-     * {@code ScrollState.updateInterpolation}).
-     * <p>
-     * {@code linearInterpolation} rises slowly (denom ≈ halfPage + halfScreen), then a cosine
-     * ease keeps near-center cards near alpha 1. The previous {@code 1 - progress * 2.5} curve
-     * zeroed the menu by ~40% of a page and hid ⋮ on the active card when slightly off-center.
-     * Nearest-to-center is forced to 1 so the focused card never loses the menu.
-     */
-    private void updateTaskMenuShortcutAlphas(int primaryScroll) {
-        int taskCount = getTaskViewCount();
-        if (taskCount == 0) {
-            return;
-        }
-        TaskView nearest = getTaskViewNearestToCenterOfScreen();
-        if (showAsGrid()) {
-            TaskView focused = getTaskViewAt(getNextPage());
-            if (focused == null) {
-                focused = nearest;
-            }
-            for (int i = 0; i < taskCount; i++) {
-                TaskView tv = requireTaskViewAt(i);
-                tv.setMenuShortcutAlpha(tv == focused ? 1f : 0f);
-            }
-            return;
-        }
-
-        float halfScreen = getMeasuredWidth() / 2f;
-        float screenCenter = primaryScroll + halfScreen;
-        float edgeScale = TaskView.getEdgeScaleDownFactor(mActivity.getDeviceProfile());
-        for (int i = 0; i < taskCount; i++) {
-            TaskView tv = requireTaskViewAt(i);
-            if (tv == nearest) {
-                // Active / nearest card always keeps a full-opacity menu (Oppo idle + settle-safe).
-                tv.setMenuShortcutAlpha(1f);
-                continue;
-            }
-            float halfPage = tv.getMeasuredWidth() / 2f;
-            if (halfPage <= 0f) {
-                tv.setMenuShortcutAlpha(0f);
-                continue;
-            }
-            // Match OplusBasePagedOrientationHandler.ScrollState.updateInterpolation.
-            float childStart = tv.getLeft() + tv.getTranslationX();
-            float denom = ((1f - edgeScale) * halfPage) + halfScreen;
-            float linear = denom <= 0f ? 1f
-                    : Math.min(1f, Math.abs(screenCenter - (childStart + halfPage)) / denom);
-            // CURVE_INTERPOLATOR: (-cos(t * PI) / 2) + 0.5
-            float curved = (float) ((-Math.cos(linear * Math.PI) / 2.0) + 0.5);
-            // getCurveAlphaForCurveInterpolation(curved, minAlpha=0) → lerp(1, 0, curved), 0.1 steps
-            float menuAlpha = Math.round((1f - curved) * 10f) / 10f;
-            tv.setMenuShortcutAlpha(menuAlpha);
-        }
+        // Clear all button alpha was set by the previous line.
+        mActionsView.getIndexScrollAlpha().setValue(1 - mClearAllButton.getScrollAlpha());
     }
 
     @Override
@@ -2572,8 +2335,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             remoteTargetHandle.getTaskViewSimulator().setDrawsBelowRecents(false);
         });
         resetFromSplitSelectionState();
-        cancelPendingBottomUiEnter();
-        hideBottomUiImmediate();
 
         // These are relatively expensive and don't need to be done this frame (RecentsView isn't
         // visible anyway), so defer by a frame to get off the critical path, e.g. app to home.
@@ -2703,7 +2464,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         setEnableDrawingLiveTile(false);
         setRunningTaskHidden(true);
         setTaskIconScaledDown(true);
-        hideBottomUiImmediate();
     }
 
     /**
@@ -2713,7 +2473,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     public void onSwipeUpAnimationSuccess() {
         animateUpTaskIconScale();
         setSwipeDownShouldLaunchApp(true);
-        playBottomUiEnter();
     }
 
     private void animateRecentsRotationInPlace(int newRotation) {
@@ -2814,17 +2573,13 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             updateOrientationHandler(/* forceRecreateDragLayerControllers = */ false);
         }
 
-        boolean toRecents = mCurrentGestureEndTarget == GestureState.GestureEndTarget.RECENTS;
         setEnableFreeScroll(true);
-        setEnableDrawingLiveTile(toRecents);
+        setEnableDrawingLiveTile(mCurrentGestureEndTarget == GestureState.GestureEndTarget.RECENTS);
         setRunningTaskHidden(false);
         animateUpTaskIconScale();
         animateActionsViewIn();
 
         mCurrentGestureEndTarget = null;
-        if (toRecents) {
-            playBottomUiEnter();
-        }
     }
 
     /**
@@ -2886,14 +2641,8 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                 taskView.bind(mTmpRunningTasks[0], mOrientationState);
             }
             runningTaskViewId = taskView.getTaskViewId();
-            if (wasEmpty) {
-				///Hxy:add for modify clearallbutton location at 20240102{{&&
-				if(getResources().getBoolean(R.bool.config_clearall_center)){
-					//do nothing
-				}else{
-					addView(mClearAllButton);
-				}
-                ///&&}}
+            if (wasEmpty && shouldAddClearAllButtonWithRunningTask()) {
+                addView(mClearAllButton);
             }
 
             // Measure and layout immediately so that the scroll values is updated instantly
@@ -2913,7 +2662,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         setRunningTaskHidden(runningTaskTileHidden);
         // Update task size after setting current task.
         updateTaskSize();
-        updateBottomUiInsets();
         updateChildTaskOrientations();
 
         // Reload the task list
@@ -4173,9 +3921,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                         // Update various scroll-dependent UI.
                         dispatchScrollChanged();
                         updateActionsViewFocusedScroll();
-                        // Dock rebuilt in onViewRemoved before setCurrentPage — re-sync so the
-                        // centered/active icon matches the page we just snapped to.
-                        syncDockFromRecents();
                         if (isClearAllHidden() && !mActivity.getDeviceProfile().isTablet) {
                             mActionsView.updateDisabledFlags(OverviewActionsView.DISABLED_SCROLLING,
                                     false);
@@ -4187,9 +3932,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                 mPendingAnimation = null;
             }
         });
-        if (mOverviewDockView != null) {
-            mOverviewDockView.createIconDismissAnimation(dismissedTaskView, anim, animateTaskView);
-        }
     }
 
     /**
@@ -4278,18 +4020,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 
     private void removeTaskInternal(int dismissedTaskViewId) {
         int[] taskIds = getTaskIdsForTaskViewId(dismissedTaskViewId);
-		 TaskView taskView = getTaskViewFromTaskViewId(dismissedTaskViewId);
-        if (taskView != null) {
-            try {
-                String packageName = taskView.getTask().key.getPackageName();
-                if("com.android.music".equals(packageName)) {
-                    ActivityManager am = (ActivityManager)mContext.getSystemService(Context.ACTIVITY_SERVICE);
-                    am.forceStopPackage(packageName);
-                }
-            } catch (Exception e) {
-                Log.e(TAG,"forceStopPackage error" + e);
-            }
-        }
+        onRemoveTaskView(getTaskViewFromTaskViewId(dismissedTaskViewId));
         int primaryTaskId = taskIds[0];
         int secondaryTaskId = taskIds[1];
         UI_HELPER_EXECUTOR.getHandler().post(
@@ -4299,6 +4030,10 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                         ActivityManagerWrapper.getInstance().removeTask(secondaryTaskId);
                     }
                 });
+    }
+
+    /** Called right before the dismissed task is removed from the system. */
+    protected void onRemoveTaskView(@Nullable TaskView taskView) {
     }
 
     protected void onDismissAnimationEnds() {
@@ -4314,18 +4049,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         int count = getTaskViewCount();
         for (int i = 0; i < count; i++) {
             addDismissedTaskAnimations(requireTaskViewAt(i), duration, anim);
-			 TaskView taskView = requireTaskViewAt(i);
-            if (taskView != null) {
-                try {
-                    String packageName = taskView.getTask().key.getPackageName();
-                    if("com.android.music".equals(packageName)) {
-                        ActivityManager am = (ActivityManager)mContext.getSystemService(Context.ACTIVITY_SERVICE);
-                        am.forceStopPackage(packageName);
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG,"forceStopPackage error" + e);
-                }
-            }
         }
 
         mPendingAnimation = anim;
@@ -4335,23 +4058,18 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                 finishRecentsAnimation(true /* toRecents */, false /* shouldPip */, () -> {
                     UI_HELPER_EXECUTOR.getHandler().post(
                             ActivityManagerWrapper.getInstance()::removeAllRecentTasks);
-                    UI_HELPER_EXECUTOR.getHandler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (!mSyncRunning) {
-                                ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
-                                ((ActivityManager) getContext().getSystemService(SliceHints.HINT_ACTIVITY)).getMemoryInfo(memInfo);
-                                mOldFreeMemory = memInfo.availMem;
-                                new ClearMemorySyncTask().execute(new Context[]{getContext()});
-                            }
-                        }
-                    }, 500);
+                    onAllTasksDismissed();
                     startHome();
                 });
             }
             mPendingAnimation = null;
         });
         return anim;
+    }
+
+    /** Called after Clear all removed every task, right before going home. */
+    protected void onAllTasksDismissed() {
+        removeTasksViewsAndClearAllButton();
     }
 
     private boolean snapToPageRelative(int pageCount, int delta, boolean cycle) {
@@ -4367,7 +4085,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         return true;
     }
 
-    private void runDismissAnimation(PendingAnimation pendingAnim) {
+    protected void runDismissAnimation(PendingAnimation pendingAnim) {
         AnimatorPlaybackController controller = pendingAnim.createPlaybackController();
         controller.dispatchOnStart();
         controller.getAnimationPlayer().setInterpolator(FAST_OUT_SLOW_IN);
@@ -4391,7 +4109,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     }
 
     @SuppressWarnings("unused")
-    private void dismissAllTasks(View view) {
+    protected void dismissAllTasks(View view) {
         runDismissAnimation(createAllTasksDismissAnimation(DISMISS_TASK_DURATION));
         mActivity.getStatsLogManager().logger().log(LAUNCHER_TASK_CLEAR_ALL);
     }
@@ -4472,7 +4190,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         mEmptyMessagePaint.setAlpha(alphaInt);
         mEmptyIcon.setAlpha(alphaInt);
         mActionsView.getContentAlpha().setValue(mContentAlpha);
-        applyBottomUiContentAlpha(mContentAlpha);
 
         if (alpha > 0) {
             setVisibility(VISIBLE);
@@ -4503,253 +4220,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                 mActionsView.updateDisabledFlags(OverviewActionsView.DISABLED_SCROLLING, false);
             }
         }
-        // Dock + Clear All are siblings — hide them whenever overview itself is not shown.
-        updateBottomUiOverviewVisibility();
-        if (visibility == VISIBLE && mBottomUiEnterRequested) {
-            scheduleBottomUiEnter();
-        }
-    }
-
-    /** True when Clear All / dock icons should be on screen (overview only). */
-    public boolean shouldShowBottomUi() {
-        return mOverviewStateEnabled && !mOverviewFullscreenEnabled
-                && getVisibility() == VISIBLE && mContentAlpha > 0f && getTaskViewCount() > 0;
-    }
-
-    private void updateBottomUiOverviewVisibility() {
-        if (!getResources().getBoolean(R.bool.config_clearall_center)) {
-            return;
-        }
-        boolean show = shouldShowBottomUi();
-        if (mClearAllPanel != null) {
-            mClearAllPanel.setVisibility(show ? VISIBLE : GONE);
-            if (show) {
-                applySettledBottomUiAlpha(mClearAllPanel);
-            }
-        }
-        if (mOverviewDockView != null) {
-            DeviceProfile dp = getDeviceProfile();
-            boolean showDock = show && !dp.isTablet && !dp.isLandscape;
-            mOverviewDockView.setVisibility(showDock ? VISIBLE : GONE);
-            if (showDock) {
-                applySettledBottomUiAlpha(mOverviewDockView);
-            }
-        }
-    }
-
-    private void applyBottomUiContentAlpha(float alpha) {
-        if (!getResources().getBoolean(R.bool.config_clearall_center)) {
-            return;
-        }
-        // Leaving recents: drop the footer immediately. Enter is a separate delayed fade.
-        if (alpha <= 0f) {
-            hideBottomUiImmediate();
-        } else {
-            updateBottomUiOverviewVisibility();
-            if (!mGestureActive && mFullscreenProgress <= 0.05f && !mBottomUiEntered) {
-                playBottomUiEnter();
-            }
-        }
-    }
-
-    /**
-     * Oppo {@code OplusClearAllPanelView.playEnterAnimation}: dock + RAM + Clear all stay
-     * hidden until recents cards have settled, then fade/rise in.
-     */
-    public void playBottomUiEnter() {
-        if (!getResources().getBoolean(R.bool.config_clearall_center)) {
-            return;
-        }
-        cancelPendingBottomUiEnter();
-        mBottomUiEnterRequested = true;
-        if (mOrientationState.getTouchRotation() != ROTATION_0) {
-            hideBottomUiImmediate();
-            return;
-        }
-        // Still in the app-to-recents swipe (BACKGROUND_APP): keep footer hidden.
-        if (!mOverviewStateEnabled || mOverviewFullscreenEnabled
-                || mGestureActive || mFullscreenProgress > 0.05f) {
-            // Keep the request until gesture end, fullscreen progress, or task binding changes.
-            return;
-        }
-        // Icons bind after the gesture; sync first so the dock is VISIBLE for this fade.
-        syncDockFromRecents();
-        if (!shouldShowBottomUi()) {
-            // Task binding/content visibility will retry the retained request.
-            return;
-        }
-        if (mBottomUiEntered && getBottomUiAlpha() > 0.99f) {
-            mBottomUiEnterRequested = false;
-            applySettledBottomUiAlpha(mOverviewDockView);
-            return;
-        }
-        if (mBottomUiAnimator != null && mBottomUiAnimator.isRunning()
-                && mBottomUiAnimationEntering) {
-            return;
-        }
-        // An old exit must not prevent a new enter.
-        cancelBottomUiAnim();
-        float shift = getResources().getDimension(R.dimen.hxy_overview_bottom_ui_enter_shift);
-        AnimatorSet anim = new AnimatorSet();
-        boolean hasTarget = false;
-        if (mClearAllPanel != null && mClearAllPanel.getVisibility() == VISIBLE) {
-            mClearAllPanel.setAlpha(0f);
-            mClearAllPanel.setTranslationY(shift);
-            anim.play(ObjectAnimator.ofFloat(mClearAllPanel, View.ALPHA, 0f, 1f));
-            anim.play(ObjectAnimator.ofFloat(mClearAllPanel, View.TRANSLATION_Y, shift, 0f));
-            hasTarget = true;
-        }
-        if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
-            // Dock Y is set via OverviewDockView.setY() — do not touch translationY.
-            mOverviewDockView.setAlpha(0f);
-            anim.play(ObjectAnimator.ofFloat(mOverviewDockView, View.ALPHA, 0f, 1f));
-            hasTarget = true;
-        }
-        if (!hasTarget) {
-            return;
-        }
-        if (mClearAllPanel != null) {
-            mClearAllPanel.updateMemoryInfoDisplay();
-        }
-        anim.setDuration(600);
-        anim.setInterpolator(EMPHASIZED_DECELERATE);
-        anim.addListener(new AnimatorListenerAdapter() {
-            private boolean mCancelled;
-
-            @Override
-            public void onAnimationCancel(Animator animation) {
-                mCancelled = true;
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                if (mBottomUiAnimator != animation) {
-                    return;
-                }
-                mBottomUiAnimator = null;
-                if (mCancelled || !mBottomUiEnterRequested || !shouldShowBottomUi()) {
-                    return;
-                }
-                mBottomUiEntered = true;
-                mBottomUiEnterRequested = false;
-                // Dock may bind after this fade; reveal it if it appeared late.
-                updateBottomUiOverviewVisibility();
-            }
-        });
-        mBottomUiAnimationEntering = true;
-        mBottomUiAnimator = anim;
-        anim.start();
-    }
-
-    private void scheduleBottomUiEnter() {
-        if (!mBottomUiEnterRequested || mPendingBottomUiEnter != null) {
-            return;
-        }
-        mPendingBottomUiEnter = () -> {
-            mPendingBottomUiEnter = null;
-            playBottomUiEnter();
-        };
-        postOnAnimation(mPendingBottomUiEnter);
-    }
-
-    private void cancelPendingBottomUiEnter() {
-        if (mPendingBottomUiEnter != null) {
-            removeCallbacks(mPendingBottomUiEnter);
-            mPendingBottomUiEnter = null;
-        }
-    }
-
-    private void applySettledBottomUiAlpha(View view) {
-        if (view == null) {
-            return;
-        }
-        if (mBottomUiEntered) {
-            view.setAlpha(1f);
-        } else if (mBottomUiAnimator == null || !mBottomUiAnimator.isRunning()) {
-            view.setAlpha(0f);
-        }
-    }
-
-    /** Oppo {@code playExitAnimator}: fade footer as soon as we leave Overview. */
-    public void playBottomUiExit() {
-        if (!getResources().getBoolean(R.bool.config_clearall_center)) {
-            return;
-        }
-        cancelPendingBottomUiEnter();
-        mBottomUiEnterRequested = false;
-        cancelBottomUiAnim();
-        mBottomUiEntered = false;
-        if (getBottomUiAlpha() <= 0.01f) {
-            hideBottomUiImmediate();
-            return;
-        }
-        AnimatorSet anim = new AnimatorSet();
-        if (mClearAllPanel != null) {
-            anim.play(ObjectAnimator.ofFloat(mClearAllPanel, View.ALPHA, mClearAllPanel.getAlpha(), 0f));
-        }
-        if (mOverviewDockView != null) {
-            anim.play(ObjectAnimator.ofFloat(mOverviewDockView, View.ALPHA, mOverviewDockView.getAlpha(), 0f));
-        }
-        anim.setDuration(240);
-        anim.setInterpolator(ACCEL);
-        anim.addListener(new AnimatorListenerAdapter() {
-            private boolean mCancelled;
-
-            @Override
-            public void onAnimationCancel(Animator animation) {
-                mCancelled = true;
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                if (mBottomUiAnimator != animation) {
-                    return;
-                }
-                mBottomUiAnimator = null;
-                if (!mCancelled) {
-                    hideBottomUiImmediate();
-                }
-            }
-        });
-        mBottomUiAnimationEntering = false;
-        mBottomUiAnimator = anim;
-        anim.start();
-    }
-
-    public void hideBottomUiImmediate() {
-        cancelPendingBottomUiEnter();
-        mBottomUiEnterRequested = false;
-        cancelBottomUiAnim();
-        mBottomUiEntered = false;
-        if (mClearAllPanel != null) {
-            mClearAllPanel.setAlpha(0f);
-            mClearAllPanel.setTranslationY(0f);
-        }
-        if (mOverviewDockView != null) {
-            mOverviewDockView.setAlpha(0f);
-        }
-        if (getResources().getBoolean(R.bool.config_clearall_center)) {
-            updateBottomUiOverviewVisibility();
-        }
-    }
-
-    private void cancelBottomUiAnim() {
-        if (mBottomUiAnimator != null) {
-            // Invalidate ownership before cancel() dispatches onAnimationEnd().
-            Animator animator = mBottomUiAnimator;
-            mBottomUiAnimator = null;
-            animator.cancel();
-        }
-    }
-
-    private float getBottomUiAlpha() {
-        if (mClearAllPanel != null && mClearAllPanel.getVisibility() == VISIBLE) {
-            return mClearAllPanel.getAlpha();
-        }
-        if (mOverviewDockView != null && mOverviewDockView.getVisibility() == VISIBLE) {
-            return mOverviewDockView.getAlpha();
-        }
-        return 0f;
     }
 
     @Override
@@ -4814,7 +4284,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
      * A version of {@link #getTaskViewAt} when the caller is sure about the input index.
      */
     @NonNull
-    private TaskView requireTaskViewAt(int index) {
+    protected TaskView requireTaskViewAt(int index) {
         return Objects.requireNonNull(getTaskViewAt(index));
     }
 
@@ -4865,10 +4335,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                         .setScroll(getScrollOffset()));
         setImportantForAccessibility(isModal() ? IMPORTANT_FOR_ACCESSIBILITY_NO
                 : IMPORTANT_FOR_ACCESSIBILITY_AUTO);
-        if (mOverviewDockView != null) {
-            // Dock may have laid out before Recents, or kept the same size across a load plan.
-            mOverviewDockView.recenterOnCurrentRecentsPage();
-        }
     }
 
     private void updatePivots() {
@@ -6187,9 +5653,6 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
     public void setOverviewFullscreenEnabled(boolean overviewFullscreenEnabled) {
         if (mOverviewFullscreenEnabled != overviewFullscreenEnabled) {
             mOverviewFullscreenEnabled = overviewFullscreenEnabled;
-            if (!overviewFullscreenEnabled && mBottomUiEnterRequested) {
-                scheduleBottomUiEnter();
-            }
             // Request layout to ensure scroll position is recalculated with updated
             // mFullscreenProgress.
             requestLayout();
@@ -6283,17 +5746,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
             getCurrentPageTaskView().setModalness(modalness);
         }
         // Only show actions view when it's modal for in-place landscape mode.
-        ///Hxy:add for modify clearallbutton location at 20240102{{&&
-        if(getResources().getBoolean(R.bool.config_clearall_center)){
-            boolean inPlaceLandscape = /*!mOrientationState.isRecentsActivityRotationAllowed()
-                    && mOrientationState.getTouchRotation() != ROTATION_0*/false;
-            mActionsView.updateHiddenFlags(HIDDEN_NON_ZERO_ROTATION, modalness < 1 && inPlaceLandscape);
-        }else{
         boolean inPlaceLandscape = !mOrientationState.isRecentsActivityRotationAllowed()
                 && mOrientationState.getTouchRotation() != ROTATION_0;
         mActionsView.updateHiddenFlags(HIDDEN_NON_ZERO_ROTATION, modalness < 1 && inPlaceLandscape);
-        }
-        ///&&}}
     }
 
     @Nullable
@@ -6564,247 +6019,5 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
 
     public interface TaskLaunchListener {
         void onTaskLaunched();
-    }
-
-    public void hxySetOldMemory(long mem) {
-        mOldFreeMemory = mem;
-    }
-
-    public void hxyClearAllTasks() {
-        runDismissAnimation(createAllTasksDismissAnimation(DISMISS_TASK_DURATION));
-    }
-
-    private class ClearMemorySyncTask extends AsyncTask<Context, Integer, Context> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            mSyncRunning = true;
-        }
-
-        @Override
-        protected Context doInBackground(Context... context) {
-
-            ActivityManager activityMgr = (ActivityManager)context[0].getSystemService(Context.ACTIVITY_SERVICE);
-            PackageManager packageMgr = (PackageManager)context[0].getPackageManager();
-            List<ActivityManager.RunningAppProcessInfo> runningProcList = activityMgr.getRunningAppProcesses();
-
-            if (runningProcList == null) {
-                return context[0];
-            }
-
-            String self = context[0].getPackageName();
-            Intent launcher_intent = new Intent(Intent.ACTION_MAIN);
-            launcher_intent.addCategory(Intent.CATEGORY_HOME);
-            ResolveInfo launcher = packageMgr.resolveActivity(launcher_intent, PackageManager.MATCH_DEFAULT_ONLY);
-
-            mRunningProcListSize = runningProcList.size();
-            Log.d(TAG, "mRunningProcListSize = " + mRunningProcListSize);
-
-            String[] filtList = getContext().getResources().getStringArray(
-                    com.android.internal.R.array.hxy_config_deep_clean_whitelist);
-            Log.d(TAG, "filtList.length = " + filtList.length);
-            for (int i = 0; i < mRunningProcListSize; i++) {
-                ActivityManager.RunningAppProcessInfo runningAppProcessInfo = runningProcList.get(i);
-                Log.d(TAG, "runningAppProcessInfo.processName = " + runningAppProcessInfo.processName
-                        + ". import = " + runningAppProcessInfo.importance);
-
-                //set processing index
-                publishProgress(i);
-
-                String pkgName = runningAppProcessInfo.processName;
-                if (runningAppProcessInfo.processName != null) {
-                    String items[] = runningAppProcessInfo.processName.split(":");
-                    if (items.length > 0) {
-                        pkgName = items[0];
-                    }
-                }
-
-                if (self.equals(pkgName)) {
-                    continue;
-                }
-
-                if (launcher.activityInfo.packageName.equals(pkgName)) {
-                    continue;
-                }
-
-                int exist_in_whitelist = Settings.System.getInt(context[0].getContentResolver(), pkgName,  0);
-                Log.d(TAG, "ClearMemorySyncTask. doInBackground. intent.getComponent().getPackageName() = "
-                   + pkgName + ". exist_in_whitelist = " + exist_in_whitelist);
-                if (1 == exist_in_whitelist){
-                    continue;
-                }
-
-                boolean filt = false;
-                for (String str : filtList) {
-                    if (pkgName.equalsIgnoreCase(str)) {
-                        filt = true;
-                        break;
-                    }
-                }
-
-                if (filt) {
-                    //Log.d(TAG, "filt --0-- package, name = " + pkgName);
-                    continue;
-                } else {
-                    Log.d(TAG, "ClearMemorySyncTask. doInBackground. pkgName = " + pkgName);
-                }
-
-                if (runningAppProcessInfo.importance >= ActivityManager.RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE) {
-                    String[] pkgList = runningAppProcessInfo.pkgList;
-                    Log.d(TAG, "pkgList.length=" + pkgList.length);
-
-                    for (int j = 0; j < pkgList.length; j++) {
-                        Log.d(TAG, "pkgList[" + j + "]=" + pkgList[j]);
-                        int is_in_whitelist = Settings.System.getInt(context[0].getContentResolver(), pkgList[j],  0);
-                        if (1 == is_in_whitelist) {
-                            continue;
-                        }
-
-                        if (pkgList[j].startsWith("com.google")) {
-                            Log.d(TAG, "com.google process, continue");
-                            continue;
-                        }
-                        if (pkgList[j].contains("com.mediatek.schpwronoff")) {
-                            continue;
-                        }
-                        if (pkgList[j].contains("com.android.mtp")) {
-                            continue;
-                        }
-                        if (pkgList[j].contains("android.process.media")) {
-                            continue;
-                        }
-                        if (pkgList[j].contains("com.hxy.factorymode")) {
-                            continue;
-                        }
-                        boolean needFilt = false;
-                        for (String str : filtList) {
-                            if (pkgList[j].equalsIgnoreCase(str)) {
-                                needFilt = true;
-                                break;
-                            }
-                        }
-
-                        if (needFilt) {
-                            //Log.d(TAG, "filt --1-- package, name = " + pkgList[j]);
-                            continue;
-                        }
-
-                        Log.d(TAG, "!!! --- kill --- pkgList[" + j + "]=" + pkgList[j]);
-                        activityMgr.killBackgroundProcesses(pkgList[j]);
-                        //hxy add for deep clean may cause audio's app play error restart
-//                        activityMgr.forceStopPackage(pkgList[j]);
-                        if (runningAppProcessInfo.uid > Process.FIRST_APPLICATION_UID) activityMgr.killUid(runningAppProcessInfo.uid, "ClearMemorySyncTask kill app");
-                        //hxy add for deep clean may cause audio's app play error restart end
-                    }
-                }
-            }
-
-            publishProgress(mRunningProcListSize);
-
-            return context[0];
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPostExecute(Context context) {
-            mSyncRunning = false;
-            hxyShowCleanCompleted(true);
-        }
-
-        private boolean isCurrentHomeActivity(Context context, ComponentName component, ActivityInfo homeInfo) {
-            /// M: [ALPS00846214] Check all installed launcher.
-            ActivityInfo homeAI;
-            PackageManager pm = context.getPackageManager();
-            Intent i = new Intent("android.intent.action.MAIN");
-            i.addCategory("android.intent.category.HOME");
-            List<ResolveInfo> lst = pm.queryIntentActivities(i, 0);
-
-            if (lst != null) {
-                for (ResolveInfo resolveInfo : lst) {
-                    homeAI = resolveInfo.activityInfo;
-
-                    if (homeAI != null
-                            && homeAI.packageName.equals(component.getPackageName())
-                            && homeAI.name.equals(component.getClassName())){
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-    }
-
-    public void clearMemorySchedule() {
-        if (mSyncRunning) {
-            return;
-        }
-
-        //if (phoneIsInUse()) {
-        //    return;
-        //}
-
-        ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
-        ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
-        am.getMemoryInfo(memInfo);
-        mOldFreeMemory = memInfo.availMem;
-
-        ClearMemorySyncTask mSync = new ClearMemorySyncTask();
-        if (mSync != null) {
-            mSync.execute(getContext());
-        }
-    }
-
-    private boolean phoneIsInUse() {
-        int state = ((TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE)).getCallState();
-        if (state != TelephonyManager.CALL_STATE_IDLE) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    private void hxyShowCleanCompleted(boolean hint) {
-        if (hint) {
-            String str = null;
-
-            ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
-
-            ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
-            am.getMemoryInfo(memInfo);
-            mNewFreeMemory = memInfo.availMem;
-            long detaMemory = mNewFreeMemory - mOldFreeMemory;
-
-            Log.d(TAG, "hxyShowCleanCompleted. mNewFreeMemory = " + mNewFreeMemory +
-                    ", mOldFreeMemory = " + mOldFreeMemory + ". detaMemory = " + detaMemory);
-
-            if (detaMemory <= 0) {
-                str = getContext().getString(R.string.hxy_clear_memrey_all_locked);
-            } else {
-                str = getContext().getString(R.string.hxy_clear_memrey_toast,
-                        Formatter.formatShortFileSize(getContext(), detaMemory));
-            }
-
-            // ColorOS tip: compact wrap-content COUISnackBar on the drag layer (not a stretched
-            // Recents child), with bottom inset above the nav bar.
-            final String message = str;
-            post(() -> {
-                View host = mActivity != null ? mActivity.getDragLayer() : this;
-                if (host == null) {
-                    host = this;
-                }
-                int bottomMargin = getResources().getDimensionPixelSize(
-                        com.coui.appcompat.R.dimen.coui_snack_bar_margin_bottom);
-                android.view.WindowInsets insets = host.getRootWindowInsets();
-                if (insets != null) {
-                    bottomMargin += insets.getSystemWindowInsetBottom();
-                }
-                COUISnackBar.make(host.getContext(), host, message, 2500, bottomMargin).show();
-            });
-        }
     }
 }

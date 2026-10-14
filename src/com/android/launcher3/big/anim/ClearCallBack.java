@@ -12,7 +12,7 @@ import com.android.launcher3.big.memoryclean.utils.HxyAntiShakeUtil;
 import com.android.launcher3.R;
 import com.android.launcher3.big.HxyAnimBubbleTextView;
 import com.android.launcher3.dragndrop.DragLayer;
-import com.android.quickstep.views.RecentsView;
+import com.android.quickstep.views.DreamRecentsViewImpl;
 
 /**
  * Cleanup icon callback. Icon visibility / text timing matches the pre-booster
@@ -59,7 +59,7 @@ public class ClearCallBack extends BaseCallback {
 
     private void sendMemoryCleanBroadcast(Context context) {
         if (!HxyAntiShakeUtil.isInvalidClick(1500) && (context instanceof ContextWrapper)) {
-           ((RecentsView) Launcher.getLauncher(context).getOverviewPanel()).hxyClearAllTasks();
+           ((DreamRecentsViewImpl<?, ?>) Launcher.getLauncher(context).getOverviewPanel()).hxyClearAllTasks();
         }
     }
 

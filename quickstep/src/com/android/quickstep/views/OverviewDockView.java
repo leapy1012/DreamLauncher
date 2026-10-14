@@ -87,7 +87,7 @@ public class OverviewDockView extends HorizontalScrollView {
     private final int mDimColor;
 
     @Nullable
-    private RecentsView<?, ?> mRecentsView;
+    private DreamRecentsViewImpl<?, ?> mRecentsView;
     private int[] mBoundTaskIds = new int[0];
     /** Dock child index currently scrolled to center (visual LTR order). */
     private int mCenteredChildIndex = -1;
@@ -151,7 +151,7 @@ public class OverviewDockView extends HorizontalScrollView {
                 ViewGroup.LayoutParams.MATCH_PARENT));
     }
 
-    public void setRecentsView(RecentsView<?, ?> recentsView) {
+    public void setRecentsView(DreamRecentsViewImpl<?, ?> recentsView) {
         mRecentsView = recentsView;
         if (recentsView != null) {
             mRecentsRtl = recentsView.isRtl();
@@ -196,7 +196,7 @@ public class OverviewDockView extends HorizontalScrollView {
     /**
      * Rebuild icons from the current RecentsView task list when the set of task ids changes.
      */
-    public void syncFromRecents(@Nullable RecentsView<?, ?> recentsView) {
+    public void syncFromRecents(@Nullable DreamRecentsViewImpl<?, ?> recentsView) {
         if (recentsView == null) {
             clearIcons();
             return;

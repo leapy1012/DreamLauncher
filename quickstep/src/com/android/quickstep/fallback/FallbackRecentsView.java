@@ -47,15 +47,15 @@ import com.android.quickstep.RotationTouchHelper;
 import com.android.quickstep.util.GroupTask;
 import com.android.quickstep.util.SplitSelectStateController;
 import com.android.quickstep.util.TaskViewSimulator;
+import com.android.quickstep.views.DreamRecentsViewImpl;
 import com.android.quickstep.views.OverviewActionsView;
-import com.android.quickstep.views.RecentsView;
 import com.android.quickstep.views.TaskView;
 import com.android.systemui.shared.recents.model.Task;
 
 import java.util.ArrayList;
 
 @TargetApi(Build.VERSION_CODES.R)
-public class FallbackRecentsView extends RecentsView<RecentsActivity, RecentsState>
+public class FallbackRecentsView extends DreamRecentsViewImpl<RecentsActivity, RecentsState>
         implements StateListener<RecentsState> {
 
     private static final int TASK_DISMISS_DURATION = 150;

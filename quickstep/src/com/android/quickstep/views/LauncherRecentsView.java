@@ -60,7 +60,7 @@ import com.android.launcher3.touch.PagedOrientationHandler;
  * {@link RecentsView} used in Launcher activity
  */
 @TargetApi(Build.VERSION_CODES.O)
-public class LauncherRecentsView extends RecentsView<QuickstepLauncher, LauncherState>
+public class LauncherRecentsView extends DreamRecentsViewImpl<QuickstepLauncher, LauncherState>
         implements StateListener<LauncherState> {
 
     public LauncherRecentsView(Context context) {
