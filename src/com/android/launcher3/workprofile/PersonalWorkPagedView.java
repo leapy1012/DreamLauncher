@@ -19,12 +19,13 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
+import com.android.launcher.DreamPagedViewImpl;
 import com.android.launcher3.PagedView;
 
 /**
  *  A {@link PagedView} for showing different views for the personal and work profile respectively.
  */
-public class PersonalWorkPagedView extends PagedView<PersonalWorkSlidingTabStrip> {
+public class PersonalWorkPagedView extends DreamPagedViewImpl<PersonalWorkSlidingTabStrip> {
 
     static final float START_DAMPING_TOUCH_SLOP_ANGLE = (float) Math.PI / 6;
     static final float MAX_SWIPE_ANGLE = (float) Math.PI / 3;

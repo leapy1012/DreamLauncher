@@ -74,6 +74,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import com.android.launcher.DreamPagedViewImpl;
 import com.android.launcher3.accessibility.AccessibleDragListenerAdapter;
 import com.android.launcher3.accessibility.WorkspaceAccessibilityHelper;
 import com.android.launcher3.anim.Interpolators;
@@ -155,7 +156,7 @@ import com.android.launcher3.BuildConfig;
  *
  * @param <T> Class that extends View and PageIndicator
  */
-public class Workspace<T extends View & PageIndicator> extends PagedView<T>
+public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImpl<T>
         implements DropTarget, DragSource, View.OnTouchListener,
         DragController.DragListener, Insettable, StateHandler<LauncherState>,
         WorkspaceLayoutManager, LauncherBindableItemsContainer, LauncherOverlayCallbacks {
@@ -1503,7 +1504,7 @@ public class Workspace<T extends View & PageIndicator> extends PagedView<T>
         }
         // Always allow a card-tap preview: abort any in-flight page settle first.
         // Previously a non-finished scroller only logged and never played the effect.
-        if (!mScroller.isCOUIFinished()) {
+        if (!mScroller.isFinished()) {
             abortScrollerAnimation();
         }
         final int current = mCurrentPage;

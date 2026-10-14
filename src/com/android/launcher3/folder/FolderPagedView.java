@@ -34,13 +34,13 @@ import android.view.ViewDebug;
 
 import androidx.annotation.Nullable;
 
+import com.android.launcher.DreamPagedViewImpl;
 import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.BubbleTextView;
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.LauncherAppState;
-import com.android.launcher3.PagedView;
 import com.android.launcher3.R;
 import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.Utilities;
@@ -67,7 +67,8 @@ import com.android.launcher3.icons.FastBitmapDrawable;
 import com.android.launcher3.big.add.HxyAddBubbleTextView;
 import com.android.launcher3.LauncherApplication;
 
-public class FolderPagedView extends PagedView<PageIndicatorDots> implements ClipPathView {
+public class FolderPagedView extends DreamPagedViewImpl<PageIndicatorDots>
+        implements ClipPathView {
 
     private static final String TAG = "FolderPagedView";
 

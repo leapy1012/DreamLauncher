@@ -14,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewDebug;
 
+import com.android.launcher.DreamPagedViewImpl;
 import com.android.launcher3.AbstractFloatingView;
 import com.android.launcher3.BaseActivity;
 import com.android.launcher3.BubbleTextView;
@@ -21,7 +22,6 @@ import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAppState;
-import com.android.launcher3.PagedView;
 import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.Workspace;
@@ -50,7 +50,8 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import com.android.launcher3.BuildConfig;
 
-public class HxyContentPagedView extends PagedView<PageIndicatorDots> implements View.OnClickListener {
+public class HxyContentPagedView extends DreamPagedViewImpl<PageIndicatorDots>
+        implements View.OnClickListener {
     private static final boolean DEBUG = true;
     private static final int REORDER_ANIMATION_DURATION = 230;
     private static final float SCROLL_HINT_FRACTION = 0.07f;

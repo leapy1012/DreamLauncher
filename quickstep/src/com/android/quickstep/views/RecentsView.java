@@ -120,7 +120,6 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
 import android.widget.ListView;
-import android.widget.OverScroller;
 import android.widget.Toast;
 import android.window.PictureInPictureSurfaceTransaction;
 
@@ -129,13 +128,13 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.core.graphics.ColorUtils;
 
+import com.android.launcher.DreamPagedViewImpl;
 import com.android.launcher3.BaseActivity;
 import com.android.launcher3.BaseActivity.MultiWindowModeChangedListener;
 import com.android.launcher3.RecentContainerView;
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Insettable;
 import com.android.launcher3.InvariantDeviceProfile;
-import com.android.launcher3.PagedView;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.coui.appcompat.snackbar.COUISnackBar;
@@ -158,6 +157,7 @@ import com.android.launcher3.touch.PagedOrientationHandler;
 import com.android.launcher3.util.DynamicResource;
 import com.android.launcher3.util.IntArray;
 import com.android.launcher3.util.IntSet;
+import com.android.launcher3.util.OverScroller;
 import com.android.launcher3.util.ResourceBasedOverride.Overrides;
 import com.android.launcher3.util.RunnableList;
 import com.android.launcher3.util.SplitConfigurationOptions.SplitBounds;
@@ -242,7 +242,7 @@ import androidx.slice.core.SliceHints;
  */
 @TargetApi(Build.VERSION_CODES.R)
 public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_TYPE>,
-        STATE_TYPE extends BaseState<STATE_TYPE>> extends PagedView implements Insettable,
+        STATE_TYPE extends BaseState<STATE_TYPE>> extends DreamPagedViewImpl implements Insettable,
         TaskThumbnailCache.HighResLoadingState.HighResLoadingStateChangedCallback,
         TaskVisualsChangeListener {
 
@@ -2432,7 +2432,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
      * and unloads the associated task data for tasks that are no longer visible.
      */
     public void loadVisibleTaskData(@TaskView.TaskDataChanges int dataChanges) {
-        boolean hasLeftOverview = !mOverviewStateEnabled && mScroller.isCOUIFinished();
+        boolean hasLeftOverview = !mOverviewStateEnabled && mScroller.isFinished();
         if (hasLeftOverview || mTaskListChangeId == -1) {
             // Skip loading visible task data if we've already left the overview state, or if the
             // task list hasn't been loaded yet (the task views will not reflect the task list)

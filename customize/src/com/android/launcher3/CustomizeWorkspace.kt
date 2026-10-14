@@ -19,7 +19,7 @@ import kotlin.math.abs
  * - progress = |unbounded overscroll| / width (no EdgeEffect, no finger-Δx, no seed)
  * - onScrollChange every eligible frame (not gated on session begin — Oppo 5112-5113)
  * - Session begin only: interactionBegan + scroller idle (Oppo isFinished)
- * - Gate overlay while page springing only (Oppo isSpringing ≈ isPageSpringing)
+ * - Gate overlay while page springing only (Oppo isSpringing)
  * - z6: leave overscroll zone with prior progress → force 0
  * - Home frost/scale from overlayScrollChanged (no DragLayer slide+fade)
  */
@@ -128,9 +128,8 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
 
     /**
      * Oppo gates with OverScroller.isSpringing() only — page snap spring.
-     * Do not treat residual COUI settle as springing; that deadens reverse swipes.
      */
-    private fun isScrollerSpringing(): Boolean = mScroller.isPageSpringing()
+    private fun isScrollerSpringing(): Boolean = mScroller.isSpringing()
 
     /**
      * Oppo [OplusWorkspace.overScroll].
@@ -189,8 +188,7 @@ class CustomizeWorkspace<T> @JvmOverloads constructor(
             scrollInteractionBegan = false
             return
         }
-        // Oppo: mScroller.isFinished()
-        if (!mScroller.isCOUIFinished()) return
+        if (!mScroller.isFinished()) return
         if (abs(translationY) > 0.5f) return
 
         Log.i(TAG, "overlay scroll begin")
