@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 GreenDream
+-->
+<resources>
+    <!-- Ext rebinding without code changes: "ext.Interface/impl.Creator" pairs, applied by
+         com.dream.ext.registry.ExtRegistry after the code registrations. -->
+    <string-array name="ext_api_override" translatable="false" />
+</resources>

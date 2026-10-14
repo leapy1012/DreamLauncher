@@ -61,3 +61,11 @@
 -keep class com.android.quickstep.** {
   *;
 }
+
+################ Dream ext #############
+# Creators registered by class (registerExt / ext_api_override) are instantiated reflectively,
+# and ext_api_override validation reads their generic IExtCreator<T> signature.
+-keepattributes Signature
+-keep class * implements com.dream.ext.core.IExtCreator {
+  <init>();
+}

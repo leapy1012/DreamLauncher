@@ -18,6 +18,8 @@ package com.android.launcher3;
 import android.app.Application;
 import android.content.Context;
 
+import com.dream.ext.core.ExtLoader;
+
 /**
  * Main application class for Launcher
  */
@@ -31,6 +33,7 @@ public class LauncherApplication extends Application {
         super.onCreate();
         // 将当前应用的 Context 赋值给静态变量
         sContext = this;
+        ExtLoader.init(this);
         MainProcessInitializer.initialize(this);
     }
 
