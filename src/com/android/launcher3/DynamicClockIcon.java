@@ -14,6 +14,8 @@ import android.graphics.Matrix;
 import android.os.Handler;
 import android.os.SystemClock;
 import androidx.core.content.res.ResourcesCompat;
+import com.android.launcher3.icons.BitmapInfo;
+import com.android.launcher3.icons.DataThemeFancyClock;
 import com.android.launcher3.icons.FastBitmapDrawable;
 import com.android.launcher3.icons.LauncherIcons;
 import java.util.Objects;
@@ -48,8 +50,34 @@ public class DynamicClockIcon extends FastBitmapDrawable {
     private boolean mHasSecond = false;
     private static final float ICON_SCALE = 0.83f;
 
+    /** /data/theme fancy clock layers; when set, the whole face is re-rendered per tick. */
+    private final DataThemeFancyClock mFancy;
+    private Bitmap mFancyFrame;
+    private int mFancyFrameKey;
+
+    /** Live clock from the applied /data/theme icon pack (fancy_icons/ic_launcher_clock). */
+    public DynamicClockIcon(Context context, DataThemeFancyClock fancy) {
+        this(context, fancy, Calendar.getInstance());
+    }
+
+    private DynamicClockIcon(Context context, DataThemeFancyClock fancy, Calendar now) {
+        super(renderFancyFrame(context, fancy, now));
+        mContext = context;
+        mFancy = fancy;
+        mFancyFrame = mBitmap;
+        mFancyFrameKey = fancyFrameKey(fancy, now);
+        mHasSecond = fancy.second != null;
+        mConfig = null;
+        mCamera = null;
+        mMatrix = null;
+        mCenterX = 0;
+        mCenterY = 0;
+        mHandler = new Handler();
+    }
+
     public DynamicClockIcon(Context context, int resourceId) {
         super(LauncherIcons.obtain(context).createBadgedIconBitmap(Objects.requireNonNull(ResourcesCompat.getDrawable(context.getResources(), resourceId, null))));
+        mFancy = null;
         mContext = context;
         mHasSecond = mContext.getResources().getBoolean(R.bool.show_clock_second);
         String themedName = Settings.Global.getString(mContext.getContentResolver(), "themed");
@@ -80,8 +108,34 @@ public class DynamicClockIcon extends FastBitmapDrawable {
         mHandler = new Handler();
     }
 
+    private static BitmapInfo renderFancyFrame(Context context, DataThemeFancyClock fancy,
+            Calendar time) {
+        try (LauncherIcons li = LauncherIcons.obtain(context)) {
+            return li.createBadgedIconBitmap(fancy.newFaceDrawable(time));
+        }
+    }
+
+    private static int fancyFrameKey(DataThemeFancyClock fancy, Calendar time) {
+        int key = time.get(Calendar.HOUR_OF_DAY) * 60 + time.get(Calendar.MINUTE);
+        return fancy.second != null ? key * 60 + time.get(Calendar.SECOND) : key;
+    }
+
+    private Bitmap currentFancyFrame() {
+        Calendar now = Calendar.getInstance();
+        int key = fancyFrameKey(mFancy, now);
+        if (key != mFancyFrameKey) {
+            mFancyFrame = renderFancyFrame(mContext, mFancy, now).icon;
+            mFancyFrameKey = key;
+        }
+        return mFancyFrame;
+    }
+
     @Override
     protected void drawInternal(Canvas canvas, Rect bounds) {
+        if (mFancy != null) {
+            canvas.drawBitmap(currentFancyFrame(), null, bounds, mPaint);
+            return;
+        }
         super.drawInternal(canvas, bounds);
         float scaleX = getBounds().width() / (float) mBitmap.getWidth();
         float scaleY = getBounds().height() / (float) mBitmap.getHeight();

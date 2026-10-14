@@ -36,6 +36,7 @@ public class COUIThemeOverlay {
     private static final String BASE_CONFIG_NEW = "android.content.res.OplusBaseConfiguration";
     private static final String COLOR_MATERIAL_ENABLE = "color_material_enable";
     private static final int COMPAT_VERSION = 12000;
+    private static final int DREAM_COMPAT_VERSION = 16000;
     private static final int COUI_CUSTOM_FALG = 131072;
     private static final int COUI_CUSTOM_THEME_FLAG = 256;
     private static final int COUI_ONLINE_FALG = 1048576;
@@ -72,7 +73,13 @@ public class COUIThemeOverlay {
     private static final Class<?> sCouiViewInflaterClass = COUIComponentsViewInflater.class;
 
     static {
-        mThemeOverlayName = canReachFrameworkWrapper() ? WRAPPER_CLASS_NEW : COUICompatUtil.getInstance().getConfigurationName();
+        if (canReachFrameworkWrapper()) {
+            mThemeOverlayName = WRAPPER_CLASS_NEW;
+        } else if (com.coui.appcompat.compat.CouiPlatform.isDreamRuntime()) {
+            mThemeOverlayName = com.coui.appcompat.compat.CouiPlatform.DREAM_CONFIGURATION_WRAPPER;
+        } else {
+            mThemeOverlayName = COUICompatUtil.getInstance().getConfigurationName();
+        }
         mThemeO = isThemeO();
         mThemeR = isThemeR();
         mThemeP = isThemeP() && COUIVersionUtil.getOSVersionCode() > 0;
@@ -84,8 +91,9 @@ public class COUIThemeOverlay {
 
     private boolean canReachBaseConfiguration() {
         // In-tree stub OplusBaseConfiguration would make Class.forName succeed on AOSP;
-        // require a real ColorOS runtime (OplusBuild) instead.
-        return com.coui.appcompat.compat.CouiPlatform.isColorOsRuntime();
+        // require a real ColorOS runtime (OplusBuild) or the D960 Dream wrapper instead.
+        return com.coui.appcompat.compat.CouiPlatform.isColorOsRuntime()
+                || com.coui.appcompat.compat.CouiPlatform.isDreamRuntime();
     }
 
     private static boolean canReachFrameworkWrapper() {
@@ -115,6 +123,10 @@ public class COUIThemeOverlay {
             int parsedThemeVersion = !TextUtils.isEmpty(themeVersion) ? Integer.parseInt(themeVersion.trim()) : 0;
             if (parsedThemeVersion != 0) {
                 return parsedThemeVersion;
+            }
+            if (com.coui.appcompat.compat.CouiPlatform.isDreamRuntime()) {
+                // D960 ships only the current coui_theme_arrays_ids table, no o/r patch arrays.
+                return DREAM_COMPAT_VERSION;
             }
             try {
                 String compatThemeVersion = (String) method.invoke(null, COUICompatUtil.getInstance().getThemeVerisonName());
@@ -286,7 +298,7 @@ public class COUIThemeOverlay {
             } else {
                 resId = R.array.coui_theme_arrays_single;
             }
-            if (resId == 0 || themeIndex == -1) {
+            if (resId == 0 || themeIndex < 0) {
                 return;
             }
             TypedArray typedArrayObtainTypedArray = context.getResources().obtainTypedArray(resId);

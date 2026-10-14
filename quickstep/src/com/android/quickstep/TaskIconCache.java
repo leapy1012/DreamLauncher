@@ -41,6 +41,7 @@ import com.android.launcher3.icons.BaseIconFactory;
 import com.android.launcher3.icons.BaseIconFactory.IconOptions;
 import com.android.launcher3.icons.BitmapInfo;
 import com.android.launcher3.icons.LauncherIconProvider;
+import com.android.launcher3.icons.LauncherIcons;
 import com.android.launcher3.util.DisplayController;
 import com.android.launcher3.util.DisplayController.DisplayInfoChangeListener;
 import com.android.launcher3.util.DisplayController.Info;
@@ -248,10 +249,11 @@ public class TaskIconCache implements DisplayInfoChangeListener {
     @WorkerThread
     private BitmapInfo getBitmapInfo(Drawable drawable, int userId,
             int primaryColor, boolean isInstantApp) {
-        try (BaseIconFactory bif = getIconFactory()) {
+        // Same factory as workspace icons: theme PNGs are remasked full-bleed instead of
+        // being shrunk onto a primary-color/white wrapper plate.
+        try (LauncherIcons bif = LauncherIcons.obtain(mContext)) {
             bif.setWrapperBackgroundColor(primaryColor);
 
-            // User version code O, so that the icon is always wrapped in an adaptive icon container
             return bif.createBadgedIconBitmap(drawable,
                     new IconOptions().setUser(UserHandle.of(userId))
                             .setInstantApp(isInstantApp)

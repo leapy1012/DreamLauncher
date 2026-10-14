@@ -32,10 +32,12 @@ import android.os.UserHandle;
 
 import androidx.annotation.VisibleForTesting;
 
+import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.icons.LauncherIconProvider;
 import com.android.launcher3.icons.IconProvider.IconChangeListener;
 import com.android.launcher3.util.Executors.SimpleThreadFactory;
 import com.android.launcher3.util.MainThreadInitializedObject;
+import com.android.launcher3.util.SimpleBroadcastReceiver;
 import com.android.quickstep.util.GroupTask;
 import com.android.quickstep.util.TaskVisualsChangeListener;
 import com.android.systemui.shared.recents.model.Task;
@@ -86,6 +88,13 @@ public class RecentsModel implements IconChangeListener, TaskStackChangeListener
 
         TaskStackChangeListeners.getInstance().registerTaskStackListener(this);
         iconProvider.registerIconChangeListener(this, MAIN_EXECUTOR.getHandler());
+
+        // /data/theme applies do not send OVERLAY_CHANGED, so the task icon cache would
+        // keep the previous theme's icons.
+        new SimpleBroadcastReceiver(intent -> {
+            RECENTS_MODEL_EXECUTOR.execute(() -> iconProvider.reloadDataThemeIcons(true));
+            mIconCache.clearCache();
+        }).register(context, LauncherAppState.ACTION_DATA_THEME_APPLIED);
     }
 
     public TaskIconCache getIconCache() {

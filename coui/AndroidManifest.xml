@@ -1,2 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest package="com.coui.appcompat" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.coui.appcompat">
+
+    <application>
+        <!-- Opts every COUI app into the system accent color files (OPPO OplusMaterialFile). -->
+        <meta-data
+            android:name="color_material_enable"
+            android:value="true" />
+    </application>
+</manifest>

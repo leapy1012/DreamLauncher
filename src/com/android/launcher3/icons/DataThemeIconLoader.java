@@ -79,7 +79,7 @@ public final class DataThemeIconLoader {
         putStem("ic_launcher_gallery3d", "com.android.gallery3d", "com.android.gallery");
         putStem("ic_launcher_smsmms", "com.android.mms", "com.android.messaging");
         putStem("ic_launcher_calender", "gd.app.calendar", "com.android.calendar", "com.google.android.calendar");
-        putStem("ic_launcher_clock", "com.android.deskclock");
+        putStem("ic_launcher_clock", "gd.app.clock", "com.android.deskclock");
         putStem("ic_launcher_calcultor", "com.android.calculator2", "com.android.calculator", "gd.app.calculator");
         putStem("ic_launcher_music", "gd.app.musicplayer", "com.android.music");
         putStem("ic_launcher_video", "gd.app.video");

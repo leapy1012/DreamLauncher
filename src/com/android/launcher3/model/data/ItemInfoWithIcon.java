@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 
 import com.android.launcher3.icons.BitmapInfo;
 import com.android.launcher3.icons.BitmapInfo.DrawableCreationFlags;
+import com.android.launcher3.icons.DataThemeFancyClock;
 import com.android.launcher3.icons.FastBitmapDrawable;
 import com.android.launcher3.logging.FileLog;
 import com.android.launcher3.pm.PackageInstallInfo;
@@ -41,6 +42,9 @@ import android.text.TextUtils;
 public abstract class ItemInfoWithIcon extends ItemInfo {
 
     public static final String TAG = "ItemInfoDebug";
+
+    /** D960 clock app; live/theme clock icon like {@code R.string.dynamic_clock_pkg}. */
+    private static final String DREAM_CLOCK_PKG = "gd.app.clock";
 
     /**
      * The bitmap for the application icon
@@ -255,7 +259,12 @@ public abstract class ItemInfoWithIcon extends ItemInfo {
         String pkg = context.getResources().getString(R.string.dynamic_clock_pkg);
 		ComponentName componentName = this.getTargetComponent();
         if(componentName != null) {
-			if (componentName.getPackageName().equals(pkg)) {
+            boolean isClock = componentName.getPackageName().equals(pkg)
+                    || DREAM_CLOCK_PKG.equals(componentName.getPackageName());
+            DataThemeFancyClock fancyClock = isClock ? DataThemeFancyClock.get() : null;
+            if (fancyClock != null) {
+                drawable = new DynamicClockIcon(context, fancyClock);
+            } else if (isClock && !DataThemeFancyClock.hasDataThemeIcons()) {
                 int resId = R.drawable.ic_live_alarmclock;
                 String themedName = Settings.Global.getString(context.getContentResolver(), "themed");
                 if (TextUtils.isEmpty(themedName)) {
