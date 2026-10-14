@@ -299,7 +299,7 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
             }
             for (int i = 0; i < taskCount; i++) {
                 TaskView tv = requireTaskViewAt(i);
-                tv.setMenuShortcutAlpha(tv == focused ? 1f : 0f);
+                setMenuShortcutAlpha(tv, tv == focused ? 1f : 0f);
             }
             return;
         }
@@ -311,12 +311,12 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
             TaskView tv = requireTaskViewAt(i);
             if (tv == nearest) {
                 // Active / nearest card always keeps a full-opacity menu (Oppo idle + settle-safe).
-                tv.setMenuShortcutAlpha(1f);
+                setMenuShortcutAlpha(tv, 1f);
                 continue;
             }
             float halfPage = tv.getMeasuredWidth() / 2f;
             if (halfPage <= 0f) {
-                tv.setMenuShortcutAlpha(0f);
+                setMenuShortcutAlpha(tv, 0f);
                 continue;
             }
             // Match OplusBasePagedOrientationHandler.ScrollState.updateInterpolation.
@@ -328,7 +328,13 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
             float curved = (float) ((-Math.cos(linear * Math.PI) / 2.0) + 0.5);
             // getCurveAlphaForCurveInterpolation(curved, minAlpha=0) → lerp(1, 0, curved), 0.1 steps
             float menuAlpha = Math.round((1f - curved) * 10f) / 10f;
-            tv.setMenuShortcutAlpha(menuAlpha);
+            setMenuShortcutAlpha(tv, menuAlpha);
+        }
+    }
+
+    private static void setMenuShortcutAlpha(TaskView taskView, float alpha) {
+        if (taskView instanceof DreamTaskViewImpl) {
+            ((DreamTaskViewImpl) taskView).setMenuShortcutAlpha(alpha);
         }
     }
 

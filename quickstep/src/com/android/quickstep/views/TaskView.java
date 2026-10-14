@@ -112,7 +112,6 @@ import com.android.systemui.shared.recents.model.ThumbnailData;
 import com.android.systemui.shared.recents.utilities.PreviewPositionHelper;
 import com.android.systemui.shared.system.ActivityManagerWrapper;
 import com.android.systemui.shared.system.QuickStepContract;
-import com.android.systemui.navigationbar.buttons.KeyButtonRipple;
 
 import java.lang.annotation.Retention;
 import java.util.Arrays;
@@ -121,9 +120,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 
 /**
  * A task in the Recents view.
@@ -393,11 +389,6 @@ public class TaskView extends FrameLayout implements Reusable {
     private float mStableAlpha = 1;
 
     private int mTaskViewId = -1;
-    private int mMenuControlHeight;
-    private int mTaskTopMargin;
-    private ImageView mHxyMenu;
-    private RelativeLayout mHxyTaskMenuControl;
-    private TextView mHxyTaskName;
     /**
      * Index 0 will contain taskID of left/top task, index 1 will contain taskId of bottom/right
      */
@@ -464,7 +455,6 @@ public class TaskView extends FrameLayout implements Reusable {
                                 /* boundsBuilder= */ this::updateBorderBounds,
                                 /* targetView= */ this));
         ta.recycle();
-        mTaskTopMargin = context.getResources().getDimensionPixelSize(R.dimen.hxy_task_thumbnail_top_margin);
     }
 
     protected void updateBorderBounds(Rect bounds) {
@@ -513,10 +503,6 @@ public class TaskView extends FrameLayout implements Reusable {
         mSnapshotView = findViewById(R.id.snapshot);
         mIconView = findViewById(R.id.icon);
         mIconTouchDelegate = new TransformingTouchDelegate(mIconView);
-        mHxyTaskName = (TextView) findViewById(R.id.hxy_task_name);
-        mHxyMenu = (ImageView) findViewById(R.id.hxy_task_menu);
-        mHxyTaskMenuControl = (RelativeLayout) findViewById(R.id.hxy_taskview_menu_control);
-        mMenuControlHeight = getResources().getDimensionPixelSize(R.dimen.hxy_task_menu_height);
     }
 
     @Override
@@ -1080,7 +1066,7 @@ public class TaskView extends FrameLayout implements Reusable {
         }
     }
 
-    private boolean showTaskMenu(IconView iconView) {
+    protected boolean showTaskMenu(IconView iconView) {
         if (!getRecentsView().canLaunchFullscreenTask()) {
             // Don't show menu when selecting second split screen app
             return true;
@@ -1132,27 +1118,6 @@ public class TaskView extends FrameLayout implements Reusable {
                 requestDisallowInterceptTouchEvent(true);
                 return showTaskMenu(iconView);
             });
-            if (mHxyMenu != null) {
-                mHxyMenu.setAlpha(1f);
-                mHxyMenu.setEnabled(true);
-                mHxyMenu.setClickable(true);
-                mHxyMenu.setFocusable(true);
-                mHxyMenu.setVisibility(VISIBLE);
-                ensureMenuButtonRipple();
-                mHxyMenu.setOnClickListener(v -> {
-                    if (confirmSecondSplitSelectApp()) {
-                        return;
-                    }
-                    showTaskMenu(iconView);
-                });
-                mHxyMenu.setOnLongClickListener(v -> {
-                    requestDisallowInterceptTouchEvent(true);
-                    return showTaskMenu(iconView);
-                });
-            }
-            if (mHxyTaskName != null) { 
-                mHxyTaskName.setText(TaskUtils.getTitle(getContext(), getTask()));
-            }
         } else {
             iconView.setDrawable(null);
             iconView.setOnClickListener(null);
@@ -1169,27 +1134,23 @@ public class TaskView extends FrameLayout implements Reusable {
         PagedOrientationHandler orientationHandler = orientationState.getOrientationHandler();
         boolean isRtl = getLayoutDirection() == LAYOUT_DIRECTION_RTL;
         DeviceProfile deviceProfile = mActivity.getDeviceProfile();
-        int thumbnailTopMargin = deviceProfile.overviewTaskThumbnailTopMarginPx;
+
         boolean isGridTask = isGridTask();
-        if (deviceProfile.isMultiWindowMode) {
-            LayoutParams iconParams = (LayoutParams) mIconView.getLayoutParams();
-            int taskIconHeight = deviceProfile.overviewTaskIconSizePx;
-            int taskMargin = deviceProfile.overviewTaskMarginPx;
-            int taskIconMargin = thumbnailTopMargin - taskIconHeight - taskMargin;
-            orientationHandler.setTaskIconParams(iconParams, taskIconMargin, taskIconHeight,
+        LayoutParams iconParams = (LayoutParams) mIconView.getLayoutParams();
+
+        int thumbnailTopMargin = deviceProfile.overviewTaskThumbnailTopMarginPx;
+        int taskIconHeight = deviceProfile.overviewTaskIconSizePx;
+        int taskMargin = deviceProfile.overviewTaskMarginPx;
+
+        orientationHandler.setTaskIconParams(iconParams, taskMargin, taskIconHeight,
                 thumbnailTopMargin, isRtl);
-            iconParams.width = iconParams.height = taskIconHeight;
-            mIconView.setLayoutParams(iconParams);
-            mIconView.setRotation(orientationHandler.getDegreesRotated());
-            int iconDrawableSize = isGridTask ? deviceProfile.overviewTaskIconDrawableSizeGridPx
+        iconParams.width = iconParams.height = taskIconHeight;
+        mIconView.setLayoutParams(iconParams);
+
+        mIconView.setRotation(orientationHandler.getDegreesRotated());
+        int iconDrawableSize = isGridTask ? deviceProfile.overviewTaskIconDrawableSizeGridPx
                 : deviceProfile.overviewTaskIconDrawableSizePx;
-            mIconView.setDrawableSize(iconDrawableSize, iconDrawableSize);
-            return;
-        }
-        mIconView.setDrawableSize(getContext().getResources().getDimensionPixelSize(R.dimen.hxy_task_thumbnail_icon_size), getContext().getResources().getDimensionPixelSize(R.dimen.hxy_task_thumbnail_icon_size));
-        FrameLayout.LayoutParams snapshotParams = (FrameLayout.LayoutParams) mSnapshotView.getLayoutParams();
-        snapshotParams.topMargin = thumbnailTopMargin;
-        mSnapshotView.setLayoutParams(snapshotParams);
+        mIconView.setDrawableSize(iconDrawableSize, iconDrawableSize);
     }
 
     protected void setThumbnailOrientation(RecentsOrientedState orientationState) {
@@ -1297,36 +1258,6 @@ public class TaskView extends FrameLayout implements Reusable {
     public void setStableAlpha(float parentAlpha) {
         mStableAlpha = parentAlpha;
         setAlpha(mStableAlpha);
-    }
-
-    /**
-     * Oppo {@code OplusTaskHeaderView.setShortCutAlpha}: only the menu glyph fades; icon/title stay.
-     * Ignore taps when largely transparent (off-center cards).
-     */
-    public void setMenuShortcutAlpha(float alpha) {
-        if (mHxyMenu == null) {
-            return;
-        }
-        float clamped = Utilities.boundToRange(alpha, 0f, 1f);
-        mHxyMenu.setAlpha(clamped);
-        boolean interactive = clamped > 0.4f;
-        mHxyMenu.setEnabled(interactive);
-        mHxyMenu.setClickable(interactive);
-        mHxyMenu.setFocusable(interactive);
-    }
-
-    /** ColorOS {@code OplusKeyButtonRipple} oval press feedback on the ⋮ control. */
-    private void ensureMenuButtonRipple() {
-        if (mHxyMenu == null) {
-            return;
-        }
-        if (mHxyMenu.getBackground() instanceof KeyButtonRipple) {
-            return;
-        }
-        KeyButtonRipple ripple = new KeyButtonRipple(
-                getContext(), mHxyMenu, R.dimen.hxy_task_menu_icon_size);
-        ripple.setType(KeyButtonRipple.Type.OVAL);
-        mHxyMenu.setBackground(ripple);
     }
 
     @Override

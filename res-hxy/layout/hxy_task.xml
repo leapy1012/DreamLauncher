@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.android.quickstep.views.TaskView xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
+<com.android.quickstep.views.DreamTaskViewImpl xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:launcher="http://schemas.android.com/apk/res-auto"
     android:focusable="true"
@@ -55,4 +55,4 @@
             android:src="@drawable/ic_task_menu"
             android:tint="#ffffff"/>
     </RelativeLayout>
-</com.android.quickstep.views.TaskView>
+</com.android.quickstep.views.DreamTaskViewImpl>

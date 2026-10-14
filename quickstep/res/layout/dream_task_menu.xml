@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ColorOS-style Recents ⋮ menu host — transparent; RoundFrameLayout owns surface + shadow. -->
+<com.android.quickstep.views.DreamTaskMenuViewImpl
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@android:color/transparent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:visibility="invisible"
+    android:forceDarkAllowed="true" />

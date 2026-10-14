@@ -48,7 +48,7 @@ import android.widget.FrameLayout;
  *
  * (Icon loading sold separately, fees may apply. Shipping & Handling for Overlays not included).
  */
-public class GroupedTaskView extends TaskView {
+public class GroupedTaskView extends DreamTaskViewImpl {
 
     @Nullable
     private Task mSecondaryTask;
