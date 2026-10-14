@@ -546,10 +546,10 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
             }
             if (layout != null) {
                 layout.markCellsAsUnoccupiedForView(mDragInfo.cell);
-                if (layout instanceof Hotseat) {
+                if (layout instanceof DreamHotseat) {
                     // Ensure dock session is active so onDragExit can pack+center even
                     // if the first drop-layout switch is hotseat → workspace.
-                    ((Hotseat) layout).onItemDragStartedFromDock();
+                    ((DreamHotseat) layout).onItemDragStartedFromDock();
                 }
             }
         }
@@ -631,7 +631,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
         // Folder-sourced (and other non-Workspace) drags never hit Workspace.onDropCompleted,
         // so the dock session must end here or TypeToOut / make-room state sticks and
         // folder-dissolve reflow is skipped while mDragSessionActive remains true.
-        Hotseat hotseat = mLauncher.getHotseat();
+        DreamHotseat hotseat = DreamHotseat.from(mLauncher.getHotseat());
         if (hotseat != null) {
             hotseat.endDragSession();
         }
@@ -2190,7 +2190,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
                 && info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT) {
             return true;
         }
-        Hotseat hotseat = mLauncher.getHotseat();
+        DreamHotseat hotseat = DreamHotseat.from(mLauncher.getHotseat());
         if (hotseat == null || hotseat.canAcceptNewIcon()) {
             return true;
         }
@@ -2217,8 +2217,8 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
     boolean willCreateUserFolder(ItemInfo info, CellLayout target, int[] targetCell,
                                  float distance, boolean considerTimeout) {
         View dropOverView;
-        if (target instanceof Hotseat) {
-            dropOverView = ((Hotseat) target).findFolderMergeTarget(
+        if (target instanceof DreamHotseat) {
+            dropOverView = ((DreamHotseat) target).findFolderMergeTarget(
                     mDragViewVisualCenter[0], mDragViewVisualCenter[1], info);
             if (dropOverView == null) {
                 return false;
@@ -2310,8 +2310,8 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
     boolean createUserFolderIfNecessary(View newView, int container, CellLayout target,
             int[] targetCell, float distance, boolean external, DragObject d) {
         View v;
-        if (target instanceof Hotseat) {
-            Hotseat hotseat = (Hotseat) target;
+        if (target instanceof DreamHotseat) {
+            DreamHotseat hotseat = (DreamHotseat) target;
             v = hotseat.findFolderMergeTarget(mDragViewVisualCenter[0], mDragViewVisualCenter[1],
                     d != null ? d.dragInfo : null);
             if (v == null) {
@@ -2384,8 +2384,8 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
                 fi.addItem(destInfo);
                 fi.addItem(sourceInfo);
             }
-            if (target instanceof Hotseat) {
-                ((Hotseat) target).reflowIcons();
+            if (target instanceof DreamHotseat) {
+                ((DreamHotseat) target).reflowIcons();
             }
             return true;
         }
@@ -2552,7 +2552,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
                         // Hotseat addViewToCellLayout rejects out-of-range cellX and leaves
                         // the view detached — expand before reparent (pack may have shrunk).
                         if (hasMovedIntoHotseat) {
-                            Hotseat hotseat = mLauncher.getHotseat();
+                            DreamHotseat hotseat = DreamHotseat.from(mLauncher.getHotseat());
                             if (hotseat != null) {
                                 hotseat.ensureGridHoldsCell(mTargetCell[0]);
                             }
@@ -2590,7 +2590,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
                     // Collapse make-room → idle seats before DragView flies in so the
                     // land pixel matches endDragSession (no post-drop retarget).
                     if (hasMovedIntoHotseat) {
-                        Hotseat hotseat = mLauncher.getHotseat();
+                        DreamHotseat hotseat = DreamHotseat.from(mLauncher.getHotseat());
                         if (hotseat != null) {
                             hotseat.prepareFinalDropLanding(cell);
                             mTargetCell[0] = lp.getCellX();
@@ -3189,7 +3189,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
         // likely) — waiting for DRAG_MODE_CREATE_FOLDER lets make-room spring the
         // target away first, so folder create fails whenever n < max.
         if (mLauncher.isHotseatLayout(mDragTargetLayout)) {
-            Hotseat hotseat = mLauncher.getHotseat();
+            DreamHotseat hotseat = DreamHotseat.from(mLauncher.getHotseat());
             boolean folderMode = mDragMode == DRAG_MODE_CREATE_FOLDER
                     || mDragMode == DRAG_MODE_ADD_TO_FOLDER;
             boolean mergeLikely = !folderMode && hotseat != null
@@ -3320,7 +3320,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
             dv.setLockToHotseatRow(false, 0f);
             return;
         }
-        Hotseat hotseat = mLauncher.getHotseat();
+        DreamHotseat hotseat = DreamHotseat.from(mLauncher.getHotseat());
         if (hotseat == null) {
             return;
         }
@@ -3347,7 +3347,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
      */
     private boolean setDropLayoutForDragObject(DragObject d, float centerX, float centerY) {
         CellLayout layout = null;
-        Hotseat hotseat = mLauncher.getHotseat();
+        DreamHotseat hotseat = DreamHotseat.from(mLauncher.getHotseat());
         if (shouldUseHotseatAsDropLayout(d)) {
             // Finger may still be inside the hotseat hit rect while the DragView has
             // already cleared the dock (mtk1 case). For a dock-sourced drag, use the
@@ -3485,7 +3485,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
         if (mLauncher.isHotseatLayout(mDragTargetLayout)) {
             // Make-room vacant cells: getChildAt(mTargetCell) often misses the icon under
             // the finger when n < max. Resolve by icon center (Oppo canMergeFolder).
-            Hotseat hotseat = mLauncher.getHotseat();
+            DreamHotseat hotseat = DreamHotseat.from(mLauncher.getHotseat());
             View merge = hotseat != null
                     ? hotseat.findFolderMergeTarget(mDragViewVisualCenter[0],
                     mDragViewVisualCenter[1], dragObject.dragInfo) : null;
@@ -3799,7 +3799,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
                     info.spanX, info.spanY);
             cellLayout.onDropChild(view);
             if (mLauncher.isHotseatLayout(cellLayout)) {
-                Hotseat hotseat = mLauncher.getHotseat();
+                DreamHotseat hotseat = DreamHotseat.from(mLauncher.getHotseat());
                 if (hotseat != null) {
                     hotseat.prepareFinalDropLanding(view);
                     CellLayoutLayoutParams lp =
@@ -4029,7 +4029,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
         mDragInfo = null;
 
         // Oppo-style dock: end expand session and pack + center after drop/cancel.
-        Hotseat hotseat = mLauncher.getHotseat();
+        DreamHotseat hotseat = DreamHotseat.from(mLauncher.getHotseat());
         if (hotseat != null) {
             hotseat.endDragSession();
         }
@@ -4053,8 +4053,8 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
         if (v instanceof DropTarget) {
             mDragController.removeDropTarget((DropTarget) v);
         }
-        if (parentCell instanceof Hotseat) {
-            ((Hotseat) parentCell).reflowIcons();
+        if (parentCell instanceof DreamHotseat) {
+            ((DreamHotseat) parentCell).reflowIcons();
         }
     }
 

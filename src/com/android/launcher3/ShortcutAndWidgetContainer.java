@@ -165,9 +165,9 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
             // Hotseat: setup() writes grid x into lp.x. Drawing uses animX (see layoutChild).
             // Springing / unlocked make-room: keep animX. Locked idle: sync animX ← grid.
             if (lp.isHotseatChild) {
-                boolean springing = getParent() instanceof Hotseat hotseat
+                boolean springing = getParent() instanceof DreamHotseat hotseat
                         && hotseat.isChildIconSpringMoving(child);
-                boolean holdVisual = getParent() instanceof Hotseat hotseat
+                boolean holdVisual = getParent() instanceof DreamHotseat hotseat
                         && hotseat.shouldHoldVisualSeats();
                 if (springing || holdVisual) {
                     lp.x = lp.animX;

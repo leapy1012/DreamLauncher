@@ -25,6 +25,7 @@ import androidx.annotation.Nullable;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DragSource;
+import com.android.launcher3.DreamHotseat;
 import com.android.launcher3.DropTarget;
 import com.android.launcher3.Hotseat;
 import com.android.launcher3.Launcher;
@@ -107,11 +108,11 @@ public class LauncherDelegate {
 
                     // Hotseat: removeWorkspaceItem → reflowIcons packs neighbors into the
                     // folder seat before Notes is re-inserted. Defer pack until after add.
-                    Hotseat hotseat = null;
+                    DreamHotseat hotseat = null;
                     if (info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT
                             || info.container
                             == LauncherSettings.Favorites.CONTAINER_HOTSEAT_PREDICTION) {
-                        hotseat = mLauncher.getHotseat();
+                        hotseat = DreamHotseat.from(mLauncher.getHotseat());
                         if (hotseat != null) {
                             hotseat.beginDeferReflow();
                         }

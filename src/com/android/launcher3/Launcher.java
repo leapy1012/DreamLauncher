@@ -2919,8 +2919,8 @@ public class Launcher extends StatefulActivity<LauncherState>
             viewToFocus.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_FOCUSED);
         }
         workspace.requestLayout();
-        if (mHotseat != null) {
-            mHotseat.reflowIcons();
+        if (mHotseat instanceof DreamHotseat dreamHotseat) {
+            dreamHotseat.reflowIcons();
         }
     }
 

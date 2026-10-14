@@ -5,7 +5,7 @@ import android.view.View;
 
 import androidx.dynamicanimation.animation.FloatValueHolder;
 
-import com.android.launcher3.Hotseat;
+import com.android.launcher3.DreamHotseat;
 import com.android.launcher3.ShortcutAndWidgetContainer;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
@@ -23,14 +23,14 @@ public final class HotseatSpringMotion {
     /** Oppo {@code HotseatSpringCenterLayoutAnimation.STIFFNESS}. */
     private static final float STIFFNESS = 300f;
 
-    private final Hotseat mHotseat;
+    private final DreamHotseat mHotseat;
     private final ArrayMap<View, COUISpringAnimation> mAnimXSprings = new ArrayMap<>();
     /** Last spring final requested per child — skip DRAG_OVER noise retargets. */
     private final ArrayMap<View, Integer> mAnimXFinals = new ArrayMap<>();
     private int mRunningCount;
     private boolean mMoving;
 
-    public HotseatSpringMotion(Hotseat hotseat) {
+    public HotseatSpringMotion(DreamHotseat hotseat) {
         mHotseat = hotseat;
     }
 
