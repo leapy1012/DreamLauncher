@@ -649,9 +649,17 @@ public class OverviewDockView extends HorizontalScrollView {
     }
 
     @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        // Side padding must be in place before the container is measured: padding changed
+        // later (e.g. in onSizeChanged, inside layout) leaves the container measured too
+        // narrow, and HorizontalScrollView then clamps every centering scroll to 0.
+        updateSidePadding(MeasureSpec.getSize(widthMeasureSpec));
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        updateSidePadding(w);
         scheduleRecenterAfterLayout();
     }
 
@@ -732,9 +740,6 @@ public class OverviewDockView extends HorizontalScrollView {
         if (count == 0) {
             setVisibility(GONE);
             return;
-        }
-        if (getWidth() > 0) {
-            updateSidePadding(getWidth());
         }
         TaskIconCache iconCache = RecentsModel.INSTANCE.get(getContext()).getIconCache();
         for (int visual = 0; visual < count; visual++) {
