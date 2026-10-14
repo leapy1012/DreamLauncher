@@ -3613,7 +3613,9 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
             cellLayout.setItemPlacementDirty(true);
             onAlarm(null, cellLayout);
             cellLayout.clearDragOutlines();
-            cellLayout.completeReorder(null);
+            if (cellLayout instanceof DreamCellLayout dreamCellLayout) {
+                dreamCellLayout.completeReorder(null);
+            }
             cleanupFolderCreation();
             setCurrentDropOverCell(-1, -1);
             mLauncher.setAutoFull(false);
@@ -4779,7 +4781,9 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
             return;
         }
         cellLayout.clearDragOutlines();
-        cellLayout.clearHintAnimations();
+        if (cellLayout instanceof DreamCellLayout dreamCellLayout) {
+            dreamCellLayout.clearHintAnimations();
+        }
     }
     //end add
 

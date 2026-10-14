@@ -92,7 +92,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
-import com.android.launcher3.folder.large.LargeFolderProxy;
 
 public class CellLayout extends ViewGroup {
     private static final String TAG = "CellLayout";
@@ -1003,22 +1002,14 @@ public class CellLayout extends ViewGroup {
         cellToCenterPoint(cellX, cellY, outPoint);
     }
 
-    private boolean isLargeFolder(int[] targetCell) {
-        return LargeFolderProxy.isLargeFolder(getChildAt(targetCell[0], targetCell[1]));
-    }
-
     /**
      * Returns the max distance from the center of a cell that can accept a drop to create a folder.
-     * Oppo: {@code (reorderRadius + iconSize*0.92/2) / 2} so the outer ring of an occupied
-     * cell can still trigger push-reorder instead of always creating a folder.
      */
     public float getFolderCreationRadius(int[] targetCell) {
         DeviceProfile grid = mActivity.getDeviceProfile();
         float iconVisibleRadius = ICON_VISIBLE_AREA_FACTOR * grid.iconSizePx / 2;
-        float iconPart = isLargeFolder(targetCell)
-                ? LargeFolderProxy.getMaxDistanceForFolderCreation()
-                : iconVisibleRadius;
-        return (getReorderRadius(targetCell, 1, 1) + iconPart) / 2f;
+        // Halfway between reorder radius and icon.
+        return (getReorderRadius(targetCell, 1, 1) + iconVisibleRadius) / 2;
     }
 
     /**
@@ -1029,11 +1020,7 @@ public class CellLayout extends ViewGroup {
         getWorkspaceCellVisualCenter(targetCell[0], targetCell[1], centerPoint);
 
         Rect cellBoundsWithSpacing = mTempRect;
-        if (isLargeFolder(targetCell)) {
-            cellToRect(targetCell[0], targetCell[1], 2, 2, cellBoundsWithSpacing);
-        } else {
-            cellToRect(targetCell[0], targetCell[1], spanX, spanY, cellBoundsWithSpacing);
-        }
+        getReorderCellBounds(targetCell, spanX, spanY, cellBoundsWithSpacing);
         cellBoundsWithSpacing.inset(-mBorderSpace.x / 2, -mBorderSpace.y / 2);
 
         if (canCreateFolder(getChildAt(targetCell[0], targetCell[1])) && spanX == 1 && spanY == 1) {
@@ -1051,6 +1038,11 @@ public class CellLayout extends ViewGroup {
                 spanY * cellBoundsWithSpacing.height() / 2f);
     }
 
+    /** Cell bounds used by {@link #getReorderRadius} for the item at {@code targetCell}. */
+    protected void getReorderCellBounds(int[] targetCell, int spanX, int spanY, Rect outBounds) {
+        cellToRect(targetCell[0], targetCell[1], spanX, spanY, outBounds);
+    }
+
     public int getCellWidth() {
         return mCellWidth;
     }
@@ -1064,6 +1056,15 @@ public class CellLayout extends ViewGroup {
         mFixedHeight = height;
     }
 
+    /** Cell height for a measure pass where the cell size is not fixed. */
+    protected int calculateCellHeight(int childHeightSize, int cellWidth) {
+        return DeviceProfile.calculateCellHeight(childHeightSize, mBorderSpace.y, mCountY);
+    }
+
+    /** Called from {@link #onMeasure} once the cell dimensions are known. */
+    protected void onCellDimensionsMeasured() {
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int widthSpecMode = MeasureSpec.getMode(widthMeasureSpec);
@@ -1072,16 +1073,11 @@ public class CellLayout extends ViewGroup {
         int heightSize =  MeasureSpec.getSize(heightMeasureSpec);
         int childWidthSize = widthSize - (getPaddingLeft() + getPaddingRight());
         int childHeightSize = heightSize - (getPaddingTop() + getPaddingBottom());
-        DeviceProfile deviceProfile = mActivity.getDeviceProfile();
 
         if (mFixedCellWidth < 0 || mFixedCellHeight < 0) {
             int cw = DeviceProfile.calculateCellWidth(childWidthSize, mBorderSpace.x,
                     mCountX);
-            int ch = DeviceProfile.calculateCellHeight(childHeightSize, mBorderSpace.y,
-                    mCountY);
-            if (mContainerType == WORKSPACE && deviceProfile.useOppoWorkspaceMetrics()) {
-                ch = deviceProfile.getOppoWorkspaceCellHeight(cw);
-            }
+            int ch = calculateCellHeight(childHeightSize, cw);
             if (cw != mCellWidth || ch != mCellHeight) {
                 mCellWidth = cw;
                 mCellHeight = ch;
@@ -1090,9 +1086,7 @@ public class CellLayout extends ViewGroup {
             }
         }
 
-        if (this.mContainerType == WORKSPACE) {
-            LargeFolderProxy.initFolderIconSize(getContext(), this.mActivity, this.mCellWidth, this.mCellHeight, getPaddingLeft(), getPaddingRight(), getPaddingTop(), getPaddingTop());
-        }
+        onCellDimensionsMeasured();
 
         int newWidth = childWidthSize;
         int newHeight = childHeightSize;
@@ -1508,98 +1502,8 @@ public class CellLayout extends ViewGroup {
             bestXY[0] = -1;
             bestXY[1] = -1;
         }
-        //begin add
-        if (mContainerType == WORKSPACE && Launcher.isAutoFull()) {
-            if (relativeXPos == -1 && relativeYPos == -1) {
-                int lastOccupiedCellIndex = getLastOccupiedCellIndex();
-                if (isDragOriginViewFromOuter()) {
-                    lastOccupiedCellIndex++;
-                }
-                int[] cellXY = getCellXY(lastOccupiedCellIndex);
-                bestXY[0] = cellXY[0];
-                bestXY[1] = cellXY[1];
-            } else if (spanX == 1 && spanY == 1 && bestXY[0] != -1 && bestXY[1] != -1) {
-                int index = getIndex(bestXY[0], bestXY[1]);
-                int lastOccupiedCellIndex2 = getLastOccupiedCellIndex();
-                if (isDragOriginViewFromOuter()) {
-                    lastOccupiedCellIndex2++;
-                }
-                if (index > lastOccupiedCellIndex2) {
-                    int[] cellXY2 = getCellXY(lastOccupiedCellIndex2);
-                    bestXY[0] = cellXY2[0];
-                    bestXY[1] = cellXY2[1];
-                }
-            }
-        }
-        //end add
         return bestXY;
     }
-
-    //begin add
-
-    private int getLastOccupiedCellIndex() {
-        int childCount = mShortcutsAndWidgets.getChildCount();
-        int cellIndex = -1;
-        for (int i = 0; i < childCount; i++) {
-            CellLayoutLayoutParams layoutParams = (CellLayoutLayoutParams) mShortcutsAndWidgets.getChildAt(i).getLayoutParams();
-            int index = getIndex(layoutParams.getCellX(), layoutParams.getCellY());
-            if (layoutParams.cellHSpan == 1 && layoutParams.cellVSpan == 1 && cellIndex < index) {
-                cellIndex = index;
-            }
-        }
-        return cellIndex;
-    }
-
-
-    private boolean isDragOriginViewFromOuter() {
-        try {
-            return getParentView(getWorkspace().getDragInfo().cell, CellLayout.class) != this;
-        } catch (Exception unused) {
-            return true;
-        }
-
-    }
-
-
-    private View getParentView(View view, Class cls) {
-        if (cls.isInstance(view)) {
-            return view;
-        }
-
-        if (view.getParent() instanceof View) {
-            return (CellLayout) getParentView((View) view.getParent(), cls);
-        }
-        return null;
-    }
-
-
-    public void completeReorder(View view) {
-        if (isItemPlacementDirty()) {
-            commitTempPlacement(view);
-            completeAndClearReorderPreviewAnimations();
-            setItemPlacementDirty(false);
-            setUseTempCoords(false);
-            mPreviousSolution = null;
-        }
-
-    }
-
-
-    public void clearHintAnimations() {
-        for (Reorderable reorderable : mShakeAnimators.keySet()) {
-            ReorderPreviewAnimation reorderPreviewAnimation = mShakeAnimators.get(reorderable);
-            if (reorderPreviewAnimation != null && reorderPreviewAnimation.isModeHint()) {
-                try {
-                    reorderPreviewAnimation.finishAnimation();
-                    mShakeAnimators.remove(reorderable);
-                } catch (Exception unused) {
-
-                }
-            }
-        }
-    }
-
-    // end add
 
     public GridOccupancy getOccupied() {
         return mOccupied;
@@ -1897,12 +1801,6 @@ public class CellLayout extends ViewGroup {
             a.setDuration(REORDER_ANIMATION_DURATION);
             a.start();
         }
-
-        //begin add
-        public boolean isModeHint() {
-            return this.mode == MODE_HINT;
-        }
-        //end add
     }
 
     protected void completeAndClearReorderPreviewAnimations() {
@@ -2437,221 +2335,99 @@ public class CellLayout extends ViewGroup {
     // This method tries to find a reordering solution which satisfies the push mechanic by trying
     // to push items in each of the cardinal directions, in an order based on the direction vector
     // passed.
-    private boolean attemptPushInDirection(ArrayList<View> intersectingViews, Rect occupied,
+    protected boolean attemptPushInDirection(ArrayList<View> intersectingViews, Rect occupied,
             int[] direction, View ignoreView, ItemConfiguration solution) {
-        //begin add
-        if(mContainerType != WORKSPACE || !Launcher.isAutoFull() || occupied.width() != 1 || occupied.height() != 1 || ((ignoreView != null || isDragging()) && isOccupiedByWidget(solution, occupied))) {
-            if ((Math.abs(direction[0]) + Math.abs(direction[1])) > 1) {
-                // If the direction vector has two non-zero components, we try pushing
-                // separately in each of the components.
-                int temp = direction[1];
-                direction[1] = 0;
+        if ((Math.abs(direction[0]) + Math.abs(direction[1])) > 1) {
+            // If the direction vector has two non-zero components, we try pushing
+            // separately in each of the components.
+            int temp = direction[1];
+            direction[1] = 0;
 
-                if (pushViewsToTempLocation(intersectingViews, occupied, direction,
-                        ignoreView, solution)) {
-                    return true;
-                }
-                direction[1] = temp;
-                temp = direction[0];
-                direction[0] = 0;
-
-                if (pushViewsToTempLocation(intersectingViews, occupied, direction,
-                        ignoreView, solution)) {
-                    return true;
-                }
-                // Revert the direction
-                direction[0] = temp;
-
-                // Now we try pushing in each component of the opposite direction
-                direction[0] *= -1;
-                direction[1] *= -1;
-                temp = direction[1];
-                direction[1] = 0;
-                if (pushViewsToTempLocation(intersectingViews, occupied, direction,
-                        ignoreView, solution)) {
-                    return true;
-                }
-
-                direction[1] = temp;
-                temp = direction[0];
-                direction[0] = 0;
-                if (pushViewsToTempLocation(intersectingViews, occupied, direction,
-                        ignoreView, solution)) {
-                    return true;
-                }
-                // revert the direction
-                direction[0] = temp;
-                direction[0] *= -1;
-                direction[1] *= -1;
-
-            } else {
-                // If the direction vector has a single non-zero component, we push first in the
-                // direction of the vector
-                if (pushViewsToTempLocation(intersectingViews, occupied, direction,
-                        ignoreView, solution)) {
-                    return true;
-                }
-                // Then we try the opposite direction
-                direction[0] *= -1;
-                direction[1] *= -1;
-                if (pushViewsToTempLocation(intersectingViews, occupied, direction,
-                        ignoreView, solution)) {
-                    return true;
-                }
-                // Switch the direction back
-                direction[0] *= -1;
-                direction[1] *= -1;
-
-                // If we have failed to find a push solution with the above, then we try
-                // to find a solution by pushing along the perpendicular axis.
-
-                // Swap the components
-                int temp = direction[1];
-                direction[1] = direction[0];
-                direction[0] = temp;
-                if (pushViewsToTempLocation(intersectingViews, occupied, direction,
-                        ignoreView, solution)) {
-                    return true;
-                }
-
-                // Then we try the opposite direction
-                direction[0] *= -1;
-                direction[1] *= -1;
-                if (pushViewsToTempLocation(intersectingViews, occupied, direction,
-                        ignoreView, solution)) {
-                    return true;
-                }
-                // Switch the direction back
-                direction[0] *= -1;
-                direction[1] *= -1;
-
-                // Swap the components back
-                temp = direction[1];
-                direction[1] = direction[0];
-                direction[0] = temp;
+            if (pushViewsToTempLocation(intersectingViews, occupied, direction,
+                    ignoreView, solution)) {
+                return true;
             }
-            return false;
-        } else if(getFirstAvailableCellIndex(this.mOccupied.cells) == -1) {
-            return false;
+            direction[1] = temp;
+            temp = direction[0];
+            direction[0] = 0;
+
+            if (pushViewsToTempLocation(intersectingViews, occupied, direction,
+                    ignoreView, solution)) {
+                return true;
+            }
+            // Revert the direction
+            direction[0] = temp;
+
+            // Now we try pushing in each component of the opposite direction
+            direction[0] *= -1;
+            direction[1] *= -1;
+            temp = direction[1];
+            direction[1] = 0;
+            if (pushViewsToTempLocation(intersectingViews, occupied, direction,
+                    ignoreView, solution)) {
+                return true;
+            }
+
+            direction[1] = temp;
+            temp = direction[0];
+            direction[0] = 0;
+            if (pushViewsToTempLocation(intersectingViews, occupied, direction,
+                    ignoreView, solution)) {
+                return true;
+            }
+            // revert the direction
+            direction[0] = temp;
+            direction[0] *= -1;
+            direction[1] *= -1;
+
         } else {
-            setStrictOccupied(occupied,ignoreView,solution);
-            return true;
-        }
-        //end add
-    }
-
-    //begin add
-    private void setStrictOccupied(Rect rect, View view, ItemConfiguration itemConfiguration) {
-        GridOccupancy gridOccupancy = new GridOccupancy(this.mCountX, this.mCountY);
-        ArrayList<CellAndSpan> arrayList = new ArrayList<>();
-        for (CellAndSpan cellAndSpan : itemConfiguration.map.values()) {
-            if (cellAndSpan.spanX == 1 && cellAndSpan.spanY == 1) {
-                arrayList.add(cellAndSpan);
-            } else {
-                gridOccupancy.markCells(cellAndSpan, true);
+            // If the direction vector has a single non-zero component, we push first in the
+            // direction of the vector
+            if (pushViewsToTempLocation(intersectingViews, occupied, direction,
+                    ignoreView, solution)) {
+                return true;
             }
-        }
-        if (isDragging()) {
-            gridOccupancy.markCells(rect, true);
-            CellAndSpan cellAndSpan = itemConfiguration.map.get(view);
-            if (cellAndSpan != null) {
-                arrayList.remove(cellAndSpan);
+            // Then we try the opposite direction
+            direction[0] *= -1;
+            direction[1] *= -1;
+            if (pushViewsToTempLocation(intersectingViews, occupied, direction,
+                    ignoreView, solution)) {
+                return true;
             }
-        }
+            // Switch the direction back
+            direction[0] *= -1;
+            direction[1] *= -1;
 
-        arrayList.sort((Comparator<CellAndSpan>) this::setStrictOccupied);
-        int count = this.mCountX * this.mCountY;
-        for (CellAndSpan cellAndSpan : arrayList) {
-            int i = 0;
-            while (true) {
-                if (i < count) {
-                    int[] cellXY = getCellXY(i);
-                    int x = cellXY[0];
-                    int y = cellXY[1];
-                    if (!gridOccupancy.cells[x][y]) {
-                        cellAndSpan.cellX = x;
-                        cellAndSpan.cellY = y;
-                        gridOccupancy.markCells(cellAndSpan, true);
-                        break;
-                    }
-                    i++;
-                }
+            // If we have failed to find a push solution with the above, then we try
+            // to find a solution by pushing along the perpendicular axis.
+
+            // Swap the components
+            int temp = direction[1];
+            direction[1] = direction[0];
+            direction[0] = temp;
+            if (pushViewsToTempLocation(intersectingViews, occupied, direction,
+                    ignoreView, solution)) {
+                return true;
             }
-        }
-    }
 
-
-    public int setStrictOccupied(CellAndSpan cellAndSpan, CellAndSpan cellAndSpan2) {
-        return getIndex(cellAndSpan.cellX, cellAndSpan.cellY) - getIndex(cellAndSpan2.cellX, cellAndSpan2.cellY);
-    }
-
-
-    private boolean isOccupiedByWidget(ItemConfiguration itemConfiguration, Rect rect) {
-        boolean isOccupiedByWidget = false;
-        for (CellAndSpan value : itemConfiguration.map.values()) {
-            if (value.spanX > 1 || value.spanY > 1) {
-                if (rect.left >= value.cellX && rect.left < value.cellX + value.spanX
-                        && rect.top >= value.cellY && rect.top < value.cellY + value.spanY) {
-                    isOccupiedByWidget = true;
-                    break;
-                }
+            // Then we try the opposite direction
+            direction[0] *= -1;
+            direction[1] *= -1;
+            if (pushViewsToTempLocation(intersectingViews, occupied, direction,
+                    ignoreView, solution)) {
+                return true;
             }
+            // Switch the direction back
+            direction[0] *= -1;
+            direction[1] *= -1;
+
+            // Swap the components back
+            temp = direction[1];
+            direction[1] = direction[0];
+            direction[0] = temp;
         }
-        return isOccupiedByWidget;
+        return false;
     }
-
-
-    private boolean isDragging() {
-        try {
-            return getWorkspace().mLauncher.getDragController().isDragging();
-        } catch (Exception unused) {
-            return false;
-        }
-    }
-
-
-    private int getIndex(int cellX, int cellY) {
-        return (mCountX * cellY) + cellX;
-    }
-
-
-    private int[] getCellXY(int index) {
-        if (index == -1) {
-            return new int[]{-1, -1};
-        }
-        return new int[]{index % mCountX, index / mCountX};
-    }
-
-
-    private int getFirstAvailableCellIndex(boolean[][] cell) {
-        boolean[][] transpose = transpose(cell);
-        int cellIndex = -1;
-        for (int i = 0; i < transpose.length; i++) {
-            for (int j = 0; j < transpose[i].length; j++){
-                if (!transpose[i][j]) {
-                    cellIndex = getIndex(j, i);
-                    break;
-                }
-            }
-            if (cellIndex != -1) {
-                break;
-            }
-        }
-        return cellIndex;
-    }
-
-
-    private boolean[][] transpose(boolean[][] cell) {
-        boolean[][] result = new boolean[cell[0].length][cell.length];
-        for (int i = 0; i < cell.length; i++) {
-            for (int j = 0; j < cell[0].length; j++) {
-                result[j][i] = cell[i][j];
-            }
-        }
-        return result;
-    }
-
-    //end add
 
     /*
      * Returns a pair (x, y), where x,y are in {-1, 0, 1} corresponding to vector between
