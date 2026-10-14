@@ -421,6 +421,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                 }
             };
 
+    // OverScroll constants
+    private static final int OVERSCROLL_PAGE_SNAP_ANIMATION_DURATION = 270;
+
     private static final int DEFAULT_ACTIONS_VIEW_ALPHA_ANIMATION_DURATION = 300;
 
     protected static final int DISMISS_TASK_DURATION = 300;
@@ -1500,6 +1503,47 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         }
 
         return isHandlingTouch();
+    }
+
+    @Override
+    protected void onNotSnappingToPageInFreeScroll() {
+        int finalPos = mScroller.getFinalX();
+        if (finalPos > mMinScroll && finalPos < mMaxScroll) {
+            int firstPageScroll = getScrollForPage(!mIsRtl ? 0 : getPageCount() - 1);
+            int lastPageScroll = getScrollForPage(!mIsRtl ? getPageCount() - 1 : 0);
+
+            // If scrolling ends in the half of the added space that is closer to
+            // the end, settle to the end. Otherwise snap to the nearest page.
+            // If flinging past one of the ends, don't change the velocity as it
+            // will get stopped at the end anyway.
+            int pageSnapped = finalPos < (firstPageScroll + mMinScroll) / 2
+                    ? mMinScroll
+                    : finalPos > (lastPageScroll + mMaxScroll) / 2
+                            ? mMaxScroll
+                            : getScrollForPage(mNextPage);
+
+            if (showAsGrid()) {
+                if (isSplitSelectionActive()) {
+                    return;
+                }
+                TaskView taskView = getTaskViewAt(mNextPage);
+                // Snap to fully visible focused task and clear all button.
+                boolean shouldSnapToFocusedTask = taskView != null && taskView.isFocusedTask()
+                        && isTaskViewFullyVisible(taskView);
+                boolean shouldSnapToClearAll = mNextPage == indexOfChild(mClearAllButton);
+                if (!shouldSnapToFocusedTask && !shouldSnapToClearAll) {
+                    return;
+                }
+            }
+
+            mScroller.setFinalX(pageSnapped);
+            // Ensure the scroll/snap doesn't happen too fast;
+            int extraScrollDuration = OVERSCROLL_PAGE_SNAP_ANIMATION_DURATION
+                    - mScroller.getDuration();
+            if (extraScrollDuration > 0) {
+                mScroller.extendDuration(extraScrollDuration);
+            }
+        }
     }
 
     @Override
