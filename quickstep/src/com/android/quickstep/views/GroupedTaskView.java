@@ -36,7 +36,6 @@ import com.android.systemui.shared.system.InteractionJankMonitorWrapper;
 
 import java.util.HashMap;
 import java.util.function.Consumer;
-import android.widget.FrameLayout;
 
 /**
  * TaskView that contains and shows thumbnails for not one, BUT TWO(!!) tasks
@@ -53,7 +52,7 @@ public class GroupedTaskView extends DreamTaskViewImpl {
     @Nullable
     private Task mSecondaryTask;
     private TaskThumbnailView mSnapshotView2;
-    private IconView mIconView2;
+    protected IconView mIconView2;
     @Nullable
     private CancellableTask<ThumbnailData> mThumbnailLoadRequest2;
     @Nullable
@@ -365,20 +364,15 @@ public class GroupedTaskView extends DreamTaskViewImpl {
         int taskIconHeight = deviceProfile.overviewTaskIconSizePx;
         boolean isRtl = getLayoutDirection() == LAYOUT_DIRECTION_RTL;
 
-        int iconDrawableSize1 = getContext().getResources().getDimensionPixelSize(R.dimen.hxy_task_thumbnail_icon_size);
-        mIconView.setDrawableSize(iconDrawableSize1, iconDrawableSize1);
-        mIconView2.setDrawableSize(iconDrawableSize1, iconDrawableSize1);
-        FrameLayout.LayoutParams iconParams = (FrameLayout.LayoutParams) mIconView.getLayoutParams();
-        FrameLayout.LayoutParams iconParams2 = (FrameLayout.LayoutParams) mIconView2.getLayoutParams();
-        iconParams.topMargin = getContext().getResources().getDimensionPixelSize(R.dimen.split_recent_first_snapview_topmargin1);
-        iconParams2.topMargin = getContext().getResources().getDimensionPixelSize(R.dimen.split_recent_first_snapview_topmargin1);
-        mIconView.setLayoutParams(iconParams);
-        mIconView2.setLayoutParams(iconParams2);
-
+        onPrepareSplitIconPlacement();
         getPagedOrientationHandler().setSplitIconParams(mIconView, mIconView2,
                 taskIconHeight, mSnapshotView.getMeasuredWidth(), mSnapshotView.getMeasuredHeight(),
                 getMeasuredHeight(), getMeasuredWidth(), isRtl, deviceProfile,
                 mSplitBoundsConfig);
+    }
+
+    /** Called before the split icons are positioned, so subclasses can adjust them first. */
+    protected void onPrepareSplitIconPlacement() {
     }
 
     private void updateSecondaryDwbPlacement() {
