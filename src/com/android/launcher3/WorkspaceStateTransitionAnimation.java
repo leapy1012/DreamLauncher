@@ -59,6 +59,7 @@ import com.android.launcher3.LauncherState.ScaleAndTranslation;
 import com.android.launcher3.anim.PendingAnimation;
 import com.android.launcher3.anim.PropertySetter;
 import com.android.launcher3.anim.SpringAnimationBuilder;
+import com.android.launcher3.folder.DreamFolder;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.graphics.Scrim;
 import com.android.launcher3.graphics.SysUiScrim;
@@ -191,9 +192,9 @@ public class WorkspaceStateTransitionAnimation {
 
         // ColorOS: keep folder hidden for the whole Overview→NORMAL transition; reveal
         // only in onStateSetEnd once scrim/companions have settled (avoids white flash).
-        if (openFolder != null) {
+        if (openFolder instanceof DreamFolder dreamFolder) {
             if (state.overviewUi) {
-                openFolder.setSuppressedForOverview(true);
+                dreamFolder.setSuppressedForOverview(true);
             }
             // else: stay suppressed until Launcher.onStateSetEnd unsuppresses.
         }

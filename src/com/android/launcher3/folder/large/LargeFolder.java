@@ -3,9 +3,9 @@ package com.android.launcher3.folder.large;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.View;
-import com.android.launcher3.folder.Folder;
+import com.android.launcher3.folder.DreamFolder;
 
-public class LargeFolder extends Folder {
+public class LargeFolder extends DreamFolder {
     public LargeFolder(Context context, AttributeSet attrs) {
         super(context, attrs);
     }

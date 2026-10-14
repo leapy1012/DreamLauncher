@@ -25,6 +25,7 @@ import com.android.launcher3.Utilities;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
 import com.android.launcher3.folder.ClippedFolderIconLayoutRule;
+import com.android.launcher3.folder.DreamFolder;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.FolderPagedView;
@@ -73,7 +74,7 @@ public class LargeFolderAnimationManager {
     private final Context mContext;
     private final int mDuration;
     private final int mWorkspaceContentDuration;
-    private final Folder mFolder;
+    private final DreamFolder mFolder;
     private final FolderIcon mFolderIcon;
     private final boolean mIsOpening;
     private final Launcher mLauncher;
@@ -100,7 +101,7 @@ public class LargeFolderAnimationManager {
         }
     }
 
-    public LargeFolderAnimationManager(Folder folder, boolean isOpening) {
+    public LargeFolderAnimationManager(DreamFolder folder, boolean isOpening) {
         mFolder = folder;
         mContent = folder.mContent;
         mFolderIcon = folder.getFolderIcon();

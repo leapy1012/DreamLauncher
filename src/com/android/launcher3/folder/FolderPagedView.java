@@ -167,7 +167,7 @@ public class FolderPagedView extends DreamPagedViewImpl<PageIndicatorDots>
         }
         WorkspaceItemInfo addInfo = new WorkspaceItemInfo();
         addInfo.title = getContext().getResources().getString(R.string.str_add_to);
-        addInfo.itemType = Folder.ITEM_TYPE_ADD_FOLDER;
+        addInfo.itemType = DreamFolder.ITEM_TYPE_ADD_FOLDER;
         addInfo.rank = items.size();
         this.mAdd = createAddView(addInfo);
         if (shouldShowAddTile() && addFlag) {
@@ -330,12 +330,14 @@ public class FolderPagedView extends DreamPagedViewImpl<PageIndicatorDots>
         page.setGridSize(mGridCountX, mGridCountY);
         // ColorOS OplusFolderPagedView: empty-cell tap closes; icons keep their own click targets.
         page.setOnClickListener(v -> {
-            if (mFolder != null && !mFolder.hasEmptyLongPressOccurred()) {
+            if (mFolder != null && !(mFolder instanceof DreamFolder dreamFolder
+                    && dreamFolder.hasEmptyLongPressOccurred())) {
                 mFolder.close(true);
             }
         });
         // Oppo OplusFolderPagedView: empty-cell long-press → ToggleBar / EDIT_MODE.
-        page.setOnLongClickListener(v -> mFolder.handleEmptyLongPressToEditMode());
+        page.setOnLongClickListener(v -> mFolder instanceof DreamFolder dreamFolder
+                && dreamFolder.handleEmptyLongPressToEditMode());
 
         addView(page, -1, generateDefaultLayoutParams());
         return page;
@@ -754,8 +756,8 @@ public class FolderPagedView extends DreamPagedViewImpl<PageIndicatorDots>
      */
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        if (mFolder != null
-                && mFolder.isFullBleedOpenFolder()
+        if (mFolder instanceof DreamFolder dreamFolder
+                && dreamFolder.isFullBleedOpenFolder()
                 && ev.getAction() == MotionEvent.ACTION_UP
                 && !isHandlingTouch()) {
             mFolder.completeDragExit();

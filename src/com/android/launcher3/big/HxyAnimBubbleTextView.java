@@ -21,7 +21,7 @@ import com.android.launcher3.R;
 import com.android.launcher3.big.anim.TranslateParams;
 import com.android.launcher3.big.anim.RotateParms;
 import com.android.launcher3.BuildConfig;
-import static com.android.launcher3.folder.Folder.ITEM_TYPE_ADD_FOLDER;
+import static com.android.launcher3.folder.DreamFolder.ITEM_TYPE_ADD_FOLDER;
 import android.provider.Settings;
 import static com.android.launcher3.util.Themes.KEY_THEMED;
 

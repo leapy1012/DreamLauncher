@@ -165,6 +165,7 @@ import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.dragndrop.DragOptions;
 import com.android.launcher3.dragndrop.DragView;
 import com.android.launcher3.dragndrop.LauncherDragController;
+import com.android.launcher3.folder.DreamFolder;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderGridOrganizer;
 import com.android.launcher3.folder.FolderIcon;
@@ -1388,8 +1389,9 @@ public class Launcher extends StatefulActivity<LauncherState>
                 AbstractFloatingView topView = AbstractFloatingView.getTopOpenView(Launcher.this);
                 if (topView != null) {
                     // ColorOS: do not auto-dismiss an open folder retained through Overview.
-                    if (mRetainOpenFolderThroughOverview && topView instanceof Folder) {
-                        ((Folder) topView).setSuppressedForOverview(false);
+                    if (mRetainOpenFolderThroughOverview
+                            && topView instanceof DreamFolder dreamFolder) {
+                        dreamFolder.setSuppressedForOverview(false);
                         setLauncherBlurBg(true);
                         // Clear immediately so a subsequent desktop Home closes the folder.
                         mRetainOpenFolderThroughOverview = false;
