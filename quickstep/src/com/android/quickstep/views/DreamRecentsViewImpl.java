@@ -213,6 +213,12 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
     }
 
     @Override
+    public void setDisallowScrollToClearAll(boolean disallowScrollToClearAll) {
+        // The hidden Clear-all page must not extend the scroll range past the oldest task.
+        super.setDisallowScrollToClearAll(mClearAllCenter || disallowScrollToClearAll);
+    }
+
+    @Override
     protected void onPageEndTransition() {
         super.onPageEndTransition();
         if (mOverviewDockView != null) {
