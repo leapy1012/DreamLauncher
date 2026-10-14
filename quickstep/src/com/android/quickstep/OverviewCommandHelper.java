@@ -26,7 +26,6 @@ import android.os.SystemClock;
 import android.os.Trace;
 import android.os.Handler;
 import android.view.View;
-import android.util.Log;
 
 import androidx.annotation.BinderThread;
 import androidx.annotation.NonNull;
@@ -66,7 +65,7 @@ public class OverviewCommandHelper {
      * Size of 2 should be enough. We'll toss in one more because we're kind hearted.
      */
     private final static int MAX_QUEUE_SIZE = 3;
-    private final static String TAG = "OverviewCommandHelper";
+
     private static final String TRANSITION_NAME = "Transition:toOverview";
 
     private final TouchInteractionService mService;
@@ -132,8 +131,6 @@ public class OverviewCommandHelper {
     @BinderThread
     public void addCommand(int type) {
         if (mPendingCommands.size() >= MAX_QUEUE_SIZE) {
-            Log.e(TAG, "size too large");
-            clearPendingCommands();
             return;
         }
         CommandInfo cmd = new CommandInfo(type);
@@ -166,13 +163,6 @@ public class OverviewCommandHelper {
 
         if (callbackList != null) {
             callbackList.add(() -> scheduleNextTask(cmd));
-            if (recents.getRemoteTargetHandles() == null) {
-                RunnableList callbackLists = callbackList;
-                new Handler().postDelayed(() -> {
-                MAIN_EXECUTOR.execute(callbackLists::executeAllAndDestroy);}, 500);
-            } else {
-                MAIN_EXECUTOR.execute(callbackList::executeAllAndDestroy);
-            }
             return false;
         } else {
             recents.startHome();
