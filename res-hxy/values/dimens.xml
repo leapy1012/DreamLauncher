@@ -109,12 +109,6 @@
     <dimen name="hxyos_homepage_radius_size">12dp</dimen>
     <dimen name="hotseat_text_height_margin">40dp</dimen>
 
-    <dimen name="hxy_task_menu_top_margin">20dp</dimen>
-    <!-- Oppo color_task_header_view_icon_size / color_task_header_view_menu_size -->
-    <dimen name="hxy_task_thumbnail_icon_size">34dp</dimen>
-    <dimen name="hxy_task_menu_icon_size">42dp</dimen>
-    <dimen name="hxy_task_thumbnail_top_margin">72dp</dimen>
-    <dimen name="hxy_task_menu_height">42dp</dimen>
     <dimen name="split_recent_first_snapview_topmargin1">40dp</dimen>
 
     <!-- Oppo workspace baseline metrics. -->

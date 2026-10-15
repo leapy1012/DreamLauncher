@@ -28,7 +28,7 @@ public class DreamGroupedTaskView extends GroupedTaskView {
 
     @Override
     protected void onPrepareSplitIconPlacement() {
-        int iconSize = getResources().getDimensionPixelSize(R.dimen.hxy_task_thumbnail_icon_size);
+        int iconSize = getResources().getDimensionPixelSize(R.dimen.color_task_header_view_icon_size);
         int topMargin = getResources().getDimensionPixelSize(
                 R.dimen.split_recent_first_snapview_topmargin1);
         mIconView.setDrawableSize(iconSize, iconSize);

@@ -23,6 +23,15 @@
          live tile is drawn with the TouchInteractionService context. -->
     <dimen name="recent_task_view_radius">16dp</dimen>
 
+    <!-- Task card header (Oppo oplus_task_header) -->
+    <dimen name="color_task_thumbnail_top_margin">72dp</dimen>
+    <dimen name="color_task_header_view_icon_size">34dp</dimen>
+    <dimen name="color_task_header_view_icon_padding_start">10dp</dimen>
+    <dimen name="color_task_header_title_view_margin_start">7dp</dimen>
+    <dimen name="color_task_header_view_text_size">14sp</dimen>
+    <dimen name="color_task_header_view_menu_size">42dp</dimen>
+    <dimen name="dream_task_header_margin_top">20dp</dimen>
+
     <!--  Task Menu View (ColorOS COUI popup card)  -->
     <dimen name="task_menu_corner_radius">@dimen/coui_round_corner_m</dimen>
     <dimen name="task_menu_item_corner_radius">4dp</dimen>

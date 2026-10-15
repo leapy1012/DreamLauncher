@@ -761,7 +761,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         mClearAllButton = (ClearAllButton) LayoutInflater.from(context)
                 .inflate(R.layout.overview_clear_all_button, this, false);
         mClearAllButton.setOnClickListener(this::dismissAllTasks);
-        mTaskViewPool = new ViewPool<>(context, this, R.layout.hxy_task, 20 /* max size */,
+        mTaskViewPool = new ViewPool<>(context, this, R.layout.dream_task, 20 /* max size */,
                 10 /* initial size */);
         mGroupedTaskViewPool = new ViewPool<>(context, this,
                 R.layout.task_grouped, 20 /* max size */, 10 /* initial size */);

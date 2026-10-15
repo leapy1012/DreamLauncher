@@ -288,7 +288,7 @@ public class DreamTaskMenuViewImpl extends TaskMenuView {
 
         BaseDragLayer dragLayer = mActivity.getDragLayer();
         Rect insets = dragLayer.getInsets();
-        View anchor = mTaskView.findViewById(R.id.hxy_task_menu);
+        View anchor = mTaskView.findViewById(R.id.menu_button);
         if (anchor == null) {
             anchor = taskContainer.getThumbnailView();
         }

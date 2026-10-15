@@ -329,8 +329,9 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
     }
 
     private static void setMenuShortcutAlpha(TaskView taskView, float alpha) {
-        if (taskView instanceof DreamTaskViewImpl) {
-            ((DreamTaskViewImpl) taskView).setMenuShortcutAlpha(alpha);
+        if (taskView instanceof DreamTaskViewImpl dreamTaskView
+                && dreamTaskView.getHeader() != null) {
+            dreamTaskView.getHeader().setShortCutAlpha(alpha);
         }
     }
 

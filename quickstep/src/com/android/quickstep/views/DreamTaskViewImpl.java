@@ -8,28 +8,25 @@ import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.R;
-import com.android.launcher3.Utilities;
 import com.android.launcher3.touch.PagedOrientationHandler;
 import com.android.quickstep.TaskUtils;
 import com.android.quickstep.util.RecentsOrientedState;
-import com.android.systemui.navigationbar.buttons.KeyButtonRipple;
+import com.dream.quickstep.views.DreamTaskHeaderView;
 
 /**
- * ColorOS-style Recents task card on top of the AOSP {@link TaskView}: header with the app name
- * and a ⋮ menu button that opens {@link DreamTaskMenuViewImpl}.
+ * ColorOS-style Recents task card on top of the AOSP {@link TaskView}: a
+ * {@link DreamTaskHeaderView} with the app name and a ⋮ menu button that opens
+ * {@link DreamTaskMenuViewImpl}.
  */
 public class DreamTaskViewImpl extends TaskView {
 
     @Nullable
-    private ImageView mHxyMenu;
-    @Nullable
-    private TextView mHxyTaskName;
+    private DreamTaskHeaderView mHeader;
 
     public DreamTaskViewImpl(Context context) {
         this(context, null);
@@ -51,37 +48,34 @@ public class DreamTaskViewImpl extends TaskView {
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
-        mHxyTaskName = findViewById(R.id.hxy_task_name);
-        mHxyMenu = findViewById(R.id.hxy_task_menu);
+        mHeader = findViewById(R.id.dream_task_header);
+    }
+
+    @Nullable
+    public DreamTaskHeaderView getHeader() {
+        return mHeader;
     }
 
     @Override
     protected void setIcon(IconView iconView, @Nullable Drawable icon) {
         super.setIcon(iconView, icon);
-        if (icon == null) {
+        if (icon == null || mHeader == null) {
             return;
         }
-        if (mHxyMenu != null) {
-            mHxyMenu.setAlpha(1f);
-            mHxyMenu.setEnabled(true);
-            mHxyMenu.setClickable(true);
-            mHxyMenu.setFocusable(true);
-            mHxyMenu.setVisibility(VISIBLE);
-            ensureMenuButtonRipple();
-            mHxyMenu.setOnClickListener(v -> {
-                if (confirmSecondSplitSelectApp()) {
-                    return;
-                }
-                showTaskMenu(iconView);
-            });
-            mHxyMenu.setOnLongClickListener(v -> {
-                requestDisallowInterceptTouchEvent(true);
-                return showTaskMenu(iconView);
-            });
-        }
-        if (mHxyTaskName != null) {
-            mHxyTaskName.setText(TaskUtils.getTitle(getContext(), getTask()));
-        }
+        mHeader.setShortCutAlpha(1f);
+        ImageView menuBtn = mHeader.getMenuBtn();
+        menuBtn.setVisibility(VISIBLE);
+        menuBtn.setOnClickListener(v -> {
+            if (confirmSecondSplitSelectApp()) {
+                return;
+            }
+            showTaskMenu(iconView);
+        });
+        menuBtn.setOnLongClickListener(v -> {
+            requestDisallowInterceptTouchEvent(true);
+            return showTaskMenu(iconView);
+        });
+        mHeader.setTitle(TaskUtils.getTitle(getContext(), getTask()));
     }
 
     @Override
@@ -116,41 +110,12 @@ public class DreamTaskViewImpl extends TaskView {
             mIconView.setDrawableSize(iconDrawableSize, iconDrawableSize);
             return;
         }
-        int iconSize = getResources().getDimensionPixelSize(R.dimen.hxy_task_thumbnail_icon_size);
+        int iconSize = getResources().getDimensionPixelSize(
+                R.dimen.color_task_header_view_icon_size);
         mIconView.setDrawableSize(iconSize, iconSize);
         FrameLayout.LayoutParams snapshotParams =
                 (FrameLayout.LayoutParams) mSnapshotView.getLayoutParams();
         snapshotParams.topMargin = thumbnailTopMargin;
         mSnapshotView.setLayoutParams(snapshotParams);
-    }
-
-    /**
-     * Oppo {@code OplusTaskHeaderView.setShortCutAlpha}: only the menu glyph fades; icon/title stay.
-     * Ignore taps when largely transparent (off-center cards).
-     */
-    public void setMenuShortcutAlpha(float alpha) {
-        if (mHxyMenu == null) {
-            return;
-        }
-        float clamped = Utilities.boundToRange(alpha, 0f, 1f);
-        mHxyMenu.setAlpha(clamped);
-        boolean interactive = clamped > 0.4f;
-        mHxyMenu.setEnabled(interactive);
-        mHxyMenu.setClickable(interactive);
-        mHxyMenu.setFocusable(interactive);
-    }
-
-    /** ColorOS {@code OplusKeyButtonRipple} oval press feedback on the ⋮ control. */
-    private void ensureMenuButtonRipple() {
-        if (mHxyMenu == null) {
-            return;
-        }
-        if (mHxyMenu.getBackground() instanceof KeyButtonRipple) {
-            return;
-        }
-        KeyButtonRipple ripple = new KeyButtonRipple(
-                getContext(), mHxyMenu, R.dimen.hxy_task_menu_icon_size);
-        ripple.setType(KeyButtonRipple.Type.OVAL);
-        mHxyMenu.setBackground(ripple);
     }
 }
