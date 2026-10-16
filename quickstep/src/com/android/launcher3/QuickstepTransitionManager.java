@@ -364,6 +364,12 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                     new TaskRestartedDuringLaunchListener();
             restartedListener.register(onEndCallback::executeAllAndDestroy);
             onEndCallback.add(restartedListener::unregister);
+            if (isLaunchingFromRecents(v, null /* targets */)) {
+                // Clip-reveal launches never report their end, and OverviewCommandHelper
+                // holds the next Recents command until this list runs.
+                mHandler.postDelayed(onEndCallback::executeAllAndDestroy,
+                        RECENTS_LAUNCH_DURATION);
+            }
 
             return new ActivityOptionsWrapper(options, onEndCallback);
         }
