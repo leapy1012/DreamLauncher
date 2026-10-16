@@ -167,10 +167,18 @@ public class FolderAdaptiveIcon extends AdaptiveIconDrawable {
         foregroundCanvas.restore();
 
         // Draw background
-        Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        backgroundPaint.setColor(bg.getBgColor());
         bg.drawShadow(backgroundCanvas);
-        backgroundCanvas.drawCircle(size / 2f, size / 2f, bg.getRadius(), backgroundPaint);
+        Drawable bgDrawable = bg.getBgDrawable();
+        if (bgDrawable != null) {
+            int radius = bg.getRadius();
+            bgDrawable.setBounds(size / 2 - radius, size / 2 - radius,
+                    size / 2 + radius, size / 2 + radius);
+            bgDrawable.draw(backgroundCanvas);
+        } else {
+            Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            backgroundPaint.setColor(bg.getBgColor());
+            backgroundCanvas.drawCircle(size / 2f, size / 2f, bg.getRadius(), backgroundPaint);
+        }
         bg.drawBackgroundStroke(backgroundCanvas);
     }
 

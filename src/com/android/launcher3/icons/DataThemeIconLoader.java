@@ -383,6 +383,7 @@ public final class DataThemeIconLoader {
     /** Drop cached OPPO launcher-pack style so the next wrap reloads from disk. */
     public static void clearPlateCache() {
         OplusStyleIconConverter.clearCache();
+        DreamThirdPartUtil.clearCache();
     }
 
     private static boolean isPlateStem(String stem) {

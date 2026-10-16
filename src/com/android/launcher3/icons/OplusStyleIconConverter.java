@@ -10,7 +10,6 @@
 package com.android.launcher3.icons;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -34,7 +33,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -54,22 +52,11 @@ import java.util.zip.ZipFile;
 public final class OplusStyleIconConverter {
     private static final String TAG = "OplusStyleIconConverter";
 
-    private static final String THEME_ROOT = "/data/theme/";
-    private static final String LAUNCHER_ANDROID = "com.android.launcher";
-    private static final String LAUNCHER_OPPO = "com.oppo.launcher";
-
     private static final String IPHONE_STYLE_BG = "iphone_style_bg.png";
     private static final String IPHONE_STYLE_FG = "iphone_style_fg.png";
     private static final String NEW_IPHONE_STYLE_BG = "new_iphone_style_bg.png";
     private static final String NEW_IPHONE_STYLE_MASK = "new_iphone_style_mask.png";
     private static final String THEME_INFO = "themeInfo.xml";
-
-    /** Same drawable search order as {@code OplusThirdPartUtil} for xxhdpi devices. */
-    private static final String[] DIRS_DRAWABLE_XXH = {
-            "res/drawable-xxhdpi/",
-            "res/drawable-xhdpi/",
-            "res/drawable-hdpi/",
-    };
 
     /** {@code OplusConvertIcon.COVER_ICON_RADIO} when themeInfo Scale is missing. */
     private static final float COVER_ICON_RADIO = 0.62f;
@@ -123,7 +110,7 @@ public final class OplusStyleIconConverter {
     }
 
     public static String stateToken() {
-        File pack = resolveLauncherPack();
+        File pack = DreamThirdPartUtil.getLauncherName();
         if (pack == null) return "oplus-style-none";
         return "oplus-style-" + pack.lastModified() + "-" + pack.length();
     }
@@ -395,7 +382,7 @@ public final class OplusStyleIconConverter {
     }
 
     private static void ensureLoaded() {
-        File pack = resolveLauncherPack();
+        File pack = DreamThirdPartUtil.getLauncherName();
         long stamp = pack == null ? 0 : pack.lastModified() + pack.length();
         synchronized (LOCK) {
             if (sResolved && stamp == sPackStamp
@@ -419,7 +406,7 @@ public final class OplusStyleIconConverter {
             sPackStamp = stamp;
             sResolved = true;
             if (pack == null) {
-                Log.i(TAG, "no launcher theme pack under " + THEME_ROOT);
+                Log.i(TAG, "no launcher theme pack under " + DreamThirdPartUtil.THEME_ROOT);
                 return;
             }
             loadFromPack(pack);
@@ -434,9 +421,9 @@ public final class OplusStyleIconConverter {
 
     private static void loadFromPack(@NonNull File pack) {
         // getIconBgType — OplusConvertIcon
-        boolean hasCoverBg = assetExists(pack, IPHONE_STYLE_BG);
-        boolean hasMask = assetExists(pack, NEW_IPHONE_STYLE_MASK);
-        boolean hasFg = assetExists(pack, IPHONE_STYLE_FG);
+        boolean hasCoverBg = DreamThirdPartUtil.assetExists(pack, IPHONE_STYLE_BG);
+        boolean hasMask = DreamThirdPartUtil.assetExists(pack, NEW_IPHONE_STYLE_MASK);
+        boolean hasFg = DreamThirdPartUtil.assetExists(pack, IPHONE_STYLE_FG);
         if (hasCoverBg) {
             sIconBgType = IconBgType.COVER;
             sNeedDrawForeground = hasFg;
@@ -459,10 +446,10 @@ public final class OplusStyleIconConverter {
         }
 
         if (sIconBgType == IconBgType.COVER) {
-            sPlateBg = decodeAsset(pack, IPHONE_STYLE_BG);
+            sPlateBg = DreamThirdPartUtil.decodeAsset(pack, IPHONE_STYLE_BG);
         } else {
-            sPlateBg = decodeAsset(pack, NEW_IPHONE_STYLE_BG);
-            sMask = decodeAsset(pack, NEW_IPHONE_STYLE_MASK);
+            sPlateBg = DreamThirdPartUtil.decodeAsset(pack, NEW_IPHONE_STYLE_BG);
+            sMask = DreamThirdPartUtil.decodeAsset(pack, NEW_IPHONE_STYLE_MASK);
             if (sMask != null && (sMask.getWidth() != NORMAL_ICON_SIZE
                     || sMask.getHeight() != NORMAL_ICON_SIZE)) {
                 Bitmap scaled = Bitmap.createScaledBitmap(
@@ -474,7 +461,7 @@ public final class OplusStyleIconConverter {
             }
         }
         if (sNeedDrawForeground) {
-            sPlateFg = decodeAsset(pack, IPHONE_STYLE_FG);
+            sPlateFg = DreamThirdPartUtil.decodeAsset(pack, IPHONE_STYLE_FG);
         }
         if (sPlateBg == null) {
             // COVER/MASK without a plate bitmap cannot wrap third-party icons.
@@ -490,77 +477,6 @@ public final class OplusStyleIconConverter {
                 sPlateBg = scaled;
             }
         }
-    }
-
-    /** {@code OplusThirdPartUtil.getLauncherName} — prefer com.android.launcher. */
-    @Nullable
-    private static File resolveLauncherPack() {
-        File android = new File(THEME_ROOT + LAUNCHER_ANDROID);
-        if (android.exists()) return android;
-        File oppo = new File(THEME_ROOT + LAUNCHER_OPPO);
-        if (oppo.exists()) return oppo;
-        return null;
-    }
-
-    private static boolean assetExists(@NonNull File pack, @NonNull String name) {
-        return openAsset(pack, name) != null;
-    }
-
-    @Nullable
-    private static Bitmap decodeAsset(@NonNull File pack, @NonNull String name) {
-        AssetStream as = openAsset(pack, name);
-        if (as == null) return null;
-        try {
-            BitmapFactory.Options opts = new BitmapFactory.Options();
-            opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
-            return BitmapFactory.decodeStream(as.stream, null, opts);
-        } finally {
-            as.close();
-        }
-    }
-
-    /**
-     * Open drawable from zip (OPPO) or expanded directory (Dream ThemeApplyEngine).
-     */
-    @Nullable
-    private static AssetStream openAsset(@NonNull File pack, @NonNull String name) {
-        if (pack.isDirectory()) {
-            for (String dir : DIRS_DRAWABLE_XXH) {
-                File f = new File(pack, dir + name);
-                if (f.isFile()) {
-                    try {
-                        return new AssetStream(new BufferedInputStream(new FileInputStream(f)),
-                                null);
-                    } catch (Exception e) {
-                        return null;
-                    }
-                }
-            }
-            return null;
-        }
-        if (!pack.isFile()) return null;
-        try {
-            ZipFile zip = new ZipFile(pack);
-            for (String dir : DIRS_DRAWABLE_XXH) {
-                ZipEntry entry = zip.getEntry(dir + name);
-                if (entry != null) {
-                    return new AssetStream(zip.getInputStream(entry), zip);
-                }
-            }
-            // Some packs use different path casing / nesting
-            Enumeration<? extends ZipEntry> en = zip.entries();
-            while (en.hasMoreElements()) {
-                ZipEntry e = en.nextElement();
-                String n = e.getName();
-                if (n != null && (n.endsWith("/" + name) || name.equals(n))) {
-                    return new AssetStream(zip.getInputStream(e), zip);
-                }
-            }
-            zip.close();
-        } catch (Exception e) {
-            Log.w(TAG, "openAsset zip failed " + name + ": " + e.getMessage());
-        }
-        return null;
     }
 
     private static void parseThemeInfo(@NonNull File pack) {
@@ -621,28 +537,5 @@ public final class OplusStyleIconConverter {
 
     private static void recycleQuiet(@Nullable Bitmap b) {
         if (b != null && !b.isRecycled()) b.recycle();
-    }
-
-    private static final class AssetStream {
-        final InputStream stream;
-        final ZipFile zipToClose;
-
-        AssetStream(InputStream stream, ZipFile zipToClose) {
-            this.stream = stream;
-            this.zipToClose = zipToClose;
-        }
-
-        void close() {
-            try {
-                stream.close();
-            } catch (Exception ignored) {
-            }
-            if (zipToClose != null) {
-                try {
-                    zipToClose.close();
-                } catch (Exception ignored) {
-                }
-            }
-        }
     }
 }

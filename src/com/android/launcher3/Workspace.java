@@ -90,6 +90,7 @@ import com.android.launcher3.dragndrop.DragOptions;
 import com.android.launcher3.dragndrop.DragView;
 import com.android.launcher3.dragndrop.DraggableView;
 import com.android.launcher3.dragndrop.SpringLoadedDragController;
+import com.android.launcher3.folder.DreamPreviewBackground;
 import com.android.launcher3.folder.Folder;
 import com.android.launcher3.folder.FolderIcon;
 import com.android.launcher3.folder.PreviewBackground;
@@ -2377,7 +2378,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
                 // In order to keep everything continuous, we hand off the currently rendered
                 // folder background to the newly created icon. This preserves animation state.
                 fi.setFolderBackground(mFolderCreateBg);
-                mFolderCreateBg = new PreviewBackground(getContext());
+                mFolderCreateBg = new DreamPreviewBackground(getContext());
                 fi.performCreateAnimation(destInfo, v, sourceInfo, d, folderLocation, scale);
             } else {
                 fi.prepareCreateAnimation(v);
@@ -3521,7 +3522,7 @@ public class Workspace<T extends View & PageIndicator> extends DreamPagedViewImp
         boolean userFolderPending = willCreateUserFolder(info, dragOverView, false);
         if (mDragMode == DRAG_MODE_NONE && userFolderPending) {
 
-            mFolderCreateBg = new PreviewBackground(getContext());
+            mFolderCreateBg = new DreamPreviewBackground(getContext());
             mFolderCreateBg.setup(mLauncher, mLauncher, null,
                     dragOverView.getMeasuredWidth(), dragOverView.getMeasuredHeight(),
                     dragOverView.getPaddingTop());

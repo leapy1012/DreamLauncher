@@ -120,7 +120,7 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
 
     @Thunk BubbleTextView mFolderName;
 
-    public PreviewBackground mBackground = new PreviewBackground(getContext());
+    public PreviewBackground mBackground = new DreamPreviewBackground(getContext());
     private boolean mBackgroundIsVisible = true;
 
     FolderGridOrganizer mPreviewVerifier;

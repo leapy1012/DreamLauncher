@@ -37,8 +37,11 @@ import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.graphics.Shader;
+import android.graphics.drawable.Drawable;
 import android.util.Property;
 import android.view.View;
+
+import androidx.annotation.Nullable;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
@@ -259,6 +262,21 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
 
     public int getBgColor() {
         return mBgColor;
+    }
+
+    /** Theme plate drawn instead of {@link #getBgColor()}, or null to use the color. */
+    @Nullable
+    public Drawable getBgDrawable() {
+        return null;
+    }
+
+    @Nullable
+    public Drawable getNormalDrawable(Context context) {
+        return null;
+    }
+
+    protected View getInvalidateDelegate() {
+        return mInvalidateDelegate;
     }
 
     public int getDotColor() {
@@ -501,7 +519,7 @@ public class PreviewBackground extends CellLayout.DelegatedCellDrawing {
         drawBackground(canvas);
     }
 
-    private void drawPreviewBackground(Canvas canvas, Context context, RectF rectF) {
+    protected void drawPreviewBackground(Canvas canvas, Context context, RectF rectF) {
         int round = LargeFolderProxy.getFolderRound(context);
         canvas.drawRoundRect(rectF, (float) round, (float) round, this.mPaint);
     }
