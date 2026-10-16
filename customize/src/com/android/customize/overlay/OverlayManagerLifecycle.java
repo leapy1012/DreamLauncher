@@ -32,9 +32,16 @@ public class OverlayManagerLifecycle implements LauncherOverlayManager, Lifecycl
         mRegistry.setCurrentState(Lifecycle.State.RESUMED);
     }
 
+    /**
+     * The only teardown: a config-change relaunch keeps the window attached, so the old
+     * instance never sees {@link #onDetachedFromWindow}.
+     */
     @Override
-    public void onDetachedFromWindow() {
-        mRegistry.setCurrentState(Lifecycle.State.DESTROYED);
+    public void onActivityDestroyed(Activity activity) {
+        // INITIALIZED -> DESTROYED is illegal; nothing was started before CREATED anyway.
+        if (mRegistry.getCurrentState().isAtLeast(Lifecycle.State.CREATED)) {
+            mRegistry.setCurrentState(Lifecycle.State.DESTROYED);
+        }
     }
 
     @NonNull

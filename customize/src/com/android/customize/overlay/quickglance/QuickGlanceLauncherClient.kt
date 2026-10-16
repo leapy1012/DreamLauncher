@@ -179,7 +179,8 @@ class QuickGlanceLauncherClient(
             overlay?.onDestroy()
         } catch (_: RemoteException) {
         }
-        if (bound) {
+        // A bind still in flight is registered too and leaks unless unbound.
+        if (bound || binding) {
             try {
                 activity.unbindService(connection)
             } catch (_: Exception) {

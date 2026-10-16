@@ -62,10 +62,18 @@ class OverlayManagerImpl(val launcher: CustomizeLauncher) : OverlayManagerLifecy
 
             override fun onDestroy(owner: LifecycleOwner) {
                 lifecycle.removeObserver(this)
+                // Unbinds Quick Glance; the collector that added it is cancelled, not undone.
+                overlay?.removeView()
+                overlay = null
                 launcher.workspace.removeOverlayCallback(overlayCallback)
                 homeEffect.reset()
             }
         })
+
+        // A config-change relaunch reuses the attached window, so onAttachedToWindow won't come.
+        if (launcher.window?.peekDecorView()?.isAttachedToWindow == true) {
+            onAttachedToWindow()
+        }
     }
 
     private fun quickGlance(): QuickGlanceRemoteOverlay? =
@@ -78,7 +86,6 @@ class OverlayManagerImpl(val launcher: CustomizeLauncher) : OverlayManagerLifecy
 
     override fun onDetachedFromWindow() {
         quickGlance()?.onDetachedFromWindow()
-        super.onDetachedFromWindow()
     }
 
     override fun onActivityStarted(activity: android.app.Activity) {
