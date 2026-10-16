@@ -407,4 +407,13 @@
     <dimen name="keyboard_quick_switch_task_view_radius">16dp</dimen>
     <dimen name="keyboard_quick_switch_no_recent_items_icon_size">24dp</dimen>
     <dimen name="keyboard_quick_switch_no_recent_items_icon_margin">8dp</dimen>
+
+    <!-- Spring of the dismissed card flying up -->
+    <item name="dream_dismiss_task_trans_y_damping_ratio" format="float" type="dimen">0.99</item>
+    <item name="dream_dismiss_task_trans_y_stiffness" format="float" type="dimen">246.74</item>
+
+    <!-- Spring of the cards closing the gap left by a dismissed task -->
+    <item name="adjacent_task_pull_down_spring_damping" format="float" type="dimen">0.8</item>
+    <item name="adjacent_task_pull_down_spring_stiffness" format="float" type="dimen">246.74</item>
+    <item name="adjacent_task_pull_down_spring_stiffness_land" format="float" type="dimen">194.96</item>
 </resources>

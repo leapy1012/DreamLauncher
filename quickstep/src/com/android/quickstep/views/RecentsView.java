@@ -3212,7 +3212,7 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         }
     }
 
-    private void addDismissedTaskAnimations(TaskView taskView, long duration,
+    protected void addDismissedTaskAnimations(TaskView taskView, long duration,
             PendingAnimation anim) {
         // Use setFloat instead of setViewAlpha as we want to keep the view visible even when it's
         // alpha is set to 0 so that it can be recycled in the view pool properly
@@ -3231,6 +3231,11 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
         anim.add(ObjectAnimator.ofFloat(taskView, secondaryViewTranslate,
                 verticalFactor * secondaryTaskDimension * 2).setDuration(duration), LINEAR, sp);
 
+        addLiveTileDismissFrameCallback(taskView, anim);
+    }
+
+    /** Keeps the live tile of a running {@code taskView} on its card while it is dismissed. */
+    protected void addLiveTileDismissFrameCallback(TaskView taskView, PendingAnimation anim) {
         if (mEnableDrawingLiveTile && taskView.isRunningTask()) {
             anim.addOnFrameCallback(() -> {
                 runActionOnRemoteHandles(
@@ -3372,6 +3377,39 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
      * @param dismissingForSplitSelection task dismiss animation is used for entering split
      *                                    selection state from app icon
      */
+    /**
+     * Adds the non-grid slide of {@code child} by {@code scrollDiff} that closes the gap left by
+     * a dismissed task {@code distanceFromDismissed} pages away.
+     */
+    protected void addAdjacentTaskDismissAnimation(PendingAnimation anim, View child,
+            FloatProperty translationProperty, int scrollDiff, int distanceFromDismissed,
+            SplitAnimationTimings splitTimings) {
+        float additionalDismissDuration =
+                ADDITIONAL_DISMISS_TRANSLATION_INTERPOLATION_OFFSET * distanceFromDismissed;
+
+        // We are in non-grid layout.
+        // If dismissing for split select, use split timings.
+        // If not, use dismiss timings.
+        float animationStartProgress = isSplitSelectionActive()
+                ? Utilities.boundToRange(splitTimings.getGridSlideStartOffset(), 0f, 1f)
+                : Utilities.boundToRange(
+                        INITIAL_DISMISS_TRANSLATION_INTERPOLATION_OFFSET
+                                + additionalDismissDuration, 0f, 1f);
+
+        float animationEndProgress = isSplitSelectionActive()
+                ? Utilities.boundToRange(splitTimings.getGridSlideStartOffset()
+                                + splitTimings.getGridSlideDurationOffset(), 0f, 1f)
+                : 1f;
+
+        anim.setFloat(child, translationProperty, scrollDiff,
+                clampToProgress(
+                        splitTimings.getGridSlidePrimaryInterpolator(),
+                        animationStartProgress,
+                        animationEndProgress
+                )
+        );
+    }
+
     public void createTaskDismissAnimation(PendingAnimation anim, TaskView dismissedTaskView,
             boolean animateTaskView, boolean shouldRemoveTask, long duration,
             boolean dismissingForSplitSelection) {
@@ -3618,32 +3656,9 @@ public abstract class RecentsView<ACTIVITY_TYPE extends StatefulActivity<STATE_T
                             ? ((TaskView) child).getPrimaryDismissTranslationProperty()
                             : mOrientationHandler.getPrimaryViewTranslate();
 
-                    float additionalDismissDuration =
-                            ADDITIONAL_DISMISS_TRANSLATION_INTERPOLATION_OFFSET * Math.abs(
-                                    i - dismissedIndex);
-
-                    // We are in non-grid layout.
-                    // If dismissing for split select, use split timings.
-                    // If not, use dismiss timings.
-                    float animationStartProgress = isSplitSelectionActive()
-                            ? Utilities.boundToRange(splitTimings.getGridSlideStartOffset(), 0f, 1f)
-                            : Utilities.boundToRange(
-                                    INITIAL_DISMISS_TRANSLATION_INTERPOLATION_OFFSET
-                                            + additionalDismissDuration, 0f, 1f);
-
-                    float animationEndProgress = isSplitSelectionActive()
-                            ? Utilities.boundToRange(splitTimings.getGridSlideStartOffset()
-                                            + splitTimings.getGridSlideDurationOffset(), 0f, 1f)
-                            : 1f;
-
                     // Slide tiles in horizontally to fill dismissed area
-                    anim.setFloat(child, translationProperty, scrollDiff,
-                            clampToProgress(
-                                    splitTimings.getGridSlidePrimaryInterpolator(),
-                                    animationStartProgress,
-                                    animationEndProgress
-                            )
-                    );
+                    addAdjacentTaskDismissAnimation(anim, child, translationProperty, scrollDiff,
+                            Math.abs(i - dismissedIndex), splitTimings);
 
                     if (mEnableDrawingLiveTile && child instanceof TaskView
                             && ((TaskView) child).isRunningTask()) {

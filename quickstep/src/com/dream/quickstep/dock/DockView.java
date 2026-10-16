@@ -515,12 +515,10 @@ public class DockView extends HorizontalScrollView {
                     DOCK_ICON_EXIT, SpringProperty.DEFAULT);
         }
 
-        final int centeredIndex = mCenteredChildIndex >= 0
-                ? mCenteredChildIndex : dismissedIndex;
-        final boolean dismissCurrentLast =
-                centeredIndex == dismissedIndex && centeredIndex == childCount - 1;
-        final boolean dismissLeftOfCurrent = dismissedIndex == centeredIndex - 1;
+        // Icons right of the gap close it; then the dock scrolls to the icon of the task Recents
+        // snaps to, which in right-to-left Recents is the older (left) neighbour.
         final float gap = mIconSize + mIconSpacing;
+        final int scrollShift = getDismissScrollShift(dismissedTaskView, dismissedIndex, gap);
         boolean slid = false;
         for (int i = 0; i < childCount; i++) {
             View child = mContainer.getChildAt(i);
@@ -528,8 +526,7 @@ public class DockView extends HorizontalScrollView {
                 continue;
             }
             float layoutShift = i > dismissedIndex ? -gap : 0f;
-            float extra = (dismissCurrentLast || dismissLeftOfCurrent) ? gap : 0f;
-            float tx = layoutShift + extra;
+            float tx = layoutShift - scrollShift;
             if (tx != 0f) {
                 anim.add(ObjectAnimator.ofFloat(child, View.TRANSLATION_X, child.getTranslationX(),
                                 tx),
@@ -541,6 +538,38 @@ public class DockView extends HorizontalScrollView {
             anim.addOnFrameCallback(this::updateCurveProperties);
         }
         anim.addEndListener(success -> finishIconDismiss(dismissedIcon, dismissedTaskId, success));
+    }
+
+    /**
+     * Change of dock {@code scrollX} once the dismissed icon is removed: from the current scroll
+     * to centering the icon of the page Recents snaps to after the dismiss.
+     */
+    private int getDismissScrollShift(TaskView dismissedTaskView, int dismissedDockIndex,
+            float gap) {
+        if (mRecentsView == null) {
+            return 0;
+        }
+        int draggedIndex = mRecentsView.indexOfChild(dismissedTaskView);
+        int taskCount = mRecentsView.getTaskViewCount();
+        int currentPage = mRecentsView.getCurrentPage();
+        if (draggedIndex < 0 || taskCount <= 1) {
+            return 0;
+        }
+        // Same rule as RecentsView's dismiss end: the index Recents snaps to after removal.
+        int pageToSnapTo = (draggedIndex < currentPage || currentPage == taskCount - 1)
+                ? currentPage - 1 : currentPage;
+        int oldIndex = pageToSnapTo < draggedIndex ? pageToSnapTo : pageToSnapTo + 1;
+        TaskView target = mRecentsView.getTaskViewAt(oldIndex);
+        int[] targetIds = target != null ? target.getTaskIds() : null;
+        View targetIcon = targetIds != null && targetIds.length > 0
+                ? findIconForTaskId(targetIds[0]) : null;
+        if (targetIcon == null) {
+            return 0;
+        }
+        int targetDockIndex = mContainer.indexOfChild(targetIcon);
+        int newScroll = dockScrollForCenteringChild(targetDockIndex)
+                - (targetDockIndex > dismissedDockIndex ? Math.round(gap) : 0);
+        return newScroll - getScrollX();
     }
 
     @Nullable

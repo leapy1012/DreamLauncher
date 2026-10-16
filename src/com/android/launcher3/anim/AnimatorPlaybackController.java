@@ -158,13 +158,18 @@ public class AnimatorPlaybackController implements ValueAnimator.AnimatorUpdateL
         long springDuration = animationDuration;
         for (Holder h : mChildAnimations) {
             if ((h.springProperty.flags & springFlag) != 0) {
+                boolean useStartSpring = h.springProperty.mUseDiffSpringForce && !goingToEnd;
                 SpringAnimationBuilder s = new SpringAnimationBuilder(context)
                         .setStartValue(mCurrentFraction)
                         .setEndValue(goingToEnd ? 1 : 0)
                         .setStartVelocity(velocityProgressPerMs)
                         .setMinimumVisibleChange(distanceInverse)
-                        .setDampingRatio(h.springProperty.mDampingRatio)
-                        .setStiffness(h.springProperty.mStiffness)
+                        .setDampingRatio(useStartSpring
+                                ? h.springProperty.mStartDampingRatio
+                                : h.springProperty.mDampingRatio)
+                        .setStiffness(useStartSpring
+                                ? h.springProperty.mStartStiffness
+                                : h.springProperty.mStiffness)
                         .computeParams();
 
                 long expectedDurationL = s.getDuration();

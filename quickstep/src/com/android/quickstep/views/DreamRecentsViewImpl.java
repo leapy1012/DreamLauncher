@@ -7,6 +7,7 @@ import static android.view.Surface.ROTATION_0;
 
 import static com.android.launcher3.anim.Interpolators.ACCEL;
 import static com.android.launcher3.anim.Interpolators.EMPHASIZED_DECELERATE;
+import static com.android.launcher3.anim.Interpolators.LINEAR;
 import static com.android.launcher3.util.Executors.UI_HELPER_EXECUTOR;
 
 import android.animation.Animator;
@@ -24,6 +25,7 @@ import android.os.Process;
 import android.provider.Settings;
 import android.text.format.Formatter;
 import android.util.AttributeSet;
+import android.util.FloatProperty;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -37,11 +39,13 @@ import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.R;
 import com.android.launcher3.RecentContainerView;
 import com.android.launcher3.anim.PendingAnimation;
+import com.android.launcher3.anim.SpringProperty;
 import com.android.launcher3.statemanager.BaseState;
 import com.android.launcher3.statemanager.StatefulActivity;
 import com.android.quickstep.BaseActivityInterface;
 import com.android.quickstep.GestureState;
 import com.android.quickstep.RotationTouchHelper;
+import com.android.quickstep.util.SplitAnimationTimings;
 import com.android.quickstep.util.SplitSelectStateController;
 import com.android.systemui.shared.recents.model.Task;
 import com.coui.appcompat.snackbar.COUISnackBar;
@@ -62,6 +66,10 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
 
     /** Killed whenever its task is dismissed, so playback stops with it. */
     private static final String MUSIC_PACKAGE = "com.android.music";
+
+    /** Spring a dragged card uses to return when its dismiss is cancelled (0.33s response). */
+    private static final float DRAG_ANIM_STIFFNESS = (float) Math.pow(2 * Math.PI / 0.33, 2);
+    private static final float DRAG_ANIM_DAMPING_RATIO = 0.85f;
 
     /** Dock and Clear all sit below the task list instead of the AOSP Clear-all page. */
     private final boolean mClearAllCenter;
@@ -362,6 +370,72 @@ public abstract class DreamRecentsViewImpl<ACTIVITY_TYPE extends StatefulActivit
         if (toRecents) {
             playBottomUiEnter();
         }
+    }
+
+    /**
+     * Neighbours start closing the gap with the dismissed card instead of waiting for AOSP's
+     * staggered second half, so they move together with the dock icons; on release they settle
+     * with the pull-down spring.
+     */
+    @Override
+    protected void addAdjacentTaskDismissAnimation(PendingAnimation anim, View child,
+            FloatProperty translationProperty, int scrollDiff, int distanceFromDismissed,
+            SplitAnimationTimings splitTimings) {
+        if (isSplitSelectionActive()) {
+            super.addAdjacentTaskDismissAnimation(anim, child, translationProperty, scrollDiff,
+                    distanceFromDismissed, splitTimings);
+            return;
+        }
+        ObjectAnimator slide = ObjectAnimator.ofFloat(child, translationProperty, scrollDiff);
+        if (child instanceof TaskView) {
+            anim.add(slide, LINEAR, getAdjacentTaskDismissSpringProperty());
+        } else {
+            anim.add(slide, ACCEL, SpringProperty.DEFAULT);
+        }
+    }
+
+    /**
+     * The dismissed card flies up past the top edge without fading, and springs back down
+     * if the dismiss is cancelled.
+     */
+    @Override
+    protected void addDismissedTaskAnimations(TaskView taskView, long duration,
+            PendingAnimation anim) {
+        if (showAsGrid() || !mOrientationHandler.isLayoutNaturalToLauncher()) {
+            super.addDismissedTaskAnimations(taskView, duration, anim);
+            return;
+        }
+        int flags = getTaskViewCount() > 1
+                ? SpringProperty.FLAG_CAN_SPRING_ON_END | SpringProperty.FLAG_CAN_SPRING_ON_START
+                : SpringProperty.FLAG_CAN_SPRING_ON_START;
+        SpringProperty spring = new SpringProperty(flags)
+                .setStartStiffness(DRAG_ANIM_STIFFNESS)
+                .setStartDampingRatio(DRAG_ANIM_DAMPING_RATIO)
+                .setStiffness(getResources().getFloat(R.dimen.dream_dismiss_task_trans_y_stiffness))
+                .setDampingRatio(
+                        getResources().getFloat(R.dimen.dream_dismiss_task_trans_y_damping_ratio))
+                .setUseDiffSpringForce(true);
+        // Card bottom to screen top, plus a margin so the shadow leaves the screen too
+        float displacement = taskView.getBottom() * 1.1f;
+        anim.add(ObjectAnimator.ofFloat(taskView, taskView.getSecondaryDismissTranslationProperty(),
+                        mOrientationHandler.getSecondaryTranslationDirectionFactor() * displacement)
+                        .setDuration(duration),
+                LINEAR, spring);
+        addLiveTileDismissFrameCallback(taskView, anim);
+    }
+
+    private SpringProperty getAdjacentTaskDismissSpringProperty() {
+        float stiffness = mOrientationHandler.getPrimaryValue(
+                getResources().getFloat(R.dimen.adjacent_task_pull_down_spring_stiffness),
+                getResources().getFloat(R.dimen.adjacent_task_pull_down_spring_stiffness_land));
+        return new SpringProperty(SpringProperty.FLAG_CAN_SPRING_ON_END
+                | SpringProperty.FLAG_CAN_SPRING_ON_START)
+                .setStartStiffness(DRAG_ANIM_STIFFNESS)
+                .setStartDampingRatio(DRAG_ANIM_DAMPING_RATIO)
+                .setStiffness(stiffness)
+                .setDampingRatio(
+                        getResources().getFloat(R.dimen.adjacent_task_pull_down_spring_damping))
+                .setUseDiffSpringForce(true);
     }
 
     @Override

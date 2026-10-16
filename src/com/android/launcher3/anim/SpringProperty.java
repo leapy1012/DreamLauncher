@@ -33,6 +33,10 @@ public class SpringProperty {
 
     float mDampingRatio = SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY;
     float mStiffness = SpringForce.STIFFNESS_MEDIUM;
+    // Used instead of the above when springing back to the start, if mUseDiffSpringForce
+    float mStartDampingRatio = SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY;
+    float mStartStiffness = SpringForce.STIFFNESS_MEDIUM;
+    boolean mUseDiffSpringForce;
 
     public SpringProperty() {
         this(0);
@@ -49,6 +53,21 @@ public class SpringProperty {
 
     public SpringProperty setStiffness(float stiffness) {
         mStiffness = stiffness;
+        return this;
+    }
+
+    public SpringProperty setStartDampingRatio(float dampingRatio) {
+        mStartDampingRatio = dampingRatio;
+        return this;
+    }
+
+    public SpringProperty setStartStiffness(float stiffness) {
+        mStartStiffness = stiffness;
+        return this;
+    }
+
+    public SpringProperty setUseDiffSpringForce(boolean useDiffSpringForce) {
+        mUseDiffSpringForce = useDiffSpringForce;
         return this;
     }
 }
