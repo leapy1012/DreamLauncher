@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.android.launcher3.BubbleTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:launcher="http://schemas.android.com/apk/res-auto"
+    style="@style/BaseIcon.AllApps"
+    android:id="@+id/icon"
+    launcher:iconDisplay="cluster_apps"
+    launcher:centerVertically="true" />

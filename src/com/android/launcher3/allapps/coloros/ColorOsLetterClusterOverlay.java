@@ -518,7 +518,7 @@ final class ColorOsLetterClusterOverlay {
             LayoutInflater inflater = LayoutInflater.from(getContext());
             for (AppInfo info : apps) {
                 BubbleTextView icon = (BubbleTextView) inflater.inflate(
-                        R.layout.all_apps_icon, this, false);
+                        R.layout.cluster_apps_icon, this, false);
                 icon.setOnClickListener(ItemClickHandler.INSTANCE);
                 icon.setOnLongClickListener(ItemLongClickListener.INSTANCE_ALL_APPS);
                 icon.applyFromApplicationInfo(info);

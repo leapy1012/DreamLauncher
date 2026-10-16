@@ -52,7 +52,6 @@
     <string name="hxy_folder_open">Open folder</string>
     <string name="hxy_folder_rename">Rename</string>
     <string name="hxy_folder_ungroup">Ungroup</string>
-    <string name="hxy_folder_ungroup_message">Ungroup \"%1$s\" and place apps on the home screen?</string>
     <string name="hxy_folder_preview_nine">Nine-grid preview</string>
     <string name="hxy_folder_preview_four">Four-grid preview</string>
     <string name="hxy_folder_preview_highlight">Highlight preview</string>
@@ -172,4 +171,16 @@
     <string name="oplus_privacy_app_preview_closed">App content hidden</string>
     <!-- Oppo remove_widget_panel_title -->
     <string name="remove_widget_panel_title">Remove widget</string>
+    <!-- Oppo OplusAlertPopup dialogs -->
+    <string name="alert_hide_cancel">Cancel</string>
+    <string name="disband_alert_popup_title">Ungroup apps from \"%s\"?</string>
+    <string name="disband_alert_popup_message">Apps in the folder will be moved to the Home screen.</string>
+    <string name="new_disband_action">Ungroup</string>
+    <string name="uninstall_action">Uninstall</string>
+    <string name="uninstall_app_popup_message">App data, including files and settings, will be permanently deleted from this device.</string>
+    <string name="uninstall_panel_single_app_title">Uninstall \"%s\"?</string>
+    <plurals name="uninstall_panel_apps_title_plurals">
+        <item quantity="one">Uninstall the %1$d app below?</item>
+        <item quantity="other">Uninstall the %1$d apps below?</item>
+    </plurals>
 </resources>

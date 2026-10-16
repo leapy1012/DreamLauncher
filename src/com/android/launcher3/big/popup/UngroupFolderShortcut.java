@@ -1,6 +1,6 @@
 package com.android.launcher3.big.popup;
 
-import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.view.View;
 
 import com.android.launcher3.AbstractFloatingView;
@@ -9,6 +9,7 @@ import com.android.launcher3.R;
 import com.android.launcher3.folder.large.LargeFolderDisbandHelper;
 import com.android.launcher3.folder.large.LargeFolderIcon;
 import com.android.launcher3.model.data.ItemInfo;
+import com.android.launcher3.popup.DreamAlertPopup;
 import com.android.launcher3.popup.SystemShortcut;
 import com.android.launcher3.views.ActivityContext;
 
@@ -29,13 +30,16 @@ public class UngroupFolderShortcut extends SystemShortcut<Launcher> {
         if (title == null || title.length() == 0) {
             title = mTarget.getString(R.string.folder_hint_text);
         }
-        String message = mTarget.getString(R.string.hxy_folder_ungroup_message, title);
-        new AlertDialog.Builder(mTarget)
-                .setTitle(R.string.hxy_folder_ungroup)
-                .setMessage(message)
-                .setPositiveButton(R.string.hxy_folder_ungroup, (d, which) ->
-                        LargeFolderDisbandHelper.ungroup(mTarget, mFolderIcon))
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
+        new DreamAlertPopup(mTarget).createMultiMessageDialog(
+                mTarget.getString(R.string.disband_alert_popup_title, title),
+                mTarget.getString(R.string.disband_alert_popup_message),
+                mTarget.getString(R.string.new_disband_action),
+                mTarget.getString(R.string.alert_hide_cancel),
+                null,
+                (dialog, which) -> {
+                    if (which == DialogInterface.BUTTON_POSITIVE) {
+                        LargeFolderDisbandHelper.ungroup(mTarget, mFolderIcon);
+                    }
+                });
     }
 }

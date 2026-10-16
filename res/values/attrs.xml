@@ -87,6 +87,7 @@
             <enum name="taskbar" value="5" />
             <enum name="search_result_tall" value="6" />
             <enum name="search_result_small" value="7" />
+            <enum name="cluster_apps" value="13" />
         </attr>
         <attr name="centerVertically" format="boolean" />
     </declare-styleable>

@@ -51,7 +51,6 @@ public abstract class FastScrollRecyclerView extends COUIRecyclerView  {
 
     public FastScrollRecyclerView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        setOverScrollEnable(false);
         setEnablePointerDownAction(false);
     }
 

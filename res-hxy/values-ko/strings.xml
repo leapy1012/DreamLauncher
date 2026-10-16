@@ -36,4 +36,14 @@
         <item quantity="one">%d개 선택됨</item>
         <item quantity="other">%d개 선택됨</item>
     </plurals>
+    <string name="alert_hide_cancel">취소</string>
+    <string name="disband_alert_popup_title">\"%s\"의 앱을 그룹 해제할까요?</string>
+    <string name="disband_alert_popup_message">폴더에 있는 앱이 홈 화면으로 이동됩니다.</string>
+    <string name="new_disband_action">그룹 해제</string>
+    <string name="uninstall_action">제거</string>
+    <string name="uninstall_app_popup_message">파일 및 설정을 포함한 앱 데이터가 이 기기에서 영구히 삭제됩니다.</string>
+    <string name="uninstall_panel_single_app_title">\"%s\"을(를) 제거하시겠습니까?</string>
+    <plurals name="uninstall_panel_apps_title_plurals">
+        <item quantity="other">아래 %1$d 앱을 제거하시겠습니까?</item>
+    </plurals>
 </resources>

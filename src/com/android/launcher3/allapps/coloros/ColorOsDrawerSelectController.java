@@ -15,8 +15,8 @@
  */
 package com.android.launcher3.allapps.coloros;
 
-import android.app.AlertDialog;
 import android.content.ComponentName;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Canvas;
@@ -30,6 +30,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -52,12 +53,16 @@ import com.android.launcher3.model.data.AppInfo;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.ItemInfoWithIcon;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
+import com.android.launcher3.popup.DreamAlertPopup;
 import com.android.launcher3.util.ComponentKey;
 import com.android.launcher3.views.ActivityContext;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringAnimation;
 import com.coui.appcompat.animation.dynamicanimation.COUISpringForce;
+import com.coui.appcompat.checkbox.COUICheckBox;
+import com.coui.appcompat.imageview.COUIRoundImageView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -598,22 +603,49 @@ public final class ColorOsDrawerSelectController {
                     Toast.LENGTH_SHORT).show();
             return;
         }
-        new AlertDialog.Builder(mLauncher)
-                .setTitle(R.string.coloros_drawer_select_uninstall)
-                .setMessage(mLauncher.getResources().getQuantityString(
-                        R.plurals.coloros_drawer_select_count,
-                        uninstallable.size(), uninstallable.size()))
-                .setPositiveButton(R.string.coloros_drawer_select_uninstall, (d, w) -> {
-                    for (AppInfo app : uninstallable) {
-                        startUninstall(app);
-                        ComponentKey key = new ComponentKey(app.componentName, app.user);
-                        mSelected.remove(key);
+        DreamAlertPopup popup = new DreamAlertPopup(mLauncher);
+        String positive = mLauncher.getString(R.string.uninstall_action);
+        String negative = mLauncher.getString(R.string.alert_hide_cancel);
+        if (uninstallable.size() == 1) {
+            AppInfo app = uninstallable.get(0);
+            popup.createMultiMessageDialog(
+                    mLauncher.getString(R.string.uninstall_panel_single_app_title,
+                            app.title == null ? "" : app.title),
+                    mLauncher.getString(R.string.uninstall_app_popup_message),
+                    positive, negative, null,
+                    (dialog, which) -> {
+                        if (which == DialogInterface.BUTTON_POSITIVE) {
+                            uninstallApps(uninstallable);
+                        }
+                    });
+            return;
+        }
+        IconImageAdapter adapter = new IconImageAdapter(uninstallable);
+        adapter.setOnCheckedChangeListener(checkedCount -> {
+            popup.changeTitle(getUninstallAppsTitle(checkedCount));
+            popup.changesPositiveButtonState(checkedCount > 0);
+        });
+        popup.createMultiChoiceBottomDialog(getUninstallAppsTitle(uninstallable.size()), null,
+                positive, negative, adapter, null,
+                (dialog, which) -> {
+                    if (which == DialogInterface.BUTTON_POSITIVE) {
+                        uninstallApps(adapter.getCheckedApps());
                     }
-                    updateTitleAndActions();
-                    refreshIconChecks();
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
+                });
+    }
+
+    private String getUninstallAppsTitle(int count) {
+        return mLauncher.getResources().getQuantityString(
+                R.plurals.uninstall_panel_apps_title_plurals, count, count);
+    }
+
+    private void uninstallApps(List<AppInfo> apps) {
+        for (AppInfo app : apps) {
+            startUninstall(app);
+            mSelected.remove(new ComponentKey(app.componentName, app.user));
+        }
+        updateTitleAndActions();
+        refreshIconChecks();
     }
 
     private void startUninstall(AppInfo app) {
@@ -788,6 +820,81 @@ public final class ColorOsDrawerSelectController {
         @Override
         public int getOpacity() {
             return PixelFormat.TRANSLUCENT;
+        }
+    }
+
+    /** Oppo {@code UninstallRemoveAppPanel.IconImageAdapter}: checkable app rows. */
+    private static final class IconImageAdapter extends BaseAdapter {
+
+        interface OnCheckedChangeListener {
+            void onCheckedChanged(int checkedCount);
+        }
+
+        private final List<AppInfo> mApps;
+        private final boolean[] mChecked;
+        @Nullable private OnCheckedChangeListener mListener;
+
+        IconImageAdapter(List<AppInfo> apps) {
+            mApps = apps;
+            mChecked = new boolean[apps.size()];
+            Arrays.fill(mChecked, true);
+        }
+
+        void setOnCheckedChangeListener(OnCheckedChangeListener listener) {
+            mListener = listener;
+        }
+
+        List<AppInfo> getCheckedApps() {
+            List<AppInfo> checked = new ArrayList<>();
+            for (int i = 0; i < mApps.size(); i++) {
+                if (mChecked[i]) {
+                    checked.add(mApps.get(i));
+                }
+            }
+            return checked;
+        }
+
+        @Override
+        public int getCount() {
+            return mApps.size();
+        }
+
+        @Override
+        public AppInfo getItem(int position) {
+            return mApps.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            View view = convertView != null ? convertView
+                    : LayoutInflater.from(parent.getContext())
+                            .inflate(R.layout.item_normal_view_delete_panel, parent, false);
+            AppInfo app = mApps.get(position);
+            COUIRoundImageView icon = view.findViewById(R.id.delete_icon_view);
+            if (app.bitmap != null && app.bitmap.icon != null) {
+                icon.setImageBitmap(app.bitmap.icon);
+                icon.setBorderRectRadius(0);
+            }
+            TextView name = view.findViewById(R.id.tv_name);
+            name.setText(app.title == null ? "" : app.title);
+            COUICheckBox checkBox = view.findViewById(R.id.check_box);
+            checkBox.setChecked(mChecked[position]);
+            view.findViewById(R.id.item_divider).setVisibility(
+                    position == mApps.size() - 1 ? View.INVISIBLE : View.VISIBLE);
+            view.setOnClickListener(v -> {
+                mChecked[position] = !mChecked[position];
+                checkBox.setChecked(mChecked[position]);
+                v.announceForAccessibility(name.getText());
+                if (mListener != null) {
+                    mListener.onCheckedChanged(getCheckedApps().size());
+                }
+            });
+            return view;
         }
     }
 }

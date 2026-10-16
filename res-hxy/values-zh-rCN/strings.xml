@@ -54,7 +54,6 @@
     <string name="hxy_folder_open">打开文件夹</string>
     <string name="hxy_folder_rename">重命名</string>
     <string name="hxy_folder_ungroup">解散分组</string>
-    <string name="hxy_folder_ungroup_message">解散“%1$s”并将应用放到桌面？</string>
     <string name="hxy_folder_preview_nine">九宫格预览</string>
     <string name="hxy_folder_preview_four">四宫格预览</string>
     <string name="hxy_folder_preview_highlight">高亮预览</string>
@@ -154,5 +153,16 @@
     <plurals name="coloros_drawer_select_count">
         <item quantity="one">已选择 %d 项</item>
         <item quantity="other">已选择 %d 项</item>
+    </plurals>
+    <string name="alert_hide_cancel">取消</string>
+    <string name="disband_alert_popup_title">要解散“%s”文件夹吗？</string>
+    <string name="disband_alert_popup_message">文件夹内应用将被平铺在桌面</string>
+    <string name="new_disband_action">解散</string>
+    <string name="uninstall_action">卸载</string>
+    <string name="uninstall_app_popup_message">此应用的数据（包括文件和设置数据）将从本设备彻底删除</string>
+    <string name="uninstall_panel_single_app_title">要卸载“%s”吗？</string>
+    <plurals name="uninstall_panel_apps_title_plurals">
+        <item quantity="one">要卸载以下 %1$d 个应用吗？</item>
+        <item quantity="other">要卸载以下 %1$d 个应用吗？</item>
     </plurals>
 </resources>

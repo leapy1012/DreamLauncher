@@ -26,7 +26,6 @@ import static com.android.launcher3.model.data.ItemInfoWithIcon.FLAG_DISABLED_SU
 import static com.android.launcher3.util.Executors.MAIN_EXECUTOR;
 import static com.android.launcher3.util.Executors.UI_HELPER_EXECUTOR;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.LauncherApps;
@@ -65,6 +64,7 @@ import com.android.launcher3.widget.LauncherAppWidgetProviderInfo;
 import com.android.launcher3.widget.PendingAppWidgetHostView;
 import com.android.launcher3.widget.WidgetAddFlowHandler;
 import com.android.launcher3.widget.WidgetManagerHelper;
+import com.coui.appcompat.dialog.COUIAlertDialogBuilder;
 
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
@@ -253,7 +253,7 @@ public class ItemClickHandler {
             siFuture.thenAcceptAsync(marketLaunchAction, MAIN_EXECUTOR);
             return;
         }
-        new AlertDialog.Builder(launcher)
+        new COUIAlertDialogBuilder(launcher)
                 .setTitle(R.string.abandoned_promises_title)
                 .setMessage(R.string.abandoned_promise_explanation)
                 .setPositiveButton(R.string.abandoned_search,
@@ -318,7 +318,7 @@ public class ItemClickHandler {
                     return false;
                 }
 
-                new AlertDialog.Builder(context)
+                new COUIAlertDialogBuilder(context)
                         .setTitle(R.string.dialog_update_title)
                         .setMessage(R.string.dialog_update_message)
                         .setPositiveButton(R.string.dialog_update, (d, i) -> {

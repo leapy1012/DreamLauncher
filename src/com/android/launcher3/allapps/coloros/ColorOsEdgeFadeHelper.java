@@ -40,11 +40,10 @@ public final class ColorOsEdgeFadeHelper {
     }
 
     public void configureFromResources(@NonNull Resources res) {
+        // Oppo all_apps_fading_edge_height: the list top sits at the tab pill bottom.
         int topSoft = res.getDimensionPixelSize(R.dimen.coloros_all_apps_top_fade_height);
-        int overlap = res.getDimensionPixelSize(R.dimen.coloros_all_apps_under_tab_overlap);
         int softBot = res.getDimensionPixelSize(R.dimen.coloros_all_apps_bottom_fade_soft_height);
-        // Soft dissolve covers the under-segment nest so fade starts at the tab, not in empty air.
-        setFadeHeights(topSoft + overlap, softBot + dp(res, 8), softBot, topSoft);
+        setFadeHeights(topSoft, softBot + dp(res, 8), softBot, topSoft);
     }
 
     private static int dp(Resources res, int v) {
@@ -108,13 +107,14 @@ public final class ColorOsEdgeFadeHelper {
         final int h = host.getHeight();
         final int topH = Math.min(mTopFadePx, h);
         final int botH = Math.min(mBottomFadePx, h);
+        // Pin the bands to the visible edges while a COUI overscroll bounce offsets the scroll.
+        int saveCount = canvas.save();
+        canvas.translate(host.getScrollX(), host.getScrollY());
 
-        // Oppo soft stops (EB/C2 family) without a long solid black plate.
         if (topH > 0) {
+            // Oppo level-B drawer: the plain View top fading edge, opaque to clear.
             mFadePaint.setShader(new LinearGradient(0, 0, 0, topH,
-                    new int[]{0xD9000000, 0x8C000000, 0x33000000, 0x00000000},
-                    new float[]{0f, 0.28f, 0.65f, 1f},
-                    Shader.TileMode.CLAMP));
+                    0xFF000000, 0x00000000, Shader.TileMode.CLAMP));
             canvas.drawRect(0, 0, w, topH, mFadePaint);
         }
         if (botH > 0) {
@@ -125,6 +125,7 @@ public final class ColorOsEdgeFadeHelper {
                     Shader.TileMode.CLAMP));
             canvas.drawRect(0, y0, w, h, mFadePaint);
         }
+        canvas.restoreToCount(saveCount);
         mFadePaint.setShader(null);
     }
 

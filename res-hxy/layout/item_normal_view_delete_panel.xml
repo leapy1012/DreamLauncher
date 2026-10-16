@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:launcher="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/coui_alert_dialog_item_background"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
+
+        <com.coui.appcompat.imageview.COUIRoundImageView
+            android:id="@+id/delete_icon_view"
+            android:layout_width="@dimen/alert_panel_icon_size"
+            android:layout_height="@dimen/alert_panel_icon_size"
+            android:layout_marginStart="@dimen/uninstall_panel_icon_margin_start"
+            launcher:couiBorderRadius="@dimen/alert_panel_icon_border_radius"
+            launcher:couiHasDefaultPic="false"
+            launcher:couiType="round" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:paddingEnd="4dp"
+                android:singleLine="true"
+                android:textColor="?attr/couiColorPrimaryNeutral"
+                android:textDirection="locale"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/tv_uninstall_info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:ellipsize="end"
+                android:maxLines="5"
+                android:textColor="?attr/couiColorSecondNeutral"
+                android:textDirection="locale"
+                android:textSize="12sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <com.coui.appcompat.checkbox.COUICheckBox
+            android:id="@+id/check_box"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="13dp"
+            android:layout_marginEnd="13dp"
+            android:background="@null"
+            android:clickable="false"
+            android:gravity="center" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/item_divider"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/coui_list_divider_height"
+        android:layout_marginStart="79dp"
+        android:layout_marginEnd="24dp"
+        android:background="?attr/couiColorDivider"
+        android:forceDarkAllowed="false"
+        android:importantForAccessibility="no" />
+</LinearLayout>

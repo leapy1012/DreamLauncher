@@ -3,17 +3,21 @@ package com.android.launcher3.allapps.coloros;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.COUIRecyclerView;
 import androidx.recyclerview.widget.RecyclerView;
 
 /**
- * Categories list: Oppo soft edge fades. Bottom edge is layout-pinned above search.
+ * Categories list: Oppo soft edge fades and the same COUI spring overscroll as the All grid.
+ * Bottom edge is layout-pinned above search.
  */
-public class ColorOsCategoryRecyclerView extends RecyclerView {
+public class ColorOsCategoryRecyclerView extends COUIRecyclerView {
 
     private final ColorOsEdgeFadeHelper mFade = new ColorOsEdgeFadeHelper();
+    private int mLastTouchAction = MotionEvent.ACTION_CANCEL;
 
     public ColorOsCategoryRecyclerView(Context context) {
         this(context, null);
@@ -26,6 +30,7 @@ public class ColorOsCategoryRecyclerView extends RecyclerView {
     public ColorOsCategoryRecyclerView(Context context, @Nullable AttributeSet attrs,
             int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        setEnablePointerDownAction(false);
         setClipChildren(true);
         setClipToPadding(true);
         if (ColorOsEdgeFadeHelper.shouldUse(context)) {
@@ -43,6 +48,34 @@ public class ColorOsCategoryRecyclerView extends RecyclerView {
 
     public ColorOsEdgeFadeHelper getEdgeFade() {
         return mFade;
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        boolean intercept = super.onInterceptTouchEvent(ev);
+        // COUIRecyclerView claims a touch that lands on a still-moving list. At either end the
+        // drawer's swipe-to-close must still be able to take it.
+        if (intercept && ev.getActionMasked() == MotionEvent.ACTION_DOWN
+                && (!canScrollVertically(-1) || !canScrollVertically(1))) {
+            getParent().requestDisallowInterceptTouchEvent(false);
+        }
+        return intercept;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        int action = ev.getAction();
+        int actionMasked = ev.getActionMasked();
+        // When the drawer's close gesture steals the touch during a top bounce, treat the cancel
+        // as a release so the bounce springs back instead of freezing.
+        if (actionMasked == MotionEvent.ACTION_CANCEL && getScrollY() < 0
+                && mLastTouchAction != MotionEvent.ACTION_DOWN) {
+            ev.setAction(MotionEvent.ACTION_UP);
+        }
+        mLastTouchAction = actionMasked;
+        boolean handled = super.onTouchEvent(ev);
+        ev.setAction(action);
+        return handled;
     }
 
     @Override

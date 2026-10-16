@@ -177,6 +177,11 @@ public class LauncherAllAppsContainerView extends ActivityAllAppsContainerView<L
     }
 
     @Override
+    protected boolean useCategoryPager() {
+        return getResources().getBoolean(R.bool.config_coloros_drawer);
+    }
+
+    @Override
     protected boolean isColorOsSearchSessionActive() {
         return isColorOsSearchUiActive();
     }

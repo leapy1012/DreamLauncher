@@ -4,6 +4,9 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -28,17 +31,22 @@ import com.android.customize.overlay.model.CategoryInfo;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherState;
 import com.android.launcher3.R;
+import com.android.launcher3.Utilities;
 import com.android.launcher3.allapps.ActivityAllAppsContainerView;
 import com.android.launcher3.allapps.AllAppsRecyclerView;
 import com.android.launcher3.allapps.AlphabeticalAppsList;
 import com.android.launcher3.allapps.AlphabeticalAppsList.FastScrollSectionInfo;
 import com.android.launcher3.allapps.BaseAllAppsAdapter;
+import com.android.launcher3.allapps.DreamCategoryPagedView;
+import com.android.launcher3.allapps.DreamCategoryTabView;
 import com.android.launcher3.allapps.search.AppsSearchContainerLayout;
 import com.android.launcher3.model.data.AppInfo;
 import com.android.launcher3.settings.SettingsActivity;
+import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.RecyclerViewFastScroller;
 import com.coui.appcompat.poplist.COUIPopupListWindow;
 import com.coui.appcompat.poplist.PopupListItem;
+import com.coui.appcompat.rippleutil.COUIRippleDrawableUtil;
 import com.coui.appcompat.segmentbutton.COUISegmentButtonLayout;
 
 import java.util.ArrayList;
@@ -72,6 +80,7 @@ public final class ColorOsDrawerChrome {
     @Nullable private ColorOsCategoryItemTouchCallback mCategoryTouchCallback;
     @Nullable private ColorOsCategoryDragDecoration mCategoryDragDecoration;
     @Nullable private ItemTouchHelper mCategoryTouchHelper;
+    /** How far the Categories list extends up under the tab row (its top padding). */
     private boolean mShowingCategories;
     private boolean mPageAnimating;
     /** ColorOS search focus/IME session — drawer chrome faded (Oppo animateForSearch). */
@@ -96,6 +105,28 @@ public final class ColorOsDrawerChrome {
     @Nullable private VelocityTracker mVelocityTracker;
 
     private final CategoryController mCategoryController = new CategoryController();
+
+    /** All / Categories pager hosting {@link #mCategoryList}; null in the work-tabs layout. */
+    @Nullable private DreamCategoryPagedView mPager;
+    private final DreamCategoryPagedView.Callbacks mPagerCallbacks =
+            new DreamCategoryPagedView.Callbacks() {
+                @Override
+                public boolean canSwipePages() {
+                    return !isDrawerSelectActive() && !isCategoryDragging() && !mSearchUiActive
+                            && !mContainer.isSearching()
+                            && (mLetterCluster == null || !mLetterCluster.isShowing());
+                }
+
+                @Override
+                public void onPagesScrolled(float progress) {
+                    onPagerScrolled(progress);
+                }
+
+                @Override
+                public void onPageSettled(int page) {
+                    onPagerSettled(page);
+                }
+            };
 
     public ColorOsDrawerChrome(ActivityAllAppsContainerView<?> container) {
         mContainer = container;
@@ -137,6 +168,9 @@ public final class ColorOsDrawerChrome {
         // Relax clipping so the scaled drag shadow is not cut by the drawer pager.
         boolean dragging = isCategoryDragging();
         mContainer.setClipChildren(!dragging);
+        if (mPager != null) {
+            mPager.setClipChildren(!dragging);
+        }
         if (mCategoryList != null) {
             mCategoryList.setClipChildren(false);
         }
@@ -339,6 +373,10 @@ public final class ColorOsDrawerChrome {
      * Returns true when this gesture should own the stream.
      */
     public boolean onInterceptPageSwipe(MotionEvent ev) {
+        if (mPager != null) {
+            // The pager pages with the finger itself.
+            return false;
+        }
         if (isDrawerSelectActive() || isCategoryDragging()) {
             endSwipeTracking();
             return false;
@@ -396,6 +434,9 @@ public final class ColorOsDrawerChrome {
 
     /** Consume the page-swipe stream after {@link #onInterceptPageSwipe} claimed it. */
     public boolean onPageSwipeTouch(MotionEvent ev) {
+        if (mPager != null) {
+            return false;
+        }
         if (isDrawerSelectActive()) {
             endSwipeTracking();
             return false;
@@ -451,6 +492,102 @@ public final class ColorOsDrawerChrome {
         if (mVelocityTracker != null) {
             mVelocityTracker.recycle();
             mVelocityTracker = null;
+        }
+    }
+
+    /**
+     * Hosts Categories as page 1 of the container's {@link DreamCategoryPagedView}, or next to
+     * the All list when the container has no pager (work tabs). The pager is recreated when
+     * the adapters are rebound, so this re-homes the list each time.
+     */
+    private void attachCategoryPage() {
+        if (mCategoryList == null) {
+            return;
+        }
+        DreamCategoryPagedView pager = mContainer.getCategoryPagedView();
+        ViewGroup host = pager != null ? pager : mContainer;
+        if (mCategoryList.getParent() == host && pager == mPager) {
+            return;
+        }
+        if (mCategoryList.getParent() instanceof ViewGroup) {
+            ((ViewGroup) mCategoryList.getParent()).removeView(mCategoryList);
+        }
+        mPager = pager;
+        if (pager != null) {
+            mCategoryList.setTranslationX(0f);
+            mCategoryList.setAlpha(1f);
+            mCategoryList.setVisibility(View.VISIBLE);
+            pager.addView(mCategoryList, new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            pager.setCallbacks(mPagerCallbacks);
+            if (mSegment instanceof DreamCategoryTabView) {
+                pager.setTabView((DreamCategoryTabView) mSegment);
+            }
+            pager.setCurrentPage(mShowingCategories
+                    ? DreamCategoryPagedView.PAGE_CATEGORIES : DreamCategoryPagedView.PAGE_ALL);
+            return;
+        }
+        RelativeLayout.LayoutParams catLp = new RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        catLp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        catLp.addRule(RelativeLayout.ABOVE, R.id.search_container_all_apps);
+        catLp.topMargin = mContainer.getResources().getDimensionPixelSize(
+                R.dimen.coloros_all_apps_content_margin_top);
+        catLp.bottomMargin = 0;
+        mCategoryList.setVisibility(mShowingCategories ? View.VISIBLE : View.GONE);
+        mContainer.addView(mCategoryList, catLp);
+    }
+
+    /** Oppo fades the fast scroller with the page scroll; it belongs to the All page only. */
+    /** Oppo {@code setupMenuVisible}: circular COUI press ripple tinted for the wallpaper. */
+    private void applyMenuPressRipple(ImageView menu) {
+        menu.setClickable(true);
+        COUIRippleDrawableUtil.setIconPressRippleDrawable(menu, Utilities.dpToPx(36f) / 2);
+        Drawable background = menu.getBackground();
+        if (background instanceof LayerDrawable) {
+            Drawable ripple = ((LayerDrawable) background).getDrawable(0);
+            if (ripple instanceof RippleDrawable) {
+                boolean brightWallpaper = Themes.getAttrBoolean(
+                        mContainer.getContext(), R.attr.isWorkspaceDarkText);
+                ((RippleDrawable) ripple).setColor(ColorStateList.valueOf(
+                        mContainer.getContext().getColor(brightWallpaper
+                                ? R.color.search_bar_primary_button_bright
+                                : R.color.search_bar_primary_button_dark)));
+            }
+        }
+    }
+
+    private void onPagerScrolled(float progress) {
+        if (progress > 0f) {
+            dismissLetterCluster();
+        }
+        if (mLetterIndex == null || !shouldShowLetterRail(/* onAllPage= */ true)) {
+            return;
+        }
+        // Visible only while part of the All page is on screen, so it can never be left
+        // behind (even at alpha 0) on Categories.
+        int visibility = progress < 1f ? View.VISIBLE : View.GONE;
+        if (mLetterIndex.getVisibility() != visibility) {
+            mLetterIndex.setVisibility(visibility);
+            if (visibility == View.VISIBLE) {
+                mLetterIndex.bringToFront();
+            }
+        }
+        mLetterIndex.setAlpha(1f - progress);
+    }
+
+    private void onPagerSettled(int page) {
+        boolean categories = page == DreamCategoryPagedView.PAGE_CATEGORIES;
+        if (categories != mShowingCategories) {
+            mShowingCategories = categories;
+            dismissLetterCluster();
+            if (categories && mCategoryAdapter != null && mCategoryAdapter.getItemCount() == 0) {
+                bindCategories();
+            }
+        }
+        updateLetterRailVisibility();
+        if (mLetterIndex != null && !mSearchUiActive) {
+            mLetterIndex.setAlpha(1f);
         }
     }
 
@@ -532,6 +669,13 @@ public final class ColorOsDrawerChrome {
             if (mSuppressSegmentCallback || isDrawerSelectActive()) {
                 return;
             }
+            if (mPager != null) {
+                // Also fires on every pill spring frame; only a new target page snaps.
+                if (mPager.getNextPage() != to) {
+                    mPager.snapToPage(to, DreamCategoryPagedView.TAB_SNAP_DURATION);
+                }
+                return;
+            }
             if (to == 1) {
                 if (!mShowingCategories) {
                     showCategoriesPage();
@@ -543,6 +687,7 @@ public final class ColorOsDrawerChrome {
         menu.setOnClickListener(this::showOverflowMenu);
         menu.setImageResource(R.drawable.ic_overflow_menu);
         menu.clearColorFilter();
+        applyMenuPressRipple(menu);
 
         mLetterCluster = new ColorOsLetterClusterOverlay(mContainer);
         mLetterCluster.bindChrome(mTabHeader, mContainer.getSearchView());
@@ -605,14 +750,7 @@ public final class ColorOsDrawerChrome {
         mCategoryList.setBackground(null);
         int hPad = dp(16);
         mCategoryList.setPadding(hPad, 0, hPad, dp(16));
-        RelativeLayout.LayoutParams catLp = new RelativeLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        catLp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        catLp.addRule(RelativeLayout.ABOVE, R.id.search_container_all_apps);
-        catLp.topMargin = mContainer.getResources().getDimensionPixelSize(
-                R.dimen.coloros_all_apps_content_margin_top);
-        catLp.bottomMargin = 0;
-        mContainer.addView(mCategoryList, catLp);
+        attachCategoryPage();
         // Oppo: long-press category cards to reorder (OplusItemTouchHelper + FocusedItemDecorator).
         mCategoryDragDecoration = new ColorOsCategoryDragDecoration(mContainer.getContext());
         mCategoryList.addItemDecoration(mCategoryDragDecoration);
@@ -664,6 +802,7 @@ public final class ColorOsDrawerChrome {
         if (mTabHeader == null) {
             return;
         }
+        attachCategoryPage();
         applyTabTopInset();
         applySearchBottomInset();
         mContainer.layoutColorOsAppsBelowTabs();
@@ -740,6 +879,13 @@ public final class ColorOsDrawerChrome {
      */
     private void layoutCategoryListUnderTabs() {
         if (mCategoryList == null) {
+            return;
+        }
+        if (mPager != null && mCategoryList.getParent() == mPager) {
+            // The pager is placed like the All list.
+            mCategoryList.setTranslationY(0f);
+            mCategoryList.setClipToPadding(true);
+            mCategoryList.setClipChildren(true);
             return;
         }
         ViewGroup.LayoutParams raw = mCategoryList.getLayoutParams();
@@ -905,6 +1051,13 @@ public final class ColorOsDrawerChrome {
             mSuppressSegmentCallback = true;
             mSegment.selectSegmentAt(categories ? 1 : 0);
             mSuppressSegmentCallback = false;
+        }
+        if (mPager != null) {
+            mShowingCategories = categories;
+            mPager.setCurrentPage(categories
+                    ? DreamCategoryPagedView.PAGE_CATEGORIES : DreamCategoryPagedView.PAGE_ALL);
+            syncPageVisibility();
+            return;
         }
         if (categories) {
             showCategoriesPage();
@@ -1132,7 +1285,10 @@ public final class ColorOsDrawerChrome {
         builder.setId(MENU_ID_SELECT);
         mPopupItems.add(builder.build());
 
-        if (!mShowingCategories) {
+        boolean onAllPage = mPager != null
+                ? mPager.getNextPage() == DreamCategoryPagedView.PAGE_ALL
+                : !mShowingCategories;
+        if (onAllPage) {
             builder.reset();
             builder.setTitle(context.getString(R.string.coloros_drawer_app_sort_sort));
             builder.setTitleColorList(titleColor);
@@ -1219,14 +1375,24 @@ public final class ColorOsDrawerChrome {
         mContainer.post(this::refreshLetterRailSections);
     }
 
-    /** Oppo hides A–Z rail when sort is not by name. */
+    /**
+     * Oppo {@code LetterIndexFastScrollHelper.getFastScrollerVisibility}: the A–Z rail shows
+     * only on the All page (the pager's target page), sorted by name, outside select and search.
+     */
+    private boolean shouldShowLetterRail(boolean onAllPage) {
+        return onAllPage && !isDrawerSelectActive() && !mSearchUiActive
+                && ColorOsDrawerSort.getSortRule(mContainer.getContext())
+                        == ColorOsDrawerSort.SORT_BY_NAME;
+    }
+
     private void updateLetterRailVisibility() {
         if (mLetterIndex == null) {
             return;
         }
-        boolean show = !mShowingCategories
-                && ColorOsDrawerSort.getSortRule(mContainer.getContext())
-                == ColorOsDrawerSort.SORT_BY_NAME;
+        boolean onAllPage = mPager != null
+                ? mPager.getNextPage() == DreamCategoryPagedView.PAGE_ALL
+                : !mShowingCategories;
+        boolean show = shouldShowLetterRail(onAllPage);
         mLetterIndex.setVisibility(show ? View.VISIBLE : View.GONE);
         if (!show) {
             dismissLetterCluster();
@@ -1432,6 +1598,10 @@ public final class ColorOsDrawerChrome {
             applySearchUiVisibility();
             return;
         }
+        if (mPager != null) {
+            syncPagerVisibility();
+            return;
+        }
         View apps = resolveAppsContentView();
         View appsContainer = mContainer.getAppsRecyclerViewContainer();
         View cats = mCategoryList;
@@ -1493,6 +1663,36 @@ public final class ColorOsDrawerChrome {
         applyTabHeaderVisibility();
     }
 
+    /** Both pages stay laid out in the pager; the pager position picks the page. */
+    private void syncPagerVisibility() {
+        mPageAnimating = false;
+        View stockHeader = mContainer.getFloatingHeaderView();
+        if (stockHeader != null) {
+            stockHeader.setVisibility(View.GONE);
+        }
+        dismissLetterCluster();
+        restoreAppsListContentVisible();
+        if (mCategoryList != null) {
+            mCategoryList.animate().cancel();
+            mCategoryList.setTranslationX(0f);
+            mCategoryList.setAlpha(1f);
+            mCategoryList.setVisibility(View.VISIBLE);
+        }
+        if (mShowingCategories && mCategoryAdapter != null
+                && mCategoryAdapter.getItemCount() == 0) {
+            bindCategories();
+        }
+        applyListFadePadding();
+        if (mPager == null || !mPager.isMoving()) {
+            updateLetterRailVisibility();
+        }
+        View search = mContainer.getSearchView();
+        if (search != null) {
+            search.bringToFront();
+        }
+        applyTabHeaderVisibility();
+    }
+
     /**
      * While searching: hide All/Categories chrome; leave AOSP search RV visibility
      * to {@link ActivityAllAppsContainerView#updateSearchResultsVisibility()}.
@@ -1503,14 +1703,19 @@ public final class ColorOsDrawerChrome {
         if (stockHeader != null) {
             stockHeader.setVisibility(View.GONE);
         }
-        setGoneOrInvisible(resolveAppsContentView(), View.GONE);
-        View appsContainer = mContainer.getAppsRecyclerViewContainer();
-        View apps = resolveAppsContentView();
-        if (appsContainer != null && appsContainer != apps) {
-            setGoneOrInvisible(appsContainer, View.GONE);
-        }
-        if (mCategoryList != null) {
-            setGoneOrInvisible(mCategoryList, View.GONE);
+        if (mPager != null) {
+            // Hide the pager only: a GONE page would break the pager's page scrolls.
+            setGoneOrInvisible(mPager, View.GONE);
+        } else {
+            setGoneOrInvisible(resolveAppsContentView(), View.GONE);
+            View appsContainer = mContainer.getAppsRecyclerViewContainer();
+            View apps = resolveAppsContentView();
+            if (appsContainer != null && appsContainer != apps) {
+                setGoneOrInvisible(appsContainer, View.GONE);
+            }
+            if (mCategoryList != null) {
+                setGoneOrInvisible(mCategoryList, View.GONE);
+            }
         }
         if (mLetterIndex != null) {
             mLetterIndex.setVisibility(View.GONE);

@@ -163,6 +163,14 @@
     <dimen name="coloros_category_recent_padding_top">12dp</dimen>
     <!-- Oppo all_apps_custom_fade_layer_top_fading_height / bottom_fading_height. -->
     <dimen name="coloros_all_apps_top_fade_height">32dp</dimen>
+    <!-- Oppo drawer menu press ripple on bright / dark wallpapers. -->
+    <color name="search_bar_primary_button_bright">#14000000</color>
+    <color name="search_bar_primary_button_dark">#26ffffff</color>
+    <color name="launcher_delete_app_panel_positive_btn_text_color">#ec3e50</color>
+    <color name="launcher_delete_app_panel_positive_btn_notclickable_text_color">#26ec3e50</color>
+    <dimen name="alert_panel_icon_size">36dp</dimen>
+    <dimen name="alert_panel_icon_border_radius">12dp</dimen>
+    <dimen name="uninstall_panel_icon_margin_start">24dp</dimen>
     <!-- Oppo all_apps_custom_fade_layer_bottom_height_three_button. -->
     <dimen name="coloros_all_apps_bottom_fade_height">128dp</dimen>
     <!-- Oppo all_apps_custom_fade_layer_bottom_fading_height. -->

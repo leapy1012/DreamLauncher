@@ -49,6 +49,7 @@ import android.text.TextUtils.TruncateAt;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.StyleSpan;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Property;
 import android.util.TypedValue;
 import android.view.KeyEvent;
@@ -62,6 +63,7 @@ import androidx.annotation.UiThread;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.launcher3.accessibility.BaseAccessibilityDelegate;
+import com.android.launcher3.allapps.coloros.ColorOsDrawerColumns;
 import com.android.launcher3.allapps.coloros.ColorOsHomeSettings;
 import com.android.launcher3.allapps.coloros.ColorOsIconChangeAnimManager;
 import com.android.launcher3.config.FeatureFlags;
@@ -133,6 +135,13 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     protected static final int DISPLAY_TASKBAR = 5;
     private static final int DISPLAY_SEARCH_RESULT = 6;
     private static final int DISPLAY_SEARCH_RESULT_SMALL = 7;
+    private static final int DISPLAY_DRAWER_CLUSTER = 13;
+
+    /** Oppo cluster icons: smaller than the drawer grid so the 56dp cells keep a gap. */
+    private static final float CLUSTER_ICON_SCALE = 0.89f;
+    private static final float CLUSTER_MAX_ICON_SIZE_COL_FIVE = 48.06f;
+    private static final float CLUSTER_MAX_ICON_SIZE_COL_FOUR = 53.4f;
+    private static final float CLUSTER_TEXT_SIZE_SCALE = 0.78f;
 
     private static final float MIN_LETTER_SPACING = -0.05f;
     private static final int MAX_SEARCH_LOOP_COUNT = 20;
@@ -272,6 +281,18 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
                 // ColorOS drawer is always on a dark scrim; keep labels readable.
                 setTextColor(getContext().getColor(R.color.coloros_all_apps_text));
             }
+        } else if (mDisplay == DISPLAY_DRAWER_CLUSTER) {
+            setTextSize(TypedValue.COMPLEX_UNIT_PX,
+                    grid.allAppsIconTextSizePx * CLUSTER_TEXT_SIZE_SCALE);
+            setLineSpacing(0f, 1f);
+            setCompoundDrawablePadding(grid.allAppsIconDrawablePaddingPx);
+            float maxIconDp = ColorOsDrawerColumns.get(context) == ColorOsDrawerColumns.COLUMNS_FOUR
+                    ? CLUSTER_MAX_ICON_SIZE_COL_FOUR : CLUSTER_MAX_ICON_SIZE_COL_FIVE;
+            float maxIconPx = maxIconDp * DisplayMetrics.DENSITY_DEVICE_STABLE
+                    / DisplayMetrics.DENSITY_DEFAULT;
+            defaultIconSize = (int) Math.min(grid.allAppsIconSizePx * CLUSTER_ICON_SCALE,
+                    maxIconPx);
+            setTextColor(getContext().getColor(R.color.coloros_all_apps_text));
         } else if (mDisplay == DISPLAY_FOLDER) {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, grid.folderChildTextSizePx);
             setCompoundDrawablePadding(grid.folderChildDrawablePaddingPx);
@@ -376,7 +397,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     }
 
     public boolean isAllAppsDisplay() {
-        return mDisplay == DISPLAY_ALL_APPS;
+        return mDisplay == DISPLAY_ALL_APPS || mDisplay == DISPLAY_DRAWER_CLUSTER;
     }
 
     private ColorOsIconChangeAnimManager getIconChangeAnimManager() {
@@ -519,10 +540,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         if (mDisplay == DISPLAY_WORKSPACE
                 && ColorOsLayoutSettings.isHideIconNames(getContext())) {
             setTextAlpha(0f);
-        } else if (mDisplay == DISPLAY_ALL_APPS
+        } else if (isAllAppsDisplay()
                 && !ColorOsHomeSettings.isShowDrawerAppNames(getContext())) {
             setTextAlpha(0f);
-        } else if (mDisplay == DISPLAY_ALL_APPS) {
+        } else if (isAllAppsDisplay()) {
             setTextAlpha(1f);
         }
     }
@@ -1221,7 +1242,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
                 && ColorOsLayoutSettings.isHideIconNames(getContext())) {
             return false;
         }
-        if (mDisplay == DISPLAY_ALL_APPS
+        if (isAllAppsDisplay()
                 && !ColorOsHomeSettings.isShowDrawerAppNames(getContext())) {
             return false;
         }
@@ -1249,7 +1270,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         } else if (mDisplay == DISPLAY_WORKSPACE
                 && ColorOsLayoutSettings.isHideIconNames(getContext())) {
             visible = false;
-        } else if (mDisplay == DISPLAY_ALL_APPS
+        } else if (isAllAppsDisplay()
                 && !ColorOsHomeSettings.isShowDrawerAppNames(getContext())) {
             visible = false;
         }
@@ -1449,7 +1470,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
             mDotInfo = mActivity.getDotInfoForItem(itemInfo);
             boolean isDotted = mDotInfo != null;
             float newDotScale = isDotted ? 1f : 0;
-            if (mDisplay == DISPLAY_ALL_APPS) {
+            if (isAllAppsDisplay()) {
                 mDotRenderer = mActivity.getDeviceProfile().mDotRendererAllApps;
             } else {
                 mDotRenderer = mActivity.getDeviceProfile().mDotRendererWorkSpace;

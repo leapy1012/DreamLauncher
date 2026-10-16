@@ -1110,6 +1110,27 @@ public class COUISegmentButtonLayout extends LinearLayout implements ISegmentBut
 
     @Override
     public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+        TextView from = getSegmentAt(position);
+        if (from == null || from.getWidth() <= 0) {
+            return;
+        }
+        TextView to = getSegmentAt(position + 1);
+        if (to == null) {
+            to = from;
+            positionOffset = 0f;
+        }
+        // The pager owns the indicator while it scrolls.
+        if (this.mSpringAnimationPos != null && this.mSpringAnimationPos.isRunning()) {
+            this.mSpringAnimationPos.cancel();
+        }
+        if (this.mSpringAnimationWidth != null && this.mSpringAnimationWidth.isRunning()) {
+            this.mSpringAnimationWidth.cancel();
+        }
+        float fromCenter = (from.getLeft() + from.getRight()) / 2.0f;
+        float toCenter = (to.getLeft() + to.getRight()) / 2.0f;
+        this.mIndicatorCenterX = fromCenter + (toCenter - fromCenter) * positionOffset;
+        this.mIndicatorWidth = from.getWidth() + (to.getWidth() - from.getWidth()) * positionOffset;
+        updateIndicatorRect();
     }
 
     @Override

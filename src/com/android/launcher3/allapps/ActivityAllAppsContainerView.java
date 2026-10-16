@@ -154,6 +154,8 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     private final Path mTmpPath = new Path();
     private final RectF mTmpRectF = new RectF();
     protected AllAppsPagedView mViewPager;
+    /** ColorOS All / Categories pager; null with work tabs or outside the ColorOS drawer. */
+    @Nullable protected DreamCategoryPagedView mCategoryPagedView;
     protected FloatingHeaderView mHeader;
     protected View mBottomSheetBackground;
     protected RecyclerViewFastScroller mFastScroller;
@@ -616,9 +618,12 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         View oldView = getAppsRecyclerViewContainer();
         int index = indexOfChild(oldView);
         removeView(oldView);
-        int layout = showTabs ? R.layout.all_apps_tabs : R.layout.all_apps_rv_layout;
+        int layout = showTabs ? R.layout.all_apps_tabs
+                : useCategoryPager() ? R.layout.all_apps_category : R.layout.all_apps_rv_layout;
         final View rvContainer = getLayoutInflater().inflate(layout, this, false);
         addView(rvContainer, index);
+        mCategoryPagedView = rvContainer instanceof DreamCategoryPagedView
+                ? (DreamCategoryPagedView) rvContainer : null;
         if (showTabs) {
             mViewPager = (AllAppsPagedView) rvContainer;
             mViewPager.initParentViews(this);
@@ -710,6 +715,16 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     /** Hook for ColorOS drawer to re-pin the apps list under the tab chrome. */
     protected void onColorOsDrawerHeaderReady() {}
 
+    /** True to host the A-Z list in a {@link DreamCategoryPagedView} next to Categories. */
+    protected boolean useCategoryPager() {
+        return false;
+    }
+
+    @Nullable
+    public DreamCategoryPagedView getCategoryPagedView() {
+        return mCategoryPagedView;
+    }
+
     /**
      * ColorOS drawer: symmetric horizontal padding so the icon grid is centered;
      * letter rail overlays the trailing edge (Oppo) instead of eating a large end pad.
@@ -747,12 +762,15 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         if (tabBottom > overlap) {
             topMargin = tabBottom - overlap + belowGap;
         }
-        layoutColorOsContent(getAppsRecyclerViewContainer(), topMargin);
+        View appsContainer = getAppsRecyclerViewContainer();
+        layoutColorOsContent(appsContainer, topMargin);
         // During search, tabs are hidden — pin search RV from the top so settle
         // translation has room to hug the pill (Oppo frequent row).
         layoutColorOsContent(getSearchRecyclerView(), searchSession ? 0 : topMargin);
         View appsList = findViewById(R.id.apps_list_view);
-        if (appsList != null && appsList != getAppsRecyclerViewContainer()) {
+        if (appsList instanceof AllAppsRecyclerView && appsContainer == mCategoryPagedView) {
+            applyColorOsListFade((AllAppsRecyclerView) appsList);
+        } else if (appsList != null && appsList != appsContainer) {
             layoutColorOsContent(appsList, topMargin);
         }
         layoutColorOsLetterRail(0);
@@ -857,25 +875,28 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         lp.bottomMargin = 0;
         v.setLayoutParams(lp);
         if (v instanceof AllAppsRecyclerView) {
-            AllAppsRecyclerView rv = (AllAppsRecyclerView) v;
-            rv.setClipToPadding(true);
-            rv.setClipChildren(true);
-            rv.setBackground(null);
-            int left = rv.getPaddingLeft();
-            int right = rv.getPaddingRight();
-            if (rv.getPaddingTop() != 0 || rv.getPaddingBottom() != 0) {
-                rv.setPadding(left, 0, right, 0);
-            }
-            com.android.launcher3.allapps.coloros.ColorOsEdgeFadeHelper fade =
-                    rv.getColorOsEdgeFade();
-            if (fade != null) {
-                fade.configureFromResources(getResources());
-                fade.setEnabled(true);
-                fade.ensureHostLayer(rv);
-                fade.applyToHost(rv);
-                fade.applyEdgeAlphas(rv);
-                rv.invalidate();
-            }
+            applyColorOsListFade((AllAppsRecyclerView) v);
+        }
+    }
+
+    private void applyColorOsListFade(AllAppsRecyclerView rv) {
+        rv.setClipToPadding(true);
+        rv.setClipChildren(true);
+        rv.setBackground(null);
+        int left = rv.getPaddingLeft();
+        int right = rv.getPaddingRight();
+        if (rv.getPaddingTop() != 0 || rv.getPaddingBottom() != 0) {
+            rv.setPadding(left, 0, right, 0);
+        }
+        com.android.launcher3.allapps.coloros.ColorOsEdgeFadeHelper fade =
+                rv.getColorOsEdgeFade();
+        if (fade != null) {
+            fade.configureFromResources(getResources());
+            fade.setEnabled(true);
+            fade.ensureHostLayer(rv);
+            fade.applyToHost(rv);
+            fade.applyEdgeAlphas(rv);
+            rv.invalidate();
         }
     }
 
@@ -1304,7 +1325,10 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
      * hidden while searching.
      **/
     public ViewGroup getAppsRecyclerViewContainer() {
-        return mViewPager != null ? mViewPager : findViewById(R.id.apps_list_view);
+        if (mViewPager != null) {
+            return mViewPager;
+        }
+        return mCategoryPagedView != null ? mCategoryPagedView : findViewById(R.id.apps_list_view);
     }
 
     /** The RV for search results, which is hidden while A-Z apps are visible. */

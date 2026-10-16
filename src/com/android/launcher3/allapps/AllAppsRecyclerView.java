@@ -32,6 +32,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
@@ -58,6 +59,7 @@ public class AllAppsRecyclerView extends FastScrollRecyclerView {
     protected final int mNumAppsPerRow;
     private final AllAppsFastScrollHelper mFastScrollHelper;
     private int mCumulativeVerticalScroll;
+    private int mLastTouchAction = MotionEvent.ACTION_CANCEL;
 
     protected AlphabeticalAppsList<?> mApps;
 
@@ -112,6 +114,35 @@ public class AllAppsRecyclerView extends FastScrollRecyclerView {
         if (mColorOsFade != null && mColorOsFade.isEnabled()) {
             mColorOsFade.applyEdgeAlphas(this);
         }
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        boolean intercept = super.onInterceptTouchEvent(ev);
+        // COUIRecyclerView claims a touch that lands on a still-moving list. At either end the
+        // drawer's swipe-to-close must still be able to take it.
+        if (intercept && ev.getActionMasked() == MotionEvent.ACTION_DOWN
+                && (!canScrollVertically(-1)
+                        || computeVerticalScrollOffset() >= getAvailableScrollHeight())) {
+            getParent().requestDisallowInterceptTouchEvent(false);
+        }
+        return intercept;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        int action = ev.getAction();
+        int actionMasked = ev.getActionMasked();
+        // When the drawer's close gesture steals the touch during a top bounce, treat the cancel
+        // as a release so the bounce springs back instead of freezing.
+        if (actionMasked == MotionEvent.ACTION_CANCEL && getScrollY() < 0
+                && mLastTouchAction != MotionEvent.ACTION_DOWN) {
+            ev.setAction(MotionEvent.ACTION_UP);
+        }
+        mLastTouchAction = actionMasked;
+        boolean handled = super.onTouchEvent(ev);
+        ev.setAction(action);
+        return handled;
     }
 
     @Override

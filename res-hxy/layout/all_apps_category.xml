@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ColorOS drawer pager: the All list here, Categories is added by ColorOsDrawerChrome. -->
+<com.android.launcher3.allapps.DreamCategoryPagedView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/all_apps_category_pager"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="center_horizontal|top"
+    android:clipChildren="true"
+    android:clipToPadding="false"
+    android:descendantFocusability="afterDescendants">
+
+    <include layout="@layout/all_apps_rv_layout" />
+
+</com.android.launcher3.allapps.DreamCategoryPagedView>
